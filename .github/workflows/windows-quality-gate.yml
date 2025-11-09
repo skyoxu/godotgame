@@ -67,7 +67,14 @@ jobs:
           $env:Path = "$HOME\.dotnet;" + $env:Path
           & "$env:GODOT_BIN" --headless --path . --quit
 
+      - name: Build C# solutions
+        shell: pwsh
+        run: |
+          $env:Path = "$HOME\.dotnet;" + $env:Path
+          & "$env:GODOT_BIN" --headless --path . --build-solutions --quit
+
       - name: Install Export Templates (with fallback)
+        if: ${{ inputs.with_export == 'true' }}
         shell: pwsh
         run: |
           $Version = '4.5.1'
@@ -93,12 +100,33 @@ jobs:
           Copy-Item -Recurse -Force "$temp/*" $dst
           Write-Host "Export templates installed to $dst"
 
-      - name: Run Quality Gate
+      - name: Dotnet tests
         shell: pwsh
+        run: ./scripts/ci/run_dotnet_tests.ps1 -Solution 'Game.sln'
+
+      - name: GdUnit4 tests
+        shell: pwsh
+        env:
+          TEMPLATE_DEMO: ${{ inputs.include_demo == 'true' && '1' || '' }}
         run: |
-          $args = @()
-          if ('${{ inputs.with_export }}' -eq 'true') { $args += '-WithExport' }
-          if ('${{ inputs.include_demo }}' -eq 'true') { $args += '-IncludeDemo' }
-          $perf = '${{ inputs.perf_p95_ms }}'
-          if ($perf -and $perf -ne '0') { $args += '-PerfP95Ms'; $args += $perf }
-          ./scripts/ci/quality_gate.ps1 -GodotBin "$env:GODOT_BIN" @args
+          $env:Path = "$HOME\.dotnet;" + $env:Path
+          ./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"
+
+      - name: Headless smoke
+        shell: pwsh
+        run: ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 5
+
+      - name: Export Windows EXE
+        if: ${{ inputs.with_export == 'true' }}
+        shell: pwsh
+        run: ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe
+
+      - name: Smoke EXE
+        if: ${{ inputs.with_export == 'true' }}
+        shell: pwsh
+        run: ./scripts/ci/smoke_exe.ps1 -ExePath build\Game.exe -TimeoutSec 5
+
+      - name: Perf budget gate
+        if: ${{ inputs.perf_p95_ms != 0 }}
+        shell: pwsh
+        run: ./scripts/ci/check_perf_budget.ps1 -MaxP95Ms ${{ inputs.perf_p95_ms }}
