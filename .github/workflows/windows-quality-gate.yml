@@ -36,6 +36,15 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Ensure DOTNET_ROOT and PATH
+        shell: pwsh
+        run: |
+          $dotnet = (Get-Command dotnet).Path
+          $root = Split-Path -Parent $dotnet
+          "DOTNET_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          $root | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          Write-Host "DOTNET at $dotnet; DOTNET_ROOT=$root appended to PATH"
+
       - name: Download Godot .NET (mono) with fallback
         shell: pwsh
         run: |
@@ -119,7 +128,8 @@ jobs:
       - name: Export Windows EXE
         if: ${{ inputs.with_export == 'true' }}
         shell: pwsh
-        run: ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe
+        run: |
+          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe
 
       - name: Smoke EXE
         if: ${{ inputs.with_export == 'true' }}
