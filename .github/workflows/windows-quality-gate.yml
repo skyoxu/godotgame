@@ -1,32 +1,13 @@
-﻿name: Windows Quality Gate
-
-# Notes:
-# - Smoke markers recognized by scripts:
-#   [TEMPLATE_SMOKE_READY] (preferred), [DB] opened (fallback)
-# - Export templates are installed before export; headless smoke runs regardless.
+name: Windows Quality Gate
 
 on:
-  workflow_dispatch:
-    inputs:
-      with_export:
-        description: "Include export + EXE smoke"
-        type: choice
-        options: [ 'false', 'true' ]
-        default: 'false'
-      include_demo:
-        description: "Enable demo screens/tests (TEMPLATE_DEMO=1)"
-        type: choice
-        options: [ 'false', 'true' ]
-        default: 'false'
-      perf_p95_ms:
-        description: "Perf budget P95 (ms), 0 to skip"
-        type: string
-        default: "0"
+  workflow_dispatch: {}
 
 jobs:
   quality:
     runs-on: windows-latest
-    timeout-minutes: 60
+    env:
+      GODOT_VERSION: '4.5.1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,101 +16,62 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
       - name: Pin .NET SDK/Runtime and export DOTNET_ROOT
         shell: pwsh
         run: |
-           = "C:\Users\weiruan/dotnet-install.ps1"
-          Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 
-          & powershell -NoProfile -ExecutionPolicy Bypass -File  -Version 8.0.401 -InstallDir "C:\Users\weiruan/.dotnet"
-          & powershell -NoProfile -ExecutionPolicy Bypass -File  -Runtime dotnet -Version 8.0.21 -InstallDir "C:\Users\weiruan/.dotnet"
-          "DOTNET_ROOT=C:\Users\weiruan/.dotnet" | Out-File -FilePath  -Append -Encoding utf8
-          "C:\Users\weiruan/.dotnet" | Out-File -FilePath  -Append -Encoding utf8
+          $installer = "$HOME/dotnet-install.ps1"
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Version 8.0.401 -InstallDir "$HOME/.dotnet"
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Runtime dotnet -Version 8.0.21 -InstallDir "$HOME/.dotnet"
+          "DOTNET_ROOT=$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           dotnet --info
 
-      - name: Ensure DOTNET_ROOT and PATH
+      - name: Download Godot .NET (GitHub Releases)
         shell: pwsh
         run: |
-          $dotnet = (Get-Command dotnet).Path
-          $root = Split-Path -Parent $dotnet
-          "DOTNET_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          $root | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
-          Write-Host "DOTNET at $dotnet; DOTNET_ROOT=$root appended to PATH"
-
-      - name: Download Godot .NET (mono) with fallback
-        shell: pwsh
-        run: |
-          $Version = '4.5.1'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           New-Item -ItemType Directory -Force -Path godot | Out-Null
           $zip = "godot/godot.zip"
-          $urls = @(
-            "https://github.com/godotengine/godot/releases/download/${Version}-stable/Godot_v${Version}-stable_mono_win64.zip",
-            "https://downloads.tuxfamily.org/godotengine/${Version}/mono/Godot_v${Version}-stable_mono_win64.zip"
-          )
-          $ok = $false
-          for ($i=1; $i -le 3 -and -not $ok; $i++) {
-            foreach ($u in $urls) {
-              Write-Host "Attempt #${i}: downloading $u"
-              try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zip; $ok = $true; break } catch { Write-Warning $_; Start-Sleep -Seconds (3*$i) }
-            }
-          }
-          if (-not $ok) { throw 'Failed to download Godot after retries.' }
+          $u = "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_mono_win64.zip"
+          Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zip
           Expand-Archive $zip -DestinationPath godot -Force
           $exe = Get-ChildItem godot -Recurse -Filter *win64*.exe | Select-Object -First 1
           if (-not $exe) { throw 'Godot exe not found after download.' }
           "GODOT_BIN=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "GODOT_BIN=$($exe.FullName)"
 
-      - name: Prewarm Godot C# build (first compile)
+      - name: Install Export Templates (GitHub Releases)
         shell: pwsh
         run: |
-          $env:Path = "$HOME\.dotnet;" + $env:Path
-          & "$env:GODOT_BIN" --headless --path . --quit
-
-      - name: Build C# solutions
-        shell: pwsh
-        run: |
-          $env:Path = "$HOME\.dotnet;" + $env:Path
-          & "$env:GODOT_BIN" --headless --path . --build-solutions --quit
-
-      - name: Install Export Templates (with fallback)
-        if: ${{ inputs.with_export == 'true' }}
-        shell: pwsh
-        run: |
-          $Version = '4.5.1'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           $tpz = "godot/export_templates.tpz"
-          $urls = @(
-            "https://github.com/godotengine/godot/releases/download/${Version}-stable/Godot_v${Version}-stable_export_templates.tpz",
-            "https://downloads.tuxfamily.org/godotengine/${Version}/Godot_v${Version}-stable_export_templates.tpz"
-          )
-          $ok = $false
-          for ($i=1; $i -le 3 -and -not $ok; $i++) {
-            foreach ($u in $urls) {
-              Write-Host "Attempt #${i}: downloading templates $u"
-              try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $tpz; $ok = $true; break } catch { Write-Warning $_; Start-Sleep -Seconds (3*$i) }
-            }
-          }
-          if (-not $ok) { throw 'Failed to download export templates after retries.' }
+          $u = "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_export_templates.tpz"
+          Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $tpz
           $temp = "godot/templates_unpacked"
           Expand-Archive $tpz -DestinationPath $temp -Force
-          $ver = "$Version.stable.mono"
+          $ver = "${env:GODOT_VERSION}.stable.mono"
           $dst1 = Join-Path $env:APPDATA ("Godot/templates/$ver")
           $dst2 = Join-Path $env:APPDATA ("Godot/export_templates/$ver")
           New-Item -ItemType Directory -Force -Path $dst1,$dst2 | Out-Null
           Copy-Item -Recurse -Force "$temp/*" $dst1
           Copy-Item -Recurse -Force "$temp/*" $dst2
-          Write-Host "Export templates installed to both templates and export_templates"
+          Write-Host "Templates installed: $dst1 and $dst2"
+          $check1 = Join-Path $dst1 'windows_release_x86_64.exe'
+          $check2 = Join-Path $dst1 'windows_debug_x86_64.exe'
+          if (-not (Test-Path $check1) -or -not (Test-Path $check2)) { Write-Error "Export templates not complete under $dst1" }
+
+      - name: Prewarm & Build Solutions
+        shell: pwsh
+        run: |
+          $env:Path = "$HOME\.dotnet;" + $env:Path
+          & "$env:GODOT_BIN" --headless --path . --quit
+          & "$env:GODOT_BIN" --headless --path . --build-solutions --quit
 
       - name: Dotnet tests
         shell: pwsh
         run: ./scripts/ci/run_dotnet_tests.ps1 -Solution 'Game.sln'
-
-      - name: Enable demo tests (optional)
-        if: ${{ inputs.include_demo == 'true' }}
-        shell: pwsh
-        run: |
-          "TEMPLATE_DEMO=1" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: GdUnit4 tests
         shell: pwsh
@@ -142,19 +84,20 @@ jobs:
         run: ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 5
 
       - name: Export Windows EXE
-        if: ${{ inputs.with_export == 'true' }}
         shell: pwsh
         run: |
-          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe
+          $env:Path = "$HOME\.dotnet;" + $env:Path
+          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build/Game.exe
 
       - name: Smoke EXE
-        if: ${{ inputs.with_export == 'true' }}
         shell: pwsh
         run: ./scripts/ci/smoke_exe.ps1 -ExePath build\Game.exe -TimeoutSec 5
 
-      - name: Perf budget gate
-        if: ${{ inputs.perf_p95_ms != '' && inputs.perf_p95_ms != '0' }}
-        shell: pwsh
-        run: ./scripts/ci/check_perf_budget.ps1 -MaxP95Ms ${{ inputs.perf_p95_ms }}
-
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            build/Game.exe
+            logs/ci/**
 

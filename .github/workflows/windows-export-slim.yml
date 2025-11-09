@@ -17,6 +17,17 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Pin .NET SDK/Runtime and export DOTNET_ROOT
+        shell: pwsh
+        run: |
+          $installer = "$HOME/dotnet-install.ps1"
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Version 8.0.401 -InstallDir "$HOME/.dotnet"
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Runtime dotnet -Version 8.0.21 -InstallDir "$HOME/.dotnet"
+          "DOTNET_ROOT=$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          dotnet --info
+
       - name: Ensure DOTNET_ROOT and PATH
         shell: pwsh
         run: |
@@ -56,7 +67,9 @@ jobs:
           Copy-Item -Recurse -Force "$temp/*" $dst1
           Copy-Item -Recurse -Force "$temp/*" $dst2
           Write-Host "Templates installed: $dst1 and $dst2"
-          Get-ChildItem -Recurse $dst1 | Select-Object -First 5 | % { Write-Host $_.FullName }
+          $check1 = Join-Path $dst1 'windows_release_x86_64.exe'
+          $check2 = Join-Path $dst1 'windows_debug_x86_64.exe'
+          if (-not (Test-Path $check1) -or -not (Test-Path $check2)) { Write-Error "Export templates not complete under $dst1" }
 
       - name: Prewarm & Build Solutions
         shell: pwsh
