@@ -104,10 +104,12 @@ jobs:
           $temp = "godot/templates_unpacked"
           Expand-Archive $tpz -DestinationPath $temp -Force
           $ver = "$Version.stable.mono"
-          $dst = Join-Path $env:APPDATA ("Godot/templates/$ver")
-          New-Item -ItemType Directory -Force -Path $dst | Out-Null
-          Copy-Item -Recurse -Force "$temp/*" $dst
-          Write-Host "Export templates installed to $dst"
+          $dst1 = Join-Path $env:APPDATA ("Godot/templates/$ver")
+          $dst2 = Join-Path $env:APPDATA ("Godot/export_templates/$ver")
+          New-Item -ItemType Directory -Force -Path $dst1,$dst2 | Out-Null
+          Copy-Item -Recurse -Force "$temp/*" $dst1
+          Copy-Item -Recurse -Force "$temp/*" $dst2
+          Write-Host "Export templates installed to both templates and export_templates"
 
       - name: Dotnet tests
         shell: pwsh
@@ -140,3 +142,4 @@ jobs:
         if: ${{ inputs.perf_p95_ms != 0 }}
         shell: pwsh
         run: ./scripts/ci/check_perf_budget.ps1 -MaxP95Ms ${{ inputs.perf_p95_ms }}
+
