@@ -1,4 +1,4 @@
-﻿[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://Game.Godot/Scripts/Main.gd" id="1_0k4m0"]
 [ext_resource type="PackedScene" path="res://Game.Godot/Scenes/UI/HUD.tscn" id="2"]
@@ -61,7 +61,6 @@ grow_horizontal = 2
 grow_vertical = 2
 z_index = 100
 mouse_filter = 1
-
 
 
 
