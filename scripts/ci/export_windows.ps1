@@ -4,10 +4,7 @@ param(
   [string]$Output = 'build/Game.exe'
 )
 
-$ErrorActionPreference = 'Stop'
-if (-not $GodotBin -or -not (Test-Path $GodotBin)) {
-  Write-Error "GODOT_BIN is not set or file not found. Pass -GodotBin or set env var."
-}
+ $ErrorActionPreference = 'Stop'
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Output) | Out-Null
 Write-Host "Exporting $Preset to $Output"
@@ -27,13 +24,26 @@ $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
 $dest = Join-Path $PSScriptRoot ("../../logs/ci/$ts/export")
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 $glog = Join-Path $dest 'godot_export.log'
+New-Item -ItemType File -Force -Path $glog | Out-Null
+Write-Host ("Log file: " + $glog)
+
+if (-not $GodotBin -or -not (Test-Path $GodotBin)) {
+  $msg = "GODOT_BIN is not set or file not found: '$GodotBin'"
+  Add-Content -Encoding UTF8 -Path $glog -Value $msg
+  Write-Error $msg
+}
 
 function Invoke-BuildSolutions() {
   Write-Host "Pre-building C# solutions via Godot (--build-solutions)"
   $out = Join-Path $dest ("godot_build_solutions.out.log")
   $err = Join-Path $dest ("godot_build_solutions.err.log")
   $args = @('--headless','--verbose','--path','.', '--build-solutions', '--quit')
-  $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+  try {
+    $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+  } catch {
+    Add-Content -Encoding UTF8 -Path $glog -Value ("Start-Process failed (build-solutions): " + $_.Exception.Message)
+    throw
+  }
   $ok = $p.WaitForExit(600000)
   if (-not $ok) { Write-Warning 'Godot build-solutions timed out; killing process'; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
   Add-Content -Encoding UTF8 -Path $glog -Value ("=== build-solutions @ " + (Get-Date).ToString('o'))
@@ -58,7 +68,12 @@ function Invoke-Export([string]$mode) {
   $err = Join-Path $dest ("godot_export.$mode.err.log")
   $args = @('--headless','--verbose','--path','.', "--export-$mode", $Preset, $Output)
   Add-Content -Encoding UTF8 -Path $glog -Value ("Using preset: '" + $Preset + "' output: '" + $Output + "'")
-  $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+  try {
+    $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+  } catch {
+    Add-Content -Encoding UTF8 -Path $glog -Value ("Start-Process failed (export-"+$mode+"): " + $_.Exception.Message)
+    throw
+  }
   $ok = $p.WaitForExit(600000)
   if (-not $ok) { Write-Warning 'Godot export timed out; killing process'; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
   Add-Content -Encoding UTF8 -Path $glog -Value ("=== export-$mode @ " + (Get-Date).ToString('o'))

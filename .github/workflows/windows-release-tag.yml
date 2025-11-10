@@ -72,7 +72,7 @@ jobs:
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
           & "$env:GODOT_BIN" --headless --path . --quit
-          & "$env:GODOT_BIN" --headless --path . --build-solutions --quit
+          & "$env:GODOT_BIN" --headless --path . --build-solutions --verbose --quit
           dotnet restore GodotGame.csproj
           dotnet build GodotGame.csproj -c Release -v minimal
 
@@ -80,7 +80,26 @@ jobs:
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
-          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build/Game.exe
+          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Preset "Windows Desktop" -Output build/Game.exe
+
+      - name: Print export log tail (always)
+        if: always()
+        shell: pwsh
+        run: |
+          $log = Get-ChildItem -Recurse -Filter godot_export.log -Path logs -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($log) {
+            Write-Host "Export log: $($log.FullName)"
+            Get-Content $log.FullName -Tail 200
+          } else {
+            Write-Warning 'No godot_export.log found under logs/**'
+          }
+
+      - name: Upload export logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-logs
+          path: logs/ci/**/export/**
 
       - name: Attach to GitHub Release
         uses: softprops/action-gh-release@v1
@@ -89,4 +108,3 @@ jobs:
             build/Game.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
