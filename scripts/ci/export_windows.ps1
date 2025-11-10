@@ -28,11 +28,36 @@ $dest = Join-Path $PSScriptRoot ("../../logs/ci/$ts/export")
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 $glog = Join-Path $dest 'godot_export.log'
 
+function Invoke-BuildSolutions() {
+  Write-Host "Pre-building C# solutions via Godot (--build-solutions)"
+  $out = Join-Path $dest ("godot_build_solutions.out.log")
+  $err = Join-Path $dest ("godot_build_solutions.err.log")
+  $args = @('--headless','--verbose','--path','.', '--build-solutions', '--quit')
+  $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
+  $ok = $p.WaitForExit(600000)
+  if (-not $ok) { Write-Warning 'Godot build-solutions timed out; killing process'; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+  Add-Content -Encoding UTF8 -Path $glog -Value ("=== build-solutions @ " + (Get-Date).ToString('o'))
+  if (Test-Path $out) { Get-Content $out -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
+  if (Test-Path $err) { Get-Content $err -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
+  # Log quick check for built assembly
+  try {
+    $binDir = Join-Path $PSScriptRoot '../../.godot/mono/temp/bin'
+    if (Test-Path $binDir) {
+      $dlls = Get-ChildItem -Path $binDir -Filter '*.dll' -ErrorAction SilentlyContinue
+      Add-Content -Encoding UTF8 -Path $glog -Value ("Built DLLs: " + ($dlls | Select-Object -ExpandProperty Name | Sort-Object | Out-String))
+    } else {
+      Add-Content -Encoding UTF8 -Path $glog -Value 'Warning: .godot/mono/temp/bin not found after build-solutions.'
+    }
+  } catch {}
+  return $p.ExitCode
+}
+
 function Invoke-Export([string]$mode) {
   Write-Host "Invoking export: $mode"
   $out = Join-Path $dest ("godot_export.$mode.out.log")
   $err = Join-Path $dest ("godot_export.$mode.err.log")
   $args = @('--headless','--verbose','--path','.', "--export-$mode", $Preset, $Output)
+  Add-Content -Encoding UTF8 -Path $glog -Value ("Using preset: '" + $Preset + "' output: '" + $Output + "'")
   $p = Start-Process -FilePath $GodotBin -ArgumentList $args -PassThru -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
   $ok = $p.WaitForExit(600000)
   if (-not $ok) { Write-Warning 'Godot export timed out; killing process'; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
@@ -40,6 +65,11 @@ function Invoke-Export([string]$mode) {
   if (Test-Path $out) { Get-Content $out -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
   if (Test-Path $err) { Get-Content $err -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
   return $p.ExitCode
+}
+
+$buildCode = Invoke-BuildSolutions
+if ($buildCode -ne 0) {
+  Write-Error "Godot --build-solutions failed with exit code $buildCode. See log: $glog"
 }
 
 $exitCode = Invoke-Export 'release'

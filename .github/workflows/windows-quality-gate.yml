@@ -16,7 +16,7 @@ jobs:
         continue-on-error: true
         run: |
           ./scripts/ci/lint_workflows.ps1
-          if ( -ne 0) { Write-Warning 'Workflow lint warnings found (soft gate)'; exit 0 }
+          if ($LASTEXITCODE -ne 0) { Write-Warning 'Workflow lint warnings found (soft gate)'; exit 0 }
 
 
       - name: Setup .NET 8
@@ -97,8 +97,11 @@ jobs:
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
+          $env:GODOT_DOTNET_CLI = (Get-Command dotnet).Path
           & "$env:GODOT_BIN" --headless --path . --quit
-          & "$env:GODOT_BIN" --headless --path . --build-solutions --quit
+          & "$env:GODOT_BIN" --headless --path . --build-solutions --verbose --quit
+          dotnet restore GodotGame.csproj
+          dotnet build GodotGame.csproj -c Release -v minimal
 
       - name: Dotnet tests
         shell: pwsh
@@ -125,7 +128,7 @@ jobs:
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
-          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build/Game.exe
+          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Preset "Windows Desktop" -Output build/Game.exe
 
 
       - name: Print export log tail (always)
