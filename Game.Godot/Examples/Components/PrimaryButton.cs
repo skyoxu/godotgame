@@ -35,7 +35,9 @@ public partial class PrimaryButton : Button
                 hoverStyle.BgColor = new Color(1f, 0.3f, 0.3f);
                 break;
         }
-        normalStyle.CornerRadiusAll = 8; hoverStyle.CornerRadiusAll = 8;
+        // Godot 4: set corner radius individually (CornerRadiusAll removed)
+        normalStyle.CornerRadiusTopLeft = 8; normalStyle.CornerRadiusTopRight = 8; normalStyle.CornerRadiusBottomRight = 8; normalStyle.CornerRadiusBottomLeft = 8;
+        hoverStyle.CornerRadiusTopLeft = 8; hoverStyle.CornerRadiusTopRight = 8; hoverStyle.CornerRadiusBottomRight = 8; hoverStyle.CornerRadiusBottomLeft = 8;
         AddThemeStyleboxOverride("normal", normalStyle);
         AddThemeStyleboxOverride("hover", hoverStyle);
     }

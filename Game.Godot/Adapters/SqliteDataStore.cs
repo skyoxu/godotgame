@@ -211,9 +211,9 @@ public partial class SqliteDataStore : Node, ISqlDatabase
     {
         try
         {
-            var obj = ClassDB.Instantiate("SQLite");
-            if (obj is not GodotObject go) return false;
-            _pluginDb = go;
+            var obj = ClassDB.Instantiate("SQLite") as GodotObject;
+            if (obj == null) return false;
+            _pluginDb = obj;
             // Prefer setting Path then calling OpenDb, if exposed
             try { _pluginDb.Set("Path", absPath); } catch { }
             var ok = _pluginDb.Call("OpenDb").AsBool();

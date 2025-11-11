@@ -26,7 +26,7 @@ public partial class GameEngineDemo : Node
 
     public void ApplyDamage(int amount)
     {
-        _engine.ApplyDamage(new Damage(amount, DamageType.Physical, isCritical: false));
+        _engine.ApplyDamage(new Damage(amount, DamageType.Physical, IsCritical: false));
     }
     public void StartGame()
     {

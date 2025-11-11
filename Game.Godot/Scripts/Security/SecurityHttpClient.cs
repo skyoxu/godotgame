@@ -67,7 +67,7 @@ public partial class SecurityHttpClient : Node
         try
         {
             var entry = new { ts = DateTime.UtcNow.ToString("O"), event_type = eventType, url = resource, reason, source = nameof(SecurityHttpClient) };
-            var line = JsonSerializer.Serialize(entry) + Environment.NewLine;
+            var line = JsonSerializer.Serialize(entry) + System.Environment.NewLine;
             var dir = ProjectSettings.GlobalizePath("user://logs/security");
             Directory.CreateDirectory(dir);
             File.AppendAllText(System.IO.Path.Combine(dir, "audit-http.jsonl"), line);
