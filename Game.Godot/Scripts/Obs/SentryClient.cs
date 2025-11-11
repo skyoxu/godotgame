@@ -24,7 +24,7 @@ public partial class SentryClient : Node
         }
     }
 
-    public bool CaptureMessage(string level, string message, Godot.Collections.Dictionary? context = null)
+    public bool CaptureMessage(string level, string message, System.Collections.Generic.Dictionary<string, object>? context = null)
     {
         try
         {
@@ -34,7 +34,7 @@ public partial class SentryClient : Node
                 type = "message",
                 level = level,
                 message = message,
-                context = context ?? new Godot.Collections.Dictionary(),
+                context = context ?? new System.Collections.Generic.Dictionary<string, object>(),
                 dsn_present = !string.IsNullOrWhiteSpace(Dsn),
                 enabled = Enabled
             };
@@ -48,7 +48,7 @@ public partial class SentryClient : Node
         }
     }
 
-    public bool CaptureException(string exceptionMessage, Godot.Collections.Dictionary? context = null)
+    public bool CaptureException(string exceptionMessage, System.Collections.Generic.Dictionary<string, object>? context = null)
     {
         try
         {
@@ -57,7 +57,7 @@ public partial class SentryClient : Node
                 ts = DateTime.UtcNow.ToString("O"),
                 type = "exception",
                 message = exceptionMessage,
-                context = context ?? new Godot.Collections.Dictionary(),
+                context = context ?? new System.Collections.Generic.Dictionary<string, object>(),
                 dsn_present = !string.IsNullOrWhiteSpace(Dsn),
                 enabled = Enabled
             };
@@ -80,4 +80,3 @@ public partial class SentryClient : Node
         File.AppendAllText(path, json + Environment.NewLine);
     }
 }
-

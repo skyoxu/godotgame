@@ -28,8 +28,8 @@ public partial class GameEngineDemo : Node
     {
         _engine.ApplyDamage(new Damage(amount, DamageType.Physical, isCritical: false));
     }
-}
     public void StartGame()
     {
         _engine.Start();
     }
+}

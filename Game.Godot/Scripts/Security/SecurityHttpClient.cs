@@ -10,8 +10,8 @@ public partial class SecurityHttpClient : Node
 {
     [Signal] public delegate void RequestBlockedEventHandler(string reason, string url);
 
-    [Export] public Godot.Collections.Array<string> AllowedDomains { get; set; } = new() { "example.com", "sentry.io" };
-    [Export] public Godot.Collections.Array<string> AllowedMethods { get; set; } = new() { "GET", "POST" };
+    [Export] public string[] AllowedDomains { get; set; } = new[] { "example.com", "sentry.io" };
+    [Export] public string[] AllowedMethods { get; set; } = new[] { "GET", "POST" };
     [Export] public bool EnforceHttps { get; set; } = true;
     [Export] public int MaxBodyBytes { get; set; } = 10_000_000; // 10 MB
 
@@ -75,4 +75,3 @@ public partial class SecurityHttpClient : Node
         catch { /* ignore audit failures */ }
     }
 }
-
