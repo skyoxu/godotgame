@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$GodotBin = $env:GODOT_BIN,
   [string]$Preset = 'Windows Desktop',
   [string]$Output = 'build/Game.exe'
@@ -31,6 +31,33 @@ if (-not $GodotBin -or -not (Test-Path $GodotBin)) {
   $msg = "GODOT_BIN is not set or file not found: '$GodotBin'"
   Add-Content -Encoding UTF8 -Path $glog -Value $msg
   Write-Error $msg
+}
+
+# Resolve export preset name from export_presets.cfg to avoid 'Invalid export preset name'
+function Resolve-Preset([string]$requested) {
+  $cfgCandidates = @('export_presets.cfg','Game.Godot/export_presets.cfg')
+  $names = @()
+  foreach ($c in $cfgCandidates) {
+    if (Test-Path $c) {
+      try {
+        $lines = Get-Content $c -ErrorAction SilentlyContinue
+        foreach ($ln in $lines) {
+          if ($ln -match '^\s*name\s*=\s*"([^"]+)"') { $names += $Matches[1] }
+        }
+      } catch {}
+    }
+  }
+  if ($names.Count -eq 0) { return $requested }
+  # exact match
+  if ($names -contains $requested) { return $requested }
+  # common alias mapping: 'Windows' -> first name containing 'Windows'
+  $win = $names | Where-Object { $_ -match '(?i)windows' } | Select-Object -First 1
+  if ($requested -eq 'Windows' -and $win) { return $win }
+  # prefer 'Windows Desktop' if present
+  $wd = $names | Where-Object { $_ -eq 'Windows Desktop' } | Select-Object -First 1
+  if ($wd) { return $wd }
+  # fallback to first preset
+  return ($names | Select-Object -First 1)
 }
 
 function Invoke-BuildSolutions() {
@@ -145,3 +172,4 @@ if (Test-Path $maybePck) { Copy-Item -Force $maybePck $dest 2>$null }
 if (Test-Path $glog) { Write-Host "--- godot_export.log (tail) ---"; Get-Content $glog -Tail 200 }
 Write-Host "Export artifacts copied to $dest (log: $glog)"
 exit $exitCode
+
