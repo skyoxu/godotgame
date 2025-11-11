@@ -65,12 +65,22 @@ function Invoke-BuildSolutions() {
       if ($latest) {
         $logPath = Join-Path $latest.FullName 'msbuild_log.txt'
         if (Test-Path $logPath) {
-          Copy-Item -Force $logPath (Join-Path $dest 'msbuild_log.txt') -ErrorAction SilentlyContinue
-          # Also extract C# error lines for quick visibility
+          $msbLocal = Join-Path $dest 'msbuild_log.txt'
+          Copy-Item -Force $logPath $msbLocal -ErrorAction SilentlyContinue
+          # Extract errors: match 'error <code>', 'CSxxxx', 'GD010x' (case-insensitive)
           try {
-            (Select-String -Path $logPath -Pattern 'error CS[0-9]+' -SimpleMatch -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Line) |
-              Set-Content -Path (Join-Path $dest 'msbuild_errors.txt') -Encoding UTF8
-          } catch {}
+            $pattern = '(?i)\berror\b\s+[A-Z]?[0-9]{3,5}\b|CS[0-9]{4}\b|GD010[0-9]\b'
+            $matches = Select-String -Path $logPath -Pattern $pattern -AllMatches -ErrorAction SilentlyContinue
+            $outFile = Join-Path $dest 'msbuild_errors.txt'
+            if ($matches -and $matches.Count -gt 0) {
+              $lines = $matches | Select-Object -ExpandProperty Line
+              $lines | Set-Content -Path $outFile -Encoding UTF8
+            } else {
+              'No errors matched (pattern: error|CSxxxx|GD010x).' | Set-Content -Path $outFile -Encoding UTF8
+            }
+          } catch {
+            ('Failed to extract msbuild errors: ' + $_.Exception.Message) | Set-Content -Path (Join-Path $dest 'msbuild_errors.txt') -Encoding UTF8
+          }
         }
       }
     }
