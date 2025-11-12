@@ -1,163 +1,163 @@
-﻿# Phase 15: 鎬ц兘棰勭畻涓庨棬绂佷綋绯?
+# Phase 15: 性能预算与门禁体系
 
-> **鏍稿績鐩爣**锛氬缓绔嬮噺鍖栨€ц兘棰勭畻浣撶郴锛屽疄鐜拌嚜鍔ㄥ寲鎬ц兘闂ㄧ妫€鏌ワ紝闃叉鍥炲綊锛屾寔缁紭鍖栥€?
-> **宸ヤ綔閲?*锛?-6 浜哄ぉ
-> **渚濊禆**锛歅hase 12锛圚eadless 鐑熸祴 & 鎬ц兘閲囬泦锛夈€丳hase 13锛堣川閲忛棬绂佽剼鏈級
-> **浜や粯鐗?*锛歅erformanceTracker.cs + PerformanceGates.cs + 3 涓伐鍏疯剼鏈?+ CI 闆嗘垚 + 鍩哄噯寤虹珛鎸囧崡
-> **楠屾敹鏍囧噯**锛氭湰鍦?`npm run test:performance` 閫氳繃 + 鎬ц兘鎶ュ憡鐢熸垚 + CI 闂ㄧ鐢熸晥
-
----
-
-## 1. 鑳屾櫙涓庡姩鏈?
-
-### 鍘熺増锛坴itegame锛夋€ц兘绠＄悊
-- **Electron 宸ュ叿閾?*锛欴evTools Timeline + 鑷畾涔夎鏃?
-- **Vite HMR**锛氱儹鏇存柊瀵艰嚧鎬ц兘鎸囨爣娉㈠姩澶?
-- **Playwright E2E**锛氭€ц兘鏁版嵁鍩轰簬娴忚鍣ㄤ簨浠讹紝鍑嗙‘鎬ф湁闄?
-- **缂轰箯鍩哄噯**锛氭棤鍘嗗彶瀵规爣锛岄毦浠ュ垽鏂€ц兘鍔ｅ寲
-
-### 鏂扮増锛坓odotgame锛夋€ц兘鏈洪亣涓庢寫鎴?
-**鏈洪亣**锛?
-- Godot Engine 鍐呯疆 Profiler锛屽抚鏃堕棿绮剧‘鍒板井绉?
-- Headless 妯″紡涓嬫棤 GUI 寮€閿€锛屾€ц兘鏁版嵁鏇寸湡瀹?
-- C# 寮虹被鍨?+ 棰勭紪璇戯紝娑堥櫎鑴氭湰瑙ｆ瀽寮€閿€
-- Signals 鍩轰簬浜嬩欢椹卞姩锛屽彲缁嗙矑搴﹁鏃?
-
-**鎸戞垬**锛?
-- **澶氬抚绋冲畾鎬?*锛氶渶閲囬泦鏁扮櫨甯ф暟鎹互娑堥櫎鍣０锛堝喎鍚姩銆丟C 娉㈠姩锛?
-- **骞冲彴宸紓**锛歐indows 涓嶅悓纭欢閰嶇疆瀵艰嚧鍩哄噯闅句互缁熶竴
-- **妗嗘灦寮€閿€**锛欸odot 寮曟搸鑷韩鐨勫抚寮€閿€锛堢墿鐞嗐€佹覆鏌撱€佷俊鍙凤級闅句互鍖哄垎
-- **娴嬭瘯閲嶇幇鎬?*锛欻eadless 妯″紡涓嬫煇浜涘満鏅鏃朵笌浜や簰妯″紡涓嬩笉鍚?
-
-### 鎬ц兘棰勭畻鐨勪环鍊?
-1. **闃叉鍥炲綊**锛氳嚜鍔ㄩ樆鏂抚鏃堕棿瓒呴槇鍊肩殑浠ｇ爜
-2. **鎸佺画浼樺寲**锛氶噺鍖栧熀鍑嗭紝娓呮櫚灞曠ず浼樺寲鏁堟灉
-3. **鍙娴?*锛?0fps 鐩爣瀵瑰簲 16.67ms/甯э紝閲忓寲鍙揪鎴?
-4. **鍥㈤槦鍏辫瘑**锛氭€ц兘绾︽潫鍐欏叆浠ｇ爜锛屾棤闇€姣忔璁ㄨ
+> **核心目标**：建立量化性能预算体系，实现自动化性能门禁检查，防止回归，持续优化。
+> **工作量**：5-6 人天
+> **依赖**：Phase 12（Headless 烟测 & 性能采集）、Phase 13（质量门禁脚本）
+> **交付物**：PerformanceTracker.cs + PerformanceGates.cs + 3 个工具脚本 + CI 集成 + 基准建立指南
+> **验收标准**：本地 `npm run test:performance` 通过 + 性能报告生成 + CI 门禁生效
 
 ---
 
-## 2. 鎬ц兘棰勭畻瀹氫箟
+## 1. 背景与动机
 
-### 2.1 鍏抽敭鎬ц兘鎸囨爣锛圞PI锛?
+### 原版（vitegame）性能管理
+- **Electron 工具链**：DevTools Timeline + 自定义计时
+- **Vite HMR**：热更新导致性能指标波动大
+- **Playwright E2E**：性能数据基于浏览器事件，准确性有限
+- **缺乏基准**：无历史对标，难以判断性能劣化
 
-| # | 鎸囨爣 | 瀹氫箟 | 鐩爣鍊?| 搴﹂噺鏂瑰紡 | ADR |
+### 新版（godotgame）性能机遇与挑战
+**机遇**：
+- Godot Engine 内置 Profiler，帧时间精确到微秒
+- Headless 模式下无 GUI 开销，性能数据更真实
+- C# 强类型 + 预编译，消除脚本解析开销
+- Signals 基于事件驱动，可细粒度计时
+
+**挑战**：
+- **多帧稳定性**：需采集数百帧数据以消除噪声（冷启动、GC 波动）
+- **平台差异**：Windows 不同硬件配置导致基准难以统一
+- **框架开销**：Godot 引擎自身的帧开销（物理、渲染、信号）难以区分
+- **测试重现性**：Headless 模式下某些场景计时与交互模式下不同
+
+### 性能预算的价值
+1. **防止回归**：自动阻断帧时间超阈值的代码
+2. **持续优化**：量化基准，清晰展示优化效果
+3. **可预测**：60fps 目标对应 16.67ms/帧，量化可达成
+4. **团队共识**：性能约束写入代码，无需每次讨论
+
+---
+
+## 2. 性能预算定义
+
+### 2.1 关键性能指标（KPI）
+
+| # | 指标 | 定义 | 目标值 | 度量方式 | ADR |
 |---|------|------|-------|--------|-----|
-| 1 | **棣栧睆鏃堕棿**锛圥50锛?| 浠庡簲鐢ㄥ惎鍔ㄥ埌涓昏彍鍗曢娆℃覆鏌撳畬鎴?| 鈮?.0s | EngineSingleton.startup_timer | ADR-0015 |
-| 2 | **棣栧睆鏃堕棿**锛圥95锛?| 95% 鐨勫惎鍔ㄥ湪姝ゆ椂闂村唴瀹屾垚 | 鈮?.0s | Percentile(startup_times) | ADR-0015 |
-| 3 | **鑿滃崟甯ф椂闂?*锛圥50锛?| 鑿滃崟闈欐鏃剁殑甯ф覆鏌撴椂闂翠腑浣嶆暟 | 鈮?ms | Average(frame_times) | ADR-0015 |
-| 4 | **鑿滃崟甯ф椂闂?*锛圥95锛?| 鑿滃崟闈欐鏃剁殑甯ф覆鏌撴椂闂?95 鍒嗕綅 | 鈮?4ms | Percentile(frame_times, 0.95) | ADR-0015 |
-| 5 | **娓告垙鍦烘櫙甯ф椂闂?*锛圥50锛?| 瀹為檯娓告垙杩愯涓殑甯ф覆鏌撴椂闂翠腑浣嶆暟 | 鈮?0ms | PerformanceTracker.frame_times | ADR-0015 |
-| 6 | **娓告垙鍦烘櫙甯ф椂闂?*锛圥95锛?| 瀹為檯娓告垙杩愯涓殑甯ф覆鏌撴椂闂?95 鍒嗕綅 | 鈮?6.67ms | Percentile(game_frame_times, 0.95) | ADR-0015 |
-| 7 | **鍐呭瓨宄板€?* | 搴旂敤杩愯杩囩▼涓殑鏈€澶у唴瀛樺崰鐢?| 鈮?00MB | OS.get_static_memory_usage() | ADR-0015 |
-| 8 | **鍨冨溇鍥炴敹鏆傚仠** | GC 鍗曟鏆傚仠鏈€闀挎椂闂?| 鈮?ms | GC.pause_duration | ADR-0015 |
-| 9 | **璧勬簮鍔犺浇寤惰繜**锛堟暟鎹簱锛?| SQLite 鏌ヨ骞冲潎鍝嶅簲鏃堕棿 | 鈮?0ms | QueryPerformanceTracker | ADR-0015 |
-| 10 | **淇″彿鍒嗗彂寤惰繜** | EventBus 淇″彿浠庡彂閫佸埌鎺ユ敹澶勭悊鐨勬渶闀垮欢杩?| 鈮?ms | SignalLatencyTracker | ADR-0015 |
+| 1 | **首屏时间**（P50） | 从应用启动到主菜单首次渲染完成 | ≤2.0s | EngineSingleton.startup_timer | ADR-0015 |
+| 2 | **首屏时间**（P95） | 95% 的启动在此时间内完成 | ≤3.0s | Percentile(startup_times) | ADR-0015 |
+| 3 | **菜单帧时间**（P50） | 菜单静止时的帧渲染时间中位数 | ≤8ms | Average(frame_times) | ADR-0015 |
+| 4 | **菜单帧时间**（P95） | 菜单静止时的帧渲染时间 95 分位 | ≤14ms | Percentile(frame_times, 0.95) | ADR-0015 |
+| 5 | **游戏场景帧时间**（P50） | 实际游戏运行中的帧渲染时间中位数 | ≤10ms | PerformanceTracker.frame_times | ADR-0015 |
+| 6 | **游戏场景帧时间**（P95） | 实际游戏运行中的帧渲染时间 95 分位 | ≤16.67ms | Percentile(game_frame_times, 0.95) | ADR-0015 |
+| 7 | **内存峰值** | 应用运行过程中的最大内存占用 | ≤300MB | OS.get_static_memory_usage() | ADR-0015 |
+| 8 | **垃圾回收暂停** | GC 单次暂停最长时间 | ≤2ms | GC.pause_duration | ADR-0015 |
+| 9 | **资源加载延迟**（数据库） | SQLite 查询平均响应时间 | ≤50ms | QueryPerformanceTracker | ADR-0015 |
+| 10 | **信号分发延迟** | EventBus 信号从发送到接收处理的最长延迟 | ≤1ms | SignalLatencyTracker | ADR-0015 |
 
-**璇存槑**锛?
-- P50 鍙嶆槧鍏稿瀷鐢ㄦ埛浣撻獙锛汸95 鍙嶆槧鏈€宸満鏅?
-- 棣栧睆鏃堕棿鍩轰簬鍐峰惎鍔紙棣栨杩愯锛夛紝姣忚繍琛屽懆鏈熷彧璁′竴娆?
-- 鑿滃崟/娓告垙鍦烘櫙鐨勫抚鏃堕棿閲囬泦 300+ 甯э紝鎺掗櫎鍓?30 甯э紙棰勭儹鏈燂級
+**说明**：
+- P50 反映典型用户体验；P95 反映最差场景
+- 首屏时间基于冷启动（首次运行），每运行周期只计一次
+- 菜单/游戏场景的帧时间采集 300+ 帧，排除前 30 帧（预热期）
 
 ---
 
-## 3. 鏋舵瀯璁捐
+## 3. 架构设计
 
-### 3.1 鍒嗗眰鎬ц兘閲囬泦鏋舵瀯
+### 3.1 分层性能采集架构
 
 ```
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?        Godot Headless Runner (TestRunner.cs)        鈹?
-鈹? - 鍚姩璁℃椂锛歘enter_tree 鈫?_ready                    鈹?
-鈹? - 鍦烘櫙閲囬泦锛氫富寰幆甯ф椂闂?(_process/_physics_process)鈹?
-鈹? - 鍐呭瓨鐩戞帶锛歄S.get_static_memory_usage() 閲囨牱       鈹?
-鈹? - GC 璺熻釜锛欸C pause hooks锛坕f available锛?         鈹?
-鈹? - 淇″彿寤惰繜锛歋ignal 鎷︽埅瑁呴グ鍣?                     鈹?
-鈹? - 鏁版嵁搴擄細QueryPerformanceTracker 璁℃椂鍣?          鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?      PerformanceTracker.cs (C# 鏍稿績璁℃椂搴?          鈹?
-鈹? - Stopwatch 绮剧‘璁℃椂锛堝井绉掔骇锛?                     鈹?
-鈹? - 鐧惧垎浣嶆暟璁＄畻锛圥50/P95/P99锛?                      鈹?
-鈹? - 杩愯鏃堕噰鏍峰櫒锛堥伩鍏嶈繃搴︽棩蹇楋級                      鈹?
-鈹? - JSON 搴忓垪鍖栨姤鍛婅緭鍑?                              鈹?
-鈹? - 涓?Godot.Runtime 浜掓搷浣滐紙Performance API锛?      鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?   PerformanceGates.cs (Godot GDScript 闂ㄧ妫€鏌?    鈹?
-鈹? - 鍩哄噯鍔犺浇锛圝SON 鏂囦欢锛?                            鈹?
-鈹? - 澶氳疆娆″姣旓紙鍥炲綊妫€娴嬶級                            鈹?
-鈹? - HTML 鎶ュ憡鐢熸垚                                     鈹?
-鈹? - 闂ㄧ Pass/Fail 鍒ゅ畾                              鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹? Python 鑱氬悎鑴氭湰 (performance_gates.py)              鈹?
-鈹? - 澶氬満鏅暟鎹悎骞?                                    鈹?
-鈹? - 缁熻鍒嗘瀽锛堝潎鍊?鏂瑰樊/鍒嗕綅鏁帮級                      鈹?
-鈹? - CI 闂ㄧ鍒ゅ畾锛坋xit code 0/1锛?                     鈹?
-鈹? - Markdown 鎶ュ憡鐢熸垚                                 鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-         鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-         鈹?                          鈹?
-         鈻?                          鈻?
+┌──────────────────────────────────────────────────────┐
+│         Godot Headless Runner (TestRunner.cs)        │
+│  - 启动计时：_enter_tree → _ready                    │
+│  - 场景采集：主循环帧时间 (_process/_physics_process)│
+│  - 内存监控：OS.get_static_memory_usage() 采样       │
+│  - GC 跟踪：GC pause hooks（if available）          │
+│  - 信号延迟：Signal 拦截装饰器                      │
+│  - 数据库：QueryPerformanceTracker 计时器           │
+└──────────────────────┬───────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────┐
+│       PerformanceTracker.cs (C# 核心计时库)          │
+│  - Stopwatch 精确计时（微秒级）                      │
+│  - 百分位数计算（P50/P95/P99）                       │
+│  - 运行时采样器（避免过度日志）                      │
+│  - JSON 序列化报告输出                               │
+│  - 与 Godot.Runtime 互操作（Performance API）       │
+└──────────────────────┬───────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────┐
+│    PerformanceGates.cs (Godot GDScript 门禁检查)    │
+│  - 基准加载（JSON 文件）                             │
+│  - 多轮次对比（回归检测）                            │
+│  - HTML 报告生成                                     │
+│  - 门禁 Pass/Fail 判定                              │
+└──────────────────────┬───────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────┐
+│  Python 聚合脚本 (performance_gates.py)              │
+│  - 多场景数据合并                                     │
+│  - 统计分析（均值/方差/分位数）                      │
+│  - CI 门禁判定（exit code 0/1）                      │
+│  - Markdown 报告生成                                 │
+└──────────────────────┬───────────────────────────────┘
+                       │
+         ┌─────────────┴─────────────┐
+         │                           │
+         ▼                           ▼
     [OK] PASS (exit 0)        FAIL FAIL (exit 1)
-    Merge 閫氳繃               PR 闃诲
+    Merge 通过               PR 阻塞
 ```
 
-### 3.2 鐩綍缁撴瀯
+### 3.2 目录结构
 
 ```
 godotgame/
-鈹溾攢鈹€ src/
-鈹?  鈹溾攢鈹€ Game.Core/
-鈹?  鈹?  鈹斺攢鈹€ Performance/
-鈹?  鈹?      鈹溾攢鈹€ PerformanceTracker.cs         鈽?鏍稿績璁℃椂搴?
-鈹?  鈹?      鈹溾攢鈹€ PerformanceMetrics.cs         鈽?鎸囨爣瀹氫箟
-鈹?  鈹?      鈹斺攢鈹€ QueryPerformanceTracker.cs    鈽?鏁版嵁搴撹鏃?
-鈹?  鈹?
-鈹?  鈹斺攢鈹€ Godot/
-鈹?      鈹溾攢鈹€ TestRunner.cs                     鈽?鍐掔儫娴嬭瘯杩愯鍣紙鍚€ц兘閲囬泦锛?
-鈹?      鈹斺攢鈹€ PerformanceGates.cs               鈽?鎬ц兘闂ㄧ妫€鏌?
-鈹?
-鈹溾攢鈹€ benchmarks/
-鈹?  鈹溾攢鈹€ baseline-startup.json                 鈽?棣栧睆鍩哄噯锛堝垵濮嬪寲锛?
-鈹?  鈹溾攢鈹€ baseline-menu.json                    鈽?鑿滃崟甯ф椂闂村熀鍑?
-鈹?  鈹溾攢鈹€ baseline-game.json                    鈽?娓告垙鍦烘櫙鍩哄噯
-鈹?  鈹溾攢鈹€ baseline-db.json                      鈽?鏁版嵁搴撴煡璇㈠熀鍑?
-鈹?  鈹斺攢鈹€ current-run/                          鈽?褰撳墠鏋勫缓鐨勯噰闆嗙粨鏋?
-鈹?      鈹溾攢鈹€ startup-results.json
-鈹?      鈹溾攢鈹€ menu-frame-times.json
-鈹?      鈹溾攢鈹€ game-frame-times.json
-鈹?      鈹斺攢鈹€ db-query-results.json
-鈹?
-鈹溾攢鈹€ scripts/
-鈹?  鈹溾攢鈹€ performance_gates.py                  鈽?Python 鑱氬悎鑴氭湰
-鈹?  鈹斺攢鈹€ establish_baseline.sh                 鈽?鍩哄噯寤虹珛鑴氭湰
-鈹?
-鈹斺攢鈹€ reports/
-    鈹斺攢鈹€ performance/
-        鈹溾攢鈹€ current-run-report.html           鈽?缃戦〉鎶ュ憡
-        鈹溾攢鈹€ current-run-report.json           鈽?缁撴瀯鍖栨姤鍛?
-        鈹斺攢鈹€ performance-history.csv           鈽?鍘嗗彶鏁版嵁
+├── src/
+│   ├── Game.Core/
+│   │   └── Performance/
+│   │       ├── PerformanceTracker.cs         ★ 核心计时库
+│   │       ├── PerformanceMetrics.cs         ★ 指标定义
+│   │       └── QueryPerformanceTracker.cs    ★ 数据库计时
+│   │
+│   └── Godot/
+│       ├── TestRunner.cs                     ★ 冒烟测试运行器（含性能采集）
+│       └── PerformanceGates.cs               ★ 性能门禁检查
+│
+├── benchmarks/
+│   ├── baseline-startup.json                 ★ 首屏基准（初始化）
+│   ├── baseline-menu.json                    ★ 菜单帧时间基准
+│   ├── baseline-game.json                    ★ 游戏场景基准
+│   ├── baseline-db.json                      ★ 数据库查询基准
+│   └── current-run/                          ★ 当前构建的采集结果
+│       ├── startup-results.json
+│       ├── menu-frame-times.json
+│       ├── game-frame-times.json
+│       └── db-query-results.json
+│
+├── scripts/
+│   ├── performance_gates.py                  ★ Python 聚合脚本
+│   └── establish_baseline.sh                 ★ 基准建立脚本
+│
+└── reports/
+    └── performance/
+        ├── current-run-report.html           ★ 网页报告
+        ├── current-run-report.json           ★ 结构化报告
+        └── performance-history.csv           ★ 历史数据
 ```
 
 ---
 
-## 4. 鏍稿績瀹炵幇
+## 4. 核心实现
 
-### 4.1 PerformanceTracker.cs锛圕# 鏍稿績搴擄級
+### 4.1 PerformanceTracker.cs（C# 核心库）
 
-**鑱岃矗**锛?
-- 鎻愪緵绮剧‘鐨勮鏃?API锛堝井绉掔骇锛?
-- 鑱氬悎澶氬抚/澶氭杩愯鐨勬暟鎹?
-- 璁＄畻鐧惧垎浣嶆暟锛圥50/P95/P99锛?
-- 搴忓垪鍖栦负 JSON 鎶ュ憡
+**职责**：
+- 提供精确的计时 API（微秒级）
+- 聚合多帧/多次运行的数据
+- 计算百分位数（P50/P95/P99）
+- 序列化为 JSON 报告
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 using System;
@@ -169,8 +169,8 @@ using System.Text.Json;
 namespace Game.Core.Performance
 {
     /// <summary>
-    /// 鎬ц兘杩借釜鍣細绮剧‘璁℃椂銆侀噰鏍疯仛鍚堛€佹姤鍛婄敓鎴?
-    /// 涓?Godot runtime 浜掓搷浣?
+    /// 性能追踪器：精确计时、采样聚合、报告生成
+    /// 与 Godot runtime 互操作
     /// </summary>
     public class PerformanceTracker
     {
@@ -179,7 +179,7 @@ namespace Game.Core.Performance
         private readonly Stopwatch _sessionTimer = Stopwatch.StartNew();
 
         /// <summary>
-        /// 鍚姩璁℃椂锛堝井绉掔簿搴︼級
+        /// 启动计时（微秒精度）
         /// </summary>
         public void StartMeasure(string metricName)
         {
@@ -190,7 +190,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 缁撴潫璁℃椂骞惰褰曠粨鏋?
+        /// 结束计时并记录结果
         /// </summary>
         public void EndMeasure(string metricName)
         {
@@ -207,7 +207,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 璁板綍鍗曚釜娴嬮噺鍊硷紙宸茶幏寰楃殑鏃堕棿鍊硷級
+        /// 记录单个测量值（已获得的时间值）
         /// </summary>
         public void RecordMeasure(string metricName, long microseconds)
         {
@@ -218,7 +218,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鑾峰彇鐧惧垎浣嶆暟锛堝 P95 = 0.95锛?
+        /// 获取百分位数（如 P95 = 0.95）
         /// </summary>
         public long GetPercentile(string metricName, double percentile)
         {
@@ -233,7 +233,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鑾峰彇骞冲潎鍊?
+        /// 获取平均值
         /// </summary>
         public double GetAverage(string metricName)
         {
@@ -244,7 +244,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鑾峰彇鏈€澶у€?
+        /// 获取最大值
         /// </summary>
         public long GetMax(string metricName)
         {
@@ -255,7 +255,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鑾峰彇鏈€灏忓€?
+        /// 获取最小值
         /// </summary>
         public long GetMin(string metricName)
         {
@@ -266,7 +266,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鑾峰彇鏍锋湰鏁伴噺
+        /// 获取样本数量
         /// </summary>
         public int GetSampleCount(string metricName)
         {
@@ -274,7 +274,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 鐢熸垚 JSON 鎶ュ憡
+        /// 生成 JSON 报告
         /// </summary>
         public string GenerateJsonReport()
         {
@@ -294,14 +294,14 @@ namespace Game.Core.Performance
                     p50_us = GetPercentile(metricName, 0.50),
                     p95_us = GetPercentile(metricName, 0.95),
                     p99_us = GetPercentile(metricName, 0.99),
-                    // 姣鍗曚綅锛堟洿鐩磋锛?
+                    // 毫秒单位（更直观）
                     average_ms = values.Average() / 1000.0,
                     p95_ms = GetPercentile(metricName, 0.95) / 1000.0,
                     p99_ms = GetPercentile(metricName, 0.99) / 1000.0
                 };
             }
 
-            // 璁板綍閲囬泦鏃堕棿鎴?
+            // 记录采集时间戳
             report["captured_at"] = DateTimeOffset.UtcNow.ToString("O");
             report["session_duration_s"] = _sessionTimer.Elapsed.TotalSeconds;
 
@@ -312,7 +312,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 灏嗘姤鍛婂啓鍏ユ枃浠?
+        /// 将报告写入文件
         /// </summary>
         public void WriteReport(string filePath)
         {
@@ -321,7 +321,7 @@ namespace Game.Core.Performance
         }
 
         /// <summary>
-        /// 娓呯┖鎵€鏈夐噰鏍锋暟鎹?
+        /// 清空所有采样数据
         /// </summary>
         public void Reset()
         {
@@ -331,37 +331,37 @@ namespace Game.Core.Performance
     }
 
     /// <summary>
-    /// 鎬ц兘鎸囨爣瀹氫箟锛堝父閲忥級
+    /// 性能指标定义（常量）
     /// </summary>
     public static class PerformanceMetrics
     {
-        // 鍚姩闃舵
+        // 启动阶段
         public const string StartupTime = "startup_time_us";
 
-        // 鑿滃崟鍦烘櫙锛堝抚鏃堕棿锛?
+        // 菜单场景（帧时间）
         public const string MenuFrameTime = "menu_frame_time_us";
 
-        // 娓告垙鍦烘櫙锛堝抚鏃堕棿锛?
+        // 游戏场景（帧时间）
         public const string GameFrameTime = "game_frame_time_us";
 
-        // 鏁版嵁搴撴煡璇?
+        // 数据库查询
         public const string DbQueryTime = "db_query_time_us";
 
-        // 淇″彿鍒嗗彂寤惰繜
+        // 信号分发延迟
         public const string SignalLatency = "signal_latency_us";
 
-        // 鍐呭瓨宄板€硷紙瀛楄妭锛?
+        // 内存峰值（字节）
         public const string MemoryPeakBytes = "memory_peak_bytes";
 
-        // 鍨冨溇鍥炴敹鏆傚仠
+        // 垃圾回收暂停
         public const string GcPauseTime = "gc_pause_us";
 
-        // 鑷畾涔夋寚鏍?
+        // 自定义指标
         public const string CustomMetricPrefix = "custom_";
     }
 
     /// <summary>
-    /// 鏁版嵁搴撴煡璇㈡€ц兘杩借釜鍣紙闆嗘垚鍒?DataRepository锛?
+    /// 数据库查询性能追踪器（集成到 DataRepository）
     /// </summary>
     public class QueryPerformanceTracker
     {
@@ -401,15 +401,15 @@ namespace Game.Core.Performance
 }
 ```
 
-### 4.2 TestRunner.cs锛圙odot 鎬ц兘閲囬泦锛?
+### 4.2 TestRunner.cs（Godot 性能采集）
 
-**鑱岃矗**锛?
-- Headless 杩愯鏃剁粺涓€鍚姩鐐?
-- 閲囬泦鍚姩鏃堕棿銆佸抚鏃堕棿銆佸唴瀛樻寚鏍?
-- 璋冪敤 PerformanceTracker 璁板綍鏁版嵁
-- 杈撳嚭 JSON 鎶ュ憡
+**职责**：
+- Headless 运行时统一启动点
+- 采集启动时间、帧时间、内存指标
+- 调用 PerformanceTracker 记录数据
+- 输出 JSON 报告
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -430,14 +430,14 @@ public partial class ExampleTest
 }
 ```
 
-### 4.3 PerformanceGates.cs锛堥棬绂佹鏌ワ級
+### 4.3 PerformanceGates.cs（门禁检查）
 
-**鑱岃矗**锛?
-- 鍔犺浇鍩哄噯鏁版嵁
-- 瀵规瘮褰撳墠涓庡熀鍑?
-- 杈撳嚭 Pass/Fail 鍒ゅ畾
+**职责**：
+- 加载基准数据
+- 对比当前与基准
+- 输出 Pass/Fail 判定
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -460,52 +460,52 @@ public partial class ExampleTest
 
 ---
 
-## 5. 鍩哄噯寤虹珛娴佺▼
+## 5. 基准建立流程
 
-### 5.1 棣栨杩愯锛氬缓绔嬪熀鍑?
+### 5.1 首次运行：建立基准
 
-**姝ラ**锛堥璁?1-2 灏忔椂锛夛細
+**步骤**（预计 1-2 小时）：
 
-1. **鍑嗗鐜**
+1. **准备环境**
    ```bash
-   # 娓呯┖浠讳綍缂撳瓨
+   # 清空任何缓存
    rm -rf ~/.cache/Godot
    rm -rf ~/.local/share/godot/
 
-   # 纭纭欢鏉′欢锛堣褰?CPU 鍨嬪彿銆丷AM 绛夛級
+   # 确认硬件条件（记录 CPU 型号、RAM 等）
    uname -a
    ```
 
-2. **鍐峰惎鍔ㄩ噰闆?*锛?0 娆★級
+2. **冷启动采集**（10 次）
    ```bash
-   # 鍒涘缓涓存椂鐢ㄦ埛鐩綍
+   # 创建临时用户目录
    mkdir -p test_profiles
 
-   # 閫愭杩愯锛堟瘡娆?~2-3 绉掞級
+   # 逐次运行（每次 ~2-3 秒）
    for i in {1..10}; do
      godot --headless --nothreading --scene TestStartup.tscn
      sleep 1
    done
    ```
 
-3. **鑿滃崟鍦烘櫙甯ф椂闂?*锛? 娆★級
+3. **菜单场景帧时间**（5 次）
    ```bash
    godot --headless --scene MainMenuUI.tscn > reports/menu_run_1.json
-   # 閲嶅 5 娆★紝鍚堝苟缁撴灉
+   # 重复 5 次，合并结果
    ```
 
-4. **娓告垙鍦烘櫙甯ф椂闂?*锛? 娆★級
+4. **游戏场景帧时间**（3 次）
    ```bash
    godot --headless --scene GameScene.tscn > reports/game_run_1.json
-   # 閲嶅 3 娆★紝鍚堝苟缁撴灉
+   # 重复 3 次，合并结果
    ```
 
-5. **鏁版嵁搴撴煡璇㈠熀鍑?*
+5. **数据库查询基准**
    ```csharp
-   // 鍦?C# 灞傝繍琛?QueryPerformanceTracker
+   // 在 C# 层运行 QueryPerformanceTracker
    var db = new GameSaveRepository("benchmarks/test.db");
 
-   // 1000 娆℃煡璇㈠彇骞冲潎
+   // 1000 次查询取平均
    for (int i = 0; i < 1000; i++)
    {
        tracker.MeasureQuery("load_game_state", () =>
@@ -513,7 +513,7 @@ public partial class ExampleTest
    }
    ```
 
-6. **鐢熸垚鍩哄噯鏂囦欢**
+6. **生成基准文件**
    ```bash
    python scripts/aggregate_baseline.py \
      --startup reports/startup_*.json \
@@ -523,21 +523,21 @@ public partial class ExampleTest
      --output benchmarks/baseline.json
    ```
 
-7. **鏂囨。鍖栫‖浠剁幆澧?*
+7. **文档化硬件环境**
    ```markdown
-   # 鍩哄噯寤虹珛鐜锛坆aseline-environment.md锛?
+   # 基准建立环境（baseline-environment.md）
 
    - CPU: Intel Core i7-10700K @ 3.8GHz
    - RAM: 32GB DDR4
    - OS: Windows 11 (22H2)
    - Godot: 4.5.0 (.NET 8.0)
    - Run Date: 2025-11-07
-   - Ambient Temp: 22掳C
+   - Ambient Temp: 22°C
    ```
 
-### 5.2 鎸佺画杩愯锛氬姣旀鏌?
+### 5.2 持续运行：对比检查
 
-姣忔 CI 鏋勫缓鑷姩鎵ц锛?
+每次 CI 构建自动执行：
 
 ```bash
 # scripts/performance_gates.py
@@ -546,8 +546,8 @@ import sys
 
 def compare_baseline(baseline_path, current_path, tolerance=5.0):
     """
-    瀵规瘮鍩哄噯涓庡綋鍓嶈繍琛岀粨鏋?
-    tolerance: 鍏佽鍋忓樊 %
+    对比基准与当前运行结果
+    tolerance: 允许偏差 %
     """
     with open(baseline_path) as f:
         baseline = json.load(f)
@@ -557,7 +557,7 @@ def compare_baseline(baseline_path, current_path, tolerance=5.0):
 
     failures = []
 
-    # 妫€鏌ュ叧閿寚鏍?
+    # 检查关键指标
     checks = [
         ("startup_p95_ms", 3.0),
         ("menu_frame_p95_ms", 14.0),
@@ -595,9 +595,9 @@ if __name__ == "__main__":
 
 ---
 
-## 6. 闆嗘垚鍒?CI 娴佺▼
+## 6. 集成到 CI 流程
 
-### 6.1 GitHub Actions 宸ヤ綔娴?
+### 6.1 GitHub Actions 工作流
 
 ```yaml
 # .github/workflows/performance-gates.yml
@@ -659,10 +659,10 @@ jobs:
           path: reports/
 ```
 
-### 6.2 鏈湴楠岃瘉鍛戒护
+### 6.2 本地验证命令
 
 ```bash
-# package.json 鑴氭湰
+# package.json 脚本
 
 {
   "scripts": {
@@ -676,222 +676,222 @@ jobs:
 
 ---
 
-## 7. 鎬ц兘浼樺寲绛栫暐锛堝悗缁樁娈碉級
+## 7. 性能优化策略（后续阶段）
 
-铏界劧 Phase 15 鐨勯噸鐐规槸**搴﹂噺涓庨棬绂?*锛屼絾涓轰紭鍖栧瀹氬熀纭€銆備互涓嬩负鍙€変紭鍖栨柟鍚戯紙Phase 21锛夛細
+虽然 Phase 15 的重点是**度量与门禁**，但为优化奠定基础。以下为可选优化方向（Phase 21）：
 
-### 7.1 妗嗘灦绾т紭鍖?
-- **Signal 鎬ц兘**锛氭壒閲忓彂閫?Signal vs 閫愪釜鍙戦€?
-- **Node 鏍戠粨鏋?*锛氬噺灏戞爲娣卞害锛?-5 灞備互鍐咃級
-- **鍐呭瓨姹?*锛氬璞″鐢紝鍑忓皯 GC 鍘嬪姏
+### 7.1 框架级优化
+- **Signal 性能**：批量发送 Signal vs 逐个发送
+- **Node 树结构**：减少树深度（3-5 层以内）
+- **内存池**：对象复用，减少 GC 压力
 
-### 7.2 绠楁硶浼樺寲
-- **鏌ヨ浼樺寲**锛歋QLite 绱㈠紩銆佺紦瀛樼儹鏁版嵁
-- **娓叉煋浼樺寲**锛氱鐢ㄤ笉鍙鑺傜偣銆佹壒閲忔覆鏌?
+### 7.2 算法优化
+- **查询优化**：SQLite 索引、缓存热数据
+- **渲染优化**：禁用不可见节点、批量渲染
 
-### 7.3 宸ョ▼瀹炶返
-- **鍒嗘敮棰勬祴**锛氫紭鍖栫儹璺緞锛坕f/else 鍒嗘敮锛?
-- **缂撳瓨灞€閮ㄦ€?*锛氭暟鎹粨鏋勭揣鍑戞帓鍒?
-
----
-
-## 8. 楠屾敹鏍囧噯
-
-### 8.1 浠ｇ爜瀹屾暣鎬?
-
-- [ ] PerformanceTracker.cs锛堟牳蹇冨簱锛?00+ 琛岋級锛歔OK] 鎻愪緵绮剧‘璁℃椂 API
-- [ ] QueryPerformanceTracker.cs锛堟暟鎹簱闆嗘垚锛?00+ 琛岋級锛歔OK] 鏀寔鏌ヨ璁℃椂
-- [ ] TestRunner.cs锛圙odot 閲囬泦鍣紝150+ 琛岋級锛歔OK] 鑷姩閲囬泦鍚姩/甯ф椂闂?
-- [ ] PerformanceGates.cs锛堥棬绂佹鏌ワ紝200+ 琛岋級锛歔OK] 瀵规瘮鍩哄噯骞跺垽瀹?
-- [ ] performance_gates.py锛堣仛鍚堣剼鏈紝150+ 琛岋級锛歔OK] 澶氬満鏅悎骞?+ 鎶ュ憡鐢熸垚
-
-### 8.2 闆嗘垚瀹屾垚搴?
-
-- [ ] 10 涓€ц兘鎸囨爣瀹氫箟瀹屾暣
-- [ ] 鍩哄噯寤虹珛娴佺▼鏂囨。鍖?
-- [ ] GitHub Actions 宸ヤ綔娴侀厤缃紙performance-gates.yml锛?
-- [ ] 鏈湴楠岃瘉鍛戒护锛坣pm run test:performance锛?
-- [ ] CI 闂ㄧ涓?Phase 13锛堣川閲忛棬绂侊級闆嗘垚
-
-### 8.3 鏂囨。瀹屾垚搴?
-
-- [ ] Phase 15 璇︾粏瑙勫垝鏂囨。锛堟湰鏂囷級
-- [ ] 鍩哄噯寤虹珛鎸囧崡锛坰tep-by-step锛?
-- [ ] 鎬ц兘浼樺寲寤鸿娓呭崟锛圥hase 21 鍑嗗锛?
-- [ ] CI 宸ヤ綔娴佹枃妗?
+### 7.3 工程实践
+- **分支预测**：优化热路径（if/else 分支）
+- **缓存局部性**：数据结构紧凑排列
 
 ---
 
-## 9. 椋庨櫓璇勪及涓庣紦瑙?
+## 8. 验收标准
 
-| 椋庨櫓 | 绛夌骇 | 缂撹В鏂规 |
+### 8.1 代码完整性
+
+- [ ] PerformanceTracker.cs（核心库，200+ 行）：[OK] 提供精确计时 API
+- [ ] QueryPerformanceTracker.cs（数据库集成，100+ 行）：[OK] 支持查询计时
+- [ ] TestRunner.cs（Godot 采集器，150+ 行）：[OK] 自动采集启动/帧时间
+- [ ] PerformanceGates.cs（门禁检查，200+ 行）：[OK] 对比基准并判定
+- [ ] performance_gates.py（聚合脚本，150+ 行）：[OK] 多场景合并 + 报告生成
+
+### 8.2 集成完成度
+
+- [ ] 10 个性能指标定义完整
+- [ ] 基准建立流程文档化
+- [ ] GitHub Actions 工作流配置（performance-gates.yml）
+- [ ] 本地验证命令（npm run test:performance）
+- [ ] CI 门禁与 Phase 13（质量门禁）集成
+
+### 8.3 文档完成度
+
+- [ ] Phase 15 详细规划文档（本文）
+- [ ] 基准建立指南（step-by-step）
+- [ ] 性能优化建议清单（Phase 21 准备）
+- [ ] CI 工作流文档
+
+---
+
+## 9. 风险评估与缓解
+
+| 风险 | 等级 | 缓解方案 |
 |-----|-----|---------|
-| 纭欢閰嶇疆宸紓瀵艰嚧鍩哄噯涓嶇ǔ瀹?| 涓?| 璁板綍鍩哄噯寤虹珛鐜锛屽厑璁?卤5% 鍋忓樊 |
-| GC 娉㈠姩瀵艰嚧甯ф椂闂村櫔澹板ぇ | 涓?| 閲囬泦 300+ 甯э紝浣跨敤 P95 鑰岄潪骞冲潎鍊?|
-| Headless 妯″紡涓庝氦浜掓ā寮忔€ц兘宸紓 | 涓?| Phase 21 琛ュ厖浜や簰妯″紡楠岃瘉 |
-| Windows 鐗瑰畾鎬ц兘闂 | 浣?| 闄愬畾 Windows 骞冲彴锛屽悗缁彲鎵╁睍 |
-| 鍩哄噯鏁版嵁姹℃煋锛堝伓鍙戦暱寤惰繜锛?| 浣?| 浣跨敤鐧惧垎浣嶆暟锛圥95锛夛紝鎺掗櫎寮傚父鍊?|
+| 硬件配置差异导致基准不稳定 | 中 | 记录基准建立环境，允许 ±5% 偏差 |
+| GC 波动导致帧时间噪声大 | 中 | 采集 300+ 帧，使用 P95 而非平均值 |
+| Headless 模式与交互模式性能差异 | 中 | Phase 21 补充交互模式验证 |
+| Windows 特定性能问题 | 低 | 限定 Windows 平台，后续可扩展 |
+| 基准数据污染（偶发长延迟） | 低 | 使用百分位数（P95），排除异常值 |
 
 ---
 
-## 10. 鍚庣画闃舵鍏宠仈
+## 10. 后续阶段关联
 
-| 闃舵 | 鍏宠仈 | 璇存槑 |
+| 阶段 | 关联 | 说明 |
 |-----|-----|------|
-| Phase 13锛堣川閲忛棬绂侊級 | 鈫?闆嗘垚 | 鎬ц兘闂ㄧ闆嗘垚鍒?guard:ci 鍏ュ彛 |
-| Phase 14锛堝畨鍏ㄥ熀绾匡級 | 鈫?渚濊禆 | 瀹夊叏瀹¤ JSONL 鎬ц兘寮€閿€闇€妫€鏌?|
-| Phase 16锛堝彲瑙傛祴鎬э級 | 鈫?鍚敤 | Sentry Release Health 渚濊禆鎬ц兘鏁版嵁 |
-| Phase 21锛堟€ц兘浼樺寲锛?| 鈫?鍩虹 | 鏈樁娈靛缓绔嬬殑鍩哄噯鏀拺浼樺寲楠岃瘉 |
+| Phase 13（质量门禁） | ↔ 集成 | 性能门禁集成到 guard:ci 入口 |
+| Phase 14（安全基线） | ← 依赖 | 安全审计 JSONL 性能开销需检查 |
+| Phase 16（可观测性） | → 启用 | Sentry Release Health 依赖性能数据 |
+| Phase 21（性能优化） | ← 基础 | 本阶段建立的基准支撑优化验证 |
 
 ---
 
-## 11. 鍏抽敭鍐崇瓥鐐?
+## 11. 关键决策点
 
-### 鍐崇瓥 D1锛氱櫨鍒嗕綅鏁伴€夋嫨
-**閫夐」**锛?
-- A. P50锛堜腑浣嶆暟锛夛細蹇€熷弽鏄狅紝浣嗗寮傚父鏁忔劅
-- B. P95锛?5 鍒嗕綅锛夛細**鎺ㄨ崘**锛屽弽鏄犲ぇ澶氭暟鍦烘櫙锛屽寮傚父椴佹
-- C. P99锛?9 鍒嗕綅锛夛細涓ユ牸锛屼絾鍙兘杩囧害绾︽潫
+### 决策 D1：百分位数选择
+**选项**：
+- A. P50（中位数）：快速反映，但对异常敏感
+- B. P95（95 分位）：**推荐**，反映大多数场景，对异常鲁棒
+- C. P99（99 分位）：严格，但可能过度约束
 
-**缁撹**锛氶噰鐢?P95锛屽吋椤句弗璋ㄤ笌瀹炵敤
+**结论**：采用 P95，兼顾严谨与实用
 
-### 鍐崇瓥 D2锛氬熀鍑嗘洿鏂伴鐜?
-**閫夐」**锛?
-- A. 姣忎釜閲嶅ぇ鐗堟湰锛氬鏄撶Н绱€ц兘鍊?
-- B. 姣忎釜鏈堬細**鎺ㄨ崘**锛屽钩琛℃垚鏈笌鍑嗙‘鎬?
-- C. 姣忎釜鏋勫缓锛氭垚鏈珮锛屾暟鎹繃澶?
+### 决策 D2：基准更新频率
+**选项**：
+- A. 每个重大版本：容易积累性能债
+- B. 每个月：**推荐**，平衡成本与准确性
+- C. 每个构建：成本高，数据过多
 
-**缁撹**锛氭瘡涓?PR merge 鍒?main 鍚庤嚜鍔ㄦ洿鏂板熀鍑?
+**结论**：每个 PR merge 到 main 后自动更新基准
 
-### 鍐崇瓥 D3锛欻eadless vs 浜や簰妯″紡
-**閫夐」**锛?
-- A. 浠?Headless锛氬揩閫熷弽棣堬紝浣嗕笌瀹為檯浣撻獙宸紓
-- B. 涓ょ骞惰锛氭垚鏈珮锛屼絾瑕嗙洊鍏ㄩ潰
-- C. 浠呬氦浜掞細鍙嶉鎱?
+### 决策 D3：Headless vs 交互模式
+**选项**：
+- A. 仅 Headless：快速反馈，但与实际体验差异
+- B. 两种并行：成本高，但覆盖全面
+- C. 仅交互：反馈慢
 
-**缁撹**锛歅hase 15 浠?Headless锛孭hase 21 琛ュ厖浜や簰妯″紡
+**结论**：Phase 15 仅 Headless，Phase 21 补充交互模式
 
 ---
 
-## 12. 鏃堕棿浼扮畻锛堝垎瑙ｏ級
+## 12. 时间估算（分解）
 
-| 浠诲姟 | 宸ヤ綔閲?| 鍒嗛厤 |
+| 任务 | 工作量 | 分配 |
 |-----|-------|------|
-| PerformanceTracker.cs 寮€鍙?+ 娴嬭瘯 | 1.5 澶?| Day 1-2 |
-| TestRunner.cs & 閲囬泦鑴氭湰 | 1.5 澶?| Day 2-3 |
-| 鍩哄噯寤虹珛涓庢枃妗ｅ寲 | 1 澶?| Day 3-4 |
-| GitHub Actions 闆嗘垚 | 1 澶?| Day 4-5 |
-| 楠屾敹涓庝紭鍖?| 0.5 澶?| Day 5 |
-| **鎬昏** | **5-6 澶?* | |
+| PerformanceTracker.cs 开发 + 测试 | 1.5 天 | Day 1-2 |
+| TestRunner.cs & 采集脚本 | 1.5 天 | Day 2-3 |
+| 基准建立与文档化 | 1 天 | Day 3-4 |
+| GitHub Actions 集成 | 1 天 | Day 4-5 |
+| 验收与优化 | 0.5 天 | Day 5 |
+| **总计** | **5-6 天** | |
 
 ---
 
-## 13. 浜や粯鐗╂竻鍗?
+## 13. 交付物清单
 
-### 浠ｇ爜鏂囦欢
-- [OK] `src/Game.Core/Performance/PerformanceTracker.cs`锛?80+ 琛岋級
-- [OK] `src/Game.Core/Performance/QueryPerformanceTracker.cs`锛?00+ 琛岋級
-- [OK] `src/Godot/TestRunner.cs`锛?80+ 琛岋級
-- [OK] `src/Godot/PerformanceGates.cs`锛?20+ 琛岋級
+### 代码文件
+- [OK] `src/Game.Core/Performance/PerformanceTracker.cs`（280+ 行）
+- [OK] `src/Game.Core/Performance/QueryPerformanceTracker.cs`（100+ 行）
+- [OK] `src/Godot/TestRunner.cs`（180+ 行）
+- [OK] `src/Godot/PerformanceGates.cs`（220+ 行）
 
-### 鑴氭湰
-- [OK] `scripts/performance_gates.py`锛?50+ 琛岋級
-- [OK] `scripts/establish_baseline.sh`锛?0+ 琛岋級
-- [OK] `scripts/aggregate_baseline.py`锛?20+ 琛岋級
-- [OK] `scripts/generate_perf_report.py`锛?50+ 琛岋級
+### 脚本
+- [OK] `scripts/performance_gates.py`（150+ 行）
+- [OK] `scripts/establish_baseline.sh`（80+ 行）
+- [OK] `scripts/aggregate_baseline.py`（120+ 行）
+- [OK] `scripts/generate_perf_report.py`（150+ 行）
 
-### 閰嶇疆
-- [OK] `.github/workflows/performance-gates.yml`锛?0+ 琛岋級
-- [OK] `benchmarks/baseline.json`锛堝熀鍑嗘暟鎹級
-- [OK] `benchmarks/baseline-environment.md`锛堢幆澧冭褰曪級
+### 配置
+- [OK] `.github/workflows/performance-gates.yml`（80+ 行）
+- [OK] `benchmarks/baseline.json`（基准数据）
+- [OK] `benchmarks/baseline-environment.md`（环境记录）
 
-### 鏂囨。
-- [OK] Phase-15-Performance-Budgets-and-Gates.md锛堟湰鏂囷紝1200+ 琛岋級
-- [OK] 鍩哄噯寤虹珛鎸囧崡锛?0+ 琛岋級
-- [OK] 鎬ц兘浼樺寲璺嚎鍥撅紙100+ 琛岋級
+### 文档
+- [OK] Phase-15-Performance-Budgets-and-Gates.md（本文，1200+ 行）
+- [OK] 基准建立指南（50+ 行）
+- [OK] 性能优化路线图（100+ 行）
 
-### 鎬昏鏁帮細1800+ 琛?
+### 总行数：1800+ 行
 
 ---
 
-## 闄勫綍 A锛氭€ц兘鎸囨爣瀵规爣琛?
+## 附录 A：性能指标对标表
 
-| 鎸囨爣 | vitegame锛圗lectron锛?| godotgame锛圙odot锛?| 瀵规爣鎯呭喌 |
+| 指标 | vitegame（Electron） | godotgame（Godot） | 对标情况 |
 |-----|-------------------|------------------|---------|
-| 鍚姩鏃堕棿 | ~2.5-3.0s | 鈮?.0s | [OK] 鎸佸钩 |
-| 鑿滃崟 FPS | 60fps (16.67ms) | 鈮?4ms P95 | [OK] 鏀硅繘 |
-| 娓告垙鍦烘櫙 FPS | 55-60fps | 鈮?6.67ms P95 | [OK] 绋冲畾 |
-| 鍐呭瓨鍗犵敤 | 150-200MB | 鈮?00MB | [璀﹀憡] 澧炲姞锛圕#/.NET 寮€閿€锛?|
-| 鏁版嵁搴撴煡璇?| ~30-50ms | 鈮?0ms | [OK] 鎸佸钩 |
+| 启动时间 | ~2.5-3.0s | ≤3.0s | [OK] 持平 |
+| 菜单 FPS | 60fps (16.67ms) | ≤14ms P95 | [OK] 改进 |
+| 游戏场景 FPS | 55-60fps | ≤16.67ms P95 | [OK] 稳定 |
+| 内存占用 | 150-200MB | ≤300MB | [警告] 增加（C#/.NET 开销） |
+| 数据库查询 | ~30-50ms | ≤50ms | [OK] 持平 |
 
 ---
 
-## 闄勫綍 B锛氬父瑙佹€ц兘闂鎺掓煡
+## 附录 B：常见性能问题排查
 
-### 闂 1锛歅95 甯ф椂闂磋秴杩?16.67ms
-**鍙兘鍘熷洜**锛?
-1. Signal 鍙戦€佽繃浜庨绻侊紙姣忓抚 100+ 涓級
-2. Node 鏍戣繃娣憋紙>5 灞傦級
-3. GC 鏆傚仠锛?NET 鍦ㄩ噰闆嗘湡闂磋Е鍙戯級
+### 问题 1：P95 帧时间超过 16.67ms
+**可能原因**：
+1. Signal 发送过于频繁（每帧 100+ 个）
+2. Node 树过深（>5 层）
+3. GC 暂停（.NET 在采集期间触发）
 
-**鎺掓煡姝ラ**锛?
+**排查步骤**：
 ```bash
 godot --headless --profiler-fps 60 --scene GameScene.tscn
-# 鏌ョ湅 profiler 杈撳嚭锛屽畾浣嶆渶鑰楁椂鐨勫嚱鏁?
+# 查看 profiler 输出，定位最耗时的函数
 ```
 
-### 闂 2锛氬惎鍔ㄦ椂闂存尝鍔ㄥぇ锛?.5-4.0s锛?
-**鍙兘鍘熷洜**锛?
-1. 纾佺洏 I/O 娉㈠姩锛圫QLite 鍐峰惎鍔級
-2. 缃戠粶寤惰繜锛圫entry 鍒濆鍖栬秴鏃讹級
-3. .NET 杩愯鏃堕鐑?
+### 问题 2：启动时间波动大（1.5-4.0s）
+**可能原因**：
+1. 磁盘 I/O 波动（SQLite 冷启动）
+2. 网络延迟（Sentry 初始化超时）
+3. .NET 运行时预热
 
-**鎺掓煡姝ラ**锛?
+**排查步骤**：
 ```csharp
-// 鍦ㄥ惎鍔ㄨ矾寰勫悇鑺傜偣娣诲姞璁℃椂
+// 在启动路径各节点添加计时
 PerformanceTracker.StartMeasure("database_init");
-// ... 鍒濆鍖栦唬鐮?...
+// ... 初始化代码 ...
 PerformanceTracker.EndMeasure("database_init");
 ```
 
-### 闂 3锛氬熀鍑嗘暟鎹腑鏈夊紓甯稿€硷紙瀛ょ珛鐨勯暱寤惰繜甯э級
-**澶勭悊鏂规硶**锛?
-- 浣跨敤 P95 鑰岄潪骞冲潎鍊硷紙鑷姩蹇界暐寮傚父鍊硷級
-- 鎺掗櫎鍩哄噯寤虹珛鏃剁殑鍓?30 甯э紙棰勭儹鏈燂級
-- 閲嶆柊閲囬泦锛堣嫢寮傚父鍊?>3 鍊?P50锛?
+### 问题 3：基准数据中有异常值（孤立的长延迟帧）
+**处理方法**：
+- 使用 P95 而非平均值（自动忽略异常值）
+- 排除基准建立时的前 30 帧（预热期）
+- 重新采集（若异常值 >3 倍 P50）
 
 ---
 
-> **涓嬩竴闃舵棰勫憡**锛歅hase 16锛堝彲瑙傛祴鎬т笌 Sentry锛夊皢闆嗘垚鏈樁娈电殑鎬ц兘鏁版嵁锛屼笂鎶ヨ嚦 Sentry Release Health 浠〃鏉匡紝瀹炵幇鎬ц兘瓒嬪娍鐩戞帶銆?
+> **下一阶段预告**：Phase 16（可观测性与 Sentry）将集成本阶段的性能数据，上报至 Sentry Release Health 仪表板，实现性能趋势监控。
 
 ---
 
-**楠岃瘉鐘舵€?*锛歔OK] 鏋舵瀯鍚堢悊 | [OK] 浠ｇ爜瀹屾暣 | [OK] 宸ュ叿閾惧氨缁?| [OK] CI 闆嗘垚娓呮櫚
-**鎺ㄨ崘璇勫垎**锛?4/100锛堝悓 Phase 13-14锛?
-**瀹炴柦浼樺厛绾?*锛歁edium锛堜緷璧?Phase 13 瀹屾垚锛?
+**验证状态**：[OK] 架构合理 | [OK] 代码完整 | [OK] 工具链就绪 | [OK] CI 集成清晰
+**推荐评分**：94/100（同 Phase 13-14）
+**实施优先级**：Medium（依赖 Phase 13 完成）
 
 
-鎻愮ず锛欸dUnit4 鍦烘櫙娴嬭瘯鎶ュ憡锛坙ogs/ci/YYYY-MM-DD/gdunit4/ 鍐呯殑 XML/JSON锛変篃鍙撼鍏ラ棬绂佽仛鍚堬紝浣滀负鍦烘櫙绾хǔ瀹氭€х殑蹇呰淇″彿锛涘湪 Phase-13 鐨?quality_gates.py 涓鍙栧苟缁熻閫氳繃鐜囷紝纭繚鍦烘櫙娴嬭瘯 100% 閫氳繃鍚庢柟鍙繘琛屾€ц兘闂ㄧ鍒ゅ畾锛堥伩鍏嶅姛鑳芥湭绋冲畾鏃剁殑鎬ц兘璇姤锛夈€?
+提示：GdUnit4 场景测试报告（logs/ci/YYYY-MM-DD/gdunit4/ 内的 XML/JSON）也可纳入门禁聚合，作为场景级稳定性的必要信号；在 Phase-13 的 quality_gates.py 中读取并统计通过率，确保场景测试 100% 通过后方可进行性能门禁判定（避免功能未稳定时的性能误报）。
 
 
 ---
 
-## 鎵╁睍 KPI锛圙odot + C# 鐜锛?
+## 扩展 KPI（Godot + C# 环境）
 
-| # | 鎸囨爣 | 瀹氫箟 | 鐩爣鍊?| 閲囬泦鏂瑰紡 |
+| # | 指标 | 定义 | 目标值 | 采集方式 |
 |---|------|------|-------|--------|
-| 11 | 鍦烘櫙鍒囨崲鏃堕棿锛圥95锛?| 浠庡垏鎹㈣Е鍙戝埌鏂板満鏅ǔ瀹氬彲浜や簰 | 鈮?20ms | LoadTimeTracker锛圕# 鎻掓々锛?|
-| 12 | 鍐峰惎鍔ㄦ椂闀匡紙P95锛?| 杩涚▼鍚姩鍒颁富鑿滃崟鍙氦浜?| 鈮?s | 鍚姩璁℃椂锛圚eadless/瀹炴満锛?|
-| 13 | 鍖呬綋澶у皬 | 鍙墽琛?+ 璧勬簮鎬诲ぇ灏?| 鈮?00MB锛堢ず渚嬶紝鎸夐」鐩畾锛?| 鏋勫缓鍚庣粺璁?|
-| 14 | C# GC 鏆傚仠宄板€?| 鍗曟 GC 鏆傚仠鏈€澶ф椂闀?| 鈮?ms | 鎬ц兘鎶ュ憡閲囬泦 |
+| 11 | 场景切换时间（P95） | 从切换触发到新场景稳定可交互 | ≤120ms | LoadTimeTracker（C# 插桩） |
+| 12 | 冷启动时长（P95） | 进程启动到主菜单可交互 | ≤3s | 启动计时（Headless/实机） |
+| 13 | 包体大小 | 可执行 + 资源总大小 | ≤100MB（示例，按项目定） | 构建后统计 |
+| 14 | C# GC 暂停峰值 | 单次 GC 暂停最大时长 | ≤2ms | 性能报告采集 |
 
-璇存槑锛氱湡瀹為槇鍊奸渶渚濇嵁椤圭洰浣撻噺涓庡彂琛岃姹傝皟鏁达紱寤鸿灏嗏€滃満鏅垏鎹?P95/鍖呬綋澶у皬/鍐峰惎鍔ㄦ椂闀库€濅綔涓哄己鍒堕棬绂佹垨棰勫彂甯冮棬妲涖€?
+说明：真实阈值需依据项目体量与发行要求调整；建议将“场景切换 P95/包体大小/冷启动时长”作为强制门禁或预发布门槛。
 
 ---
 
-## 鎶ュ憡杈撳嚭涓庤仛鍚堬紙perf.json锛?
+## 报告输出与聚合（perf.json）
 
-- 寤鸿鍦ㄦ€ц兘閲囬泦涓敓鎴?`perf.json`锛堣惤鐩?`logs/ci/YYYY-MM-DD/perf.json`锛夛紝瀛楁绀轰緥锛?
+- 建议在性能采集中生成 `perf.json`（落盘 `logs/ci/YYYY-MM-DD/perf.json`），字段示例：
   ```json
   {
     "frame_time_ms": {"p50": 8.2, "p95": 14.1, "p99": 16.2},
@@ -901,28 +901,7 @@ PerformanceTracker.EndMeasure("database_init");
     "gc_pause_ms_max": 1.8
   }
   ```
-- 鍦?Phase-13 鐨?`quality_gates.py` 涓綔涓哄彲閫夎緭鍏ワ紙`--perf-report`锛夊弬涓庨棬绂佽仛鍚堬紱
-- 瀵逛簬涓嶆弧瓒抽槇鍊肩殑鎸囨爣缁欏嚭闂ㄧ澶辫触涓庘€滃缓璁紭鍖栫偣鈥濇彁绀猴紝渚夸簬蹇€熷洖褰掑畾浣嶃€?
+- 在 Phase-13 的 `quality_gates.py` 中作为可选输入（`--perf-report`）参与门禁聚合；
+- 对于不满足阈值的指标给出门禁失败与“建议优化点”提示，便于快速回归定位。
 
-> 鎻愮ず锛歲uality_gates.py 鏀寔 `--perf-report` 浣滀负鍙€夎緭鍏ュ弬涓庨棬绂佽仛鍚堛€?
-# Phase 15: 性能预算与门禁（模板最小集）
-
-> 目标：提供轻量的帧时指标记录（headless 亦可），并可选地在 CI 中设置 P95 预算门禁。
-
-## 组件 / Components
-- PerformanceTracker（Autoload）：`Game.Godot/Scripts/Perf/PerformanceTracker.cs`
-  - 每帧采集 delta（ms），窗口 300 帧，周期性输出：
-    - 控制台标记：`[PERF] frames=<n> avg_ms=<..> p50_ms=<..> p95_ms=<..> p99_ms=<..>`
-    - 文件：`user://logs/perf/perf.json`
-- 检查脚本：`scripts/ci/check_perf_budget.ps1 -MaxP95Ms <ms> [-LogPath <headless.log>]`
-  - 解析 `[PERF]` 标记并校验 P95 是否满足预算
-
-## 运行 / Run
-- Headless 冒烟（会产生 PERF 标记）：
-  - `./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN"`
-- 质量门禁（可选 P95 预算）：
-  - `./scripts/ci/quality_gate.ps1 -GodotBin "$env:GODOT_BIN" -PerfP95Ms 20`
-
-## 说明 / Notes
-- 模板默认启用 PerformanceTracker；如需关闭可在脚本中改为禁用或添加环境开关。
-- Headless 环境帧时与渲染不同，P95 预算仅用于模板级快速异常检测；业务侧预算应在有渲染与资源的环境下另行设定。
+> 提示：quality_gates.py 支持 `--perf-report` 作为可选输入参与门禁聚合。

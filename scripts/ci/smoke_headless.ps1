@@ -1,7 +1,8 @@
 param(
   [string]$GodotBin = $env:GODOT_BIN,
   [string]$Scene = 'res://Game.Godot/Scenes/Main.tscn',
-  [int]$TimeoutSec = 5
+  [int]$TimeoutSec = 5,
+  [string]$ProjectPath = '.'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,8 +18,8 @@ $log = Join-Path $dest 'headless.log'
 $logOut = Join-Path $dest 'headless.out.log'
 $logErr = Join-Path $dest 'headless.err.log'
 
-Write-Host "Starting Godot headless for $TimeoutSec sec: $Scene"
-$p = Start-Process -FilePath $GodotBin -ArgumentList @('--headless','--path','.', '--scene', $Scene) -PassThru -RedirectStandardOutput $logOut -RedirectStandardError $logErr -WindowStyle Hidden
+Write-Host "Starting Godot headless for $TimeoutSec sec: $Scene (path=$ProjectPath)"
+$p = Start-Process -FilePath $GodotBin -ArgumentList @('--headless','--path',$ProjectPath, '--scene', $Scene) -PassThru -RedirectStandardOutput $logOut -RedirectStandardError $logErr -WindowStyle Hidden
 
 try {
   $ok = $p.WaitForExit(1000 * $TimeoutSec)

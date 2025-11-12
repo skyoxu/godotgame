@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Write-Host 'Setting up local environment for Godot .NET...'
 
-$projectRoot = (Resolve-Path '..\..').Path
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $dotnetDir   = Join-Path $projectRoot '.dotnet'
 $dotnetExe   = Join-Path $dotnetDir 'dotnet.exe'
 
@@ -15,6 +15,8 @@ if (-not (Test-Path $dotnetExe)) {
   $dl = Join-Path $env:TEMP 'dotnet-install.ps1'
   Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $dl
   & $dl -Version '8.0.401' -InstallDir $dotnetDir
+  # Ensure required runtime 8.0.21 is present for Godot 4.5.1
+  & $dl -Runtime 'dotnet' -Version '8.0.21' -InstallDir $dotnetDir
 }
 
 # Locate Godot mono executable (prefer console)
@@ -29,7 +31,7 @@ if (-not $godot) { Write-Warning '未在 C:\Godot 找到 Godot .NET 可执行文
 $env:DOTNET_ROOT      = $dotnetDir
 $env:PATH             = "$dotnetDir;" + $env:PATH
 if (Test-Path $dotnetExe) { $env:GODOT_DOTNET_CLI = $dotnetExe }
-if ($godot)            { $env:GODOT_BIN       = $godot }
+if ($godot)               { $env:GODOT_BIN       = $godot }
 
 if ($Persist) {
   [Environment]::SetEnvironmentVariable('DOTNET_ROOT', $dotnetDir, 'User')
@@ -44,6 +46,7 @@ if ($Persist) {
 }
 
 & $dotnetExe --info | Select-String 'Version|Base Path' | ForEach-Object { $_.ToString() }
-Write-Host ('GODOT_BIN=' + ($env:GODOT_BIN ?? ''))
-Write-Host ('GODOT_DOTNET_CLI=' + ($env:GODOT_DOTNET_CLI ?? ''))
-
+$gb = $env:GODOT_BIN; if (-not $gb) { $gb = '' }
+$gd = $env:GODOT_DOTNET_CLI; if (-not $gd) { $gd = '' }
+Write-Host ('GODOT_BIN=' + $gb)
+Write-Host ('GODOT_DOTNET_CLI=' + $gd)

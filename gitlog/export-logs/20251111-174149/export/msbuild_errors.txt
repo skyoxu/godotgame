@@ -1,0 +1,1 @@
+No errors matched (pattern: error|CSxxxx|GD010x).

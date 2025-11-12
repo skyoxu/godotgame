@@ -2,7 +2,6 @@
 
 > 本文档为 Phase 13-22 的规划骨架，每个 Phase 均包含：目标、工作量估算、关键交付物、完成清单
 > 详细文档将基于此骨架逐步展开
-> FeatureFlags 快速指引 / Quickstart：见 [Phase-18-Staged-Release-and-Canary-Strategy.md](Phase-18-Staged-Release-and-Canary-Strategy.md)
 
 ---
 

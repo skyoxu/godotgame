@@ -1,35 +1,8 @@
----
-ADR-ID: ADR-0019
-title: Godot Security Baseline
-status: Accepted
-decision-time: '2025-11-08'
-deciders: [Architecture Team]
-archRefs: [CH02]
-depends-on: [ADR-0011]
-supersedes: [ADR-0002]
----
-
 # ADR-0019: Godot Security Baseline
 
-## Context
-Electron security policies must be replaced with Godot-native guardrails for IO, HTTP, URL open, and runtime isolation.
+- Status: Proposed
+- Context: Migration Phase-2; replaces Electron-specific ADR-0002 baseline with Godot-focused rules; ties to CH02 security posture
+- Decision: Enforce res:// (read-only) and user:// (read/write) path constraints; only HTTPS external links with allowlist; disable runtime dynamic code loading; initialize Sentry Godot SDK early for release health; provide security smoke tests in CI
+- Consequences: Any absolute or traversal path is denied; all URL opens must go through Security adapter; HTTP requests constrained by allowlist and offline mode; editor-only plugins excluded from release exports
+- References: docs/migration/Phase-14-Godot-Security-Baseline.md, docs/architecture/base/02-security-baseline-electron-v2.md
 
-## Decision
-- External links: restrict to allowlist; wrap `OS.shell_open()` as `Security.open_url_safe()`.
-- HTTP: centralize via wrapper on `HTTPRequest` with domain allowlist and audit logs.
-- File system: restrict writes to `user://`; block absolute paths in game code.
-- Code loading: forbid dynamic/native DLL loading and P/Invoke in gameplay code.
-- Autoload: dedicated `Security` singleton to enforce and audit.
-- Observability: integrate Sentry (Godot SDK) with user/session scrubbing.
-
-## Consequences
-- Positive: predictable, auditable interactions; reduced attack surface.
-- Negative: adapters required; stricter review for any new IO/HTTP use.
-
-## Verification
-- CI script scans `.gd`/`.cs` for forbidden APIs; unit tests cover wrappers.
-- GdUnit4 scenes verify guardrails on common scenarios.
-
-## References
-- Godot HTTPRequest, OS APIs
-- Sentry Godot SDK

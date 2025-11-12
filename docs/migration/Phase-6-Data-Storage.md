@@ -1,32 +1,37 @@
-﻿# Phase 6: SQLite 鏁版嵁灞傝縼绉?
-> 鐘舵€? 瀹炴柦闃舵
-> 棰勪及宸ユ椂: 5-7 澶?> 椋庨櫓绛夌骇: 涓?> 鍓嶇疆鏉′欢: Phase 1-5 瀹屾垚
+# Phase 6: SQLite 数据层迁移
+
+> 状态: 实施阶段
+> 预估工时: 5-7 天
+> 风险等级: 中
+> 前置条件: Phase 1-5 完成
 
 ---
 
-## 鐩爣
+## 目标
 
-灏?vitegame 鐨?better-sqlite3 鏁版嵁搴撹縼绉诲埌 godotgame 鐨?godot-sqlite锛屽缓绔嬬被鍨嬪畨鍏ㄧ殑浠撳偍灞傚拰杩佺Щ绯荤粺銆?
+将 vitegame 的 better-sqlite3 数据库迁移到 godotgame 的 godot-sqlite，建立类型安全的仓储层和迁移系统。
+
 ---
 
-## 鎶€鏈爤瀵规瘮
+## 技术栈对比
 
-| 鍔熻兘 | vitegame (Node.js) | godotgame (Godot) |
+| 功能 | vitegame (Node.js) | godotgame (Godot) |
 |-----|-------------------|------------------|
-| 搴?| better-sqlite3 | godot-sqlite (GDNative) |
-| 鍒濆鍖?| `new Database('game.db')` | `SQLite.new() + open_db()` |
-| 鏌ヨ | `.prepare().all()` | `.query() + .query_result` |
-| 鍙傛暟鍖?| `stmt.bind(params)` | 瀛楃涓叉彃鍊硷紙娉ㄦ剰娉ㄥ叆锛?|
-| 浜嬪姟 | `.transaction()` | 鎵嬪姩 BEGIN/COMMIT |
-| 绫诲瀷 | JavaScript 瀵硅薄 | Godot.Collections.Dictionary |
+| 库 | better-sqlite3 | godot-sqlite (GDNative) |
+| 初始化 | `new Database('game.db')` | `SQLite.new() + open_db()` |
+| 查询 | `.prepare().all()` | `.query() + .query_result` |
+| 参数化 | `stmt.bind(params)` | 字符串插值（注意注入） |
+| 事务 | `.transaction()` | 手动 BEGIN/COMMIT |
+| 类型 | JavaScript 对象 | Godot.Collections.Dictionary |
 
 ---
 
-## 鏁版嵁搴撴灦鏋?
-### 褰撳墠 Schema (vitegame)
+## 数据库架构
+
+### 当前 Schema (vitegame)
 
 ```sql
--- 鐢ㄦ埛鏁版嵁
+-- 用户数据
 CREATE TABLE users (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
@@ -34,18 +39,19 @@ CREATE TABLE users (
     last_login INTEGER
 );
 
--- 鐜╁瀛樻。
+-- 玩家存档
 CREATE TABLE saves (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     slot_number INTEGER NOT NULL,
-    data TEXT NOT NULL, -- JSON 搴忓垪鍖?    created_at INTEGER NOT NULL,
+    data TEXT NOT NULL, -- JSON 序列化
+    created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     UNIQUE(user_id, slot_number)
 );
 
--- 娓告垙缁熻
+-- 游戏统计
 CREATE TABLE statistics (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -55,7 +61,7 @@ CREATE TABLE statistics (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Schema 鐗堟湰鎺у埗
+-- Schema 版本控制
 CREATE TABLE schema_version (
     version INTEGER PRIMARY KEY,
     applied_at INTEGER NOT NULL,
@@ -63,11 +69,13 @@ CREATE TABLE schema_version (
 );
 ```
 
-### 鐩爣 Schema (godotgame)
+### 目标 Schema (godotgame)
 
-淇濇寔鐩稿悓缁撴瀯锛屼絾娣诲姞锛?
+保持相同结构，但添加：
+
 ```sql
--- 鏂板锛氭垚灏辩郴缁?CREATE TABLE achievements (
+-- 新增：成就系统
+CREATE TABLE achievements (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     achievement_key TEXT NOT NULL,
@@ -77,7 +85,8 @@ CREATE TABLE schema_version (
     UNIQUE(user_id, achievement_key)
 );
 
--- 鏂板锛氳缃瓨鍌?CREATE TABLE settings (
+-- 新增：设置存储
+CREATE TABLE settings (
     user_id TEXT PRIMARY KEY,
     audio_volume REAL DEFAULT 1.0,
     graphics_quality TEXT DEFAULT 'medium',
@@ -89,8 +98,9 @@ CREATE TABLE schema_version (
 
 ---
 
-## IDataStore 瀹炵幇锛圥hase 5 鎺ュ彛锛?
-### 鎺ュ彛瀹氫箟锛堝洖椤撅級
+## IDataStore 实现（Phase 5 接口）
+
+### 接口定义（回顾）
 
 ```csharp
 // Game.Core/Ports/IDataStore.cs
@@ -107,7 +117,7 @@ public interface IDataStore
 }
 ```
 
-### Godot SQLite 閫傞厤鍣紙澧炲己鐗堬級
+### Godot SQLite 适配器（增强版）
 
 ```csharp
 // Game.Godot/Adapters/SqliteDataStore.cs
@@ -119,8 +129,9 @@ using System.Reflection;
 namespace Game.Godot.Adapters;
 
 /// <summary>
-/// 浣跨敤 godot-sqlite 鎻掍欢鐨勯€傞厤鍣紙澧炲己鐗堬級
-/// 鏀寔鍙傛暟鍖栨煡璇€佷簨鍔°€佺被鍨嬫槧灏?/// </summary>
+/// 使用 godot-sqlite 插件的适配器（增强版）
+/// 支持参数化查询、事务、类型映射
+/// </summary>
 public class SqliteDataStore : IDataStore
 {
     private SQLite? _db;
@@ -136,10 +147,10 @@ public class SqliteDataStore : IDataStore
             throw new InvalidOperationException($"Failed to open database: {dbPath}");
         }
 
-        // 鍚敤澶栭敭绾︽潫
+        // 启用外键约束
         Execute("PRAGMA foreign_keys = ON;");
 
-        // 鎬ц兘浼樺寲
+        // 性能优化
         Execute("PRAGMA journal_mode = WAL;"); // Write-Ahead Logging
         Execute("PRAGMA synchronous = NORMAL;");
     }
@@ -155,7 +166,7 @@ public class SqliteDataStore : IDataStore
         if (_db == null)
             throw new InvalidOperationException("Database not opened");
 
-        // 鍙傛暟鍖栨煡璇紙绠€鍖栫増锛岀敓浜х幆澧冮渶鏇翠弗鏍硷級
+        // 参数化查询（简化版，生产环境需更严格）
         string parameterizedSql = FormatSqlWithParameters(sql, parameters);
 
         var success = _db.Query(parameterizedSql);
@@ -195,7 +206,8 @@ public class SqliteDataStore : IDataStore
     }
 
     /// <summary>
-    /// 寮€濮嬩簨鍔?    /// </summary>
+    /// 开始事务
+    /// </summary>
     public void BeginTransaction()
     {
         if (_inTransaction)
@@ -206,7 +218,7 @@ public class SqliteDataStore : IDataStore
     }
 
     /// <summary>
-    /// 鎻愪氦浜嬪姟
+    /// 提交事务
     /// </summary>
     public void CommitTransaction()
     {
@@ -218,7 +230,7 @@ public class SqliteDataStore : IDataStore
     }
 
     /// <summary>
-    /// 鍥炴粴浜嬪姟
+    /// 回滚事务
     /// </summary>
     public void RollbackTransaction()
     {
@@ -230,13 +242,15 @@ public class SqliteDataStore : IDataStore
     }
 
     /// <summary>
-    /// 绠€鍖栧弬鏁板寲锛堢敓浜х幆澧冮渶浣跨敤 Prepared Statements锛?    /// </summary>
+    /// 简化参数化（生产环境需使用 Prepared Statements）
+    /// </summary>
     private string FormatSqlWithParameters(string sql, object[] parameters)
     {
         if (parameters == null || parameters.Length == 0)
             return sql;
 
-        // 绠€鍗曟浛鎹紙璀﹀憡锛氫笉闃?SQL 娉ㄥ叆锛屼粎鐢ㄤ簬婕旂ず锛?        for (int i = 0; i < parameters.Length; i++)
+        // 简单替换（警告：不防 SQL 注入，仅用于演示）
+        for (int i = 0; i < parameters.Length; i++)
         {
             var param = parameters[i];
             string value = param switch
@@ -255,19 +269,26 @@ public class SqliteDataStore : IDataStore
         return sql;
     }
 
-#### 瀹夊叏鎻愮ず涓庡噯澶囪鍙ュ缓璁?
-> 閲嶈锛氫互涓?`FormatSqlWithParameters` 浠呬负鏁欏绀轰緥锛屾棤娉曢槻寰″鏉傛敞鍏ュ満鏅€傜敓浜у疄鐜板簲浼樺厛閲囩敤鈥滈缂栬瘧璇彞/缁戝畾鍙傛暟鈥濊兘鍔涳紱鑻ユ墍鐢ㄧ殑 `godot-sqlite` 鐗堟湰鏀寔 Prepared Statement锛岃鍙傝€冨畼鏂规帴鍙ｄ娇鐢ㄧ粦瀹氬弬鏁帮紙濡?`?1, ?2 ...`锛夛紝骞堕€氳繃鏄惧紡绫诲瀷缁戝畾锛堝瓧绗︿覆杞箟銆佹暟鍊兼枃鍖栨棤鍏虫牸寮忥級鍐欏叆銆?
-寤鸿鍋氭硶锛?- 鍦ㄩ€傞厤灞備负鈥滃彧璇绘煡璇?鍐欏叆鎿嶄綔鈥濆垎鍒彁渚涘皝瑁咃紝鍐呴儴闆嗕腑鍋氬弬鏁扮粦瀹氫笌閿欒澶勭悊锛?- 涓衡€滃姩鎬佹瀯閫?SQL鈥濈殑鍦烘櫙锛岀粺涓€璧扳€滅櫧鍚嶅崟瀛楁鍚?+ 缁戝畾鍊尖€濈殑绛栫暐锛岄伩鍏嶇洿鎺ユ嫾鎺ワ紱
-- 浣跨敤鍗曞厓娴嬭瘯瑕嗙洊鈥滄敞鍏ュ皾璇?寮傚父璺緞/浜嬪姟鍥炴粴鈥濈瓑杈圭晫锛?- 灏嗏€滃弬鏁板寲寮€鍏?闄嶇骇绛栫暐鈥濇毚闇蹭负閰嶇疆椤癸紝CI 涓姝㈤檷绾ц繍琛屻€?
+#### 安全提示与准备语句建议
+
+> 重要：以上 `FormatSqlWithParameters` 仅为教学示例，无法防御复杂注入场景。生产实现应优先采用“预编译语句/绑定参数”能力；若所用的 `godot-sqlite` 版本支持 Prepared Statement，请参考官方接口使用绑定参数（如 `?1, ?2 ...`），并通过显式类型绑定（字符串转义、数值文化无关格式）写入。
+
+建议做法：
+- 在适配层为“只读查询/写入操作”分别提供封装，内部集中做参数绑定与错误处理；
+- 为“动态构造 SQL”的场景，统一走“白名单字段名 + 绑定值”的策略，避免直接拼接；
+- 使用单元测试覆盖“注入尝试/异常路径/事务回滚”等边界；
+- 将“参数化开关/降级策略”暴露为配置项，CI 中禁止降级运行。
+
     /// <summary>
-    /// 杞箟 SQL 瀛楃涓诧紙鍩虹鐗堟湰锛?    /// </summary>
+    /// 转义 SQL 字符串（基础版本）
+    /// </summary>
     private string EscapeSqlString(string input)
     {
         return input.Replace("'", "''");
     }
 
     /// <summary>
-    /// 鏄犲皠 Dictionary 鍒?C# 瀵硅薄锛堝弽灏勭増鏈級
+    /// 映射 Dictionary 到 C# 对象（反射版本）
     /// </summary>
     private T? MapToObject<T>(Godot.Collections.Dictionary row) where T : class
     {
@@ -276,7 +297,7 @@ public class SqliteDataStore : IDataStore
 
         foreach (var prop in properties)
         {
-            // 灏濊瘯澶氱鍛藉悕绾﹀畾
+            // 尝试多种命名约定
             string[] possibleKeys = {
                 prop.Name,                           // UserId
                 ToSnakeCase(prop.Name),              // user_id
@@ -291,7 +312,7 @@ public class SqliteDataStore : IDataStore
                     {
                         var value = row[key];
 
-                        // 绫诲瀷杞崲
+                        // 类型转换
                         if (value != null && prop.CanWrite)
                         {
                             object convertedValue = prop.PropertyType.Name switch
@@ -322,7 +343,7 @@ public class SqliteDataStore : IDataStore
     }
 
     /// <summary>
-    /// PascalCase 鈫?snake_case
+    /// PascalCase → snake_case
     /// </summary>
     private string ToSnakeCase(string input)
     {
@@ -335,9 +356,9 @@ public class SqliteDataStore : IDataStore
 
 ---
 
-## 棰嗗煙妯″瀷 (C# DTOs)
+## 领域模型 (C# DTOs)
 
-### 鐢ㄦ埛瀹炰綋
+### 用户实体
 
 ```csharp
 // Game.Core/Domain/Entities/User.cs
@@ -362,7 +383,7 @@ public class User
 }
 ```
 
-### 瀛樻。瀹炰綋
+### 存档实体
 
 ```csharp
 // Game.Core/Domain/Entities/SaveGame.cs
@@ -394,8 +415,9 @@ public class SaveGame
 
 ---
 
-## 浠撳偍灞傚疄鐜?
-### 鐢ㄦ埛浠撳偍鎺ュ彛
+## 仓储层实现
+
+### 用户仓储接口
 
 ```csharp
 // Game.Core/Domain/Repositories/IUserRepository.cs
@@ -413,7 +435,7 @@ public interface IUserRepository
 }
 ```
 
-### 鐢ㄦ埛浠撳偍瀹炵幇
+### 用户仓储实现
 
 ```csharp
 // Game.Godot/Repositories/UserRepository.cs
@@ -480,8 +502,10 @@ public class UserRepository : IUserRepository
 
 ---
 
-## 鏁版嵁搴撹縼绉荤郴缁?
-### 杩佺Щ绠＄悊鍣?
+## 数据库迁移系统
+
+### 迁移管理器
+
 ```csharp
 // Game.Core/Infrastructure/DatabaseMigration.cs
 
@@ -501,7 +525,8 @@ public class DatabaseMigration
     }
 
     /// <summary>
-    /// 杩愯鎵€鏈夋湭搴旂敤鐨勮縼绉?    /// </summary>
+    /// 运行所有未应用的迁移
+    /// </summary>
     public void Migrate()
     {
         EnsureSchemaVersionTable();
@@ -584,7 +609,7 @@ public class DatabaseMigration
 }
 ```
 
-### 杩佺Щ鍩虹被
+### 迁移基类
 
 ```csharp
 // Game.Core/Infrastructure/Migration.cs
@@ -602,7 +627,7 @@ public abstract class Migration
 }
 ```
 
-### 鍏蜂綋杩佺Щ绀轰緥
+### 具体迁移示例
 
 ```csharp
 // Game.Core/Infrastructure/Migrations/Migration001_InitialSchema.cs
@@ -618,7 +643,8 @@ public class Migration001_InitialSchema : Migration
 
     public override void Up(IDataStore dataStore)
     {
-        // Users 琛?        dataStore.Execute(@"
+        // Users 表
+        dataStore.Execute(@"
             CREATE TABLE users (
                 id TEXT PRIMARY KEY,
                 username TEXT NOT NULL UNIQUE,
@@ -626,7 +652,8 @@ public class Migration001_InitialSchema : Migration
                 last_login INTEGER
             )");
 
-        // Saves 琛?        dataStore.Execute(@"
+        // Saves 表
+        dataStore.Execute(@"
             CREATE TABLE saves (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -638,7 +665,8 @@ public class Migration001_InitialSchema : Migration
                 UNIQUE(user_id, slot_number)
             )");
 
-        // Statistics 琛?        dataStore.Execute(@"
+        // Statistics 表
+        dataStore.Execute(@"
             CREATE TABLE statistics (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -648,7 +676,7 @@ public class Migration001_InitialSchema : Migration
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )");
 
-        // 绱㈠紩
+        // 索引
         dataStore.Execute("CREATE INDEX idx_saves_user_id ON saves(user_id)");
         dataStore.Execute("CREATE INDEX idx_statistics_user_id ON statistics(user_id)");
     }
@@ -699,12 +727,12 @@ public class Migration002_AddAchievements : Migration
 
 ---
 
-## 鍚姩鏃跺垵濮嬪寲
+## 启动时初始化
 
-### ServiceLocator 闆嗘垚
+### ServiceLocator 集成
 
 ```csharp
-// Game.Godot/Autoloads/ServiceLocator.cs (鎵╁睍)
+// Game.Godot/Autoloads/ServiceLocator.cs (扩展)
 
 public partial class ServiceLocator : Node
 {
@@ -712,21 +740,23 @@ public partial class ServiceLocator : Node
 
     public IDataStore DataStore { get; private set; } = null!;
     public IUserRepository UserRepository { get; private set; } = null!;
-    // ... 鍏朵粬鏈嶅姟
+    // ... 其他服务
 
     public override void _Ready()
     {
         Instance = this;
 
-        // 鍒濆鍖栨暟鎹瓨鍌?        DataStore = new SqliteDataStore();
+        // 初始化数据存储
+        DataStore = new SqliteDataStore();
         DataStore.Open("user://game.db");
 
-        // 杩愯杩佺Щ
+        // 运行迁移
         var logger = new GodotLogger("Migration");
         var migration = new DatabaseMigration(DataStore, logger);
         migration.Migrate();
 
-        // 鍒濆鍖栦粨鍌?        UserRepository = new UserRepository(DataStore);
+        // 初始化仓储
+        UserRepository = new UserRepository(DataStore);
 
         GD.Print("Database initialized and migrated successfully");
     }
@@ -740,9 +770,10 @@ public partial class ServiceLocator : Node
 
 ---
 
-## 娴嬭瘯绛栫暐
+## 测试策略
 
-### 鍗曞厓娴嬭瘯锛堝唴瀛?SQLite锛?
+### 单元测试（内存 SQLite）
+
 ```csharp
 // Game.Core.Tests/Infrastructure/UserRepositoryTests.cs
 
@@ -764,7 +795,7 @@ public class UserRepositoryTests : IDisposable
         _dataStore = new FakeDataStore();
         _dataStore.Open(":memory:");
 
-        // 鍒濆鍖?Schema
+        // 初始化 Schema
         _dataStore.Execute(@"
             CREATE TABLE users (
                 id TEXT PRIMARY KEY,
@@ -844,7 +875,7 @@ public class UserRepositoryTests : IDisposable
 }
 ```
 
-### 杩佺Щ娴嬭瘯
+### 迁移测试
 
 ```csharp
 // Game.Core.Tests/Infrastructure/DatabaseMigrationTests.cs
@@ -896,7 +927,7 @@ public class DatabaseMigrationTests : IDisposable
         // Act
         _migration.Migrate();
 
-        // Assert锛堟病鏈夋姏鍑哄紓甯革級
+        // Assert（没有抛出异常）
         var version = _dataStore.QuerySingle<VersionRow>("SELECT MAX(version) as version FROM schema_version");
         version!.Version.Should().BeGreaterThan(0);
     }
@@ -920,12 +951,12 @@ public class DatabaseMigrationTests : IDisposable
 
 ---
 
-## 鏁版嵁杩佺Щ鑴氭湰
+## 数据迁移脚本
 
-### 浠?vitegame 杩佺Щ鏁版嵁
+### 从 vitegame 迁移数据
 
 ```csharp
-// scripts/MigrateData.cs (CLI 宸ュ叿)
+// scripts/MigrateData.cs (CLI 工具)
 
 using Game.Core.Ports;
 using Game.Godot.Adapters;
@@ -945,20 +976,21 @@ public class DataMigrationTool
 
         Console.WriteLine($"Migrating data from {sourcePath} to {targetPath}...");
 
-        // 鎵撳紑婧愭暟鎹簱锛堝亣璁句娇鐢?System.Data.SQLite锛?        using var sourceConn = new System.Data.SQLite.SQLiteConnection($"Data Source={sourcePath}");
+        // 打开源数据库（假设使用 System.Data.SQLite）
+        using var sourceConn = new System.Data.SQLite.SQLiteConnection($"Data Source={sourcePath}");
         sourceConn.Open();
 
-        // 鎵撳紑鐩爣鏁版嵁搴擄紙Godot SQLite 閫傞厤鍣級
+        // 打开目标数据库（Godot SQLite 适配器）
         var targetStore = new SqliteDataStore();
         targetStore.Open(targetPath);
 
-        // 杩佺Щ鐢ㄦ埛
+        // 迁移用户
         MigrateUsers(sourceConn, targetStore);
 
-        // 杩佺Щ瀛樻。
+        // 迁移存档
         MigrateSaves(sourceConn, targetStore);
 
-        // 杩佺Щ缁熻鏁版嵁
+        // 迁移统计数据
         MigrateStatistics(sourceConn, targetStore);
 
         Console.WriteLine("Migration completed successfully!");
@@ -1043,9 +1075,9 @@ public class DataMigrationTool
 
 ---
 
-## CI 闆嗘垚
+## CI 集成
 
-### 鏁版嵁搴撴祴璇?(GitHub Actions)
+### 数据库测试 (GitHub Actions)
 
 ```yaml
 # .github/workflows/tests.yml
@@ -1078,7 +1110,7 @@ jobs:
 
       - name: Check migration integrity
         run: |
-          # 楠岃瘉鎵€鏈夎縼绉婚兘鏈夊搴旂殑娴嬭瘯
+          # 验证所有迁移都有对应的测试
           $migrations = Get-ChildItem -Path Game.Core/Infrastructure/Migrations/*.cs
           foreach ($migration in $migrations) {
             $testFile = "Game.Core.Tests/Infrastructure/" + $migration.BaseName + "Tests.cs"
@@ -1091,44 +1123,31 @@ jobs:
 
 ---
 
-## 瀹屾垚鏍囧噯
+## 完成标准
 
-- [ ] IDataStore 閫傞厤鍣ㄥ畬鏁村疄鐜帮紙浜嬪姟鏀寔锛?- [ ] User/SaveGame/Statistics 瀹炰綋鍜屼粨鍌ㄥ畬鎴?- [ ] 鏁版嵁搴撹縼绉荤郴缁熷彲杩愯锛圡igration001-003锛?- [ ] 鎵€鏈変粨鍌ㄩ€氳繃鍗曞厓娴嬭瘯锛堝唴瀛?SQLite锛?- [ ] 杩佺Щ绯荤粺閫氳繃闆嗘垚娴嬭瘯
-- [ ] 鏁版嵁杩佺Щ鑴氭湰鍙粠 vitegame 瀵煎叆鏁版嵁
-- [ ] ServiceLocator 闆嗘垚鏁版嵁搴撳垵濮嬪寲
-- [ ] CI 绠￠亾鍖呭惈鏁版嵁搴撴祴璇曞拰杩佺Щ瀹屾暣鎬ф鏌?
----
-
-## 鎬ц兘浼樺寲寤鸿
-
-1. **杩炴帴姹?*锛欸odot SQLite 涓嶆敮鎸佽繛鎺ユ睜锛岃€冭檻浣跨敤鍗曚緥妯″紡
-2. **鎵归噺鎻掑叆**锛氫娇鐢ㄤ簨鍔″寘瑁瑰鏉?INSERT 璇彞
-3. **绱㈠紩绛栫暐**锛氫负楂橀鏌ヨ瀛楁锛坲ser_id, username锛夊缓绔嬬储寮?4. **WAL 妯″紡**锛歚PRAGMA journal_mode = WAL` 鎻愬崌骞跺彂鍐欏叆
-5. **鏌ヨ浼樺寲**锛氶伩鍏?SELECT \*锛屼粎鏌ヨ闇€瑕佺殑瀛楁
+- [ ] IDataStore 适配器完整实现（事务支持）
+- [ ] User/SaveGame/Statistics 实体和仓储完成
+- [ ] 数据库迁移系统可运行（Migration001-003）
+- [ ] 所有仓储通过单元测试（内存 SQLite）
+- [ ] 迁移系统通过集成测试
+- [ ] 数据迁移脚本可从 vitegame 导入数据
+- [ ] ServiceLocator 集成数据库初始化
+- [ ] CI 管道包含数据库测试和迁移完整性检查
 
 ---
 
-## 涓嬩竴姝?
-瀹屾垚鏈樁娈靛悗锛岀户缁細
+## 性能优化建议
 
-鉃★笍 [Phase-7-UI-Migration.md](Phase-7-UI-Migration.md) 鈥?React 鈫?Godot Control 杩佺Щ
+1. **连接池**：Godot SQLite 不支持连接池，考虑使用单例模式
+2. **批量插入**：使用事务包裹多条 INSERT 语句
+3. **索引策略**：为高频查询字段（user_id, username）建立索引
+4. **WAL 模式**：`PRAGMA journal_mode = WAL` 提升并发写入
+5. **查询优化**：避免 SELECT \*，仅查询需要的字段
 
-### Autoload 与仓储使用 / Autoload & Repositories
+---
 
-- Autoload: `project.godot` 已注册 `SqlDb`，入口 `Main.gd` 调用 `SqlDb.TryOpen("user://data/game.db")`（首次运行自动执行 `scripts/db/schema.sql`）。
-- C# 仓储：见 `Game.Core/Repositories/*.cs` 与 `Game.Godot/Adapters/Db/*.cs`，通过 `ISqlDatabase` 注入使用。
-- 示例（C#）：
-```csharp
-var db = GetNode<Game.Godot.Adapters.SqliteDataStore>("/root/SqlDb");
-var users = new Game.Godot.Adapters.Db.UserRepository(db);
-await users.UpsertAsync(new Game.Core.Domain.Entities.User { Username = "alice" });
-var u = await users.FindByUsernameAsync("alice");
-```
+## 下一步
 
+完成本阶段后，继续：
 
-### Inventory 持久化（过渡实现）
-
-- 使用 saves 表 `slot_number=90` 存储 inventory 快照（JSON: `{ items: { id: qty } }`），用户为 `default`。
-- 仓储：`SqlInventoryRepository`（Game.Godot/Adapters/Db/SqlInventoryRepository.cs），接口对齐 `IInventoryRepository`。
-- UI 面板仍保留 JSON 存储作为演示；仓储桥接 `InventoryRepoBridge` 用于 GdUnit 测试与后续 UI 接入。
-
+➡️ [Phase-7-UI-Migration.md](Phase-7-UI-Migration.md) — React → Godot Control 迁移

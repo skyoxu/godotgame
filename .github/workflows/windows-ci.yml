@@ -1,9 +1,4 @@
-﻿name: Windows CI (Godot + GdUnit4)
-
-# Notes:
-# - Smoke markers recognized by scripts:
-#   [TEMPLATE_SMOKE_READY] (preferred), [DB] opened (fallback)
-# - Export templates are installed before export (see Install Export Templates step).
+name: Windows CI (Godot + GdUnit4)
 
 on:
   push:
@@ -15,94 +10,101 @@ jobs:
   build-test-export:
     runs-on: windows-latest
     env:
-      GODOT_VERSION: 4.5.1
-      GODOT_BIN: ${{ github.workspace }}\godot\Godot_v4.5.1-stable_mono_win64.exe
+      GODOT_VERSION: '4.5.1'
+      EXPORT_SIZE_MAX_MB: '150'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 8
+      - name: Setup .NET 8 pinned
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Download Godot .NET (Windows) with fallback
+      - name: Pin .NET SDK/Runtime and set DOTNET_ROOT
+        shell: pwsh
+        run: |
+          $installer = "$HOME/dotnet-install.ps1"
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Version 8.0.401 -InstallDir "$HOME/.dotnet"
+          & powershell -NoProfile -ExecutionPolicy Bypass -File $installer -Runtime dotnet -Version 8.0.21 -InstallDir "$HOME/.dotnet"
+          "DOTNET_ROOT=$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "$HOME/.dotnet" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          dotnet --info
+
+      - name: Download Godot .NET (GitHub Releases)
         shell: pwsh
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           New-Item -ItemType Directory -Force -Path godot | Out-Null
           $zip = "godot/godot.zip"
-          $urls = @(
-            "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_mono_win64.zip",
-            "https://downloads.tuxfamily.org/godotengine/${env:GODOT_VERSION}/mono/Godot_v${env:GODOT_VERSION}-stable_mono_win64.zip"
-          )
-          $ok = $false
-          for ($i=1; $i -le 3 -and -not $ok; $i++) {
-            foreach ($u in $urls) {
-              Write-Host "Attempt #${i}: downloading $u"
-              try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zip; $ok = $true; break } catch { Write-Warning $_; Start-Sleep -Seconds (3*$i) }
-            }
-          }
-          if (-not $ok) { throw 'Failed to download Godot after retries.' }
-          \ \ \ \ \ \ \ \ \ \ Expand-Archive\ \ -DestinationPath\ godot\ -Force`n\ \ \ \ \ \ \ \ \ \ \ =\ Get-ChildItem\ godot\ -Recurse\ -Filter\ \*win64\*\.exe\ \|\ Select-Object\ -First\ 1`n\ \ \ \ \ \ \ \ \ \ if\ \(-not\ \)\ \{\ throw\ 'Godot\ exe\ not\ found\ after\ download\.'\ }`n\ \ \ \ \ \ \ \ \ \ "GODOT_BIN="\ \|\ Out-File\ -FilePath\ \ -Append\ -Encoding\ utf8`n\ \ \ \ \ \ \ \ \ \ Write-Host\ "GODOT_BIN="
+          $u = "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_mono_win64.zip"
+          Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zip
+          Expand-Archive $zip -DestinationPath godot -Force
+          $exe = Get-ChildItem godot -Recurse -Filter *win64*.exe | Select-Object -First 1
+          if (-not $exe) { throw 'Godot exe not found after download.' }
+          "GODOT_BIN=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "GODOT_BIN=$($exe.FullName)"
 
-      - name: Install Export Templates (with fallback)
+      - name: Install Export Templates (GitHub Releases)
         shell: pwsh
         run: |
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
           $tpz = "godot/export_templates.tpz"
-          $urls = @(
-            "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_export_templates.tpz",
-            "https://downloads.tuxfamily.org/godotengine/${env:GODOT_VERSION}/Godot_v${env:GODOT_VERSION}-stable_export_templates.tpz"
-          )
-          $ok = $false
-          for ($i=1; $i -le 3 -and -not $ok; $i++) {
-            foreach ($u in $urls) {
-              Write-Host "Attempt #${i}: downloading templates $u"
-              try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $tpz; $ok = $true; break } catch { Write-Warning $_; Start-Sleep -Seconds (3*$i) }
-            }
-          }
-          if (-not $ok) { throw 'Failed to download export templates after retries.' }
+          $u = "https://github.com/godotengine/godot/releases/download/${env:GODOT_VERSION}-stable/Godot_v${env:GODOT_VERSION}-stable_export_templates.tpz"
+          Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $tpz
           $temp = "godot/templates_unpacked"
           Expand-Archive $tpz -DestinationPath $temp -Force
-          $ver = "${env:GODOT_VERSION}.stable.mono"
-          $dst = Join-Path $env:APPDATA ("Godot/templates/$ver")
-          New-Item -ItemType Directory -Force -Path $dst | Out-Null
-          Copy-Item -Recurse -Force "$temp/*" $dst
-          Write-Host "Export templates installed to $dst"
+          $src = Join-Path $temp 'templates'
+          if (Test-Path $src) { $copyFrom = $src } else { $copyFrom = $temp }
+          $verMono = "${env:GODOT_VERSION}.stable.mono"
+          $ver = "${env:GODOT_VERSION}.stable"
+          $dsts = @(
+            (Join-Path $env:APPDATA ("Godot/templates/$verMono")),
+            (Join-Path $env:APPDATA ("Godot/templates/$ver")),
+            (Join-Path $env:APPDATA ("Godot/export_templates/$verMono")),
+            (Join-Path $env:APPDATA ("Godot/export_templates/$ver"))
+          )
+          New-Item -ItemType Directory -Force -Path $dsts | Out-Null
+          foreach ($d in $dsts) { Copy-Item -Recurse -Force "$copyFrom/*" $d }
+          Write-Host ("Templates installed: " + ($dsts -join ', '))
+          $names = @('windows_release_x86_64.exe','windows_debug_x86_64.exe','windows_release_x86_64_console.exe','windows_debug_x86_64_console.exe')
+          $ok = $false
+          foreach ($d in $dsts) { $hit = 0; foreach ($n in $names) { if (Test-Path (Join-Path $d $n)) { $hit++ } } if ($hit -ge 2) { $ok = $true; break } }
+          if (-not $ok) { Write-Warning 'Export templates executables not found in expected dirs.' }
 
       - name: Prewarm & Build Solutions
         continue-on-error: true
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Continue'
           $env:Path = "$HOME\.dotnet;" + $env:Path
           $env:GODOT_DOTNET_CLI = (Get-Command dotnet).Path
-          dotnet --info
           dotnet restore GodotGame.csproj
           dotnet build GodotGame.csproj -c Release -v minimal
-          try { & "$env:GODOT_BIN" --headless --path . --build-solutions --verbose --quit } catch { Write-Warning $_ }
+          try { & "$env:GODOT_BIN" --headless --path . --quit } catch { Write-Warning $_ }
 
-      - name: Cache .dotnet tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\Temp`nuGetScratch
-            ~\.nuget\packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+      - name: Prepare test project link
+        shell: pwsh
+        run: |
+          ./scripts/ci/prepare_gd_tests.ps1 -ProjectPath 'Tests.Godot' -RuntimeDir 'Game.Godot'
 
       - name: Run GdUnit4 tests
         continue-on-error: true
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
-          .\scripts\ci\run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"
+          ./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN" -ProjectPath 'Tests.Godot'
+
+      - name: Verify Base-Clean rules
+        shell: pwsh
+        run: |
+          ./scripts/ci/verify_base_clean.ps1 -RepoRoot '.'
 
       - name: Export Windows build
         if: always()
         shell: pwsh
         run: |
-          .\scripts\ci\export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Preset "Windows Desktop" -Output build\Game.exe
+          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Preset "Windows Desktop" -Output build\Game.exe
 
       - name: Print export log tail (always)
         if: always()
@@ -126,9 +128,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-artifacts
+          name: windows-release
           path: |
-            build\Game.exe
-            logs\ci\**\*
-
-
+            build/Game.exe
+            logs/ci/**

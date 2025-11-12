@@ -1,13 +1,22 @@
-﻿# Phase 6 Quickstart 鈥?Windows-only DB Setup
+# Phase 6 Quickstart — Windows-only DB Setup
 
-鐩爣/Goal
-- 鍦?Windows 鐜涓?Godot + C# 椤圭洰鍑嗗 SQLite 瀛樺偍锛岄伒寰?Phase鈥? 杩佺Щ鏂规銆?
-姝ラ/Steps
-- 瀹夎 godot-sqlite 鎻掍欢锛氬皢瀹樻柟鎻掍欢鏀惧叆 `addons/godot-sqlite/` 骞跺湪 Godot Editor 鈫?Project 鈫?Plugins 鍚敤銆?- 寤鸿鐨勬暟鎹簱璺緞锛歚user://data/game.db`锛堥娆¤繍琛屾椂鑻ヤ笉瀛樺湪锛屽垱寤哄苟鎵ц schema锛夈€?- 鍒濆鍖?Schema锛氫娇鐢?`scripts/db/schema.sql` 浣滀负寤鸿〃鑴氭湰锛堝寘鍚?users/saves/statistics/schema_version/achievements/settings锛夈€?- 鎬ц兘/瀹夊叏寤鸿锛歚PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL`銆?
-浠ｇ爜鎺ュ叆/Code Integration锛堝悗缁級
-- 閫傞厤鍣細`Game.Godot/Adapters/SqliteDataStore.cs`锛堝綋鍓嶄负鍗犱綅锛屽惎鐢ㄦ彃浠跺悗瀵规帴 API锛夈€?- 绔彛锛歚Game.Core/Ports/ISqlDatabase.cs`锛圤pen/Close/Execute/Query/Tx锛夈€?- Autoload锛氫笉寮哄埗锛涘缓璁敱鍦烘櫙鍏ュ彛鎴栨湇鍔″畾浣嶅櫒鎸夐渶鍒涘缓骞舵寔鏈夈€?
-娉ㄦ剰/Notes
-- 鏈ā鏉?Windows鈥憃nly锛涗繚鎸佷笌 Editor 鐨?.NET 鐗堟湰涓€鑷达紙`GodotGame.csproj` Sdk=4.5.x锛夈€?- 鑻ユ湭瀹夎鎻掍欢锛岄€傞厤鍣ㄤ細鎶涘嚭 NotSupportedException锛岃繖鏄鏈熺殑鍗犱綅琛屼负銆?
+## 目标 / Goal
+- 在 Windows 环境为 Godot + C# 项目就绪 SQLite 存储，配合 Phase 6 数据层迁移方案。
+
+## 步骤 / Steps
+- 安装 godot-sqlite 插件：将官方插件放入 `addons/godot-sqlite/`，在 Godot Editor → Project → Plugins 启用。
+- 推荐的数据库路径：`user://data/game.db`（首次运行不存在则创建并执行 schema）。
+- 初始化 Schema：使用 `scripts/db/schema.sql` 作为建表脚本（包含 `users/saves/statistics/schema_version/achievements/settings`）。
+- 性能/安全建议：`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL`。
+
+## 代码接入 / Code Integration（后续）
+- 适配器：`Game.Godot/Adapters/SqliteDataStore.cs`（当前为占位；启用插件后对接 API）。
+- 端口：`Game.Core/Ports/ISqlDatabase.cs`（Open/Close/Execute/Query/Tx）。
+- Autoload：不强制；建议由场景入口或服务定位器按需创建并保持存活。
+
+## 注意 / Notes
+- 本方案为 Windows-only；保持与 Editor 的 .NET 版本一致（例如 `GodotGame.csproj` 目标 SDK 与 Godot 4.5 .NET 对齐）。
+- 若未安装插件，适配器会抛出 `NotSupportedException`，属于预期的占位保护。
 
 ## 导出注意事项 / Export Notes
 
@@ -20,7 +29,6 @@
 
 - 启动时 `Main.gd` 输出：`[DB] opened at user://data/game.db`（成功）或 `open failed: <LastError>`（失败）。
 - 适配器在 Open 时输出后端：`[DB] backend=plugin (godot-sqlite)` 或 `[DB] backend=managed (Microsoft.Data.Sqlite)`。
-
 
 ## Backend 选择 / Backend Override
 

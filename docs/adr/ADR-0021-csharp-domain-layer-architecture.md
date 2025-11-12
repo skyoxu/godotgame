@@ -1,28 +1,8 @@
----
-ADR-ID: ADR-0021
-title: C# Domain Layer Architecture
-status: Accepted
-decision-time: '2025-11-08'
-deciders: [Architecture Team]
-archRefs: [CH04, CH05]
-depends-on: []
-supersedes: []
----
-
 # ADR-0021: C# Domain Layer Architecture
 
-## Context
-Separate core game logic from Godot runtime via a clean domain layer in C#.
+- Status: Proposed
+- Context: Migration Phase-2; CH05 data/ports and CH06 runtime view; enforce testable, engine-agnostic core
+- Decision: Structure Game.Core as pure C# (no Godot dependency), using ports/interfaces (ITime, IInput, IDataStore, ILogger, etc.); inject adapters from Game.Godot; keep events/DTO/contracts under Scripts/Core/Contracts/** as SSoT
+- Consequences: Faster TDD cycles; deterministic unit tests; clear boundaries for adapters; scene glue remains thin
+- References: docs/migration/Phase-4-Domain-Layer.md, docs/migration/Phase-5-Adapter-Layer.md, docs/architecture/base/05-data-models-and-storage-ports-v2.md
 
-## Decision
-- Projects: `Game.Core` (pure C#), `Game.Core.Tests` (xUnit).
-- Structure: Domain (Entities, ValueObjects), Services, Interfaces (ports).
-- Adapters: Godot-facing layer implements ports (time, input, resource load).
-- Testing: domain covered by xUnit; adapters by xUnit with fakes.
-
-## Consequences
-- Positive: deterministic tests; portability; clearer seams for AI-assisted code.
-- Negative: extra adapter code; discipline to avoid Godot leakage into domain.
-
-## References
-- Ports & Adapters pattern

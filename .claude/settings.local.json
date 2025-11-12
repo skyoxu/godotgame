@@ -24,7 +24,15 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(py -3 -m pip show chardet)",
+      "Bash(py -3 -m pip install:*)",
+      "Bash(py -3 scripts\\ci\\convert_to_utf8.py:*)",
+      "Bash(py -3 scripts/ci/convert_to_utf8.py:*)",
+      "Bash(py -3:*)",
+      "Bash(dir:*)",
+      "Bash(xcopy:*)",
+      "Bash(iconv:*)"
     ],
     "deny": [],
     "ask": []

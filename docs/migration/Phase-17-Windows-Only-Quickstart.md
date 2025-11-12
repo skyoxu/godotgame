@@ -1,20 +1,39 @@
-﻿# Phase 17 闄勫綍锛歐indows-only 蹇€熸寚寮曪紙鏈粨搴撴ā鏉匡級
+# Phase 17 快速上手 — Windows-only（最终交付）
 
-1) 鏈湴杩愯涓庢祴璇?- 璁剧疆 PATH锛堝綋鍓嶄細璇濓級: `$env:Path = "$env:USERPROFILE\.dotnet;" + $env:Path`锛圙odot .NET 鏋勫缓闇€瑕侊級
-- 杩愯 GdUnit4 娴嬭瘯: `./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"`
-- 杩愯婕旂ず鍦烘櫙锛堥潪 headless锛? `"$env:GODOT_BIN" --path . --scene "res://Game.Godot/Scenes/Main.tscn"`
+本页提供在 Windows 环境下“本地运行/测试/导出/CI”的最小可行指引，配合 Phase‑16（可观测性）、Phase‑17（构建与导出）、Phase‑18（分阶段发布）形成闭环。
 
-2) 瀵煎嚭 Windows 鍙墽琛?- 棰勮: `export_presets.cfg` 宸插寘鍚?鈥淲indows Desktop鈥濓紝杈撳嚭鍒?`build/Game.exe`
-- 鍛戒护: `./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe`
-- 鎻愮ず: 闇€鍦?Godot Editor 涓畨瑁?Windows 瀵煎嚭妯℃澘锛圗ditor 鈫?Export 鈫?Manage Export Templates锛?
-3) CI锛圙itHub Actions / Windows锛?- 宸ヤ綔娴? `.github/workflows/windows-ci.yml`
-- 姝ラ: 瀹夎 .NET 鈫?涓嬭浇 Godot .NET 鈫?杩愯 GdUnit4 鈫?瀵煎嚭 .exe 鈫?涓婁紶 `build/Game.exe` 涓?`logs/ci/**`
+## 1) 本地运行与测试（Windows）
+- 环境变量（必要时，确保 .NET CLI 在 PATH 前缀）
+  - PowerShell: `$env:Path = "$env:USERPROFILE\.dotnet;" + $env:Path`
+- 运行 GdUnit4 测试（headless）
+  - `./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"`
+- 运行演示场景（非 headless）
+  - `"$env:GODOT_BIN" --path . --scene "res://Game.Godot/Scenes/Main.tscn"`
 
-4) 璺緞涓庢敞鎰忎簨椤?- `user://` 鏄犲皠: `%APPDATA%\Godot\app_userdata\<椤圭洰鍚?`锛堥」鐩悕鍙栬嚜 `project.godot` 鐨?`application/config/name`锛?- Headless 鎻愮ず: UI/闊抽鍦?headless 涓嬩笉绋冲畾锛岄€傞厤灞傛祴璇曚紭鍏?DataStore/ResourceLoader/浜嬩欢淇″彿
-- Autoload 鍗曚緥: 宸插湪 `project.godot` 娉ㄥ唽 `EventBus/DataStore/Logger/Audio/Time/Input`锛屽満鏅腑鍙€氳繃 `/root/<Name>` 璁块棶
+## 2) 导出 Windows 可执行
+- 预设：`export_presets.cfg` 已包含 “Windows Desktop”，输出 `build/Game.exe`
+- 命令：
+  - `./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe`
+- 模板：需在 Godot Editor 安装 Windows Export Templates（Editor → Export → Manage Export Templates）
 
-Commands (Windows-only):
-- Test: `.\\scripts\\test.ps1 -GodotBin "$env:GODOT_BIN"`
-- Export: `.\\scripts\\ci\\export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\\Game.exe`
-- Smoke (headless): `.\\scripts\\ci\\smoke_headless.ps1 -GodotBin "$env:GODOT_BIN"`
-- Smoke (exe): `.\\scripts\\ci\\smoke_exe.ps1 -ExePath build\\Game.exe`
+## 3) CI（GitHub Actions / Windows）
+- 工作流：`.github/workflows/windows-ci.yml`
+- 步骤概览：安装 .NET → 下载 Godot .NET → 运行 GdUnit4 → 导出 .exe → 上传 `build/Game.exe` 与 `logs/ci/**`
+- 轻量导出流（可选）：`.github/workflows/windows-export-slim.yml`
+
+## 4) 路径与注意事项
+- `user://` 映射：`%APPDATA%\Godot\app_userdata\<项目名>`（项目名来自 `project.godot` 的 `application/config/name`）
+- Headless 提示：UI/音频在 headless 下不稳定；优先验证 DataStore/ResourceLoader/Signals
+- Autoload 单例：`project.godot` 已注册 `EventBus / DataStore / Logger / Audio / Time / Input`，在场景中可通过 `/root/<Name>` 访问
+
+## 5) 常用命令（Windows-only）
+- 测试：`.\scripts\ci\run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"`
+- 导出：`.\scripts\ci\export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Output build\Game.exe`
+- 烟测（headless）：`.\scripts\ci\smoke_headless.ps1 -GodotBin "$env:GODOT_BIN"`
+- 烟测（exe）：`.\scripts\ci\smoke_exe.ps1 -ExePath build\Game.exe`
+
+## 6) 与相关 Phase 的衔接
+- Phase‑16（可观测性与发布健康）：建议在构建产物中启用 Sentry Releases + Sessions，CI 校验 Crash‑Free 指标
+- Phase‑17（构建与导出）：详见 `Phase-17-Build-System-and-Godot-Export.md` 与 `Phase-17-Export-Checklist.md`，本页为最小跑通版
+- Phase‑18（分阶段发布/金丝雀）：结合导出产物与 Release Health，在 Canary/Beta/Stable 分阶段推进
+

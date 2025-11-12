@@ -40,3 +40,25 @@ tmp/
 **/obj/
 .vs/
 TestResults/
+
+# Local .NET SDK/runtime placed in repo (should not be versioned)
+.dotnet/
+
+# IDE/editor caches (keep project configs if any are explicitly added elsewhere)
+.idea/
+.vscode/
+
+# Windows/macOS system files
+Thumbs.db
+.DS_Store
+
+# Common local user files
+*.user
+*.suo
+
+# Debug symbols/build outputs not meant for VCS
+*.pdb
+
+# Godot editor binaries/downloads (keep project assets only)
+Godot_v*.exe
+Godot_*.zip

@@ -1,4 +1,4 @@
-﻿# Phase 18: Staged Release & Canary Strategy（模板最小集）
+# Phase 18: Staged Release & Canary Strategy（模板最小集）
 ## Goals
 
 - Keep Windows-only packaging simple and repeatable with staged rollout.
@@ -53,3 +53,4 @@
 
 - Windows-only 模板不包含商店分发；假定人工或内部分发渠道。
 - 代码签名建议单独配置，在导出后执行签名脚本。
+

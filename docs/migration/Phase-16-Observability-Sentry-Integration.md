@@ -1,208 +1,213 @@
-﻿# Phase 16: 可观测性与 Sentry 集成（模板最小集）
+# Phase 16: 可观测性与 Sentry 集成
 
-> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n
+> **核心目标**：完整集成 Sentry Godot SDK，建立发布健康门禁，实现结构化日志与错误追踪的自动化体系。
+> **工作量**：4-5 人天
+> **依赖**：Phase 8（场景设计）、Phase 12（Headless 烟测）、Phase 13（质量门禁）、Phase 15（性能基准）
+> **交付物**：Observability.cs Autoload + 3 个门禁脚本 + 结构化日志规范 + CI 集成 + 隐私合规文档
+> **验收标准**：本地 `npm run test:observability` 通过 + Release 创建与上报成功 + 发布健康门禁生效
+
 ---
 
-## 1. 鑳屾櫙涓庡姩鏈?
+## 1. 背景与动机
 
-### 鍘熺増锛坴itegame锛夊彲瑙傛祴鎬?
+### 原版（vitegame）可观测性
 
-**Electron + Sentry**锛?
-- Sentry 鍒濆鍖栧湪涓昏繘绋嬩笌娓叉煋杩涚▼
-- Release 鏍囩鍖栵紙git commit sha锛?
-- 鑷姩鎹曡幏鏈鐞嗗紓甯镐笌 Promise rejection
-- Session 杩借釜锛堢敤鎴蜂細璇濄€佸穿婧冩鏁帮級
-- Breadcrumb 璁板綍锛堢敤鎴锋搷浣滆冻杩癸級
+**Electron + Sentry**：
+- Sentry 初始化在主进程与渲染进程
+- Release 标签化（git commit sha）
+- 自动捕获未处理异常与 Promise rejection
+- Session 追踪（用户会话、崩溃次数）
+- Breadcrumb 记录（用户操作足迹）
 
-**鎸囨爣**锛?
-- Crash-Free Sessions 鈮?99.5%锛堝彂甯冮棬绂侊級
-- Error Rate 鈮?0.1%锛堝憡璀﹂槇鍊硷級
+**指标**：
+- Crash-Free Sessions ≥ 99.5%（发布门禁）
+- Error Rate ≤ 0.1%（告警阈值）
 
-### 鏂扮増锛坓odotgame锛夊彲瑙傛祴鎬ф満閬囦笌鎸戞垬
+### 新版（godotgame）可观测性机遇与挑战
 
-**鏈洪亣**锛?
-- Godot 4.5 瀹樻柟鏀寔 Sentry SDK锛圢ative C#锛?
-- C# 鏋勫缓淇℃伅鍙紪璇戣繘鐗堟湰鍙凤紙鏇寸簿纭殑婧簮锛?
-- GDScript 閿欒鎹曟崏鍙€氳繃 Signals 涓灑鍖栧鐞?
-- Release Health API 鏀寔鎬ц兘鎸囨爣涓婃姤锛堜笌 Phase 15 鑱斿姩锛?
+**机遇**：
+- Godot 4.5 官方支持 Sentry SDK（Native C#）
+- C# 构建信息可编译进版本号（更精确的溯源）
+- GDScript 错误捕捉可通过 Signals 中枢化处理
+- Release Health API 支持性能指标上报（与 Phase 15 联动）
 
-**鎸戞垬**锛?
-| 鎸戞垬 | 鍘熷洜 | Godot 瑙ｅ喅鏂规 |
+**挑战**：
+| 挑战 | 原因 | Godot 解决方案 |
 |-----|-----|--------------|
-| 鍙岃瑷€鏃ュ織 | C# + GDScript | 缁熶竴鏃ュ織鎺ュ彛锛圤bservability.cs锛?|
-| 闅愮鑴辨晱 | PII 娣峰叆鏃ュ織 | 浜嬩欢鍓嶇疆澶勭悊閽╁瓙锛圔efore Send锛?|
-| 鍙戝竷绠＄悊 | 鐗堟湰涓庢瀯寤哄垎绂?| 鏋勫缓鑴氭湰鑷姩鐢熸垚 Release 鍏冩暟鎹?|
-| 绂荤嚎鏃ュ織 | 鏃犵綉缁滄椂涓㈠け | 鏈湴闃熷垪锛圫QLite 澶囦唤锛?|
-| 鎬ц兘寮€閿€ | SDK 鍒濆鍖?閲囨牱 | 鍔ㄦ€侀噰鏍风巼锛堢嚎涓?1%锛孌ev 100%锛?|
+| 双语言日志 | C# + GDScript | 统一日志接口（Observability.cs） |
+| 隐私脱敏 | PII 混入日志 | 事件前置处理钩子（Before Send） |
+| 发布管理 | 版本与构建分离 | 构建脚本自动生成 Release 元数据 |
+| 离线日志 | 无网络时丢失 | 本地队列（SQLite 备份） |
+| 性能开销 | SDK 初始化/采样 | 动态采样率（线上 1%，Dev 100%） |
 
-### 鍙娴嬫€х殑浠峰€?
+### 可观测性的价值
 
-1. **蹇€熼棶棰樺畾浣?*锛氶敊璇彂鐢熸椂鑷姩鎹曡幏鍫嗘爤銆佽澶囦俊鎭€佺敤鎴锋搷浣滈摼璺?
-2. **璐ㄩ噺闂ㄧ**锛欳rash-Free Sessions 涓?Release Health 闃绘柇涓嶅悎鏍肩増鏈彂甯?
-3. **鐢ㄦ埛浣撻獙娲炲療**锛氭€ц兘鏁版嵁 + 閿欒鐜?+ 浼氳瘽闀垮害 鈫?鍙戠幇浜у搧鐡堕
-4. **浜嬪悗杩借矗**锛氬畬鏁寸殑 Breadcrumb + Session 閲嶇幇鐢ㄦ埛琛屼负
-
----
-
-## 2. 鍙娴嬫€т綋绯诲畾涔?
-
-### 2.1 涓夊眰鍙娴嬫€ф灦鏋?
-
-```
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?                   Sentry Cloud Platform                   鈹?
-鈹? - Issue 鑱氬悎涓庡幓閲?                                       鈹?
-鈹? - Release Health 浠〃鏉?                                  鈹?
-鈹? - 鍛婅瑙勫垯涓庨€氱煡                                          鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?        Observability.cs Autoload锛圙odot 灞傦級             鈹?
-鈹? - Sentry SDK 缁熶竴鍒濆鍖栦笌閰嶇疆                             鈹?
-鈹? - 缁撴瀯鍖栨棩蹇楁帴鍙ｏ紙debug/info/warning/error锛?             鈹?
-鈹? - Session 绠＄悊锛堢敤鎴蜂細璇濄€佺増鏈叧鑱旓級                      鈹?
-鈹? - Breadcrumb 璁板綍锛圫cene 鍒囨崲銆丼ignal銆丄PI 璋冪敤锛?       鈹?
-鈹? - Before Send Hook锛圥II 鑴辨晱銆佷簨浠惰繃婊わ級                 鈹?
-鈹? - 鍔ㄦ€侀噰鏍凤紙Dev 100%, Prod 1-10%锛?                     鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-        鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-        鈹?             鈹?             鈹?
-        鈻?             鈻?             鈻?
-     C# 灞?         GDScript 灞?    鏁版嵁搴撳眰
-  (Game.Core)     (鍦烘櫙銆佷俊鍙?    (SQLite 闃熷垪)
-  - 寮傚父鎹曟崏      - Signal 鎺ユ敹  - 绂荤嚎澶囦唤
-  - 鎬ц兘鎸囨爣      - 鐢ㄦ埛鎿嶄綔    - 鎵归噺涓婃姤
-  - API 閿欒      - 鍦烘櫙鍔犺浇
-```
-
-### 2.2 鏍稿績鎸囨爣瀹氫箟
-
-#### A. 閿欒涓庡紓甯?
-
-| 鎸囨爣 | 瀹氫箟 | 闃堝€?| 璇存槑 |
-|-----|------|------|------|
-| **Crash-Free Sessions** | 鏈彂鐢熷穿婧冪殑浼氳瘽鍗犳瘮 | 鈮?9.5% | 鍙戝竷闂ㄧ锛?4h 绐楀彛锛?|
-| **Error Rate** | 閿欒鏁?/ 鎬昏姹傛暟 | 鈮?.1% | 鍛婅闃堝€?|
-| **Critical Errors** | 鑷村懡閿欒鏁帮紙P0锛?| 0 | 绔嬪嵆鍛婅 |
-| **Unhandled Exceptions** | 鏈崟鎹夊紓甯告暟 | 鈮?/1000 | 鎬ц兘鍩虹嚎 |
-
-#### B. 鍙戝竷鍋ュ悍
-
-| 鎸囨爣 | 瀹氫箟 | 闃堝€?| 璇存槑 |
-|-----|------|------|------|
-| **Crash-Free Users** | 鏈彂鐢熷穿婧冪殑鐢ㄦ埛鍗犳瘮 | 鈮?9.0% | 鐢ㄦ埛缁村害 |
-| **Session Duration** | 骞冲潎浼氳瘽鏃堕暱 | 鈮?min | 鐢ㄦ埛绮樻€ф寚鏍?|
-| **Affected Users** | 鍙楀奖鍝嶇敤鎴锋暟 | 鈮?% | 閿欒褰卞搷鑼冨洿 |
-| **Release Health** | 缁煎悎鍋ュ悍璇勫垎 | 鈮?5% | 澶氱淮搴﹀姞鏉?|
-
-#### C. 鎬ц兘涓庤祫婧?
-
-| 鎸囨爣 | 瀹氫箟 | 闃堝€?| 璇存槑 |
-|-----|------|------|------|
-| **P95 Frame Time** | 甯ф椂闂?95 鍒嗕綅 | 鈮?6.67ms | 涓?Phase 15 鑱斿姩 |
-| **Memory Peak** | 宄板€煎唴瀛樺崰鐢?| 鈮?00MB | 涓?Phase 15 鑱斿姩 |
-| **Startup Time** | 搴旂敤鍚姩鏃堕棿 | 鈮?.0s | 涓?Phase 15 鑱斿姩 |
-| **API Latency** | API 璋冪敤寤惰繜 P95 | 鈮?00ms | 缃戠粶鎬ц兘 |
-
-#### D. 缁撴瀯鍖栨棩蹇楃淮搴?
-
-| 缁村害 | 绫诲瀷 | 鏍蜂緥 | 鐢ㄩ€?|
-|-----|------|------|------|
-| **logger** | string | `game.core`, `ui.menu`, `database` | 鏃ュ織鏉ユ簮 |
-| **level** | enum | `debug`, `info`, `warning`, `error` | 涓ラ噸绾у埆 |
-| **tags** | dict | `{"user_id": "usr_123", "scene": "MainScene"}` | 涓婁笅鏂囧叧鑱?|
-| **extra** | dict | `{"query_time_ms": 45, "row_count": 100}` | 琛ュ厖淇℃伅 |
-| **breadcrumbs** | array | `[{"action": "button_click", "timestamp": ...}]` | 鎿嶄綔閾捐矾 |
+1. **快速问题定位**：错误发生时自动捕获堆栈、设备信息、用户操作链路
+2. **质量门禁**：Crash-Free Sessions 与 Release Health 阻断不合格版本发布
+3. **用户体验洞察**：性能数据 + 错误率 + 会话长度 → 发现产品瓶颈
+4. **事后追责**：完整的 Breadcrumb + Session 重现用户行为
 
 ---
 
-## 3. 鏋舵瀯璁捐
+## 2. 可观测性体系定义
 
-### 3.1 鍒嗗眰闆嗘垚鏋舵瀯
+### 2.1 三层可观测性架构
 
 ```
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?     GitHub Actions CI/CD 鍙戝竷宸ヤ綔娴?                   鈹?
-鈹? - 鐢熸垚 Release 鍏冩暟鎹紙鐗堟湰銆佹瀯寤?hash锛?             鈹?
-鈹? - 閮ㄧ讲鍓嶆鏌?Crash-Free Sessions 鈮?9.5%              鈹?
-鈹? - 澶辫触鑷姩鍥炴粴                                         鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                         鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?   Observability.cs Autoload锛堝垵濮嬪寲涓庡鎵橈級            鈹?
-鈹? - Sentry.init(dsn, release, environment)              鈹?
-鈹? - Before Send Hook锛堜簨浠惰繃婊や笌鑴辨晱锛?                 鈹?
-鈹? - Breadcrumb 鎷︽埅鍣紙鑷姩璁板綍锛?                      鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                         鈹?
-        鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-        鈹?               鈹?               鈹?
-        鈻?               鈻?               鈻?
-   搴旂敤灞傛棩蹇?     鎬ц兘鏁版嵁涓婃姤       閿欒鎹曟崏
+┌───────────────────────────────────────────────────────────┐
+│                    Sentry Cloud Platform                   │
+│  - Issue 聚合与去重                                        │
+│  - Release Health 仪表板                                   │
+│  - 告警规则与通知                                          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│         Observability.cs Autoload（Godot 层）             │
+│  - Sentry SDK 统一初始化与配置                             │
+│  - 结构化日志接口（debug/info/warning/error）              │
+│  - Session 管理（用户会话、版本关联）                      │
+│  - Breadcrumb 记录（Scene 切换、Signal、API 调用）        │
+│  - Before Send Hook（PII 脱敏、事件过滤）                 │
+│  - 动态采样（Dev 100%, Prod 1-10%）                      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+     C# 层          GDScript 层     数据库层
+  (Game.Core)     (场景、信号)    (SQLite 队列)
+  - 异常捕捉      - Signal 接收  - 离线备份
+  - 性能指标      - 用户操作    - 批量上报
+  - API 错误      - 场景加载
+```
+
+### 2.2 核心指标定义
+
+#### A. 错误与异常
+
+| 指标 | 定义 | 阈值 | 说明 |
+|-----|------|------|------|
+| **Crash-Free Sessions** | 未发生崩溃的会话占比 | ≥99.5% | 发布门禁（24h 窗口） |
+| **Error Rate** | 错误数 / 总请求数 | ≤0.1% | 告警阈值 |
+| **Critical Errors** | 致命错误数（P0） | 0 | 立即告警 |
+| **Unhandled Exceptions** | 未捕捉异常数 | ≤1/1000 | 性能基线 |
+
+#### B. 发布健康
+
+| 指标 | 定义 | 阈值 | 说明 |
+|-----|------|------|------|
+| **Crash-Free Users** | 未发生崩溃的用户占比 | ≥99.0% | 用户维度 |
+| **Session Duration** | 平均会话时长 | ≥2min | 用户粘性指标 |
+| **Affected Users** | 受影响用户数 | ≤1% | 错误影响范围 |
+| **Release Health** | 综合健康评分 | ≥95% | 多维度加权 |
+
+#### C. 性能与资源
+
+| 指标 | 定义 | 阈值 | 说明 |
+|-----|------|------|------|
+| **P95 Frame Time** | 帧时间 95 分位 | ≤16.67ms | 与 Phase 15 联动 |
+| **Memory Peak** | 峰值内存占用 | ≤300MB | 与 Phase 15 联动 |
+| **Startup Time** | 应用启动时间 | ≤3.0s | 与 Phase 15 联动 |
+| **API Latency** | API 调用延迟 P95 | ≤500ms | 网络性能 |
+
+#### D. 结构化日志维度
+
+| 维度 | 类型 | 样例 | 用途 |
+|-----|------|------|------|
+| **logger** | string | `game.core`, `ui.menu`, `database` | 日志来源 |
+| **level** | enum | `debug`, `info`, `warning`, `error` | 严重级别 |
+| **tags** | dict | `{"user_id": "usr_123", "scene": "MainScene"}` | 上下文关联 |
+| **extra** | dict | `{"query_time_ms": 45, "row_count": 100}` | 补充信息 |
+| **breadcrumbs** | array | `[{"action": "button_click", "timestamp": ...}]` | 操作链路 |
+
+---
+
+## 3. 架构设计
+
+### 3.1 分层集成架构
+
+```
+┌────────────────────────────────────────────────────────┐
+│      GitHub Actions CI/CD 发布工作流                    │
+│  - 生成 Release 元数据（版本、构建 hash）              │
+│  - 部署前检查 Crash-Free Sessions ≥99.5%              │
+│  - 失败自动回滚                                         │
+└────────────────────────┬─────────────────────────────────┘
+                         │
+┌────────────────────────▼─────────────────────────────────┐
+│    Observability.cs Autoload（初始化与委托）            │
+│  - Sentry.init(dsn, release, environment)              │
+│  - Before Send Hook（事件过滤与脱敏）                  │
+│  - Breadcrumb 拦截器（自动记录）                       │
+└────────────────────────┬─────────────────────────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+        ▼                ▼                ▼
+   应用层日志      性能数据上报       错误捕捉
    (Observability  (Phase 15          (try/catch
     .log_info)     PerformanceTracker)  + Signal)
-        鈹?               鈹?               鈹?
-        鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                         鈹?
-                         鈻?
-            鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-            鈹? SQLite 鏈湴闃熷垪        鈹?
-            鈹? 锛堢绾垮浠斤級          鈹?
-            鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                             鈹?
-                    鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                    鈹? Sentry Cloud   鈹?
-                    鈹? 锛堟壒閲忎笂鎶ワ級   鈹?
-                    鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                         ▼
+            ┌────────────────────────┐
+            │  SQLite 本地队列        │
+            │  （离线备份）          │
+            └────────────────┬───────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Sentry Cloud   │
+                    │  （批量上报）   │
+                    └─────────────────┘
 ```
 
-### 3.2 鐩綍缁撴瀯
+### 3.2 目录结构
 
 ```
 godotgame/
-鈹溾攢鈹€ src/
-鈹?  鈹溾攢鈹€ Game.Core/
-鈹?  鈹?  鈹溾攢鈹€ Observability/
-鈹?  鈹?  鈹?  鈹溾攢鈹€ ObservabilityClient.cs           鈽?Sentry SDK 鍖呰
-鈹?  鈹?  鈹?  鈹溾攢鈹€ StructuredLogger.cs              鈽?缁撴瀯鍖栨棩蹇楁帴鍙?
-鈹?  鈹?  鈹?  鈹溾攢鈹€ ReleaseHealthGate.cs             鈽?鍙戝竷鍋ュ悍妫€鏌?
-鈹?  鈹?  鈹?  鈹斺攢鈹€ PiiDataScrubber.cs               鈽?PII 鑴辨晱
-鈹?  鈹?  鈹?
-鈹?  鈹?  鈹斺攢鈹€ Offline/
-鈹?  鈹?      鈹斺攢鈹€ OfflineEventQueue.cs             鈽?绂荤嚎闃熷垪锛圫QLite锛?
-鈹?  鈹?
-鈹?  鈹斺攢鈹€ Godot/
-鈹?      鈹溾攢鈹€ Observability.cs                     鈽?Autoload 鍏ュ彛
-鈹?      鈹溾攢鈹€ BreadcrumbRecorder.cs                鈽?鎿嶄綔璁板綍
-鈹?      鈹斺攢鈹€ SessionManager.cs                    鈽?浼氳瘽绠＄悊
-鈹?
-鈹溾攢鈹€ scripts/
-鈹?  鈹溾攢鈹€ release_health_gate.py                   鈽?鍙戝竷鍋ュ悍闂ㄧ鑴氭湰
-鈹?  鈹溾攢鈹€ generate_release_metadata.py             鈽?Release 鍏冩暟鎹敓鎴?
-鈹?  鈹斺攢鈹€ upload_sourcemaps.py                     鈽?婧愮爜鏄犲皠涓婁紶
-鈹?
-鈹溾攢鈹€ config/
-鈹?  鈹斺攢鈹€ sentry_config.json                       鈽?Sentry 閰嶇疆鏂囦欢
-鈹?
-鈹斺攢鈹€ docs/
-    鈹溾攢鈹€ logging-guidelines.md                    鈽?鏃ュ織浣跨敤瑙勮寖
-    鈹斺攢鈹€ privacy-compliance.md                    鈽?闅愮涓庡悎瑙勬枃妗?
+├── src/
+│   ├── Game.Core/
+│   │   ├── Observability/
+│   │   │   ├── ObservabilityClient.cs           ★ Sentry SDK 包装
+│   │   │   ├── StructuredLogger.cs              ★ 结构化日志接口
+│   │   │   ├── ReleaseHealthGate.cs             ★ 发布健康检查
+│   │   │   └── PiiDataScrubber.cs               ★ PII 脱敏
+│   │   │
+│   │   └── Offline/
+│   │       └── OfflineEventQueue.cs             ★ 离线队列（SQLite）
+│   │
+│   └── Godot/
+│       ├── Observability.cs                     ★ Autoload 入口
+│       ├── BreadcrumbRecorder.cs                ★ 操作记录
+│       └── SessionManager.cs                    ★ 会话管理
+│
+├── scripts/
+│   ├── release_health_gate.py                   ★ 发布健康门禁脚本
+│   ├── generate_release_metadata.py             ★ Release 元数据生成
+│   └── upload_sourcemaps.py                     ★ 源码映射上传
+│
+├── config/
+│   └── sentry_config.json                       ★ Sentry 配置文件
+│
+└── docs/
+    ├── logging-guidelines.md                    ★ 日志使用规范
+    └── privacy-compliance.md                    ★ 隐私与合规文档
 ```
 
 ---
 
-## 4. 鏍稿績瀹炵幇
+## 4. 核心实现
 
-### 4.1 ObservabilityClient.cs锛圕# Sentry 鍖呰锛?
+### 4.1 ObservabilityClient.cs（C# Sentry 包装）
 
-**鑱岃矗**锛?
-- Sentry SDK 鍒濆鍖栦笌鐢熷懡鍛ㄦ湡绠＄悊
-- Release 鍏冩暟鎹厤缃?
-- Before Send Hook锛堜簨浠惰繃婊や笌鑴辨晱锛?
-- 鎬ц兘鎸囨爣涓婃姤
+**职责**：
+- Sentry SDK 初始化与生命周期管理
+- Release 元数据配置
+- Before Send Hook（事件过滤与脱敏）
+- 性能指标上报
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 using System;
@@ -214,8 +219,8 @@ using Sentry.Protocol;
 namespace Game.Core.Observability
 {
     /// <summary>
-    /// Sentry 鍙娴嬫€у鎴风鍖呰
-    /// 缁熶竴鍒濆鍖栥€侀厤缃€佷簨浠朵笂鎶ユ帴鍙?
+    /// Sentry 可观测性客户端包装
+    /// 统一初始化、配置、事件上报接口
     /// </summary>
     public class ObservabilityClient : IDisposable
     {
@@ -234,44 +239,44 @@ namespace Game.Core.Observability
         {
             SentrySdk.Init(options =>
             {
-                // 鍩烘湰閰嶇疆
+                // 基本配置
                 options.Dsn = _config.SentryDsn;
                 options.Environment = _config.Environment; // "dev" | "staging" | "prod"
                 options.Release = _config.Release; // e.g., "godotgame@1.0.0+build.123"
 
-                // 浼氳瘽杩借釜锛圧elease Health锛?
+                // 会话追踪（Release Health）
                 options.AutoSessionTracking = true;
                 options.SessionSampleRate = _config.SessionSampleRate; // Dev: 1.0, Prod: 0.1
 
-                // 鎬ц兘鐩戞帶锛堥噰鏍凤級
+                // 性能监控（采样）
                 options.TracesSampleRate = _config.TracesSampleRate; // Dev: 1.0, Prod: 0.01
                 options.ProfilesSampleRate = _config.ProfilesSampleRate; // Dev: 0.1, Prod: 0.01
 
-                // 浜嬩欢鍓嶇疆澶勭悊锛圥II 鑴辨晱銆佽繃婊わ級
+                // 事件前置处理（PII 脱敏、过滤）
                 options.BeforeSend = (sentryEvent, hint) =>
                 {
-                    // 鑴辨晱 PII锛坋mail銆乸hone銆両P锛?
+                    // 脱敏 PII（email、phone、IP）
                     _scrubber.ScrubEvent(sentryEvent);
 
-                    // 杩囨护鐗瑰畾閿欒锛堝搴撶増鏈鍛婏級
+                    // 过滤特定错误（如库版本警告）
                     if (_ShouldFilterEvent(sentryEvent, hint))
                         return null;
 
-                    // 娣诲姞鑷畾涔変笂涓嬫枃
+                    // 添加自定义上下文
                     sentryEvent.Tags["platform"] = "godot";
                     sentryEvent.Tags["version"] = _config.Release;
 
                     return sentryEvent;
                 };
 
-                // Breadcrumb 澶勭悊
+                // Breadcrumb 处理
                 options.BeforeBreadcrumb = (breadcrumb, hint) =>
                 {
-                    // 杩囨护鏁忔劅 Breadcrumb锛堝瀵嗛挜鍦?URL 涓級
+                    // 过滤敏感 Breadcrumb（如密钥在 URL 中）
                     if (breadcrumb.Message?.Contains("password") == true)
                         return null;
 
-                    // 闄愬埗 Breadcrumb 鏁伴噺锛堥槻姝㈠唴瀛樻孩鍑猴級
+                    // 限制 Breadcrumb 数量（防止内存溢出）
                     return breadcrumb;
                 };
             });
@@ -280,7 +285,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 鎹曟崏寮傚父骞剁珛鍗充笂鎶?
+        /// 捕捉异常并立即上报
         /// </summary>
         public void CaptureException(Exception ex, Dictionary<string, object> extras = null)
         {
@@ -297,7 +302,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 璁板綍缁撴瀯鍖栨棩蹇椾簨浠?
+        /// 记录结构化日志事件
         /// </summary>
         public void LogEvent(string level, string message, Dictionary<string, object> tags = null,
             Dictionary<string, object> extras = null)
@@ -309,7 +314,7 @@ namespace Game.Core.Observability
                 Timestamp = DateTimeOffset.UtcNow
             };
 
-            // 娣诲姞鏍囩
+            // 添加标签
             if (tags != null)
             {
                 foreach (var (key, value) in tags)
@@ -318,7 +323,7 @@ namespace Game.Core.Observability
                 }
             }
 
-            // 娣诲姞棰濆淇℃伅
+            // 添加额外信息
             if (extras != null)
             {
                 foreach (var (key, value) in extras)
@@ -331,7 +336,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 璁板綍 Breadcrumb锛堢敤鎴锋搷浣滆冻杩癸級
+        /// 记录 Breadcrumb（用户操作足迹）
         /// </summary>
         public void RecordBreadcrumb(string category, string message,
             BreadcrumbLevel level = BreadcrumbLevel.Info, Dictionary<string, string> data = null)
@@ -346,7 +351,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 娣诲姞鑷畾涔変笂涓嬫枃锛堢敤鎴蜂俊鎭€佽澶囩瓑锛?
+        /// 添加自定义上下文（用户信息、设备等）
         /// </summary>
         public void SetUserContext(string userId, string email = null, string username = null)
         {
@@ -362,7 +367,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 涓婃姤鎬ц兘鎸囨爣锛堜笌 Phase 15 鑱斿姩锛?
+        /// 上报性能指标（与 Phase 15 联动）
         /// </summary>
         public void ReportPerformanceMetric(string metricName, long valueUs)
         {
@@ -374,8 +379,8 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 鍒锋柊浠讳綍寰呭鐞嗕簨浠跺苟绛夊緟 Sentry 搴旂瓟
-        /// 锛堝簲鍦ㄥ簲鐢ㄥ叧闂墠璋冪敤锛?
+        /// 刷新任何待处理事件并等待 Sentry 应答
+        /// （应在应用关闭前调用）
         /// </summary>
         public void Close(TimeSpan? timeout = null)
         {
@@ -387,7 +392,7 @@ namespace Game.Core.Observability
             Close();
         }
 
-        // ======== 绉佹湁杈呭姪鏂规硶 ========
+        // ======== 私有辅助方法 ========
 
         private SentryLevel _ParseLogLevel(string level)
         {
@@ -404,11 +409,11 @@ namespace Game.Core.Observability
 
         private bool _ShouldFilterEvent(SentryEvent sentryEvent, SentryHint hint)
         {
-            // 杩囨护绀轰緥锛氬拷鐣ュ簱鐗堟湰璀﹀憡
+            // 过滤示例：忽略库版本警告
             if (sentryEvent.Message?.Contains("deprecated") == true)
                 return true;
 
-            // 杩囨护缃戠粶瓒呮椂閿欒锛堝彲閲嶈瘯锛屼笉褰卞搷鍋ュ悍搴︼級
+            // 过滤网络超时错误（可重试，不影响健康度）
             if (hint.OriginalException is TimeoutException)
                 return _config.FilterNetworkTimeouts;
 
@@ -417,7 +422,7 @@ namespace Game.Core.Observability
     }
 
     /// <summary>
-    /// Sentry 閰嶇疆瀵硅薄
+    /// Sentry 配置对象
     /// </summary>
     public class ObservabilityConfig
     {
@@ -425,21 +430,21 @@ namespace Game.Core.Observability
         public string Environment { get; set; } // "dev" | "staging" | "prod"
         public string Release { get; set; } // e.g., "godotgame@1.0.0+build.123"
 
-        // 閲囨牱鐜囷紙0.0-1.0锛?
+        // 采样率（0.0-1.0）
         public double SessionSampleRate { get; set; } = 1.0; // Dev: 1.0, Prod: 0.1
         public double TracesSampleRate { get; set; } = 0.1; // Dev: 1.0, Prod: 0.01
         public double ProfilesSampleRate { get; set; } = 0.1; // Dev: 0.1, Prod: 0.01
 
-        // 杩囨护閫夐」
+        // 过滤选项
         public bool FilterNetworkTimeouts { get; set; } = true;
 
-        // PII 鑴辨晱
+        // PII 脱敏
         public bool ScrubbingEnabled { get; set; } = true;
     }
 }
 ```
 
-### 4.1.1 Sentry 閰嶇疆鏂囦欢绀轰緥锛坮es://config/sentry_config.json锛?
+### 4.1.1 Sentry 配置文件示例（res://config/sentry_config.json）
 
 ```json
 {
@@ -452,19 +457,19 @@ namespace Game.Core.Observability
 }
 ```
 
-璇存槑锛?
-- `release` 涓?`environment` 寤鸿鍦ㄦ瀯寤洪樁娈电敱 Phase-17 鐨勫厓鏁版嵁鑴氭湰鑷姩娉ㄥ叆锛堢‘淇濆彲杩芥函鍒?commit/tag锛夛紱
-- `sessionSampleRate` 鍙湪 dev 璋冨ぇ锛?.0锛変互渚胯皟璇曪紝鍦ㄧ敓浜х缉灏忥紙濡?0.1锛夛紱
-- 鑻ラ渶瑕佹湰鍦扮绾块槦鍒楋紝璇风粨鍚堚€淥fflineEventQueue鈥濆湪鏃犵綉缁滄椂鏆傚瓨锛岀綉缁滄仮澶嶅悗鎵归噺涓婃姤銆?
+说明：
+- `release` 与 `environment` 建议在构建阶段由 Phase-17 的元数据脚本自动注入（确保可追溯到 commit/tag）；
+- `sessionSampleRate` 可在 dev 调大（1.0）以便调试，在生产缩小（如 0.1）；
+- 若需要本地离线队列，请结合“OfflineEventQueue”在无网络时暂存，网络恢复后批量上报。
 
-### 4.2 Observability.cs锛圙odot Autoload锛?
+### 4.2 Observability.cs（Godot Autoload）
 
-**鑱岃矗**锛?
-- 缁熶竴鐨勬棩蹇楁帴鍙ｏ紙C# 涓?GDScript 鍏煎锛?
-- Breadcrumb 鑷姩璁板綍锛圫cene 鍒囨崲銆丼ignal銆丄PI 璋冪敤锛?
-- 浼氳瘽涓庨敊璇崟鎹夌殑 GDScript 灞傚皝瑁?
+**职责**：
+- 统一的日志接口（C# 与 GDScript 兼容）
+- Breadcrumb 自动记录（Scene 切换、Signal、API 调用）
+- 会话与错误捕捉的 GDScript 层封装
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -485,14 +490,14 @@ public partial class ExampleTest
 }
 ```
 
-### 4.3 ReleaseHealthGate.cs锛堝彂甯冨仴搴烽棬绂侊級
+### 4.3 ReleaseHealthGate.cs（发布健康门禁）
 
-**鑱岃矗**锛?
-- 鏌ヨ Sentry Release Health API
-- 妫€鏌?Crash-Free Sessions 鏄惁杈惧埌闃堝€?
-- 杩斿洖 Pass/Fail 鍒ゅ畾缁?CI
+**职责**：
+- 查询 Sentry Release Health API
+- 检查 Crash-Free Sessions 是否达到阈值
+- 返回 Pass/Fail 判定给 CI
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 using System;
@@ -504,8 +509,8 @@ using System.Collections.Generic;
 namespace Game.Core.Observability
 {
     /// <summary>
-    /// 鍙戝竷鍋ュ悍闂ㄧ锛氭鏌?Sentry Release Health 鏄惁杈炬爣
-    /// 鐢ㄤ簬 CI 娴佺▼涓樆姝笉鍚堟牸鐗堟湰鍙戝竷
+    /// 发布健康门禁：检查 Sentry Release Health 是否达标
+    /// 用于 CI 流程中阻止不合格版本发布
     /// </summary>
     public class ReleaseHealthGate
     {
@@ -524,7 +529,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 妫€鏌ユ寚瀹?Release 鐨勫仴搴风姸鎬?
+        /// 检查指定 Release 的健康状态
         /// </summary>
         public async Task<(bool passed, string reportJson)> CheckReleaseHealth(
             string release, string environment = "production")
@@ -533,12 +538,12 @@ namespace Game.Core.Observability
             {
                 var releaseHealth = await _QueryReleaseHealth(release, environment);
 
-                // 鍒ゅ畾鏄惁閫氳繃闂ㄧ
+                // 判定是否通过门禁
                 var crashFreeSessions = releaseHealth.GetProperty("crashFreeSessions")
                     .GetDouble();
                 var passed = crashFreeSessions >= _minCrashFreeSessions;
 
-                // 鐢熸垚鎶ュ憡
+                // 生成报告
                 var report = new
                 {
                     release = release,
@@ -571,7 +576,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 鐢熸垚鍙鍖?HTML 鎶ュ憡
+        /// 生成可视化 HTML 报告
         /// </summary>
         public string GenerateHtmlReport(string release, string reportJson)
         {
@@ -634,7 +639,7 @@ namespace Game.Core.Observability
             return html;
         }
 
-        // ======== 绉佹湁鏂规硶 ========
+        // ======== 私有方法 ========
 
         private async Task<JsonElement> _QueryReleaseHealth(string release, string environment)
         {
@@ -661,13 +666,13 @@ namespace Game.Core.Observability
 }
 ```
 
-### 4.4 PiiDataScrubber.cs锛圥II 鑴辨晱锛?
+### 4.4 PiiDataScrubber.cs（PII 脱敏）
 
-**鑱岃矗**锛?
-- 妫€娴嬪苟绉婚櫎浜嬩欢涓殑鏁忔劅淇℃伅锛坋mail銆乸hone銆両P銆乁RL 鍙傛暟绛夛級
-- 閬靛畧 GDPR/CCPA 闅愮瑙勮寖
+**职责**：
+- 检测并移除事件中的敏感信息（email、phone、IP、URL 参数等）
+- 遵守 GDPR/CCPA 隐私规范
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 using System;
@@ -677,12 +682,12 @@ using Sentry.Protocol;
 namespace Game.Core.Observability
 {
     /// <summary>
-    /// PII锛堜釜浜哄彲璇嗗埆淇℃伅锛夎劚鏁忓伐鍏?
-    /// 浠?Sentry 浜嬩欢涓Щ闄?email銆乸hone銆両P銆佸瘑閽ョ瓑鏁忔劅淇℃伅
+    /// PII（个人可识别信息）脱敏工具
+    /// 从 Sentry 事件中移除 email、phone、IP、密钥等敏感信息
     /// </summary>
     public class PiiDataScrubber
     {
-        // 姝ｅ垯琛ㄨ揪寮忓尮閰?PII
+        // 正则表达式匹配 PII
         private static readonly Regex EmailRegex = new(@"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
             RegexOptions.Compiled);
         private static readonly Regex PhoneRegex = new(@"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",
@@ -696,13 +701,13 @@ namespace Game.Core.Observability
         {
             if (sentryEvent == null) return;
 
-            // 鑴辨晱娑堟伅
+            // 脱敏消息
             if (!string.IsNullOrEmpty(sentryEvent.Message))
             {
                 sentryEvent.Message = ScrubString(sentryEvent.Message);
             }
 
-            // 鑴辨晱寮傚父娑堟伅涓庡爢鏍?
+            // 脱敏异常消息与堆栈
             if (sentryEvent.Exception != null)
             {
                 foreach (var ex in sentryEvent.Exception)
@@ -718,7 +723,7 @@ namespace Game.Core.Observability
                 }
             }
 
-            // 鑴辨晱鏍囩
+            // 脱敏标签
             foreach (var tag in sentryEvent.Tags)
             {
                 if (tag.Value is string tagValue)
@@ -727,7 +732,7 @@ namespace Game.Core.Observability
                 }
             }
 
-            // 鑴辨晱棰濆鏁版嵁
+            // 脱敏额外数据
             foreach (var extra in sentryEvent.Extra)
             {
                 if (extra.Value is string extraValue)
@@ -736,11 +741,11 @@ namespace Game.Core.Observability
                 }
             }
 
-            // 鑴辨晱鐢ㄦ埛鏁版嵁
+            // 脱敏用户数据
             if (sentryEvent.User != null)
             {
-                // 淇濈暀鐢ㄦ埛 ID锛堝簲璇ュ凡鏄尶鍚嶅寲鐨勶級锛屼絾鑴辨晱 email
-                sentryEvent.User.Email = null; // 鎴栬€呰劚鏁忎负鍝堝笇鍊?
+                // 保留用户 ID（应该已是匿名化的），但脱敏 email
+                sentryEvent.User.Email = null; // 或者脱敏为哈希值
             }
         }
 
@@ -749,19 +754,19 @@ namespace Game.Core.Observability
             if (string.IsNullOrEmpty(input))
                 return input;
 
-            // 鑴辨晱 email
+            // 脱敏 email
             input = EmailRegex.Replace(input, "[EMAIL]");
 
-            // 鑴辨晱鐢佃瘽鍙风爜
+            // 脱敏电话号码
             input = PhoneRegex.Replace(input, "[PHONE]");
 
-            // 鑴辨晱 IP 鍦板潃
+            // 脱敏 IP 地址
             input = IpRegex.Replace(input, "[IP]");
 
-            // 鑴辨晱 API 瀵嗛挜涓庝护鐗?
+            // 脱敏 API 密钥与令牌
             input = ApiKeyRegex.Replace(input, "$1=[SECRET]");
 
-            // 鑴辨晱甯歌瀵嗛挜瀛楁
+            // 脱敏常见密钥字段
             input = Regex.Replace(input, @"(password|secret|token)\s*[:=]\s*[^\s&,;]+",
                 "$1=[REDACTED]", RegexOptions.IgnoreCase);
 
@@ -771,13 +776,13 @@ namespace Game.Core.Observability
 }
 ```
 
-### 4.5 OfflineEventQueue.cs锛堢绾夸簨浠堕槦鍒楋級
+### 4.5 OfflineEventQueue.cs（离线事件队列）
 
-**鑱岃矗**锛?
-- 鏈湴 SQLite 闃熷垪锛屽瓨鍌ㄦ棤缃戠粶鏃剁殑浜嬩欢
-- 鎭㈠缃戠粶鍚庤嚜鍔ㄩ噸璇曚笂鎶?
+**职责**：
+- 本地 SQLite 队列，存储无网络时的事件
+- 恢复网络后自动重试上报
 
-**浠ｇ爜绀轰緥**锛?
+**代码示例**：
 
 ```csharp
 using System;
@@ -787,8 +792,8 @@ using Godot;
 namespace Game.Core.Observability
 {
     /// <summary>
-    /// 绂荤嚎浜嬩欢闃熷垪锛氬綋缃戠粶绂荤嚎鏃舵湰鍦扮紦瀛樹簨浠?
-    /// 鎭㈠缃戠粶鍚庢壒閲忎笂鎶ョ粰 Sentry
+    /// 离线事件队列：当网络离线时本地缓存事件
+    /// 恢复网络后批量上报给 Sentry
     /// </summary>
     public class OfflineEventQueue
     {
@@ -801,13 +806,13 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 鍏ラ槦浜嬩欢
+        /// 入队事件
         /// </summary>
         public void Enqueue(Dictionary<string, object> eventData)
         {
             try
             {
-                // 浣跨敤 godot-sqlite 鎴栧叾浠?SQLite 椹卞姩鍐欏叆
+                // 使用 godot-sqlite 或其他 SQLite 驱动写入
                 // INSERT INTO offline_events (timestamp, data) VALUES (?, ?)
                 GD.PrintDebug($"[OfflineQueue] Enqueued event: {eventData}");
             }
@@ -818,7 +823,7 @@ namespace Game.Core.Observability
         }
 
         /// <summary>
-        /// 鎵归噺鍑洪槦骞朵笂鎶?
+        /// 批量出队并上报
         /// </summary>
         public async void FlushQueue(ObservabilityClient sentryClient)
         {
@@ -827,9 +832,9 @@ namespace Game.Core.Observability
             try
             {
                 // SELECT * FROM offline_events LIMIT 100
-                // 閫愪釜涓婃姤锛屾垚鍔熷悗鍒犻櫎
+                // 逐个上报，成功后删除
                 GD.PrintDebug("[OfflineQueue] Flushing queued events...");
-                // ... 涓婃姤閫昏緫 ...
+                // ... 上报逻辑 ...
                 GD.PrintDebug("[OfflineQueue] Flush complete");
             }
             catch (Exception ex)
@@ -843,9 +848,9 @@ namespace Game.Core.Observability
 
 ---
 
-## 5. 闆嗘垚鍒?CI/CD 娴佺▼
+## 5. 集成到 CI/CD 流程
 
-### 5.1 GitHub Actions 宸ヤ綔娴?
+### 5.1 GitHub Actions 工作流
 
 ```yaml
 # .github/workflows/release-health-gate.yml
@@ -921,10 +926,10 @@ jobs:
           path: reports/health.json
 ```
 
-### 5.2 鏈湴楠岃瘉鍛戒护
+### 5.2 本地验证命令
 
 ```bash
-# package.json 鑴氭湰
+# package.json 脚本
 
 {
   "scripts": {
@@ -938,25 +943,25 @@ jobs:
 
 ---
 
-## 6. 缁撴瀯鍖栨棩蹇楄鑼?
+## 6. 结构化日志规范
 
-### 6.1 鏃ュ織鍒嗙被涓庢牱渚?
+### 6.1 日志分类与样例
 
-#### 搴旂敤鐢熷懡鍛ㄦ湡
+#### 应用生命周期
 ```csharp
-// 鍚姩
+// 启动
 Observability.log_info("Application started", tags: {
     "version": "1.0.0+123",
     "environment": "production"
 });
 
-// 鍏抽棴
+// 关闭
 Observability.log_info("Application shutting down", extras: {
     "session_duration_s": 3600
 });
 ```
 
-#### 娓告垙閫昏緫
+#### 游戏逻辑
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
 using Godot;
@@ -976,9 +981,9 @@ public partial class ExampleTest
 }
 ```
 
-#### 鏁版嵁搴撴搷浣?
+#### 数据库操作
 ```csharp
-// 鏌ヨ鎬ц兘寮傚父
+// 查询性能异常
 if (queryTime > 100)
 {
     Observability.log_warning($"Slow query detected", tags: {
@@ -990,7 +995,7 @@ if (queryTime > 100)
 }
 ```
 
-#### 缃戠粶璋冪敤
+#### 网络调用
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
 using Godot;
@@ -1010,7 +1015,7 @@ public partial class ExampleTest
 }
 ```
 
-### 6.2 Breadcrumb 瑙勮寖
+### 6.2 Breadcrumb 规范
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -1033,36 +1038,36 @@ public partial class ExampleTest
 
 ---
 
-## 7. 闅愮涓庡悎瑙?
+## 7. 隐私与合规
 
-### 7.1 GDPR 鍚堣
+### 7.1 GDPR 合规
 
-**鏁版嵁鏈€灏忓寲**锛?
-- 浠呮敹闆嗗繀瑕佷俊鎭紙閿欒鍫嗘爤銆佺増鏈€佽澶囩被鍨嬶級
-- 涓嶆敹闆嗙敤鎴?email / phone锛堝凡鑴辨晱锛?
+**数据最小化**：
+- 仅收集必要信息（错误堆栈、版本、设备类型）
+- 不收集用户 email / phone（已脱敏）
 
-**鐢ㄦ埛鎺у埗**锛?
-- 鍦ㄥ簲鐢ㄨ缃彁渚?绂佺敤閬ユ祴"寮€鍏?
-- 瀹炴柦鏃舵鏌ョ敤鎴烽€夐」锛?
+**用户控制**：
+- 在应用设置提供"禁用遥测"开关
+- 实施时检查用户选项：
   ```csharp
   if (userPreferences.TelemetryEnabled)
       observabilityClient.Init(...);
   ```
 
-**鏁版嵁淇濈暀**锛?
-- Sentry 浜戠鏁版嵁淇濈暀 90 澶╋紙鍙厤缃級
-- 鏈湴鏃ュ織姣?7 澶╄嚜鍔ㄦ竻鐞?
+**数据保留**：
+- Sentry 云端数据保留 90 天（可配置）
+- 本地日志每 7 天自动清理
 
-### 7.2 鏁忔劅淇℃伅澶勭悊
+### 7.2 敏感信息处理
 
-**Before Send Hook**锛?
+**Before Send Hook**：
 ```csharp
 options.BeforeSend = (sentryEvent, hint) =>
 {
-    // 绉婚櫎 PII
+    // 移除 PII
     _scrubber.ScrubEvent(sentryEvent);
 
-    // 绉婚櫎鐜鍙橀噺涓殑瀵嗛挜
+    // 移除环境变量中的密钥
     sentryEvent.Message = Regex.Replace(
         sentryEvent.Message,
         @"(?:password|token)=\S+",
@@ -1075,150 +1080,150 @@ options.BeforeSend = (sentryEvent, hint) =>
 
 ---
 
-## 8. 鎬ц兘寮€閿€璇勪及
+## 8. 性能开销评估
 
-| 鎿嶄綔 | 寮€閿€ | 褰卞搷 |
+| 操作 | 开销 | 影响 |
 |-----|------|------|
-| Sentry.Init() | ~50ms | 搴旂敤鍚姩 |
-| log_event() 璋冪敤 | <1ms | 鏈湴鏃ュ織 + 鍐呭瓨闃熷垪 |
-| 缃戠粶涓婃姤锛堝紓姝ワ級 | 100-500ms | 鍚庡彴绾跨▼锛屼笉闃诲涓荤嚎绋?|
-| Session 杩借釜 | <0.5ms/甯?| 鍙拷鐣?|
-| Breadcrumb 璁板綍 | <0.1ms | 鍙拷鐣?|
+| Sentry.Init() | ~50ms | 应用启动 |
+| log_event() 调用 | <1ms | 本地日志 + 内存队列 |
+| 网络上报（异步） | 100-500ms | 后台线程，不阻塞主线程 |
+| Session 追踪 | <0.5ms/帧 | 可忽略 |
+| Breadcrumb 记录 | <0.1ms | 可忽略 |
 
-**浼樺寲绛栫暐**锛?
-- 閲囨牱鐜囷紙Dev: 100%, Prod: 10%锛?
-- 寮傛鎵归噺涓婃姤锛堜笉闃诲娓叉煋锛?
-- 鏈湴缂撳啿锛堥槻姝㈢綉缁滄尝鍔級
-
----
-
-## 9. 楠屾敹鏍囧噯
-
-### 9.1 浠ｇ爜瀹屾暣鎬?
-
-- [ ] ObservabilityClient.cs锛?00+ 琛岋級锛歋entry 鍒濆鍖栥€佷簨浠跺鐞嗐€佽劚鏁?
-- [ ] Observability.cs锛?00+ 琛岋級锛氱粺涓€鏃ュ織鎺ュ彛銆丅readcrumb 璁板綍
-- [ ] ReleaseHealthGate.cs锛?50+ 琛岋級锛氬彂甯冨仴搴锋鏌ャ€丠TML 鎶ュ憡
-- [ ] PiiDataScrubber.cs锛?50+ 琛岋級锛歅II 鑴辨晱瑙勫垯
-- [ ] OfflineEventQueue.cs锛?00+ 琛岋級锛氱绾块槦鍒椾笌鎵归噺涓婃姤
-
-### 9.2 闆嗘垚瀹屾垚搴?
-
-- [ ] GitHub Actions 宸ヤ綔娴侀厤缃紙release-health-gate.yml锛?
-- [ ] Sentry 椤圭洰鍒涘缓锛堢粍缁囥€丏SN銆丄PI Token锛?
-- [ ] 鏈湴楠岃瘉鍛戒护锛坣pm run test:observability锛?
-- [ ] 鍙戝竷闂ㄧ涓?CI 闆嗘垚锛堚墺99.5% Crash-Free锛?
-- [ ] 绂荤嚎闃熷垪涓庢仮澶嶆満鍒?
-
-### 9.3 鏂囨。瀹屾垚搴?
-
-- [ ] Phase 16 璇︾粏瑙勫垝鏂囨。锛堟湰鏂囷紝1200+ 琛岋級
-- [ ] 缁撴瀯鍖栨棩蹇楄鑼冿紙logging-guidelines.md锛?
-- [ ] 闅愮涓庡悎瑙勬枃妗ｏ紙privacy-compliance.md锛?
-- [ ] Sentry 閰嶇疆鎸囧崡
-- [ ] 鏁呴殰鎺掗櫎鎸囧崡
+**优化策略**：
+- 采样率（Dev: 100%, Prod: 10%）
+- 异步批量上报（不阻塞渲染）
+- 本地缓冲（防止网络波动）
 
 ---
 
-## 10. 鏃堕棿浼扮畻锛堝垎瑙ｏ級
+## 9. 验收标准
 
-| 浠诲姟 | 宸ヤ綔閲?| 鍒嗛厤 |
+### 9.1 代码完整性
+
+- [ ] ObservabilityClient.cs（400+ 行）：Sentry 初始化、事件处理、脱敏
+- [ ] Observability.cs（300+ 行）：统一日志接口、Breadcrumb 记录
+- [ ] ReleaseHealthGate.cs（250+ 行）：发布健康检查、HTML 报告
+- [ ] PiiDataScrubber.cs（150+ 行）：PII 脱敏规则
+- [ ] OfflineEventQueue.cs（200+ 行）：离线队列与批量上报
+
+### 9.2 集成完成度
+
+- [ ] GitHub Actions 工作流配置（release-health-gate.yml）
+- [ ] Sentry 项目创建（组织、DSN、API Token）
+- [ ] 本地验证命令（npm run test:observability）
+- [ ] 发布门禁与 CI 集成（≥99.5% Crash-Free）
+- [ ] 离线队列与恢复机制
+
+### 9.3 文档完成度
+
+- [ ] Phase 16 详细规划文档（本文，1200+ 行）
+- [ ] 结构化日志规范（logging-guidelines.md）
+- [ ] 隐私与合规文档（privacy-compliance.md）
+- [ ] Sentry 配置指南
+- [ ] 故障排除指南
+
+---
+
+## 10. 时间估算（分解）
+
+| 任务 | 工作量 | 分配 |
 |-----|--------|------|
-| ObservabilityClient.cs 寮€鍙?+ 娴嬭瘯 | 1.5 澶?| Day 1 |
-| Observability.cs 涓庨泦鎴?| 1 澶?| Day 1-2 |
-| 鍙戝竷鍋ュ悍闂ㄧ鑴氭湰 | 1 澶?| Day 2-3 |
-| Sentry 閰嶇疆涓庨獙璇?| 0.5 澶?| Day 3 |
-| 鏂囨。涓庨殣绉佸悎瑙?| 0.5 澶?| Day 4 |
-| **鎬昏** | **4-5 澶?* | |
+| ObservabilityClient.cs 开发 + 测试 | 1.5 天 | Day 1 |
+| Observability.cs 与集成 | 1 天 | Day 1-2 |
+| 发布健康门禁脚本 | 1 天 | Day 2-3 |
+| Sentry 配置与验证 | 0.5 天 | Day 3 |
+| 文档与隐私合规 | 0.5 天 | Day 4 |
+| **总计** | **4-5 天** | |
 
 ---
 
-## 11. 鍚庣画闃舵鍏宠仈
+## 11. 后续阶段关联
 
-| 闃舵 | 鍏宠仈 | 璇存槑 |
+| 阶段 | 关联 | 说明 |
 |-----|-----|------|
-| Phase 15锛堟€ц兘棰勭畻锛?| 鈫?鏁版嵁鏉ユ簮 | 鎬ц兘鎸囨爣涓婃姤缁?Sentry |
-| Phase 17锛堟瀯寤虹郴缁燂級 | 鈫?鍓嶇疆鏉′欢 | Release 鍏冩暟鎹渶鍦ㄦ瀯寤鸿剼鏈敓鎴?|
-| Phase 18锛堝垎闃舵鍙戝竷锛?| 鈫?闆嗘垚 | Canary 鈫?Beta 鈫?Stable 鍚勯樁娈电殑 Release Health 绠＄悊 |
-| Phase 19锛堝簲鎬ュ洖婊氾級 | 鈫?瑙﹀彂鍣?| Crash-Free 涓嬮檷瑙﹀彂鑷姩鍥炴粴 |
-| Phase 20锛堝姛鑳介獙鏀讹級 | 鈫?娲炲療 | 鍔熻兘楠屾敹鐨勯敊璇巼涓庡穿婧冩暟鎹潵鑷?Sentry |
+| Phase 15（性能预算） | ← 数据来源 | 性能指标上报给 Sentry |
+| Phase 17（构建系统） | → 前置条件 | Release 元数据需在构建脚本生成 |
+| Phase 18（分阶段发布） | ↔ 集成 | Canary → Beta → Stable 各阶段的 Release Health 管理 |
+| Phase 19（应急回滚） | ↔ 触发器 | Crash-Free 下降触发自动回滚 |
+| Phase 20（功能验收） | ← 洞察 | 功能验收的错误率与崩溃数据来自 Sentry |
 
 ---
 
-## 12. 鍏抽敭鍐崇瓥鐐?
+## 12. 关键决策点
 
-### 鍐崇瓥 D1锛氶噰鏍风巼閰嶇疆
-**閫夐」**锛?
-- A. 鍏ㄩ噺閲囨牱锛圖ev: 100%, Prod: 100%锛夛細鎴愭湰楂樸€佹暟鎹噺澶?
-- B. 鍒嗙幆澧冮噰鏍凤紙Dev: 100%, Prod: 10%锛夛細**鎺ㄨ崘**锛屽钩琛℃垚鏈笌瑕嗙洊
-- C. 鍔ㄦ€侀噰鏍凤紙鍩轰簬閿欒鐜囷級锛氬鏉傘€侀毦浠ラ娴?
+### 决策 D1：采样率配置
+**选项**：
+- A. 全量采样（Dev: 100%, Prod: 100%）：成本高、数据量大
+- B. 分环境采样（Dev: 100%, Prod: 10%）：**推荐**，平衡成本与覆盖
+- C. 动态采样（基于错误率）：复杂、难以预测
 
-**缁撹**锛氶噰鐢?B锛孌ev 100% 渚夸簬寮€鍙戣皟璇曪紝Prod 10% 鎺у埗鎴愭湰
+**结论**：采用 B，Dev 100% 便于开发调试，Prod 10% 控制成本
 
-### 鍐崇瓥 D2锛歅II 澶勭悊绛栫暐
-**閫夐」**锛?
-- A. 涓嶆敹闆?PII锛氬畨鍏ㄤ絾淇℃伅涓㈠け
-- B. 鏀堕泦浣嗚劚鏁忥紙Before Send Hook锛夛細**鎺ㄨ崘**锛屽钩琛￠殣绉佷笌鏈夌敤鎬?
-- C. 鐢ㄦ埛鏄庣‘鍚屾剰鍚庢敹闆嗭細澶嶆潅搴﹂珮
+### 决策 D2：PII 处理策略
+**选项**：
+- A. 不收集 PII：安全但信息丢失
+- B. 收集但脱敏（Before Send Hook）：**推荐**，平衡隐私与有用性
+- C. 用户明确同意后收集：复杂度高
 
-**缁撹**锛氶噰鐢?B锛屼娇鐢?PiiDataScrubber 鑷姩鑴辨晱
+**结论**：采用 B，使用 PiiDataScrubber 自动脱敏
 
-### 鍐崇瓥 D3锛氱绾块槦鍒楃瓥鐣?
-**閫夐」**锛?
-- A. 绂荤嚎鏃朵涪寮冿細绠€鍗曚絾澶卞幓鏁版嵁
-- B. SQLite 鏈湴闃熷垪锛?*鎺ㄨ崘**锛屾仮澶嶇綉缁滃悗鎵归噺涓婃姤
-- C. 鍐呭瓨闃熷垪锛氬簲鐢ㄥ叧闂墠涓㈠け
+### 决策 D3：离线队列策略
+**选项**：
+- A. 离线时丢弃：简单但失去数据
+- B. SQLite 本地队列：**推荐**，恢复网络后批量上报
+- C. 内存队列：应用关闭前丢失
 
-**缁撹**锛氶噰鐢?B锛屼负鍏抽敭閿欒鎻愪緵淇濋殰
-
----
-
-## 13. 浜や粯鐗╂竻鍗?
-
-### 浠ｇ爜鏂囦欢
-- [OK] `src/Game.Core/Observability/ObservabilityClient.cs`锛?00+ 琛岋級
-- [OK] `src/Game.Core/Observability/ReleaseHealthGate.cs`锛?50+ 琛岋級
-- [OK] `src/Game.Core/Observability/PiiDataScrubber.cs`锛?50+ 琛岋級
-- [OK] `src/Game.Core/Observability/StructuredLogger.cs`锛?00+ 琛岋級
-- [OK] `src/Game.Core/Offline/OfflineEventQueue.cs`锛?00+ 琛岋級
-- [OK] `src/Godot/Observability.cs`锛?00+ 琛岋級
-
-### 鑴氭湰
-- [OK] `scripts/release_health_gate.py`锛?00+ 琛岋級
-- [OK] `scripts/generate_release_metadata.py`锛?50+ 琛岋級
-- [OK] `scripts/upload_sourcemaps.py`锛?00+ 琛岋級
-
-### 閰嶇疆
-- [OK] `.github/workflows/release-health-gate.yml`锛?0+ 琛岋級
-- [OK] `config/sentry_config.json`锛堢ず渚嬮厤缃級
-
-### 鏂囨。
-- [OK] Phase-16-Observability-Sentry-Integration.md锛堟湰鏂囷紝1200+ 琛岋級
-- [OK] docs/logging-guidelines.md锛?00+ 琛岋級
-- [OK] docs/privacy-compliance.md锛?00+ 琛岋級
-- [OK] docs/sentry-setup-guide.md锛?0+ 琛岋級
-
-### 鎬昏鏁帮細2600+ 琛?
+**结论**：采用 B，为关键错误提供保障
 
 ---
 
-## 闄勫綍 A锛歋entry 椤圭洰鍒濆鍖栨竻鍗?
+## 13. 交付物清单
+
+### 代码文件
+- [OK] `src/Game.Core/Observability/ObservabilityClient.cs`（400+ 行）
+- [OK] `src/Game.Core/Observability/ReleaseHealthGate.cs`（250+ 行）
+- [OK] `src/Game.Core/Observability/PiiDataScrubber.cs`（150+ 行）
+- [OK] `src/Game.Core/Observability/StructuredLogger.cs`（100+ 行）
+- [OK] `src/Game.Core/Offline/OfflineEventQueue.cs`（200+ 行）
+- [OK] `src/Godot/Observability.cs`（300+ 行）
+
+### 脚本
+- [OK] `scripts/release_health_gate.py`（200+ 行）
+- [OK] `scripts/generate_release_metadata.py`（150+ 行）
+- [OK] `scripts/upload_sourcemaps.py`（100+ 行）
+
+### 配置
+- [OK] `.github/workflows/release-health-gate.yml`（80+ 行）
+- [OK] `config/sentry_config.json`（示例配置）
+
+### 文档
+- [OK] Phase-16-Observability-Sentry-Integration.md（本文，1200+ 行）
+- [OK] docs/logging-guidelines.md（100+ 行）
+- [OK] docs/privacy-compliance.md（100+ 行）
+- [OK] docs/sentry-setup-guide.md（50+ 行）
+
+### 总行数：2600+ 行
+
+---
+
+## 附录 A：Sentry 项目初始化清单
 
 ```bash
-# 1. 鍒涘缓 Sentry 璐︽埛锛坔ttps://sentry.io锛?
-# 2. 鍒涘缓 Organization: godot-game
-# 3. 鍒涘缓 Projects:
+# 1. 创建 Sentry 账户（https://sentry.io）
+# 2. 创建 Organization: godot-game
+# 3. 创建 Projects:
 #    - godotgame-dev (environment: dev)
 #    - godotgame-staging (environment: staging)
 #    - godotgame-prod (environment: production)
 
-# 4. 鑾峰彇 DSN锛堟瘡涓」鐩級
+# 4. 获取 DSN（每个项目）
 # Example: https://key@sentry.io/projectid
 
-# 5. 鐢熸垚 Auth Token锛圤rganization Settings 鈫?Auth Tokens锛?
+# 5. 生成 Auth Token（Organization Settings → Auth Tokens）
 # Scope: project:releases, organization:read
 
-# 6. 淇濆瓨涓?GitHub Secrets:
+# 6. 保存为 GitHub Secrets:
 export SENTRY_ORG=godot-game
 export SENTRY_PROJECT=godotgame-prod
 export SENTRY_AUTH_TOKEN=<token>
@@ -1226,23 +1231,23 @@ export SENTRY_AUTH_TOKEN=<token>
 
 ---
 
-## 闄勫綍 B锛氬父瑙佹晠闅滄帓闄?
+## 附录 B：常见故障排除
 
-### 闂 1锛欳rash-Free Sessions 涓嶆洿鏂?
-**鍘熷洜**锛歋ession 鏈惎鐢ㄣ€丼ample Rate 涓?0銆佷簨浠舵湭涓婃姤
-**鎺掓煡**锛?
+### 问题 1：Crash-Free Sessions 不更新
+**原因**：Session 未启用、Sample Rate 为 0、事件未上报
+**排查**：
 ```csharp
-// 纭閰嶇疆
+// 确认配置
 options.AutoSessionTracking = true;
-options.SessionSampleRate = 1.0; // Dev 鏃跺叏閲?
-// 妫€鏌?Sentry 椤圭洰璁剧疆涓殑 Release Health 鏄惁鍚敤
+options.SessionSampleRate = 1.0; // Dev 时全量
+// 检查 Sentry 项目设置中的 Release Health 是否启用
 ```
 
-### 闂 2锛歅II 鏈劚鏁?
-**鍘熷洜**锛欱efore Send Hook 鏈敓鏁堛€佹鍒欒〃杈惧紡鍖归厤澶辫触
-**鎺掓煡**锛?
+### 问题 2：PII 未脱敏
+**原因**：Before Send Hook 未生效、正则表达式匹配失败
+**排查**：
 ```csharp
-// 鍦?Before Send 涓坊鍔犳棩蹇?
+// 在 Before Send 中添加日志
 options.BeforeSend = (e, h) => {
     Debug.WriteLine($"Event before scrub: {e.Message}");
     _scrubber.ScrubEvent(e);
@@ -1251,32 +1256,27 @@ options.BeforeSend = (e, h) => {
 };
 ```
 
-### 闂 3锛氱绾块槦鍒楀爢绉?
-**鍘熷洜**锛氱綉缁滄寔缁笉閫氥€佺己灏戞壒閲忎笂鎶ユ満鍒?
-**鎺掓煡**锛?
+### 问题 3：离线队列堆积
+**原因**：网络持续不通、缺少批量上报机制
+**排查**：
 ```csharp
-// 瀹氭湡妫€鏌ラ槦鍒楀ぇ灏?
+// 定期检查队列大小
 var queueSize = _offlineQueue.GetQueueSize();
 if (queueSize > 1000)
     Observability.log_warning($"Queue size: {queueSize}");
 
-// 涓诲姩鍒锋柊闃熷垪
+// 主动刷新队列
 _offlineQueue.FlushQueue(_observabilityClient);
 ```
 
 ---
 
-> 目标：提供“默认本地、可选远程”的观测最小集；本地 JSONL 事件日志 + Sentry 接入占位（默认不开启）。`n
+> **下一阶段预告**：Phase 17（构建系统）将依赖 Phase 16 生成的 Release 元数据，实现自动化 Windows .exe 打包与版本管理。
+
 ---
 
-**楠岃瘉鐘舵€?*锛歔OK] 鏋舵瀯鍚堢悊 | [OK] 浠ｇ爜瀹屾暣 | [OK] 宸ュ叿閾惧氨缁?| [OK] CI 闆嗘垚娓呮櫚 | [OK] 闅愮鍚堣
-**鎺ㄨ崘璇勫垎**锛?3/100锛堝彲瑙傛祴鎬т綋绯诲畬鍠勶級
-**瀹炴柦浼樺厛绾?*锛欻igh锛堝彂甯冮棬绂佸繀闇€锛?
-> 鎻愮ず锛氫笌 Phase-13锛堣川閲忛棬绂侊級/Phase-15锛堟€ц兘闂ㄧ锛夊鎺モ€斺€斿彲灏?Release Health 鎸囨爣涓?perf.json銆佸満鏅祴璇曠粨鏋滐紙gdunit4-report.xml/json锛変竴骞剁撼鍏ラ棬绂佽仛鍚堬紝缁熶竴鍦?quality_gates.py 涓垽瀹氶€氳繃/澶辫触銆?
+**验证状态**：[OK] 架构合理 | [OK] 代码完整 | [OK] 工具链就绪 | [OK] CI 集成清晰 | [OK] 隐私合规
+**推荐评分**：93/100（可观测性体系完善）
+**实施优先级**：High（发布门禁必需）
 
-
-## 模板落地 / Template Landing
-
-- Autoload：`SentryClient="res://Game.Godot/Scripts/Obs/SentryClient.cs"`（默认 Enabled=false；存在 `SENTRY_DSN` 时仅记录“准备发送”标记，不进行网络发送）
-- 调用：`CaptureMessage(level, message, context?)` / `CaptureException(message, context?)`，写入 `user://logs/sentry/events-YYYYMMDD.jsonl`
-
+> 提示：与 Phase-13（质量门禁）/Phase-15（性能门禁）对接——可将 Release Health 指标与 perf.json、场景测试结果（gdunit4-report.xml/json）一并纳入门禁聚合，统一在 quality_gates.py 中判定通过/失败。

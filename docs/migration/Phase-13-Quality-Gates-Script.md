@@ -1,141 +1,141 @@
-﻿# Phase 13: 璐ㄩ噺闂ㄧ鑴氭湰涓庤嚜鍔ㄥ寲
+# Phase 13: 质量门禁脚本与自动化
 
-> **鏍稿績鐩爣**锛氱粺涓€ xUnit + GdUnit4 鐨勮川閲忛棬绂侊紝寤虹珛 `guard:ci` 鑴氭湰鍏ュ彛锛岀‘淇濇墍鏈夋瀯寤洪€氳繃 10 椤瑰己鍒堕棬绂佹鏌ャ€? 
-> **宸ヤ綔閲?*锛?-5 浜哄ぉ  
-> **渚濊禆**锛歅hase 10锛坸Unit 妗嗘灦锛夈€丳hase 11锛圙dUnit4 妗嗘灦锛夈€丳hase 12锛堢儫娴?& 鎬ц兘閲囬泦锛? 
-> **浜や粯鐗?*锛? 涓剼鏈?+ 1 涓?GitHub Actions 宸ヤ綔娴?+ 鏃ュ織瑙勮寖  
-> **楠屾敹鏍囧噯**锛氭湰鍦?`npm run guard:ci` 閫氳繃 + CI 鑷姩鎵ц閫氳繃
+> **核心目标**：统一 xUnit + GdUnit4 的质量门禁，建立 `guard:ci` 脚本入口，确保所有构建通过 10 项强制门禁检查。  
+> **工作量**：4-5 人天  
+> **依赖**：Phase 10（xUnit 框架）、Phase 11（GdUnit4 框架）、Phase 12（烟测 & 性能采集）  
+> **交付物**：5 个脚本 + 1 个 GitHub Actions 工作流 + 日志规范  
+> **验收标准**：本地 `npm run guard:ci` 通过 + CI 自动执行通过
 
 ---
 
-## 1. 鑳屾櫙涓庡姩鏈?
+## 1. 背景与动机
 
-### 鍘熺増锛坴itegame锛夎川閲忔帶鍒?
+### 原版（vitegame）质量控制
 - Electron + JavaScript/TypeScript
-- Playwright E2E + Vitest 鍗曞厓娴嬭瘯
-- ESLint + Prettier 鑷姩鍖?
-- GitHub Actions 鍗曚竴宸ヤ綔娴?
+- Playwright E2E + Vitest 单元测试
+- ESLint + Prettier 自动化
+- GitHub Actions 单一工作流
 
-### 鏂扮増锛坓odotgame锛夎川閲忔寫鎴?
-- **鍙岃建娴嬭瘯鏋舵瀯**锛歺Unit锛圕#锛? GdUnit4锛圙DScript锛?
-- **涓ょ缂栫▼璇█**锛氫唬鐮侀噸澶嶇巼妫€娴嬮毦搴﹀鍔?
-- **Headless 鎵ц**锛氭棤 GUI 鍙嶉锛屽繀椤讳緷璧栨棩蹇楀拰鎶ュ憡
-- **鎬ц兘鍩哄噯**锛氭柊澧?P50/P95/P99 鑷姩闂ㄧ
-- **瀹夊叏瀹¤**锛氶渶楠岃瘉 Security.cs 瀹¤鏃ュ織鏍煎紡
+### 新版（godotgame）质量挑战
+- **双轨测试架构**：xUnit（C#）+ GdUnit4（GDScript）
+- **两种编程语言**：代码重复率检测难度增加
+- **Headless 执行**：无 GUI 反馈，必须依赖日志和报告
+- **性能基准**：新增 P50/P95/P99 自动门禁
+- **安全审计**：需验证 Security.cs 审计日志格式
 
-### 璐ㄩ噺闂ㄧ鐨勪环鍊?
-1. **闃叉鍥炲綊**锛氳嚜鍔ㄩ樆鏂鐩栫巼涓嬮檷銆佹€ц兘鎭跺寲鐨勪唬鐮?
-2. **鍙璁?*锛氭瘡娆℃瀯寤虹殑鍐崇瓥杩囩▼鍙噸鐜般€佸彲婧簮
-3. **蹇€熷弽棣?*锛氬紑鍙戣€呭湪 5 鍒嗛挓鍐呬簡瑙ｆ瀯寤虹姸鎬?
-4. **CI 鑷姩鍖?*锛氭棤闇€浜哄伐浠嬪叆锛岃嚜鍔?pass/fail锛岄樆濉炰笉鍚堟牸 PR
+### 质量门禁的价值
+1. **防止回归**：自动阻断覆盖率下降、性能恶化的代码
+2. **可审计**：每次构建的决策过程可重现、可溯源
+3. **快速反馈**：开发者在 5 分钟内了解构建状态
+4. **CI 自动化**：无需人工介入，自动 pass/fail，阻塞不合格 PR
 
 ---
 
-## 2. 璐ㄩ噺闂ㄧ瀹氫箟
+## 2. 质量门禁定义
 
-### 2.1 10 椤瑰己鍒堕棬绂?
+### 2.1 10 项强制门禁
 
-| # | 闂ㄧ鍚嶇О | 搴﹂噺鏍囧噯 | 闃堝€?| 宸ュ叿 | ADR |
+| # | 门禁名称 | 度量标准 | 阈值 | 工具 | ADR |
 |---|---------|--------|------|------|-----|
-| 1 | xUnit 瑕嗙洊鐜囷紙琛岋級 | Coverage % Lines | 鈮?0% | OpenCover | ADR-0005 |
-| 2 | xUnit 瑕嗙洊鐜囷紙鍒嗘敮锛?| Coverage % Branches | 鈮?5% | OpenCover | ADR-0005 |
-| 3 | GdUnit4 鍐掔儫閫氳繃鐜?| Test Pass Count | 100% | GdUnit4 | ADR-0001 |
-| 4 | 浠ｇ爜閲嶅鐜?| Duplication % | 鈮?% | jscpd | ADR-0005 |
-| 5 | 鍦堝鏉傚害锛坢ax锛?| Max Cyclomatic | 鈮?0 | SonarQube Metrics | ADR-0005 |
-| 6 | 鍦堝鏉傚害锛堝钩鍧囷級 | Avg Cyclomatic | 鈮? | SonarQube Metrics | ADR-0005 |
-| 7 | 寰幆渚濊禆 | Circular Deps Count | 0 | NetArchTest (arch tests) | ADR-0007 |
-| 8 | 璺ㄥ眰渚濊禆 | Cross-layer Violations | 0 | NetArchTest (arch tests) | ADR-0007 |
-| 9 | 鎬ц兘鍩哄噯锛圥95锛?| Frame Time P95 | 鈮?6.67ms* | PerformanceTracker | ADR-0015 |
-| 10 | 瀹¤鏃ュ織鏍煎紡 | JSONL Valid | 100% | custom validator | ADR-0003 |
+| 1 | xUnit 覆盖率（行） | Coverage % Lines | ≥90% | OpenCover | ADR-0005 |
+| 2 | xUnit 覆盖率（分支） | Coverage % Branches | ≥85% | OpenCover | ADR-0005 |
+| 3 | GdUnit4 冒烟通过率 | Test Pass Count | 100% | GdUnit4 | ADR-0001 |
+| 4 | 代码重复率 | Duplication % | ≤2% | jscpd | ADR-0005 |
+| 5 | 圈复杂度（max） | Max Cyclomatic | ≤10 | SonarQube Metrics | ADR-0005 |
+| 6 | 圈复杂度（平均） | Avg Cyclomatic | ≤5 | SonarQube Metrics | ADR-0005 |
+| 7 | 循环依赖 | Circular Deps Count | 0 | NetArchTest (arch tests) | ADR-0007 |
+| 8 | 跨层依赖 | Cross-layer Violations | 0 | NetArchTest (arch tests) | ADR-0007 |
+| 9 | 性能基准（P95） | Frame Time P95 | ≤16.67ms* | PerformanceTracker | ADR-0015 |
+| 10 | 审计日志格式 | JSONL Valid | 100% | custom validator | ADR-0003 |
 
-*Godot 鐩爣甯х巼 60fps 鈫?姣忓抚 16.67ms锛汸95 搴斿湪姝や互涓嬬‘淇濈粷澶у鏁板抚娴佺晠
+*Godot 目标帧率 60fps → 每帧 16.67ms；P95 应在此以下确保绝大多数帧流畅
 
 ---
 
-## 3. 鏋舵瀯璁捐
+## 3. 架构设计
 
-### 3.1 鍒嗗眰鏋舵瀯
+### 3.1 分层架构
 
 ```
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?             CI/CD Orchestration                     鈹?
-鈹?        (guard-ci.yml, GitHub Actions)              鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈻尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹?      Python Gate Runner (guard_ci.py)              鈹?
-鈹? - 椤哄簭璋冪敤鍚勬祴璇?鎵弿鑴氭湰                          鈹?
-鈹? - 鎹曡幏杈撳嚭鎶ュ憡璺緞                                 鈹?
-鈹? - 璁惧畾鏃ュ織鐩綍涓庣幆澧冨彉閲?                          鈹?
-鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                       鈹?
-      鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-      鈹?               鈹?               鈹?
-      鈻?               鈻?               鈻?
+┌─────────────────────────────────────────────────────┐
+│              CI/CD Orchestration                     │
+│         (guard-ci.yml, GitHub Actions)              │
+└──────────────────────┬──────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────┐
+│       Python Gate Runner (guard_ci.py)              │
+│  - 顺序调用各测试/扫描脚本                          │
+│  - 捕获输出报告路径                                 │
+│  - 设定日志目录与环境变量                           │
+└──────────────────────┬──────────────────────────────┘
+                       │
+      ┌────────────────┼────────────────┐
+      │                │                │
+      ▼                ▼                ▼
   xUnit Test      GdUnit4 Test         Code Scan
-  鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€        鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€         鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+  ────────        ────────         ─────────
   dotnet test     godot --headless jscpd, SonarQube,
   opencover       --scene ..       SonarQube metrics,
                   GdUnit4 test runner  NetArchTest
-                       鈹?               鈹?
-                       鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                              鈹?
-         鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-         鈹?                                        鈹?
-         鈻?                                        鈻?
+                       │                │
+                       └────────────────┘
+                              │
+         ┌────────────────────┴────────────────────┐
+         │                                         │
+         ▼                                         ▼
    Report Aggregation              Python Quality Gates
    (JSON/JSONL collect)            (quality_gates.py)
-                                   - 鑱氬悎瑕嗙洊鐜?
-                                   - 妫€鏌ユ墍鏈夐棬绂?
-                                   - 鐢熸垚 HTML/JSON 鎶ュ憡
-                                   - 杩斿洖 exit code
-                                        鈹?
-                                        鈻?
-                                  鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-                                  鈹?PASS / FAIL  鈹?
-                                  鈹?(exit code)  鈹?
-                                  鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
+                                   - 聚合覆盖率
+                                   - 检查所有门禁
+                                   - 生成 HTML/JSON 报告
+                                   - 返回 exit code
+                                        │
+                                        ▼
+                                  ┌──────────────┐
+                                  │ PASS / FAIL  │
+                                  │ (exit code)  │
+                                  └──────────────┘
 ```
 
-### 3.2 鐩綍缁撴瀯
+### 3.2 目录结构
 
 ```
 godotgame/
-鈹溾攢鈹€ scripts/
-鈹?  鈹溾攢鈹€ guard.ps1                  # PowerShell 涓诲叆鍙ｈ剼鏈?
-鈹?  鈹溾攢鈹€ python/
-鈹?  鈹?  鈹斺攢鈹€ quality_gates.py        # Python 闂ㄧ鑱氬悎涓庡喅绛?
-鈹?  鈹溾攢鈹€ ci/
-鈹?  鈹?  鈹溾攢鈹€ run_xunit_tests.ps1     # xUnit 鎵ц涓庤鐩栫巼鏀堕泦
-鈹?  鈹?  鈹溾攢鈹€ run_gut_tests.ps1       # GdUnit4 鐑熸祴鎵ц
-鈹?  鈹?  鈹斺攢鈹€ run_code_scans.ps1      # 閲嶅鐜?澶嶆潅搴?渚濊禆妫€鏌?
-鈹?  鈹斺攢鈹€ validate/
-鈹?      鈹溾攢鈹€ validate_coverage.py    # 瑕嗙洊鐜囪В鏋愪笌闃堝€兼鏌?
-鈹?      鈹溾攢鈹€ validate_gut_report.py  # GdUnit4 鎶ュ憡瑙ｆ瀽
-鈹?      鈹斺攢鈹€ validate_audit_logs.py  # JSONL 瀹¤鏃ュ織楠岃瘉
-鈹溾攢鈹€ logs/
-鈹?  鈹斺攢鈹€ ci/                         # 鎸夋棩鏈熺粍缁囩殑 CI 鏃ュ織
-鈹?      鈹斺攢鈹€ 2025-11-07/
-鈹?          鈹溾攢鈹€ xunit-coverage.xml
-鈹?          鈹溾攢鈹€ gut-report.log
-鈹?          鈹溾攢鈹€ jscpd-report.json
-鈹?          鈹溾攢鈹€ complexity-report.html
-鈹?          鈹溾攢鈹€ quality-gates.html   # 鏈€缁堥棬绂佹姤鍛?
-鈹?          鈹斺攢鈹€ quality-gates.json   # 鏈哄櫒鍙鐗堟湰
-鈹溾攢鈹€ .github/
-鈹?  鈹斺攢鈹€ workflows/
-鈹?      鈹斺攢鈹€ guard-ci.yml            # GitHub Actions 宸ヤ綔娴?
-鈹斺攢鈹€ package.json
+├── scripts/
+│   ├── guard.ps1                  # PowerShell 主入口脚本
+│   ├── python/
+│   │   └── quality_gates.py        # Python 门禁聚合与决策
+│   ├── ci/
+│   │   ├── run_xunit_tests.ps1     # xUnit 执行与覆盖率收集
+│   │   ├── run_gut_tests.ps1       # GdUnit4 烟测执行
+│   │   └── run_code_scans.ps1      # 重复率/复杂度/依赖检查
+│   └── validate/
+│       ├── validate_coverage.py    # 覆盖率解析与阈值检查
+│       ├── validate_gut_report.py  # GdUnit4 报告解析
+│       └── validate_audit_logs.py  # JSONL 审计日志验证
+├── logs/
+│   └── ci/                         # 按日期组织的 CI 日志
+│       └── 2025-11-07/
+│           ├── xunit-coverage.xml
+│           ├── gut-report.log
+│           ├── jscpd-report.json
+│           ├── complexity-report.html
+│           ├── quality-gates.html   # 最终门禁报告
+│           └── quality-gates.json   # 机器可读版本
+├── .github/
+│   └── workflows/
+│       └── guard-ci.yml            # GitHub Actions 工作流
+└── package.json
     "guard:ci": "py -3 scripts/python/guard_ci.py"
 ```
 
 ---
 
-## 4. 鍏抽敭浜や粯鐗╄缁嗚璁?
+## 4. 关键交付物详细设计
 
-### 4.0 鏋舵瀯娴嬭瘯涓庡鏉傚害搴﹂噺绀轰緥
+### 4.0 架构测试与复杂度度量示例
 
-#### 4.0.1 NetArchTest 鏈€灏忔灦鏋勬祴璇曪紙C# xUnit锛?
+#### 4.0.1 NetArchTest 最小架构测试（C# xUnit）
 
 ```csharp
 // Game.Core.Tests/Architecture/LayeringTests.cs
@@ -165,33 +165,33 @@ public class LayeringTests
 }
 ```
 
-鐢ㄦ硶锛氬皢璇ユ祴璇曠撼鍏?`dotnet test` 鍗冲彲锛涘湪闂ㄧ鑱氬悎涓皢鍏跺け璐ヨ涓衡€滆法灞傝繚瑙?寰幆渚濊禆鈥濅笉閫氳繃銆?
+用法：将该测试纳入 `dotnet test` 即可；在门禁聚合中将其失败视为“跨层违规/循环依赖”不通过。
 
-#### 4.0.2 SonarQube Metrics 鏈€灏忛泦鎴?
+#### 4.0.2 SonarQube Metrics 最小集成
 
 ```bash
-# 1) 寮€濮嬪垎鏋愶紙绀轰緥锛?
+# 1) 开始分析（示例）
 dotnet sonarscanner begin \
   /k:"godotgame" /d:sonar.host.url="%SONAR_HOST_URL%" \
   /d:sonar.login="%SONAR_TOKEN%" \
   /d:sonar.cs.opencover.reportsPaths="logs/ci/xunit-coverage.xml"
 
-# 2) 杩愯鏋勫缓/娴嬭瘯锛堢‘淇濈敓鎴愯鐩栫巼锛?
+# 2) 运行构建/测试（确保生成覆盖率）
 dotnet build
 dotnet test Game.Core.Tests \
   --collect:"XPlat Code Coverage;Format=opencover;FileName=logs/ci/xunit-coverage.xml"
 
-# 3) 缁撴潫鍒嗘瀽
+# 3) 结束分析
 dotnet sonarscanner end /d:sonar.login="%SONAR_TOKEN%"
 ```
 
-璇存槑锛?
-- 鍦?CI 涓彲浣跨敤 `sonar.qualitygate.wait=true` 鎴栬鍙?Sonar API JSON 缁撴灉锛屽皢鍦堝鏉傚害/閲嶅鐜?璐ㄩ噺闂ㄧ瑙ｆ瀽鍚庝紶鍏?`quality_gates.py` 鑱氬悎銆?
-- 鑻ユ棤 Sonar 鏈嶅姟鍣紝鍙€€鍖栦负鈥滃鍑烘湰鍦?metrics JSON锛堢涓夋柟宸ュ叿鎴栬嚜缂栵級鈫?瑙ｆ瀽 鈫?鑱氬悎鈥濈殑娴佺▼銆?
+说明：
+- 在 CI 中可使用 `sonar.qualitygate.wait=true` 或读取 Sonar API JSON 结果，将圈复杂度/重复率/质量门禁解析后传入 `quality_gates.py` 聚合。
+- 若无 Sonar 服务器，可退化为“导出本地 metrics JSON（第三方工具或自编）→ 解析 → 聚合”的流程。
 
-### 4.1 鑴氭湰锛歡uard_ci.py锛圥ython 涓诲叆鍙ｏ級
+### 4.1 脚本：guard_ci.py（Python 主入口）
 
-**鑱岃矗**锛氬崗璋冩墍鏈夋祴璇曚笌鎵弿鐨勬墽琛岄『搴忥紝绠＄悊鏃ュ織鐩綍
+**职责**：协调所有测试与扫描的执行顺序，管理日志目录
 
 ```python
 # scripts/python/guard_ci.py
@@ -213,7 +213,7 @@ def main() -> int:
     log_dir.mkdir(parents=True, exist_ok=True)
     print('CI Logs:', log_dir)
 
-    # 1) xUnit 娴嬭瘯涓庤鐩栫巼
+    # 1) xUnit 测试与覆盖率
     run([
         'dotnet','test','Game.Core.Tests',
         '--configuration','Release','--no-build',
@@ -221,17 +221,17 @@ def main() -> int:
         '--collect:XPlat Code Coverage;Format=opencover;FileName=' + str(log_dir/'xunit-coverage.xml')
     ])
 
-    # 2) GdUnit4 鍐掔儫锛坔eadless锛?
+    # 2) GdUnit4 冒烟（headless）
     run([
         'godot','--headless','--path','Game.Godot',
         '--script','res://addons/gut/gut_cmdln.cs',
         '-gdir=Game.Godot/Tests','-goutput=' + str(log_dir/'gut-report.json')
     ])
 
-    # 3) 浠ｇ爜鎵弿锛堥噸澶嶇巼 绛夛級
+    # 3) 代码扫描（重复率 等）
     run(['npx','jscpd','--reporters','json','--json-file', str(log_dir/'jscpd-report.json'), '--pattern','**/*.{cs,gd}','--gitignore'])
 
-    # 4) 闂ㄧ鑱氬悎
+    # 4) 门禁聚合
     run(['py','-3','scripts/python/quality_gates.py',
          '--log-dir', str(log_dir),
          '--coverage-report', str(log_dir/'xunit-coverage.xml'),
@@ -249,9 +249,9 @@ if __name__ == '__main__':
         sys.exit(e.returncode)
 ```
 
-### 4.1.1 鎶ュ憡鏀堕泦涓庡鍒讹紙user:// 鈫?浠撳簱 logs/ci锛?
+### 4.1.1 报告收集与复制（user:// → 仓库 logs/ci）
 
-Godot 鍦?Windows 涓嬪皢 `user://` 鏄犲皠鍒?`C:\Users\<User>\AppData\Roaming\Godot\app_userdata\<ProjectName>`銆備负渚夸簬 CI 鑱氬悎闂ㄧ鎶ュ憡锛屽彲鍦?`guard_ci.py` 缁撴潫鍓嶈拷鍔犲涓嬫敹闆嗛€昏緫锛?
+Godot 在 Windows 下将 `user://` 映射到 `C:\Users\<User>\AppData\Roaming\Godot\app_userdata\<ProjectName>`。为便于 CI 聚合门禁报告，可在 `guard_ci.py` 结束前追加如下收集逻辑：
 
 ```python
 import os, shutil
@@ -267,30 +267,30 @@ def collect_user_reports(project_name: str, date_str: str, dest_dir: Path) -> No
         if f.is_file():
             shutil.copy2(f, dest_dir / f.name)
 
-# 鐢ㄦ硶绀轰緥锛?
+# 用法示例：
 # collect_user_reports(project_name='godotgame', date_str=datetime.now().strftime('%Y-%m-%d'), dest_dir=Path('logs')/'e2e'/datetime.now().strftime('%Y-%m-%d'))
 ```
 
-璇存槑锛圵indows 璺緞鏄犲皠锛夛細
-- `user://` 瀹為檯璺緞閫氬父浣嶄簬 `%APPDATA%\Godot\app_userdata\<ProjectName>`銆?
- - `<ProjectName>` 鍙栬嚜 `project.godot` 涓?`application/config/name`锛涜纭繚涓?CI 涓殑宸ョ▼鍚嶄竴鑷达紝浠ヤ究鏀堕泦鍣ㄨ兘鎵惧埌姝ｇ‘鐩綍銆?
+说明（Windows 路径映射）：
+- `user://` 实际路径通常位于 `%APPDATA%\Godot\app_userdata\<ProjectName>`。
+ - `<ProjectName>` 取自 `project.godot` 中 `application/config/name`；请确保与 CI 中的工程名一致，以便收集器能找到正确目录。
 
-鍙€夎緭鍏ワ紙GdUnit4 鍦烘櫙娴嬭瘯锛夛細
-- 鑻ュ凡灏?GdUnit4 鎶ュ憡澶嶅埗鍒?`logs/ci/YYYY-MM-DD/gdunit4/`锛屽彲鍦?`quality_gates.py` 涓鍔犺В鏋愭楠わ細
-  - 璇诲彇 `gdunit4-report.xml`锛圝Unit XML锛夋垨 `gdunit4-report.json`锛堣嫢瀛樺湪锛夛紝璁＄畻閫氳繃鐜囷紱
-  - 灏嗏€滃満鏅祴璇曢€氳繃鐜?100%鈥濅綔涓哄墠缃棬绂侊紝鍐嶆墽琛屾€ц兘闂ㄧ涓庡叾浠栬川閲忛棬绂侊紱
-  - 鎺ㄨ崘鍦?`guard_ci.py` 璋冪敤 `quality_gates.py` 鏃讹紝鏂板鍙傛暟濡?`--gdunit4-report` 浼犲叆鏂囦欢璺緞锛屼互缁熶竴鑱氬悎銆?
+可选输入（GdUnit4 场景测试）：
+- 若已将 GdUnit4 报告复制到 `logs/ci/YYYY-MM-DD/gdunit4/`，可在 `quality_gates.py` 中增加解析步骤：
+  - 读取 `gdunit4-report.xml`（JUnit XML）或 `gdunit4-report.json`（若存在），计算通过率；
+  - 将“场景测试通过率=100%”作为前置门禁，再执行性能门禁与其他质量门禁；
+  - 推荐在 `guard_ci.py` 调用 `quality_gates.py` 时，新增参数如 `--gdunit4-report` 传入文件路径，以统一聚合。
 
 ---
 
-## 鎵╁睍闂ㄧ锛堝彲閫?鎺ㄨ崘锛孏odot + C# 鐜锛?
+## 扩展门禁（可选/推荐，Godot + C# 环境）
 
-| # | 闂ㄧ鍚嶇О | 搴﹂噺鏍囧噯 | 闃堝€?| 宸ュ叿/鏉ユ簮 | 璇存槑 |
+| # | 门禁名称 | 度量标准 | 阈值 | 工具/来源 | 说明 |
 |---|---------|--------|------|-----------|-----|
-| 11 | Taskmaster 浠诲姟閾炬牎楠?| Errors Count | = 0 | taskmaster_validate.py | 瑙ｆ瀽浠诲姟閾句笌鍙嶉摼锛圵indows/py -3锛夛紝杈撳嚭 JSON锛涘け璐ラ樆鏂?|
-| 12 | 濂戠害鏍￠獙锛圕# Contracts锛?| Errors Count | = 0 | contracts_validate.py 鎴?C# 楠岃瘉鍣?| 瀵?`Game.Core/Contracts/**` DTO/浜嬩欢濂戠害杩涜绾︽潫鏍￠獙锛圖ataAnnotations/鑷畾涔夎鍒欙級锛岃緭鍑?JSON锛涘け璐ラ樆鏂?|
+| 11 | Taskmaster 任务链校验 | Errors Count | = 0 | taskmaster_validate.py | 解析任务链与反链（Windows/py -3），输出 JSON；失败阻断 |
+| 12 | 契约校验（C# Contracts） | Errors Count | = 0 | contracts_validate.py 或 C# 验证器 | 对 `Game.Core/Contracts/**` DTO/事件契约进行约束校验（DataAnnotations/自定义规则），输出 JSON；失败阻断 |
 
-guard_ci.py 鍙傛暟鎵╁睍璇存槑锛堢ず渚嬶級锛?
+guard_ci.py 参数扩展说明（示例）：
 ```
 py -3 scripts/python/quality_gates.py \
   --log-dir logs/ci/2025-11-07 \
@@ -302,13 +302,13 @@ py -3 scripts/python/quality_gates.py \
   --contracts-report logs/ci/2025-11-07/contracts-report.json
 ```
 
-璇存槑锛氭墿灞曢棬绂佺殑鎶ュ憡鏂囦欢鍙湪鈥滄姤鍛婃敹闆嗕笌澶嶅埗鈥濇楠や腑缁熶竴褰掗泦鍚庡啀浼犲叆鑱氬悎鑴氭湰锛涘湪 Godot + C# 鐜涓嬶紝濂戠害鐩綍寤鸿浣嶄簬 `Game.Core/Contracts/**`锛屼娇鐢?C# 楠岃瘉鍣紙DataAnnotations/鑷畾涔夎鍒欙級瀵煎嚭 JSON銆?
+说明：扩展门禁的报告文件可在“报告收集与复制”步骤中统一归集后再传入聚合脚本；在 Godot + C# 环境下，契约目录建议位于 `Game.Core/Contracts/**`，使用 C# 验证器（DataAnnotations/自定义规则）导出 JSON。
 
 ---
 
-### 4.2 鑴氭湰锛歳un_xunit_tests.ps1
+### 4.2 脚本：run_xunit_tests.ps1
 
-**鑱岃矗**锛氭墽琛?xUnit 娴嬭瘯骞舵敹闆?OpenCover 瑕嗙洊鐜囨姤鍛?
+**职责**：执行 xUnit 测试并收集 OpenCover 覆盖率报告
 
 ```powershell
 # scripts/ci/run_xunit_tests.ps1
@@ -320,15 +320,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# xUnit 椤圭洰璺緞
+# xUnit 项目路径
 $xunitProject = "Game.Core.Tests"
 $coverageReport = "$LogDir/xunit-coverage.xml"
 
 Write-Host "xUnit Project: $xunitProject"
 Write-Host "Coverage Report: $coverageReport"
 
-# 妫€鏌?OpenCover 瀹夎锛堟垨浣跨敤 dotnet 鍐呯疆锛?
-# 鎵ц娴嬭瘯骞舵敹闆嗚鐩栫巼
+# 检查 OpenCover 安装（或使用 dotnet 内置）
+# 执行测试并收集覆盖率
 $testCommand = @(
     "dotnet", "test", $xunitProject,
     "--configuration Release",
@@ -351,9 +351,9 @@ exit 0
 
 ---
 
-### 4.3 鑴氭湰锛歳un_gut_tests.ps1
+### 4.3 脚本：run_gut_tests.ps1
 
-**鑱岃矗**锛氭墽琛?GdUnit4 鍐掔儫娴嬭瘯锛岀敓鎴?JSON 鏍煎紡鎶ュ憡
+**职责**：执行 GdUnit4 冒烟测试，生成 JSON 格式报告
 
 ```powershell
 # scripts/ci/run_gut_tests.ps1
@@ -366,16 +366,16 @@ param(
 $ErrorActionPreference = "Stop"
 
 $gutReport = "$LogDir/gut-report.json"
-$gutProjectPath = "."  # Godot 椤圭洰鏍圭洰褰?
+$gutProjectPath = "."  # Godot 项目根目录
 
 Write-Host "GdUnit4 Project: $gutProjectPath"
 Write-Host "Report: $gutReport"
 
-# 浣跨敤 Godot headless + GdUnit4 runner scene
+# 使用 Godot headless + GdUnit4 runner scene
 $gutCommand = @(
     "godot", "--headless", "--no-window",
     "--scene", "res://tests/SmokeTestRunner.tscn",
-    "--", "output=$gutReport"  # GdUnit4 鍛戒护琛屽弬鏁?
+    "--", "output=$gutReport"  # GdUnit4 命令行参数
 )
 
 Write-Host "Running: $($gutCommand -join ' ')" -ForegroundColor Cyan
@@ -383,10 +383,10 @@ Write-Host "Running: $($gutCommand -join ' ')" -ForegroundColor Cyan
 
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "GdUnit4 execution returned non-zero, but may contain passing tests"
-    # GdUnit4 鍙兘杩斿洖闈為浂锛屽嵆浣挎祴璇曢€氳繃锛涢渶鍦?Python 楠岃瘉闃舵澶勭悊
+    # GdUnit4 可能返回非零，即使测试通过；需在 Python 验证阶段处理
 }
 
-# 楠岃瘉鎶ュ憡鏂囦欢瀛樺湪
+# 验证报告文件存在
 if (-not (Test-Path $gutReport)) {
     Write-Error "GdUnit4 report file not generated: $gutReport"
     exit 1
@@ -398,9 +398,9 @@ exit 0
 
 ---
 
-### 4.4 鑴氭湰锛歳un_code_scans.ps1
+### 4.4 脚本：run_code_scans.ps1
 
-**鑱岃矗**锛氭墽琛屼唬鐮佹壂鎻忥紙閲嶅鐜囥€佸鏉傚害銆佷緷璧栨鏌ワ級
+**职责**：执行代码扫描（重复率、复杂度、依赖检查）
 
 ```powershell
 # scripts/ci/run_code_scans.ps1
@@ -414,12 +414,12 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Running code quality scans..." -ForegroundColor Cyan
 
-# 1. jscpd - 閲嶅鐜囨鏌?
+# 1. jscpd - 重复率检查
 Write-Host "`n[Scan 1/3] jscpd (duplication)..." -ForegroundColor Yellow
 $jscpdReport = "$LogDir/jscpd-report.json"
 $jscpdCmd = @(
     "npx", "jscpd",
-    "--threshold", "2",  # 澶辫触闃堝€?2%
+    "--threshold", "2",  # 失败阈值 2%
     "--gitignore",
     "--reporters", "json",
     "--json-file", $jscpdReport,
@@ -430,10 +430,10 @@ $jscpdCmd = @(
 & $jscpdCmd[0] $jscpdCmd[1..($jscpdCmd.Length-1)]
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "jscpd check failed (duplication > 2%)"
-    # 妫€鏌ユ槸鍚︾湡鐨勮秴闃堝€硷紝鎴栧彧鏄鍛?
+    # 检查是否真的超阈值，或只是警告
 }
 
-# 2. complexity-report - 鍦堝鏉傚害
+# 2. complexity-report - 圈复杂度
 Write-Host "`n[Scan 2/3] complexity-report..." -ForegroundColor Yellow
 $complexityReport = "$LogDir/complexity-report.json"
 $complexityCmd = @(
@@ -447,7 +447,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Warning "complexity-report execution had issues (may be non-blocking)"
 }
 
-# 3. dependency-cruiser - 渚濊禆妫€鏌?
+# 3. dependency-cruiser - 依赖检查
 Write-Host "`n[Scan 3/3] dependency-cruiser (circular/cross-layer)..." -ForegroundColor Yellow
 $depCruiserReport = "$LogDir/dependency-cruiser.json"
 $depCmd = @(
@@ -468,20 +468,20 @@ exit 0
 
 ---
 
-### 4.5 鑴氭湰锛歲uality_gates.py锛圥ython 闂ㄧ鑱氬悎锛?
+### 4.5 脚本：quality_gates.py（Python 门禁聚合）
 
-**鑱岃矗**锛氳В鏋愭墍鏈夋姤鍛婏紝妫€鏌ラ棬绂侊紝鐢熸垚鏈€缁堟姤鍛?
+**职责**：解析所有报告，检查门禁，生成最终报告
 
 ```python
 #!/usr/bin/env python3
 """
 scripts/python/quality_gates.py
 
-璐ㄩ噺闂ㄧ鑱氬悎涓庡喅绛栧紩鎿?
-- 璇诲彇 xUnit/GdUnit4/jscpd/complexity 鎶ュ憡
-- 閫愰」妫€鏌ラ棬绂侊紙10 椤癸級
-- 鐢熸垚 HTML/JSON 杈撳嚭
-- 杩斿洖 exit code锛?=pass, 1=fail锛?
+质量门禁聚合与决策引擎
+- 读取 xUnit/GdUnit4/jscpd/complexity 报告
+- 逐项检查门禁（10 项）
+- 生成 HTML/JSON 输出
+- 返回 exit code（0=pass, 1=fail）
 """
 
 import json
@@ -498,7 +498,7 @@ class QualityGatesReport:
         self.timestamp = datetime.now().isoformat()
         
     def check_gate_1_xunit_lines_coverage(self, coverage_report_path):
-        """xUnit 瑕嗙洊鐜囷紙琛岋級鈮?0%"""
+        """xUnit 覆盖率（行）≥90%"""
         gate_id = "GATE-1"
         gate_name = "xUnit Line Coverage"
         threshold = 90
@@ -507,7 +507,7 @@ class QualityGatesReport:
             tree = ET.parse(coverage_report_path)
             root = tree.getroot()
             
-            # OpenCover XML 鏍煎紡锛?CoverageSession ... lineCoverage="XX.XX">
+            # OpenCover XML 格式：<CoverageSession ... lineCoverage="XX.XX">
             line_coverage = float(root.get('lineCoverage', '0'))
             
             passed = line_coverage >= threshold
@@ -516,7 +516,7 @@ class QualityGatesReport:
                 'threshold': f'{threshold}%',
                 'actual': f'{line_coverage:.2f}%',
                 'passed': passed,
-                'reason': f"Line coverage {line_coverage:.2f}% {'鈮? if passed else '<'} {threshold}%"
+                'reason': f"Line coverage {line_coverage:.2f}% {'≥' if passed else '<'} {threshold}%"
             }
             return passed
         except Exception as e:
@@ -530,7 +530,7 @@ class QualityGatesReport:
             return False
     
     def check_gate_2_xunit_branches_coverage(self, coverage_report_path):
-        """xUnit 瑕嗙洊鐜囷紙鍒嗘敮锛夆墺85%"""
+        """xUnit 覆盖率（分支）≥85%"""
         gate_id = "GATE-2"
         gate_name = "xUnit Branch Coverage"
         threshold = 85
@@ -547,7 +547,7 @@ class QualityGatesReport:
                 'threshold': f'{threshold}%',
                 'actual': f'{branch_coverage:.2f}%',
                 'passed': passed,
-                'reason': f"Branch coverage {branch_coverage:.2f}% {'鈮? if passed else '<'} {threshold}%"
+                'reason': f"Branch coverage {branch_coverage:.2f}% {'≥' if passed else '<'} {threshold}%"
             }
             return passed
         except Exception as e:
@@ -561,7 +561,7 @@ class QualityGatesReport:
             return False
     
     def check_gate_3_gut_pass_rate(self, gut_report_path):
-        """GdUnit4 鍐掔儫閫氳繃鐜?= 100%"""
+        """GdUnit4 冒烟通过率 = 100%"""
         gate_id = "GATE-3"
         gate_name = "GdUnit4 Pass Rate"
         threshold = 100
@@ -570,7 +570,7 @@ class QualityGatesReport:
             with open(gut_report_path, 'r', encoding='utf-8') as f:
                 gut_data = json.load(f)
             
-            # GdUnit4 鎶ュ憡鏍煎紡锛歿 "tests": [{...}], "passed": N, "failed": N }
+            # GdUnit4 报告格式：{ "tests": [{...}], "passed": N, "failed": N }
             total = gut_data.get('total_tests', 0)
             passed = gut_data.get('passed_tests', 0)
             
@@ -585,7 +585,7 @@ class QualityGatesReport:
                 'threshold': f'{threshold}%',
                 'actual': f'{pass_rate:.1f}% ({passed}/{total})',
                 'passed': passed_gate,
-                'reason': f"GdUnit4 Pass Rate {pass_rate:.1f}% {'鈮? if passed_gate else '<'} {threshold}%"
+                'reason': f"GdUnit4 Pass Rate {pass_rate:.1f}% {'≥' if passed_gate else '<'} {threshold}%"
             }
             return passed_gate
         except Exception as e:
@@ -599,7 +599,7 @@ class QualityGatesReport:
             return False
     
     def check_gate_4_duplication_rate(self, jscpd_report_path):
-        """浠ｇ爜閲嶅鐜?鈮?%"""
+        """代码重复率 ≤2%"""
         gate_id = "GATE-4"
         gate_name = "Code Duplication"
         threshold = 2
@@ -608,7 +608,7 @@ class QualityGatesReport:
             with open(jscpd_report_path, 'r', encoding='utf-8') as f:
                 jscpd_data = json.load(f)
             
-            # jscpd 鎶ュ憡锛歿 "duplicates": [...], "statistics": { "total": N, "clones": M } }
+            # jscpd 报告：{ "duplicates": [...], "statistics": { "total": N, "clones": M } }
             duplicates = jscpd_data.get('duplicates', [])
             statistics = jscpd_data.get('statistics', {})
             total_lines = statistics.get('total', 1)
@@ -619,16 +619,16 @@ class QualityGatesReport:
             passed = dup_rate <= threshold
             self.gates[gate_id] = {
                 'name': gate_name,
-                'threshold': f'鈮threshold}%',
+                'threshold': f'≤{threshold}%',
                 'actual': f'{dup_rate:.2f}% ({duplicate_lines}/{total_lines} lines)',
                 'passed': passed,
-                'reason': f"Duplication {dup_rate:.2f}% {'鈮? if passed else '>'} {threshold}%"
+                'reason': f"Duplication {dup_rate:.2f}% {'≤' if passed else '>'} {threshold}%"
             }
             return passed
         except Exception as e:
             self.gates[gate_id] = {
                 'name': gate_name,
-                'threshold': f'鈮threshold}%',
+                'threshold': f'≤{threshold}%',
                 'actual': 'ERROR',
                 'passed': False,
                 'reason': f"Failed to parse jscpd report: {str(e)}"
@@ -636,7 +636,7 @@ class QualityGatesReport:
             return False
     
     def check_gate_5_6_cyclomatic_complexity(self, complexity_report_path):
-        """鍦堝鏉傚害锛歮ax 鈮?0, avg 鈮?"""
+        """圈复杂度：max ≤10, avg ≤5"""
         gate_5_id = "GATE-5"
         gate_6_id = "GATE-6"
         gate_5_name = "Max Cyclomatic Complexity"
@@ -648,7 +648,7 @@ class QualityGatesReport:
             with open(complexity_report_path, 'r', encoding='utf-8') as f:
                 complexity_data = json.load(f)
             
-            # complexity-report 鏍煎紡锛歔{ "name": "...", "complexity": N }, ...]
+            # complexity-report 格式：[{ "name": "...", "complexity": N }, ...]
             complexities = [item.get('complexity', 0) for item in complexity_data if isinstance(item, dict)]
             
             if not complexities:
@@ -663,32 +663,32 @@ class QualityGatesReport:
             
             self.gates[gate_5_id] = {
                 'name': gate_5_name,
-                'threshold': f'鈮threshold_max}',
+                'threshold': f'≤{threshold_max}',
                 'actual': f'{max_complexity:.1f}',
                 'passed': passed_5,
-                'reason': f"Max complexity {max_complexity:.1f} {'鈮? if passed_5 else '>'} {threshold_max}"
+                'reason': f"Max complexity {max_complexity:.1f} {'≤' if passed_5 else '>'} {threshold_max}"
             }
             
             self.gates[gate_6_id] = {
                 'name': gate_6_name,
-                'threshold': f'鈮threshold_avg}',
+                'threshold': f'≤{threshold_avg}',
                 'actual': f'{avg_complexity:.2f}',
                 'passed': passed_6,
-                'reason': f"Avg complexity {avg_complexity:.2f} {'鈮? if passed_6 else '>'} {threshold_avg}"
+                'reason': f"Avg complexity {avg_complexity:.2f} {'≤' if passed_6 else '>'} {threshold_avg}"
             }
             
             return passed_5 and passed_6
         except Exception as e:
             self.gates[gate_5_id] = {
                 'name': gate_5_name,
-                'threshold': f'鈮threshold_max}',
+                'threshold': f'≤{threshold_max}',
                 'actual': 'ERROR',
                 'passed': False,
                 'reason': f"Failed to parse complexity report: {str(e)}"
             }
             self.gates[gate_6_id] = {
                 'name': gate_6_name,
-                'threshold': f'鈮threshold_avg}',
+                'threshold': f'≤{threshold_avg}',
                 'actual': 'ERROR',
                 'passed': False,
                 'reason': f"Failed to parse complexity report: {str(e)}"
@@ -696,7 +696,7 @@ class QualityGatesReport:
             return False
     
     def check_gate_7_8_dependencies(self, dep_cruiser_report_path):
-        """寰幆渚濊禆 & 璺ㄥ眰渚濊禆 = 0"""
+        """循环依赖 & 跨层依赖 = 0"""
         gate_7_id = "GATE-7"
         gate_8_id = "GATE-8"
         gate_7_name = "Circular Dependencies"
@@ -706,11 +706,11 @@ class QualityGatesReport:
             with open(dep_cruiser_report_path, 'r', encoding='utf-8') as f:
                 dep_data = json.load(f)
             
-            # dependency-cruiser 鏍煎紡锛歿 "modules": [...], "summary": { "error": N, "warn": M } }
+            # dependency-cruiser 格式：{ "modules": [...], "summary": { "error": N, "warn": M } }
             violations = dep_data.get('summary', {}).get('error', 0)
             warnings = dep_data.get('summary', {}).get('warn', 0)
             
-            # 杩欓噷绠€鍖栧鐞嗭紱瀹為檯鍙粏鍒嗗惊鐜緷璧?vs 璺ㄥ眰
+            # 这里简化处理；实际可细分循环依赖 vs 跨层
             circular_deps = violations
             cross_layer_violations = warnings
             
@@ -752,13 +752,13 @@ class QualityGatesReport:
             return False
     
     def check_gate_9_performance_baseline(self):
-        """鎬ц兘鍩哄噯锛圥95锛夆墹16.67ms"""
+        """性能基准（P95）≤16.67ms"""
         gate_id = "GATE-9"
         gate_name = "Performance Baseline (P95)"
         threshold = 16.67
         
-        # 浠?GdUnit4 鐑熸祴鎶ュ憡涓彁鍙栨€ц兘鏁版嵁
-        # 杩欓噷绀轰緥锛屽疄闄呴渶浠?PerformanceTracker.cs 杈撳嚭鐨勬暟鎹枃浠惰鍙?
+        # 从 GdUnit4 烟测报告中提取性能数据
+        # 这里示例，实际需从 PerformanceTracker.cs 输出的数据文件读取
         try:
             perf_report = self.log_dir / "performance-tracker.json"
             if perf_report.exists():
@@ -769,28 +769,28 @@ class QualityGatesReport:
                 passed = p95_time <= threshold
             else:
                 p95_time = None
-                passed = True  # 濡傛灉娌℃湁鎬ц兘鏁版嵁锛屾殏鏃堕€氳繃锛堝彲閫夛級
+                passed = True  # 如果没有性能数据，暂时通过（可选）
             
             self.gates[gate_id] = {
                 'name': gate_name,
-                'threshold': f'鈮threshold}ms',
+                'threshold': f'≤{threshold}ms',
                 'actual': f'{p95_time:.2f}ms' if p95_time else 'N/A',
                 'passed': passed,
-                'reason': f"P95 frame time {p95_time:.2f}ms {'鈮? if passed else '>'} {threshold}ms" if p95_time else "No perf data"
+                'reason': f"P95 frame time {p95_time:.2f}ms {'≤' if passed else '>'} {threshold}ms" if p95_time else "No perf data"
             }
             return passed
         except Exception as e:
             self.gates[gate_id] = {
                 'name': gate_name,
-                'threshold': f'鈮threshold}ms',
+                'threshold': f'≤{threshold}ms',
                 'actual': 'ERROR',
-                'passed': True,  # 鏆傛椂鏀捐
+                'passed': True,  # 暂时放行
                 'reason': f"Performance data not available (optional): {str(e)}"
             }
             return True
     
     def check_gate_10_audit_logs_format(self):
-        """瀹¤鏃ュ織鏍煎紡锛圝SONL锛? 100% 鏈夋晥"""
+        """审计日志格式（JSONL）= 100% 有效"""
         gate_id = "GATE-10"
         gate_name = "Audit Log Format (JSONL)"
         
@@ -833,7 +833,7 @@ class QualityGatesReport:
                 'threshold': '100%',
                 'actual': f'{validity_rate:.1f}% ({valid_lines}/{total_lines})',
                 'passed': passed,
-                'reason': f"JSONL validity {validity_rate:.1f}% {'=' if passed else '鈮?} 100%"
+                'reason': f"JSONL validity {validity_rate:.1f}% {'=' if passed else '≠'} 100%"
             }
             return passed
         except Exception as e:
@@ -847,7 +847,7 @@ class QualityGatesReport:
             return True
     
     def run_all_checks(self, coverage_report, gut_report, jscpd_report, complexity_report, dep_cruiser_report):
-        """鎵ц鎵€鏈?10 椤归棬绂佹鏌?""
+        """执行所有 10 项门禁检查"""
         results = []
         
         results.append(self.check_gate_1_xunit_lines_coverage(coverage_report))
@@ -868,7 +868,7 @@ class QualityGatesReport:
         return all(results)
     
     def generate_html_report(self, output_path):
-        """鐢熸垚 HTML 鎶ュ憡"""
+        """生成 HTML 报告"""
         passed_count = sum(1 for g in self.gates.values() if g['passed'])
         total_count = len(self.gates)
         
@@ -936,7 +936,7 @@ class QualityGatesReport:
             f.write(html)
     
     def generate_json_report(self, output_path):
-        """鐢熸垚 JSON 鎶ュ憡"""
+        """生成 JSON 报告"""
         report = {
             'timestamp': self.timestamp,
             'summary': {
@@ -964,7 +964,7 @@ def main():
     
     report = QualityGatesReport(args.log_dir)
     
-    # 杩愯鎵€鏈夋鏌?
+    # 运行所有检查
     all_passed = report.run_all_checks(
         args.coverage_report,
         args.gut_report,
@@ -973,7 +973,7 @@ def main():
         args.dep_cruiser_report or (Path(args.log_dir) / "dependency-cruiser.json")
     )
     
-    # 鐢熸垚鎶ュ憡
+    # 生成报告
     log_dir = Path(args.log_dir)
     report.generate_html_report(log_dir / "quality-gates.html")
     report.generate_json_report(log_dir / "quality-gates.json")
@@ -996,9 +996,9 @@ if __name__ == '__main__':
 
 ---
 
-### 4.6 GitHub Actions 宸ヤ綔娴侊細guard-ci.yml
+### 4.6 GitHub Actions 工作流：guard-ci.yml
 
-**鑱岃矗**锛欳I/CD 鑷姩鍖栧叆鐐癸紝璋冪敤鏈湴鑴氭湰锛屼笂浼犲伐浠?
+**职责**：CI/CD 自动化入点，调用本地脚本，上传工件
 
 ```yaml
 # .github/workflows/guard-ci.yml
@@ -1059,20 +1059,20 @@ jobs:
           script: |
             const fs = require('fs');
             const reportPath = 'logs/ci/*/quality-gates.json';
-            // 瑙ｆ瀽鎶ュ憡锛屽啓鍏?PR 璇勮
+            // 解析报告，写入 PR 评论
 ```
 
 ---
 
-## 5. 闆嗘垚鐐逛笌宸ヤ綔娴?
+## 5. 集成点与工作流
 
-### 5.1 鏈湴寮€鍙戞祦绋?
+### 5.1 本地开发流程
 
 ```bash
-# 寮€鍙戣€呮彁浜ゅ墠杩愯鏈湴 guard:ci
+# 开发者提交前运行本地 guard:ci
 npm run guard:ci
 
-# 杈撳嚭绀轰緥
+# 输出示例
 # [Step 1/4] Running xUnit tests with coverage...
 # xUnit tests completed
 # [Step 2/4] Running GdUnit4 smoke tests...
@@ -1091,128 +1091,109 @@ npm run guard:ci
 # ============================================================
 ```
 
-### 5.2 CI 宸ヤ綔娴?
+### 5.2 CI 工作流
 
 ```
-PR 鍒涘缓 / push to develop
-    鈹?
-    鈻?
+PR 创建 / push to develop
+    │
+    ▼
 guard-ci.yml workflow triggered
-    鈹?
-    鈹溾攢鈻?setup (.NET, Node, Python)
-    鈹溾攢鈻?npm install / dotnet restore
-    鈹溾攢鈻?pwsh scripts/guard.ps1
-    鈹?  鈹溾攢鈻?run_xunit_tests.ps1
-    鈹?  鈹溾攢鈻?run_gut_tests.ps1
-    鈹?  鈹溾攢鈻?run_code_scans.ps1
-    鈹?  鈹斺攢鈻?quality_gates.py
-    鈹?
-    鈻?(always)
+    │
+    ├─► setup (.NET, Node, Python)
+    ├─► npm install / dotnet restore
+    ├─► pwsh scripts/guard.ps1
+    │   ├─► run_xunit_tests.ps1
+    │   ├─► run_gut_tests.ps1
+    │   ├─► run_code_scans.ps1
+    │   └─► quality_gates.py
+    │
+    ▼ (always)
 Upload artifacts: logs/ci/*
-    鈹?
-    鈻?(on pull_request)
+    │
+    ▼ (on pull_request)
 Comment PR with quality-gates.json summary
-    鈹?
-    鈻?
+    │
+    ▼
 Branch protection rule checks:
   - status: guard-ci / quality-gates
-  - if FAIL 鈫?block merge
-  - if PASS 鈫?allow merge
+  - if FAIL → block merge
+  - if PASS → allow merge
 ```
 
 ---
 
-## 6. 瀹屾垚娓呭崟涓庨獙鏀舵爣鍑?
+## 6. 完成清单与验收标准
 
-### 6.1 瀹炵幇妫€鏌ユ竻鍗?
+### 6.1 实现检查清单
 
-- [ ] 鍒涘缓 `scripts/guard.ps1` 涓诲叆鍙ｈ剼鏈?
-- [ ] 鍒涘缓 `scripts/ci/run_xunit_tests.ps1`
-- [ ] 鍒涘缓 `scripts/ci/run_gut_tests.ps1`
-- [ ] 鍒涘缓 `scripts/ci/run_code_scans.ps1`
-- [ ] 鍒涘缓 `scripts/python/quality_gates.py`锛堝惈 10 椤归棬绂佹鏌ワ級
-- [ ] 鍒涘缓 `.github/workflows/guard-ci.yml`
-- [ ] 鍦?`package.json` 涓厤缃?`guard:ci` 鑴氭湰
-- [ ] 寤虹珛 `logs/ci/` 鐩綍缁撴瀯涓庢棩蹇楄鑼?
-- [ ] 缂栧啓 Phase 13 瀹屾暣鏂囨。锛堟湰鏂囨。锛?
-- [ ] 鏈湴娴嬭瘯 `npm run guard:ci` 鎴愬姛閫氳繃
+- [ ] 创建 `scripts/guard.ps1` 主入口脚本
+- [ ] 创建 `scripts/ci/run_xunit_tests.ps1`
+- [ ] 创建 `scripts/ci/run_gut_tests.ps1`
+- [ ] 创建 `scripts/ci/run_code_scans.ps1`
+- [ ] 创建 `scripts/python/quality_gates.py`（含 10 项门禁检查）
+- [ ] 创建 `.github/workflows/guard-ci.yml`
+- [ ] 在 `package.json` 中配置 `guard:ci` 脚本
+- [ ] 建立 `logs/ci/` 目录结构与日志规范
+- [ ] 编写 Phase 13 完整文档（本文档）
+- [ ] 本地测试 `npm run guard:ci` 成功通过
 
-### 6.2 楠屾敹鏍囧噯
+### 6.2 验收标准
 
-| 椤圭洰 | 楠屾敹鏍囧噯 | 纭 |
+| 项目 | 验收标准 | 确认 |
 |-----|--------|------|
-| 鑴氭湰瀹屾暣鎬?| 5 涓剼鏈?+ 1 涓伐浣滄祦瀹屾暣鍙繍琛?| 鈻?|
-| 闂ㄧ鍏ㄨ鐩?| 10 椤归棬绂佸叏閮ㄦ鏌ヤ笖鏈夌悊鐢辫鏄?| 鈻?|
-| 鎶ュ憡鐢熸垚 | HTML + JSON 鎶ュ憡鑷姩鐢熸垚 | 鈻?|
-| 鏈湴鎵ц | `npm run guard:ci` <2min 瀹屾垚 | 鈻?|
-| CI 闆嗘垚 | GitHub Actions 鑷姩瑙﹀彂锛岀粨鏋滆瘎璁?PR | 鈻?|
-| 鏂囨。瀹屾暣 | Phase 13 鏂囨。 鈮?00 琛岋紝鍚唬鐮佺ず渚?| 鈻?|
-| 鏃ュ織瑙勮寖 | `logs/ci/YYYY-MM-DD/` 鐩綍鑷姩鍒涘缓 | 鈻?|
+| 脚本完整性 | 5 个脚本 + 1 个工作流完整可运行 | □ |
+| 门禁全覆盖 | 10 项门禁全部检查且有理由说明 | □ |
+| 报告生成 | HTML + JSON 报告自动生成 | □ |
+| 本地执行 | `npm run guard:ci` <2min 完成 | □ |
+| CI 集成 | GitHub Actions 自动触发，结果评论 PR | □ |
+| 文档完整 | Phase 13 文档 ≥800 行，含代码示例 | □ |
+| 日志规范 | `logs/ci/YYYY-MM-DD/` 目录自动创建 | □ |
 
 ---
 
-## 7. 椋庨櫓涓庣紦瑙?
+## 7. 风险与缓解
 
-| # | 椋庨櫓 | 绛夌骇 | 缂撹В |
+| # | 风险 | 等级 | 缓解 |
 |---|-----|------|-----|
-| 1 | xUnit/GdUnit4 鎶ュ憡鏍煎紡鍙樻洿 | 涓?| 鐗堟湰閿佸畾锛屽畾鏈熸洿鏂拌В鏋愬櫒 |
-| 2 | 鎵弿宸ュ叿缃戠粶瓒呮椂 | 涓?| 绂荤嚎缂撳瓨锛岃秴鏃堕檷绾э紙璀﹀憡鑰岄潪澶辫触锛?|
-| 3 | PowerShell 璺ㄥ钩鍙伴棶棰?| 楂?| 浠呮敮鎸?Windows锛堝凡鏄庣‘锛夛紝鏈潵鎵╁睍鑰冭檻 core |
-| 4 | 瑕嗙洊鐜囬槇鍊艰繃楂樺鑷撮绻?fail | 涓?| 鍓?2 鍛ㄥ鏉撅紙85%锛夛紝閫愭鎻愰珮鍒?90% |
-| 5 | 鎬ц兘鍩哄噯閲囬泦涓嶇ǔ瀹?| 涓?| 閲囬泦 5 娆″彇鍧囧€硷紝baseline.json 鐗堟湰鍖?|
+| 1 | xUnit/GdUnit4 报告格式变更 | 中 | 版本锁定，定期更新解析器 |
+| 2 | 扫描工具网络超时 | 中 | 离线缓存，超时降级（警告而非失败） |
+| 3 | PowerShell 跨平台问题 | 高 | 仅支持 Windows（已明确），未来扩展考虑 core |
+| 4 | 覆盖率阈值过高导致频繁 fail | 中 | 前 2 周宽松（85%），逐步提高到 90% |
+| 5 | 性能基准采集不稳定 | 中 | 采集 5 次取均值，baseline.json 版本化 |
 
 ---
 
-## 8. 鍚庣画宸ヤ綔锛圥hase 14-22锛?
+## 8. 后续工作（Phase 14-22）
 
-瀹屾垚 Phase 13 鍚庯紝鍚庣画宸ヤ綔搴忓垪锛?
+完成 Phase 13 后，后续工作序列：
 
-- **Phase 14**锛欸odot 瀹夊叏鍩虹嚎涓庡璁★紙Security.cs 瀹屾暣瀹炵幇銆丣SONL 鏃ュ織锛?
-- **Phase 15**锛氭€ц兘棰勭畻涓庨棬绂侊紙PerformanceTracker 鍩哄噯銆佽嚜鍔ㄥ洖褰掓娴嬶級
-- **Phase 16**锛氬彲瑙傛祴鎬т笌 Sentry 闆嗘垚锛圧elease Health 闂ㄧ锛?
-- **Phase 17-22**锛氭瀯寤恒€佸彂甯冦€佸洖婊氥€佸姛鑳介獙鏀躲€佹€ц兘浼樺寲銆佹枃妗ｆ洿鏂?
-
----
-
-## 9. 鍙傝€冧笌閾炬帴
-
-- **ADR-0005**锛氳川閲忛棬绂?- 瑕嗙洊鐜囥€佸鏉傚害銆侀噸澶嶇巼
-- **ADR-0003**锛氬彲瑙傛祴鎬т笌 Sentry - 鍙戝竷鍋ュ悍闂ㄧ
-- **ADR-0001**锛氭妧鏈爤涓?Godot 闆嗘垚
-- **Phase 10**锛歺Unit 妗嗘灦涓庨」鐩粨鏋?
-- **Phase 11**锛欸dUnit4 妗嗘灦涓庡満鏅祴璇?
-- **Phase 12**锛欻eadless 鐑熸祴涓庢€ц兘閲囬泦
+- **Phase 14**：Godot 安全基线与审计（Security.cs 完整实现、JSONL 日志）
+- **Phase 15**：性能预算与门禁（PerformanceTracker 基准、自动回归检测）
+- **Phase 16**：可观测性与 Sentry 集成（Release Health 门禁）
+- **Phase 17-22**：构建、发布、回滚、功能验收、性能优化、文档更新
 
 ---
 
-**鏂囨。鐗堟湰**锛?.0  
-**瀹屾垚鏃ユ湡**锛?025-11-07  
-**浣滆€?*锛欳laude Code  
-**鐘舵€?*锛歊eady for Implementation
+## 9. 参考与链接
+
+- **ADR-0005**：质量门禁 - 覆盖率、复杂度、重复率
+- **ADR-0003**：可观测性与 Sentry - 发布健康门禁
+- **ADR-0001**：技术栈与 Godot 集成
+- **Phase 10**：xUnit 框架与项目结构
+- **Phase 11**：GdUnit4 框架与场景测试
+- **Phase 12**：Headless 烟测与性能采集
+
+---
+
+**文档版本**：1.0  
+**完成日期**：2025-11-07  
+**作者**：Claude Code  
+**状态**：Ready for Implementation
 
 
-> 鍙傝€?Runner 鎺ュ叆鎸囧崡锛氳 docs/migration/gdunit4-csharp-runner-integration.md銆?
+> 参考 Runner 接入指南：见 docs/migration/gdunit4-csharp-runner-integration.md。
 
 
 py -3 scripts/python/quality_gates.py   --log-dir logs/ci/2025-11-07   --coverage-report logs/ci/2025-11-07/xunit-coverage.xml   --gut-report logs/ci/2025-11-07/gut-report.json   --jscpd-report logs/ci/2025-11-07/jscpd-report.json   --gdunit4-report logs/ci/2025-11-07/gdunit4/gdunit4-report.xml   --taskmaster-report logs/ci/2025-11-07/taskmaster-report.json   --contracts-report logs/ci/2025-11-07/contracts-report.json   --perf-report logs/ci/2025-11-07/perf.json
 
-> 鎻愮ず锛歚perf.json` 瀛楁绀轰緥涓庤鑼冭 Phase-15锛堟€ц兘闂ㄧ锛夋枃妗ｄ腑鐨勨€滄姤鍛婅緭鍑轰笌鑱氬悎鈥濄€?
-
-## 模板质量门禁脚本 / Template Quality Gate
-
-- 一键门禁：`./scripts/ci/quality_gate.ps1 -GodotBin "$env:GODOT_BIN" [-IncludeDemo] [-WithExport] [-WithCoverage]`
-- 步骤：
-  1) dotnet tests（可选覆盖率）
-  2) GdUnit4 tests（示例测试默认关闭，可用 -IncludeDemo 启用）
-  3) Headless smoke（无界面冒烟）
-  4) Export + EXE smoke（可选 -WithExport）
-
-退出码：通过=0，失败=1（便于 CI 集成）
-
-
-## GitHub Actions（Windows） / CI Template
-
-- 工作流：`.github/workflows/windows-quality-gate.yml`（手动触发 `workflow_dispatch`）
-- 步骤：Checkout → Setup .NET → 下载 Godot .NET（mono）→ 运行 `scripts/ci/quality_gate.ps1`
-- 默认不包含导出（Export Templates 需在编辑器安装）；如需导出与 EXE 冒烟，可在本地或自建 Runner 上开启 `-WithExport`。
-
+> 提示：`perf.json` 字段示例与规范见 Phase-15（性能门禁）文档中的“报告输出与聚合”。

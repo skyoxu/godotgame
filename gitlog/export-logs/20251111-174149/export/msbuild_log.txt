@@ -1,0 +1,62 @@
+Project "GodotGame.csproj" (Restore target(s)):
+	Project "GodotGame.csproj" (_IsProjectRestoreSupported target(s)):
+	Done building project "GodotGame.csproj".
+	NuGetMessageTask: Determining projects to restore...
+	Project "GodotGame.csproj" (_GenerateRestoreProjectPathWalk target(s)):
+		Project "Game.Core.csproj" (_GenerateRestoreProjectPathWalk target(s)):
+		Done building project "Game.Core.csproj".
+	Done building project "GodotGame.csproj".
+	Project "GodotGame.csproj" (_IsProjectRestoreSupported target(s)):
+	Done building project "GodotGame.csproj".
+	Project "Game.Core.csproj" (_IsProjectRestoreSupported target(s)):
+	Done building project "Game.Core.csproj".
+	Project "Game.Core.csproj" (_GenerateRestoreGraphProjectEntry target(s)):
+	Done building project "Game.Core.csproj".
+	Project "GodotGame.csproj" (_GenerateRestoreGraphProjectEntry target(s)):
+	Done building project "GodotGame.csproj".
+	Project "Game.Core.csproj" (_GenerateProjectRestoreGraph target(s)):
+	Done building project "Game.Core.csproj".
+	Project "GodotGame.csproj" (_GenerateProjectRestoreGraph target(s)):
+	Done building project "GodotGame.csproj".
+	RestoreTask: X.509 certificate chain validation will use the default trust store selected by .NET for code signing.
+	RestoreTask: X.509 certificate chain validation will use the default trust store selected by .NET for timestamping.
+	RestoreTask: Assets file has not changed. Skipping assets file writing. Path: D:\a\godotgame\godotgame\Game.Core\obj\project.assets.json
+	RestoreTask: Restored D:\a\godotgame\godotgame\Game.Core\Game.Core.csproj (in 53 ms).
+	RestoreTask: Restoring packages for D:\a\godotgame\godotgame\GodotGame.csproj...
+	RestoreTask:   CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+	RestoreTask:   CACHE https://api.nuget.org/v3-vulnerabilities/2025.11.06.05.42.07/vulnerability.base.json
+	RestoreTask:   CACHE https://api.nuget.org/v3-vulnerabilities/2025.11.06.05.42.07/2025.11.11.11.42.29/vulnerability.update.json
+	RestoreTask: Writing assets file to disk. Path: D:\a\godotgame\godotgame\.godot\mono\temp\obj\project.assets.json
+	RestoreTask: Restored D:\a\godotgame\godotgame\GodotGame.csproj (in 449 ms).
+	RestoreTask: 
+	RestoreTask: NuGet Config files used:
+	RestoreTask:     C:\Users\runneradmin\AppData\Roaming\NuGet\NuGet.Config
+	RestoreTask:     C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.FallbackLocation.config
+	RestoreTask:     C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+	RestoreTask: 
+	RestoreTask: Feeds used:
+	RestoreTask:     https://api.nuget.org/v3/index.json
+	RestoreTask:     C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+	RestoreTask: 1 of 2 projects are up-to-date for restore.
+Done building project "GodotGame.csproj".
+Project "GodotGame.csproj" (default targets):
+	Project "Game.Core.csproj" (GetTargetFrameworks target(s)):
+	Done building project "Game.Core.csproj".
+	Project "Game.Core.csproj" (default targets):
+		: Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+		: Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+		GenerateSourceLinkFile: Source Link file 'obj\Debug\net8.0\Game.Core.sourcelink.json' is up-to-date.
+		: Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+		: Skipping target "GenerateBuildDependencyFile" because all output files are up-to-date with respect to the input files.
+		Message: Game.Core -> D:\a\godotgame\godotgame\Game.Core\bin\Debug\net8.0\Game.Core.dll
+	Done building project "Game.Core.csproj".
+	Project "Game.Core.csproj" (GetNativeManifest target(s)):
+	Done building project "Game.Core.csproj".
+	: Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+	: Skipping target "CoreGenerateAssemblyInfo" because all output files are up-to-date with respect to the input files.
+	GenerateSourceLinkFile: Source Link file 'D:\a\godotgame\godotgame\.godot\mono\temp\obj\Debug\GodotGame.sourcelink.json' is up-to-date.
+	: Skipping target "CoreCompile" because all output files are up-to-date with respect to the input files.
+	Project "Game.Core.csproj" (GetCopyToOutputDirectoryItems target(s)):
+	Done building project "Game.Core.csproj".
+	Message: GodotGame -> D:\a\godotgame\godotgame\.godot\mono\temp\bin\Debug\GodotGame.dll
+Done building project "GodotGame.csproj".

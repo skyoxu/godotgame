@@ -1,66 +1,66 @@
-﻿# Phase 8: Scene Tree 涓?Node 璁捐
+# Phase 8: Scene Tree 与 Node 设计
 
-> 鐘舵€? 璁捐闃舵
-> 棰勪及宸ユ椂: 8-12 澶?
-> 椋庨櫓绛夌骇: 涓?
-> 鍓嶇疆鏉′欢: Phase 1-7 瀹屾垚
-
----
-
-## 鐩爣
-
-鎺屾彙 Godot Scene Tree 鏋舵瀯锛屽缓绔?Node 缁勫悎涓庣户鎵挎ā寮忥紝瀹炵幇鍙祴璇曘€佸彲缁存姢鐨勫満鏅璁°€?
+> 状态: 设计阶段
+> 预估工时: 8-12 天
+> 风险等级: 中
+> 前置条件: Phase 1-7 完成
 
 ---
 
-## Scene Tree 鏍稿績姒傚康
+## 目标
 
-### Godot 鍦烘櫙鏍?vs React 缁勪欢鏍?
+掌握 Godot Scene Tree 架构，建立 Node 组合与继承模式，实现可测试、可维护的场景设计。
 
-| 姒傚康 | React (vitegame) | Godot (godotgame) |
+---
+
+## Scene Tree 核心概念
+
+### Godot 场景树 vs React 组件树
+
+| 概念 | React (vitegame) | Godot (godotgame) |
 |-----|-----------------|------------------|
-| 鍩烘湰鍗曞厓 | Component (鍑芥暟/绫? | Node (鍦烘櫙鑺傜偣) |
-| 缁勭粐鏂瑰紡 | JSX 宓屽 | Scene Tree 鏍戝舰缁撴瀯 |
-| 澶嶇敤鏈哄埗 | 缁勪欢瀵煎叆 | PackedScene 瀹炰緥鍖?|
-| 鐢熷懡鍛ㄦ湡 | mount/unmount/render | _Ready/_Process/_ExitTree |
-| 鐖跺瓙閫氫俊 | Props down/Callbacks up | Signals + GetNode |
-| 鐘舵€佺鐞?| useState/Context | Node Properties + Signals |
-| 浜嬩欢绯荤粺 | Synthetic Events | Godot Signals |
+| 基本单元 | Component (函数/类) | Node (场景节点) |
+| 组织方式 | JSX 嵌套 | Scene Tree 树形结构 |
+| 复用机制 | 组件导入 | PackedScene 实例化 |
+| 生命周期 | mount/unmount/render | _Ready/_Process/_ExitTree |
+| 父子通信 | Props down/Callbacks up | Signals + GetNode |
+| 状态管理 | useState/Context | Node Properties + Signals |
+| 事件系统 | Synthetic Events | Godot Signals |
 
-### Node 鍩虹姒傚康
+### Node 基础概念
 
 ```
-Node (鍩虹被)
-鈹溾攢 Node2D (2D 娓告垙瀵硅薄)
-鈹? 鈹溾攢 Sprite2D (绮剧伒)
-鈹? 鈹溾攢 AnimatedSprite2D (鍔ㄧ敾绮剧伒)
-鈹? 鈹溾攢 CollisionShape2D (纰版挒褰㈢姸)
-鈹? 鈹溾攢 Area2D (鍖哄煙妫€娴?
-鈹? 鈹斺攢 CharacterBody2D (瑙掕壊鎺у埗鍣?
-鈹?
-鈹溾攢 Node3D (3D 娓告垙瀵硅薄)
-鈹? 鈹溾攢 MeshInstance3D (缃戞牸瀹炰緥)
-鈹? 鈹溾攢 Camera3D (3D 鐩告満)
-鈹? 鈹斺攢 CollisionShape3D (3D 纰版挒)
-鈹?
-鈹溾攢 Control (UI 鑺傜偣)
-鈹? 鈹溾攢 Button
-鈹? 鈹溾攢 Label
-鈹? 鈹斺攢 Container (VBoxContainer, HBoxContainer, etc.)
-鈹?
-鈹溾攢 CanvasLayer (鐢诲竷灞?
-鈹溾攢 Timer (瀹氭椂鍣?
-鈹溾攢 AudioStreamPlayer (闊抽鎾斁鍣?
-鈹斺攢 HTTPRequest (HTTP 璇锋眰)
+Node (基类)
+├─ Node2D (2D 游戏对象)
+│  ├─ Sprite2D (精灵)
+│  ├─ AnimatedSprite2D (动画精灵)
+│  ├─ CollisionShape2D (碰撞形状)
+│  ├─ Area2D (区域检测)
+│  └─ CharacterBody2D (角色控制器)
+│
+├─ Node3D (3D 游戏对象)
+│  ├─ MeshInstance3D (网格实例)
+│  ├─ Camera3D (3D 相机)
+│  └─ CollisionShape3D (3D 碰撞)
+│
+├─ Control (UI 节点)
+│  ├─ Button
+│  ├─ Label
+│  └─ Container (VBoxContainer, HBoxContainer, etc.)
+│
+├─ CanvasLayer (画布层)
+├─ Timer (定时器)
+├─ AudioStreamPlayer (音频播放器)
+└─ HTTPRequest (HTTP 请求)
 ```
 
 ---
 
-## 1. Scene 鏂囦欢缁撴瀯
+## 1. Scene 文件结构
 
-### 鍦烘櫙鏂囦欢鏍煎紡 (.tscn)
+### 场景文件格式 (.tscn)
 
-**Player.tscn** (鏂囨湰鏍煎紡锛屼究浜庣増鏈帶鍒?:
+**Player.tscn** (文本格式，便于版本控制):
 
 ```
 [gd_scene load_steps=4 format=3 uid="uid://player_scene"]
@@ -83,46 +83,46 @@ shape = SubResource("1")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 ```
 
-**鍏抽敭閮ㄥ垎瑙ｆ瀽**:
+**关键部分解析**:
 
-1. **load_steps**: 鍦烘櫙鍔犺浇鎵€闇€鐨勮祫婧愭暟閲忥紙鑴氭湰銆佺汗鐞嗐€佸瓙璧勬簮绛夛級
-2. **uid**: 鍏ㄥ眬鍞竴鏍囪瘑绗︼紝鐢ㄤ簬璺ㄥ満鏅紩鐢?
-3. **ext_resource**: 澶栭儴璧勬簮寮曠敤锛堣剼鏈€佺汗鐞嗐€侀煶棰戠瓑锛?
-4. **sub_resource**: 鍐呰仈璧勬簮瀹氫箟锛堝舰鐘躲€佸姩鐢汇€佹潗璐ㄧ瓑锛?
-5. **node**: 鑺傜偣瀹氫箟锛屽寘鎷被鍨嬨€佺埗鑺傜偣銆佸睘鎬?
+1. **load_steps**: 场景加载所需的资源数量（脚本、纹理、子资源等）
+2. **uid**: 全局唯一标识符，用于跨场景引用
+3. **ext_resource**: 外部资源引用（脚本、纹理、音频等）
+4. **sub_resource**: 内联资源定义（形状、动画、材质等）
+5. **node**: 节点定义，包括类型、父节点、属性
 
-### Scene 缁ф壙 vs 缁勫悎
+### Scene 继承 vs 组合
 
-**缁ф壙妯″紡** (閫傚悎鍙樹綋璁捐):
+**继承模式** (适合变体设计):
 
 ```
 BaseEnemy.tscn
-鈹溾攢 Sprite2D
-鈹溾攢 CollisionShape2D
-鈹斺攢 HealthBar
+├─ Sprite2D
+├─ CollisionShape2D
+└─ HealthBar
 
-缁ф壙 鈫?
+继承 ↓
 
-FlyingEnemy.tscn (缁ф壙鑷?BaseEnemy.tscn)
-鈹斺攢 娣诲姞 WingAnimation 鑺傜偣
+FlyingEnemy.tscn (继承自 BaseEnemy.tscn)
+└─ 添加 WingAnimation 节点
 ```
 
-**缁勫悎妯″紡** (閫傚悎鍔熻兘缁勫悎):
+**组合模式** (适合功能组合):
 
 ```
 Player.tscn
-鈹溾攢 Sprite2D
-鈹溾攢 CollisionShape2D
-鈹溾攢 InventoryComponent (瀹炰緥鍖栫殑鍦烘櫙)
-鈹溾攢 HealthComponent (瀹炰緥鍖栫殑鍦烘櫙)
-鈹斺攢 MovementComponent (瀹炰緥鍖栫殑鍦烘櫙)
+├─ Sprite2D
+├─ CollisionShape2D
+├─ InventoryComponent (实例化的场景)
+├─ HealthComponent (实例化的场景)
+└─ MovementComponent (实例化的场景)
 ```
 
 ---
 
-## 2. Node 鐢熷懡鍛ㄦ湡
+## 2. Node 生命周期
 
-### 鏍稿績鐢熷懡鍛ㄦ湡鏂规硶
+### 核心生命周期方法
 
 ```csharp
 // Game.Godot/Scripts/PlayerController.cs
@@ -133,52 +133,52 @@ namespace Game.Godot.Scripts;
 
 public partial class PlayerController : CharacterBody2D
 {
-    // 1. _EnterTree: 鑺傜偣杩涘叆鍦烘櫙鏍戞椂璋冪敤锛堟渶鏃╋級
+    // 1. _EnterTree: 节点进入场景树时调用（最早）
     public override void _EnterTree()
     {
         GD.Print("PlayerController: _EnterTree - Node added to tree");
-        // 閫傜敤鍦烘櫙锛氭敞鍐屽叏灞€鐩戝惉鍣ㄣ€佸垵濮嬪寲闈欐€佽祫婧?
+        // 适用场景：注册全局监听器、初始化静态资源
     }
 
-    // 2. _Ready: 鑺傜偣鍙婂叾瀛愯妭鐐归兘鍔犺浇瀹屾垚鍚庤皟鐢紙鍒濆鍖栵級
+    // 2. _Ready: 节点及其子节点都加载完成后调用（初始化）
     public override void _Ready()
     {
         GD.Print("PlayerController: _Ready - Scene fully loaded");
 
-        // 鑾峰彇瀛愯妭鐐瑰紩鐢紙姝ゆ椂瀛愯妭鐐瑰凡瀛樺湪锛?
+        // 获取子节点引用（此时子节点已存在）
         _sprite = GetNode<Sprite2D>("Sprite");
         _collisionShape = GetNode<CollisionShape2D>("CollisionShape");
 
-        // 杩炴帴淇″彿
+        // 连接信号
         BodyEntered += OnBodyEntered;
 
-        // 鍒濆鍖栫姸鎬?
+        // 初始化状态
         Health = MaxHealth;
 
         GD.Print("PlayerController initialized successfully");
     }
 
-    // 3. _Process: 姣忓抚璋冪敤锛堢敤浜庢父鎴忛€昏緫鏇存柊锛?
+    // 3. _Process: 每帧调用（用于游戏逻辑更新）
     public override void _Process(double delta)
     {
-        // 閫傜敤鍦烘櫙锛氳緭鍏ュ鐞嗐€佸姩鐢绘洿鏂般€乁I 鏇存柊
+        // 适用场景：输入处理、动画更新、UI 更新
         HandleInput(delta);
         UpdateAnimation();
     }
 
-    // 4. _PhysicsProcess: 鐗╃悊甯ц皟鐢紙鍥哄畾鏃堕棿姝ラ暱锛?
+    // 4. _PhysicsProcess: 物理帧调用（固定时间步长）
     public override void _PhysicsProcess(double delta)
     {
-        // 閫傜敤鍦烘櫙锛氱墿鐞嗙Щ鍔ㄣ€佺鎾炴娴?
+        // 适用场景：物理移动、碰撞检测
         var velocity = Velocity;
 
-        // 搴旂敤閲嶅姏
+        // 应用重力
         if (!IsOnFloor())
         {
             velocity.Y += Gravity * (float)delta;
         }
 
-        // 澶勭悊绉诲姩
+        // 处理移动
         var inputDirection = Input.GetAxis("move_left", "move_right");
         velocity.X = inputDirection * Speed;
 
@@ -186,22 +186,22 @@ public partial class PlayerController : CharacterBody2D
         MoveAndSlide();
     }
 
-    // 5. _ExitTree: 鑺傜偣浠庡満鏅爲绉婚櫎鍓嶈皟鐢紙娓呯悊锛?
+    // 5. _ExitTree: 节点从场景树移除前调用（清理）
     public override void _ExitTree()
     {
         GD.Print("PlayerController: _ExitTree - Cleanup before removal");
 
-        // 鏂紑淇″彿杩炴帴
+        // 断开信号连接
         if (IsInstanceValid(this))
         {
             BodyEntered -= OnBodyEntered;
         }
 
-        // 閲婃斁闈炴墭绠¤祫婧?
-        // 娉ㄦ剰锛欸odot 绠＄悊鐨勮祫婧愪細鑷姩閲婃斁
+        // 释放非托管资源
+        // 注意：Godot 管理的资源会自动释放
     }
 
-    // 6. _Notification: 鎺ユ敹绯荤粺閫氱煡锛堥珮绾х敤娉曪級
+    // 6. _Notification: 接收系统通知（高级用法）
     public override void _Notification(int what)
     {
         switch (what)
@@ -237,12 +237,12 @@ public partial class PlayerController : CharacterBody2D
 
     private void HandleInput(double delta)
     {
-        // 杈撳叆澶勭悊閫昏緫
+        // 输入处理逻辑
     }
 
     private void UpdateAnimation()
     {
-        // 鍔ㄧ敾鏇存柊閫昏緫
+        // 动画更新逻辑
     }
 
     private void OnBodyEntered(Node2D body)
@@ -252,26 +252,26 @@ public partial class PlayerController : CharacterBody2D
 }
 ```
 
-**鐢熷懡鍛ㄦ湡椤哄簭鎬荤粨**:
+**生命周期顺序总结**:
 
 ```
-鍦烘櫙鍔犺浇鏃?
-1. _EnterTree (鐖惰妭鐐瑰厛浜庡瓙鑺傜偣)
-2. _Ready (瀛愯妭鐐瑰厛浜庣埗鑺傜偣)
+场景加载时:
+1. _EnterTree (父节点先于子节点)
+2. _Ready (子节点先于父节点)
 
-姣忓抚鏇存柊:
-3. _Process (娓叉煋甯э紝甯х巼涓嶅浐瀹?
-4. _PhysicsProcess (鐗╃悊甯э紝榛樿 60 FPS)
+每帧更新:
+3. _Process (渲染帧，帧率不固定)
+4. _PhysicsProcess (物理帧，默认 60 FPS)
 
-鍦烘櫙绉婚櫎鏃?
-5. _ExitTree (鐖惰妭鐐瑰厛浜庡瓙鑺傜偣)
+场景移除时:
+5. _ExitTree (父节点先于子节点)
 ```
 
 ---
 
-## 3. 鐖跺瓙鑺傜偣鍏崇郴涓庤妭鐐硅矾寰?
+## 3. 父子节点关系与节点路径
 
-### 鑾峰彇瀛愯妭鐐?(GetNode)
+### 获取子节点 (GetNode)
 
 ```csharp
 // Game.Godot/Scripts/UIController.cs
@@ -284,39 +284,39 @@ public partial class UIController : Control
 
     public override void _Ready()
     {
-        // 鏂瑰紡 1: 鐩存帴璺緞锛堟帹鑽愶紝绫诲瀷瀹夊叏锛?
+        // 方式 1: 直接路径（推荐，类型安全）
         _scoreLabel = GetNode<Label>("HUD/ScoreLabel");
 
-        // 鏂瑰紡 2: 缁濆璺緞锛堜粠鏍硅妭鐐瑰紑濮嬶級
+        // 方式 2: 绝对路径（从根节点开始）
         _startButton = GetNode<Button>("/root/Main/UI/Menu/StartButton");
 
-        // 鏂瑰紡 3: 鐩稿璺緞锛?./ 琛ㄧず鐖惰妭鐐癸級
+        // 方式 3: 相对路径（../ 表示父节点）
         _menu = GetNode<VBoxContainer>("../Menu");
 
-        // 鏂瑰紡 4: 浣跨敤 % 璁块棶鍞竴鍚嶇О鑺傜偣锛圙odot 4.0+锛?
+        // 方式 4: 使用 % 访问唯一名称节点（Godot 4.0+）
         var uniqueNode = GetNode<Control>("%UniqueNodeName");
 
-        // 鏂瑰紡 5: 妫€鏌ヨ妭鐐规槸鍚﹀瓨鍦?
+        // 方式 5: 检查节点是否存在
         if (HasNode("HUD/HealthBar"))
         {
             var healthBar = GetNode<Control>("HUD/HealthBar");
         }
 
-        // 鏂瑰紡 6: 浣跨敤 NodePath 鍙橀噺锛堝彲鍦?Inspector 涓厤缃級
+        // 方式 6: 使用 NodePath 变量（可在 Inspector 中配置）
         var customPath = new NodePath("HUD/ScoreLabel");
         _scoreLabel = GetNode<Label>(customPath);
     }
 }
 ```
 
-### Export NodePath 妯″紡锛堟帹鑽愮敤浜庤法鍦烘櫙寮曠敤锛?
+### Export NodePath 模式（推荐用于跨场景引用）
 
 ```csharp
 // Game.Godot/Scripts/PlayerController.cs
 
 public partial class PlayerController : CharacterBody2D
 {
-    // 鍦?Inspector 涓彲鎷栨嫿閰嶇疆鑺傜偣璺緞
+    // 在 Inspector 中可拖拽配置节点路径
     [Export]
     public NodePath HealthBarPath { get; set; } = new NodePath("../UI/HealthBar");
 
@@ -328,7 +328,7 @@ public partial class PlayerController : CharacterBody2D
 
     public override void _Ready()
     {
-        // 杩愯鏃惰В鏋愯矾寰?
+        // 运行时解析路径
         if (!HealthBarPath.IsEmpty)
         {
             _healthBar = GetNode<Control>(HealthBarPath);
@@ -342,18 +342,18 @@ public partial class PlayerController : CharacterBody2D
 }
 ```
 
-**NodePath 鏈€浣冲疄璺?*:
+**NodePath 最佳实践**:
 
-1. **纭紪鐮佽矾寰?*锛氶€傚悎鍦烘櫙鍐呴儴鍥哄畾缁撴瀯鐨勮妭鐐?
-2. **Export NodePath**锛氶€傚悎闇€瑕佸湪 Inspector 涓厤缃殑鑺傜偣寮曠敤
-3. **鍞竴鍚嶇О (%)**锛氶€傚悎璺ㄥ満鏅殑鍏ㄥ眬璁块棶锛堥渶鍦ㄧ紪杈戝櫒涓爣璁颁负 Unique锛?
-4. **淇″彿閫氫俊**锛氶€傚悎鏉捐€﹀悎鐨勮妭鐐归€氫俊锛堜笉渚濊禆璺緞锛?
+1. **硬编码路径**：适合场景内部固定结构的节点
+2. **Export NodePath**：适合需要在 Inspector 中配置的节点引用
+3. **唯一名称 (%)**：适合跨场景的全局访问（需在编辑器中标记为 Unique）
+4. **信号通信**：适合松耦合的节点通信（不依赖路径）
 
 ---
 
-## 4. Scene 瀹炰緥鍖栦笌绠＄悊
+## 4. Scene 实例化与管理
 
-### PackedScene 鍔犺浇涓庡疄渚嬪寲
+### PackedScene 加载与实例化
 
 ```csharp
 // Game.Godot/Scripts/EnemySpawner.cs
@@ -379,13 +379,13 @@ public partial class EnemySpawner : Node2D
 
     public override void _Ready()
     {
-        // 鏂瑰紡 1: 鍦?Inspector 涓厤缃?PackedScene
-        // (鎺ㄨ崘锛屼究浜庡彲瑙嗗寲閰嶇疆)
+        // 方式 1: 在 Inspector 中配置 PackedScene
+        // (推荐，便于可视化配置)
 
-        // 鏂瑰紡 2: 浠ｇ爜鍔犺浇鍦烘櫙
+        // 方式 2: 代码加载场景
         // EnemyScene = GD.Load<PackedScene>("res://Scenes/Enemies/BasicEnemy.tscn");
 
-        // 璁剧疆瀹氭椂鍣?
+        // 设置定时器
         _spawnTimer = new Timer
         {
             WaitTime = SpawnInterval,
@@ -410,22 +410,22 @@ public partial class EnemySpawner : Node2D
             return;
         }
 
-        // 瀹炰緥鍖栧満鏅?
+        // 实例化场景
         var enemy = EnemyScene.Instantiate<Node2D>();
 
-        // 璁剧疆浣嶇疆
+        // 设置位置
         enemy.Position = Position + new Vector2(
             GD.Randf() * 100 - 50,
             GD.Randf() * 100 - 50
         );
 
-        // 娣诲姞鍒板満鏅爲锛堜綔涓哄綋鍓嶈妭鐐圭殑鍏勫紵鑺傜偣锛?
+        // 添加到场景树（作为当前节点的兄弟节点）
         GetParent().AddChild(enemy);
 
-        // 杩借釜鏁屼汉瀹炰緥
+        // 追踪敌人实例
         _activeEnemies.Add(enemy);
 
-        // 鐩戝惉鏁屼汉姝讳骸淇″彿
+        // 监听敌人死亡信号
         if (enemy.HasSignal("defeated"))
         {
             enemy.Connect("defeated", Callable.From(() => OnEnemyDefeated(enemy)));
@@ -436,13 +436,13 @@ public partial class EnemySpawner : Node2D
     {
         _activeEnemies.Remove(enemy);
 
-        // 寤惰繜绉婚櫎锛堢瓑寰呮浜″姩鐢伙級
+        // 延迟移除（等待死亡动画）
         enemy.QueueFree();
     }
 
     public override void _ExitTree()
     {
-        // 娓呯悊鎵€鏈夋晫浜?
+        // 清理所有敌人
         foreach (var enemy in _activeEnemies)
         {
             if (IsInstanceValid(enemy))
@@ -455,7 +455,7 @@ public partial class EnemySpawner : Node2D
 }
 ```
 
-### 鍦烘櫙鍒囨崲 (SceneTree.ChangeSceneToFile)
+### 场景切换 (SceneTree.ChangeSceneToFile)
 
 ```csharp
 // Game.Godot/Scripts/SceneManager.cs
@@ -477,7 +477,7 @@ public partial class SceneManager : Node
     }
 
     /// <summary>
-    /// 鍒囨崲鍒版柊鍦烘櫙锛堢珛鍗冲垏鎹級
+    /// 切换到新场景（立即切换）
     /// </summary>
     public void ChangeScene(string scenePath)
     {
@@ -495,11 +495,11 @@ public partial class SceneManager : Node
     }
 
     /// <summary>
-    /// 鍒囨崲鍒版柊鍦烘櫙锛堝甫杩囨浮鏁堟灉锛?
+    /// 切换到新场景（带过渡效果）
     /// </summary>
     public async void ChangeSceneWithTransition(string scenePath, float fadeTime = 0.5f)
     {
-        // 鍒涘缓杩囨浮灞?
+        // 创建过渡层
         var transition = new ColorRect
         {
             Color = Colors.Black,
@@ -509,25 +509,25 @@ public partial class SceneManager : Node
 
         GetTree().Root.AddChild(transition);
 
-        // 娣″嚭
+        // 淡出
         var tween = CreateTween();
         tween.TweenProperty(transition, "modulate:a", 1.0f, fadeTime);
         await ToSignal(tween, Tween.SignalName.Finished);
 
-        // 鍒囨崲鍦烘櫙
+        // 切换场景
         ChangeScene(scenePath);
 
-        // 娣″叆
+        // 淡入
         tween = CreateTween();
         tween.TweenProperty(transition, "modulate:a", 0.0f, fadeTime);
         await ToSignal(tween, Tween.SignalName.Finished);
 
-        // 绉婚櫎杩囨浮灞?
+        // 移除过渡层
         transition.QueueFree();
     }
 
     /// <summary>
-    /// 棰勫姞杞藉満鏅紙鍚庡彴鍔犺浇锛屼笉闃诲锛?
+    /// 预加载场景（后台加载，不阻塞）
     /// </summary>
     public async void PreloadSceneAsync(string scenePath)
     {
@@ -555,7 +555,7 @@ public partial class SceneManager : Node
     }
 
     /// <summary>
-    /// 閲嶆柊鍔犺浇褰撳墠鍦烘櫙
+    /// 重新加载当前场景
     /// </summary>
     public void ReloadCurrentScene()
     {
@@ -563,7 +563,7 @@ public partial class SceneManager : Node
     }
 
     /// <summary>
-    /// 娣诲姞瀛愬満鏅紙涓嶅垏鎹紝鍙犲姞鏄剧ず锛?
+    /// 添加子场景（不切换，叠加显示）
     /// </summary>
     public Node? AddSubScene(string scenePath)
     {
@@ -584,9 +584,9 @@ public partial class SceneManager : Node
 
 ---
 
-## 5. Node Groups 涓?Tags
+## 5. Node Groups 与 Tags
 
-### 浣跨敤 Groups 瀹炵幇鎵归噺鎿嶄綔
+### 使用 Groups 实现批量操作
 
 ```csharp
 // Game.Godot/Scripts/Enemy.cs
@@ -595,7 +595,7 @@ public partial class Enemy : CharacterBody2D
 {
     public override void _Ready()
     {
-        // 娣诲姞鍒?"enemies" 缁?
+        // 添加到 "enemies" 组
         AddToGroup("enemies");
         AddToGroup("damageable");
     }
@@ -613,7 +613,7 @@ public partial class Player : CharacterBody2D
 
     public void AttackAllEnemies(int damage)
     {
-        // 鑾峰彇鎵€鏈?"enemies" 缁勭殑鑺傜偣
+        // 获取所有 "enemies" 组的节点
         var enemies = GetTree().GetNodesInGroup("enemies");
 
         foreach (Node enemy in enemies)
@@ -627,7 +627,7 @@ public partial class Player : CharacterBody2D
 
     public void HealAllDamageableUnits(int healAmount)
     {
-        // 鑾峰彇鎵€鏈?"damageable" 缁勭殑鑺傜偣
+        // 获取所有 "damageable" 组的节点
         var damageableUnits = GetTree().GetNodesInGroup("damageable");
 
         foreach (Node unit in damageableUnits)
@@ -646,14 +646,14 @@ public partial class GameManager : Node
 {
     public void PauseAllEnemies()
     {
-        // 鏆傚仠鎵€鏈夋晫浜?
+        // 暂停所有敌人
         GetTree().CallGroup("enemies", "set_process", false);
         GetTree().CallGroup("enemies", "set_physics_process", false);
     }
 
     public void ResumeAllEnemies()
     {
-        // 鎭㈠鎵€鏈夋晫浜?
+        // 恢复所有敌人
         GetTree().CallGroup("enemies", "set_process", true);
         GetTree().CallGroup("enemies", "set_physics_process", true);
     }
@@ -665,18 +665,18 @@ public partial class GameManager : Node
 }
 ```
 
-**Groups 浣跨敤鍦烘櫙**:
+**Groups 使用场景**:
 
-1. **鎵归噺鎺у埗**锛氭殏鍋?鎭㈠涓€缁勮妭鐐?
-2. **纰版挒绛涢€?*锛氬揩閫熻瘑鍒鎾炲璞＄被鍨?
-3. **浜嬩欢骞挎挱**锛氬悜鐗瑰畾缁勫彂閫佹秷鎭?
-4. **鏌ヨ缁熻**锛氱粺璁＄壒瀹氱被鍨嬭妭鐐规暟閲?
+1. **批量控制**：暂停/恢复一组节点
+2. **碰撞筛选**：快速识别碰撞对象类型
+3. **事件广播**：向特定组发送消息
+4. **查询统计**：统计特定类型节点数量
 
 ---
 
-## 6. Autoload (鍗曚緥妯″紡)
+## 6. Autoload (单例模式)
 
-### 娉ㄥ唽鍏ㄥ眬鍗曚緥
+### 注册全局单例
 
 **project.godot**:
 
@@ -701,15 +701,15 @@ using Game.Godot.Adapters;
 namespace Game.Godot.Autoloads;
 
 /// <summary>
-/// 鍏ㄥ眬鏈嶅姟瀹氫綅鍣紙Autoload 鍗曚緥锛?
-/// 鍦?project.godot 涓敞鍐屼负鑷姩鍔犺浇
+/// 全局服务定位器（Autoload 单例）
+/// 在 project.godot 中注册为自动加载
 /// </summary>
 public partial class ServiceLocator : Node
 {
-    // 鍗曚緥璁块棶鐐?
+    // 单例访问点
     public static ServiceLocator Instance { get; private set; } = null!;
 
-    // 鏈嶅姟瀹炰緥
+    // 服务实例
     public ITime Time { get; private set; } = null!;
     public IInput InputService { get; private set; } = null!;
     public IResourceLoader ResourceLoader { get; private set; } = null!;
@@ -719,13 +719,13 @@ public partial class ServiceLocator : Node
 
     public override void _EnterTree()
     {
-        // 璁剧疆鍗曚緥锛堝湪 _EnterTree 涓紝纭繚鏈€鏃╁垵濮嬪寲锛?
+        // 设置单例（在 _EnterTree 中，确保最早初始化）
         Instance = this;
     }
 
     public override void _Ready()
     {
-        // 娉ㄥ唽鎵€鏈夐€傞厤鍣?
+        // 注册所有适配器
         Time = new GodotTimeAdapter();
         InputService = new GodotInputAdapter();
         ResourceLoader = new GodotResourceLoader();
@@ -733,7 +733,7 @@ public partial class ServiceLocator : Node
         DataStore = new SqliteDataStore();
         Logger = new GodotLogger("Game");
 
-        // 鍒濆鍖栨暟鎹簱
+        // 初始化数据库
         DataStore.Open("user://game.db");
 
         GD.Print("ServiceLocator initialized successfully");
@@ -758,7 +758,7 @@ using System.Collections.Generic;
 namespace Game.Godot.Autoloads;
 
 /// <summary>
-/// 鍏ㄥ眬浜嬩欢鎬荤嚎锛堝彂甯?璁㈤槄妯″紡锛?
+/// 全局事件总线（发布-订阅模式）
 /// </summary>
 public partial class EventBus : Node
 {
@@ -772,7 +772,7 @@ public partial class EventBus : Node
     }
 
     /// <summary>
-    /// 璁㈤槄浜嬩欢
+    /// 订阅事件
     /// </summary>
     public void Subscribe(string eventName, Action<object> handler)
     {
@@ -785,7 +785,7 @@ public partial class EventBus : Node
     }
 
     /// <summary>
-    /// 鍙栨秷璁㈤槄
+    /// 取消订阅
     /// </summary>
     public void Unsubscribe(string eventName, Action<object> handler)
     {
@@ -796,7 +796,7 @@ public partial class EventBus : Node
     }
 
     /// <summary>
-    /// 鍙戝竷浜嬩欢
+    /// 发布事件
     /// </summary>
     public void Publish(string eventName, object data)
     {
@@ -817,7 +817,7 @@ public partial class EventBus : Node
     }
 
     /// <summary>
-    /// 娓呯┖鎵€鏈夎闃?
+    /// 清空所有订阅
     /// </summary>
     public void Clear()
     {
@@ -826,7 +826,7 @@ public partial class EventBus : Node
 }
 ```
 
-**浣跨敤 Autoload**:
+**使用 Autoload**:
 
 ```csharp
 // Game.Godot/Scripts/PlayerController.cs
@@ -835,14 +835,14 @@ public partial class PlayerController : CharacterBody2D
 {
     public override void _Ready()
     {
-        // 璁块棶鍏ㄥ眬鏈嶅姟
+        // 访问全局服务
         var logger = ServiceLocator.Instance.Logger;
         logger.LogInfo("PlayerController initialized");
 
-        // 璁㈤槄鍏ㄥ眬浜嬩欢
+        // 订阅全局事件
         EventBus.Instance.Subscribe("player_damaged", OnPlayerDamaged);
 
-        // 璁块棶鍏ㄥ眬鐘舵€?
+        // 访问全局状态
         var currentLevel = GameState.Instance.CurrentLevel;
     }
 
@@ -854,13 +854,13 @@ public partial class PlayerController : CharacterBody2D
 
     public void TakeDamage(int amount)
     {
-        // 鍙戝竷鍏ㄥ眬浜嬩欢
+        // 发布全局事件
         EventBus.Instance.Publish("player_damaged", amount);
     }
 
     public override void _ExitTree()
     {
-        // 鍙栨秷璁㈤槄
+        // 取消订阅
         EventBus.Instance.Unsubscribe("player_damaged", OnPlayerDamaged);
     }
 }
@@ -868,75 +868,75 @@ public partial class PlayerController : CharacterBody2D
 
 ---
 
-## 7. 鍦烘櫙缁勭粐鏈€浣冲疄璺?
+## 7. 场景组织最佳实践
 
-### 鎺ㄨ崘鐩綍缁撴瀯
+### 推荐目录结构
 
 ```
 Game.Godot/Scenes/
-鈹溾攢鈹€ Main.tscn                      # 涓诲満鏅紙鍚姩鍏ュ彛锛?
-鈹?
-鈹溾攢鈹€ UI/                            # UI 鍦烘櫙
-鈹?  鈹溾攢鈹€ MainMenu.tscn
-鈹?  鈹溾攢鈹€ HUD.tscn
-鈹?  鈹溾攢鈹€ PauseMenu.tscn
-鈹?  鈹溾攢鈹€ SettingsMenu.tscn
-鈹?  鈹斺攢鈹€ Components/                # 鍙鐢?UI 缁勪欢
-鈹?      鈹溾攢鈹€ PrimaryButton.tscn
-鈹?      鈹溾攢鈹€ TextInput.tscn
-鈹?      鈹斺攢鈹€ HealthBar.tscn
-鈹?
-鈹溾攢鈹€ Game/                          # 娓告垙瀹炰綋鍦烘櫙
-鈹?  鈹溾攢鈹€ Player/
-鈹?  鈹?  鈹溾攢鈹€ Player.tscn
-鈹?  鈹?  鈹斺攢鈹€ PlayerCamera.tscn
-鈹?  鈹溾攢鈹€ Enemies/
-鈹?  鈹?  鈹溾攢鈹€ BaseEnemy.tscn        # 鏁屼汉鍩虹被鍦烘櫙
-鈹?  鈹?  鈹溾攢鈹€ FlyingEnemy.tscn      # 缁ф壙鑷?BaseEnemy
-鈹?  鈹?  鈹斺攢鈹€ GroundEnemy.tscn      # 缁ф壙鑷?BaseEnemy
-鈹?  鈹溾攢鈹€ Items/
-鈹?  鈹?  鈹溾攢鈹€ Coin.tscn
-鈹?  鈹?  鈹溾攢鈹€ HealthPotion.tscn
-鈹?  鈹?  鈹斺攢鈹€ Weapon.tscn
-鈹?  鈹斺攢鈹€ Effects/
-鈹?      鈹溾攢鈹€ Explosion.tscn
-鈹?      鈹溾攢鈹€ HitEffect.tscn
-鈹?      鈹斺攢鈹€ Particle.tscn
-鈹?
-鈹溾攢鈹€ Levels/                        # 鍏冲崱鍦烘櫙
-鈹?  鈹溾攢鈹€ Level1.tscn
-鈹?  鈹溾攢鈹€ Level2.tscn
-鈹?  鈹溾攢鈹€ BossLevel.tscn
-鈹?  鈹斺攢鈹€ Tilemap/                   # 鍦板浘鐩稿叧
-鈹?      鈹溾攢鈹€ GroundTileset.tres
-鈹?      鈹斺攢鈹€ WallTileset.tres
-鈹?
-鈹斺攢鈹€ Components/                    # 鍔熻兘缁勪欢锛堝彲闄勫姞鍒颁换浣曡妭鐐癸級
-    鈹溾攢鈹€ HealthComponent.tscn
-    鈹溾攢鈹€ MovementComponent.tscn
-    鈹溾攢鈹€ InventoryComponent.tscn
-    鈹斺攢鈹€ AIComponent.tscn
+├── Main.tscn                      # 主场景（启动入口）
+│
+├── UI/                            # UI 场景
+│   ├── MainMenu.tscn
+│   ├── HUD.tscn
+│   ├── PauseMenu.tscn
+│   ├── SettingsMenu.tscn
+│   └── Components/                # 可复用 UI 组件
+│       ├── PrimaryButton.tscn
+│       ├── TextInput.tscn
+│       └── HealthBar.tscn
+│
+├── Game/                          # 游戏实体场景
+│   ├── Player/
+│   │   ├── Player.tscn
+│   │   └── PlayerCamera.tscn
+│   ├── Enemies/
+│   │   ├── BaseEnemy.tscn        # 敌人基类场景
+│   │   ├── FlyingEnemy.tscn      # 继承自 BaseEnemy
+│   │   └── GroundEnemy.tscn      # 继承自 BaseEnemy
+│   ├── Items/
+│   │   ├── Coin.tscn
+│   │   ├── HealthPotion.tscn
+│   │   └── Weapon.tscn
+│   └── Effects/
+│       ├── Explosion.tscn
+│       ├── HitEffect.tscn
+│       └── Particle.tscn
+│
+├── Levels/                        # 关卡场景
+│   ├── Level1.tscn
+│   ├── Level2.tscn
+│   ├── BossLevel.tscn
+│   └── Tilemap/                   # 地图相关
+│       ├── GroundTileset.tres
+│       └── WallTileset.tres
+│
+└── Components/                    # 功能组件（可附加到任何节点）
+    ├── HealthComponent.tscn
+    ├── MovementComponent.tscn
+    ├── InventoryComponent.tscn
+    └── AIComponent.tscn
 ```
 
-### 鍦烘櫙鍛藉悕绾﹀畾
+### 场景命名约定
 
 1. **PascalCase**: `PlayerController.tscn`, `MainMenu.tscn`
-2. **璇箟鍖?*: 鍚嶇О浣撶幇鍔熻兘锛屽 `HealthBar.tscn`, `EnemySpawner.tscn`
-3. **缁勪欢鍚庣紑**: 鍔熻兘缁勪欢浣跨敤 `Component` 鍚庣紑锛屽 `HealthComponent.tscn`
-4. **Base 鍓嶇紑**: 鎶借薄鍩虹被浣跨敤 `Base` 鍓嶇紑锛屽 `BaseEnemy.tscn`
+2. **语义化**: 名称体现功能，如 `HealthBar.tscn`, `EnemySpawner.tscn`
+3. **组件后缀**: 功能组件使用 `Component` 后缀，如 `HealthComponent.tscn`
+4. **Base 前缀**: 抽象基类使用 `Base` 前缀，如 `BaseEnemy.tscn`
 
-### 鍦烘櫙璁捐鍘熷垯
+### 场景设计原则
 
-1. **鍗曚竴鑱岃矗**锛氭瘡涓満鏅彧璐熻矗涓€涓姛鑳芥ā鍧?
-2. **缁勫悎浼樹簬缁ф壙**锛氫紭鍏堜娇鐢ㄥ満鏅疄渚嬪寲缁勫悎鍔熻兘
-3. **鏈€灏忓寲鑰﹀悎**锛氶€氳繃 Signals 鍜?EventBus 瑙ｈ€﹀満鏅?
-4. **鍙祴璇曟€?*锛氬満鏅簲鑳界嫭绔嬫祴璇曪紝涓嶄緷璧栫壒瀹氱埗鍦烘櫙
+1. **单一职责**：每个场景只负责一个功能模块
+2. **组合优于继承**：优先使用场景实例化组合功能
+3. **最小化耦合**：通过 Signals 和 EventBus 解耦场景
+4. **可测试性**：场景应能独立测试，不依赖特定父场景
 
 ---
 
-## 8. 娴嬭瘯鍦烘櫙鏋舵瀯
+## 8. 测试场景架构
 
-### GdUnit4 鍦烘櫙娴嬭瘯
+### GdUnit4 场景测试
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -957,7 +957,7 @@ public partial class ExampleTest
 }
 ```
 
-### xUnit 鍦烘櫙閫昏緫娴嬭瘯
+### xUnit 场景逻辑测试
 
 ```csharp
 // Game.Core.Tests/Scenes/SceneManagerTests.cs
@@ -1014,9 +1014,9 @@ public class SceneManagerTests
 
 ---
 
-## 9. CI 闆嗘垚
+## 9. CI 集成
 
-### 鍦烘櫙缁撴瀯楠岃瘉 (GitHub Actions)
+### 场景结构验证 (GitHub Actions)
 
 ```yaml
 # .github/workflows/scene-validation.yml
@@ -1039,7 +1039,7 @@ jobs:
 
       - name: Validate Scene Structure
         run: |
-          # 妫€鏌ユ墍鏈夊満鏅枃浠惰娉?
+          # 检查所有场景文件语法
           godot --headless --script scripts/validate_scenes.cs
 
       - name: Run GdUnit4 Scene Tests
@@ -1057,7 +1057,7 @@ jobs:
           path: TestResults/scene-tests.xml
 ```
 
-**鍦烘櫙楠岃瘉鑴氭湰** (`scripts/validate_scenes.cs`):
+**场景验证脚本** (`scripts/validate_scenes.cs`):
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -1080,26 +1080,26 @@ public partial class ExampleTest
 
 ---
 
-## 瀹屾垚鏍囧噯
+## 完成标准
 
-- [ ] 鐞嗚В Scene Tree 鏋舵瀯涓?Node 鐢熷懡鍛ㄦ湡
-- [ ] 鎺屾彙鍦烘櫙缁ф壙涓庣粍鍚堟ā寮?
-- [ ] 鐔熺粌浣跨敤 GetNode 鍜?NodePath
-- [ ] 瀹炵幇 PackedScene 瀹炰緥鍖栦笌鍦烘櫙鍒囨崲
-- [ ] 浣跨敤 Groups 瀹炵幇鎵归噺鎿嶄綔
-- [ ] 鍒涘缓 Autoload 鍏ㄥ眬鍗曚緥 (ServiceLocator/EventBus)
-- [ ] 鍦烘櫙缁勭粐閬靛惊鏈€浣冲疄璺碉紙鐩綍缁撴瀯涓庡懡鍚嶏級
-- [ ] GdUnit4 鍦烘櫙娴嬭瘯瑕嗙洊涓昏鍦烘櫙
-- [ ] xUnit 閫昏緫娴嬭瘯瑕嗙洊鍦烘櫙绠＄悊閫昏緫
-- [ ] CI 闆嗘垚鍦烘櫙缁撴瀯楠岃瘉
+- [ ] 理解 Scene Tree 架构与 Node 生命周期
+- [ ] 掌握场景继承与组合模式
+- [ ] 熟练使用 GetNode 和 NodePath
+- [ ] 实现 PackedScene 实例化与场景切换
+- [ ] 使用 Groups 实现批量操作
+- [ ] 创建 Autoload 全局单例 (ServiceLocator/EventBus)
+- [ ] 场景组织遵循最佳实践（目录结构与命名）
+- [ ] GdUnit4 场景测试覆盖主要场景
+- [ ] xUnit 逻辑测试覆盖场景管理逻辑
+- [ ] CI 集成场景结构验证
 
 ---
 
-## 涓嬩竴姝?
+## 下一步
 
-瀹屾垚鏈樁娈靛悗锛岀户缁細
+完成本阶段后，继续：
 
-鉃★笍 [Phase-9-Signal-System.md](Phase-9-Signal-System.md) 鈥?CloudEvents 鈫?Godot Signals 杩佺Щ
+➡️ [Phase-9-Signal-System.md](Phase-9-Signal-System.md) — CloudEvents → Godot Signals 迁移
 
 ## Root 分层建议 / Root Layering
 
@@ -1215,3 +1215,4 @@ public partial class MyScreen : Control
 script = ExtResource("1")
 ```
 - 脚手架：`./scripts/scaffold/new_screen.ps1 -Name MyScreen`（已包含 Enter/Exit 钩子）。
+

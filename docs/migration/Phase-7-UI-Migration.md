@@ -1,65 +1,65 @@
-﻿# Phase 7: React 鈫?Godot Control UI 杩佺Щ
+# Phase 7: React → Godot Control UI 迁移
 
-> 鐘舵€? 璁捐闃舵
-> 棰勪及宸ユ椂: 15-20 澶?
-> 椋庨櫓绛夌骇: 涓?
-> 鍓嶇疆鏉′欢: Phase 1-6 瀹屾垚
-
----
-
-## 鐩爣
-
-灏?vitegame 鐨?React 19 + Tailwind CSS UI 杩佺Щ鍒?godotgame 鐨?Godot Control 鑺傜偣绯荤粺锛屼繚鎸佸姛鑳界瓑浠锋€т笌鍙祴璇曟€с€?
+> 状态: 设计阶段
+> 预估工时: 15-20 天
+> 风险等级: 中
+> 前置条件: Phase 1-6 完成
 
 ---
 
-## 鎶€鏈爤瀵规瘮
+## 目标
 
-| 灞傛 | vitegame (Web) | godotgame (Godot) |
+将 vitegame 的 React 19 + Tailwind CSS UI 迁移到 godotgame 的 Godot Control 节点系统，保持功能等价性与可测试性。
+
+---
+
+## 技术栈对比
+
+| 层次 | vitegame (Web) | godotgame (Godot) |
 |-----|---------------|------------------|
-| UI妗嗘灦 | React 19 (JSX) | Godot Control 鑺傜偣 (.tscn) |
-| 甯冨眬绯荤粺 | Flexbox / CSS Grid | Container 鑺傜偣 (VBoxContainer, HBoxContainer, GridContainer) |
-| 鏍峰紡 | Tailwind CSS v4 | Godot Theme (.tres) + StyleBox |
-| 浜嬩欢 | React onClick / onChange | Godot Signals (pressed, text_changed) |
-| 鐘舵€佺鐞?| useState / useReducer | C# Properties + Signals |
-| 缁勪欢澶嶇敤 | React Components | 鍦烘櫙缁ф壙 + Composition |
-| 鍝嶅簲寮?| CSS濯掍綋鏌ヨ | Anchor/Margin + viewport淇″彿 |
+| UI框架 | React 19 (JSX) | Godot Control 节点 (.tscn) |
+| 布局系统 | Flexbox / CSS Grid | Container 节点 (VBoxContainer, HBoxContainer, GridContainer) |
+| 样式 | Tailwind CSS v4 | Godot Theme (.tres) + StyleBox |
+| 事件 | React onClick / onChange | Godot Signals (pressed, text_changed) |
+| 状态管理 | useState / useReducer | C# Properties + Signals |
+| 组件复用 | React Components | 场景继承 + Composition |
+| 响应式 | CSS媒体查询 | Anchor/Margin + viewport信号 |
 
 ---
 
-## React 缁勪欢 鈫?Godot Control 鏄犲皠
+## React 组件 → Godot Control 映射
 
-### 鍩虹缁勪欢鏄犲皠琛?
+### 基础组件映射表
 
-| React 缁勪欢 | Godot Control | 璇存槑 |
+| React 组件 | Godot Control | 说明 |
 |-----------|--------------|------|
-| `<div>` | `Control` / `Panel` | 閫氱敤瀹瑰櫒 |
-| `<button>` | `Button` | 鎸夐挳 |
-| `<input type="text">` | `LineEdit` | 鍗曡鏂囨湰杈撳叆 |
-| `<textarea>` | `TextEdit` | 澶氳鏂囨湰杈撳叆 |
-| `<label>` | `Label` | 鏂囨湰鏍囩 |
-| `<img>` | `TextureRect` | 鍥剧墖鏄剧ず |
-| `<select>` | `OptionButton` | 涓嬫媺閫夋嫨鍣?|
-| `<input type="checkbox">` | `CheckBox` | 澶嶉€夋 |
-| `<input type="radio">` | `CheckButton` (浜掓枼缁? | 鍗曢€夋寜閽?|
-| `<progress>` | `ProgressBar` | 杩涘害鏉?|
-| `<ul>/<ol>` | `ItemList` / `Tree` | 鍒楄〃/鏍戝舰 |
+| `<div>` | `Control` / `Panel` | 通用容器 |
+| `<button>` | `Button` | 按钮 |
+| `<input type="text">` | `LineEdit` | 单行文本输入 |
+| `<textarea>` | `TextEdit` | 多行文本输入 |
+| `<label>` | `Label` | 文本标签 |
+| `<img>` | `TextureRect` | 图片显示 |
+| `<select>` | `OptionButton` | 下拉选择器 |
+| `<input type="checkbox">` | `CheckBox` | 复选框 |
+| `<input type="radio">` | `CheckButton` (互斥组) | 单选按钮 |
+| `<progress>` | `ProgressBar` | 进度条 |
+| `<ul>/<ol>` | `ItemList` / `Tree` | 列表/树形 |
 
-### 甯冨眬瀹瑰櫒鏄犲皠
+### 布局容器映射
 
-| React 甯冨眬 | Godot Container | 璇存槑 |
+| React 布局 | Godot Container | 说明 |
 |-----------|----------------|------|
-| `display: flex; flex-direction: column` | `VBoxContainer` | 鍨傜洿甯冨眬 |
-| `display: flex; flex-direction: row` | `HBoxContainer` | 姘村钩甯冨眬 |
-| `display: grid` | `GridContainer` | 缃戞牸甯冨眬 |
-| `position: absolute` | Control + `set_position()` | 缁濆瀹氫綅 |
-| `position: relative` | Control + Anchors | 鐩稿瀹氫綅 |
+| `display: flex; flex-direction: column` | `VBoxContainer` | 垂直布局 |
+| `display: flex; flex-direction: row` | `HBoxContainer` | 水平布局 |
+| `display: grid` | `GridContainer` | 网格布局 |
+| `position: absolute` | Control + `set_position()` | 绝对定位 |
+| `position: relative` | Control + Anchors | 相对定位 |
 
 ---
 
-## 1. 鍩虹缁勪欢杩佺Щ绀轰緥
+## 1. 基础组件迁移示例
 
-### React Button 鈫?Godot Button
+### React Button → Godot Button
 
 **React (vitegame)**:
 
@@ -104,7 +104,7 @@ export function PrimaryButton({
 
 **Godot (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/PrimaryButton.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/PrimaryButton.tscn`):
 
 ```
 [gd_scene load_steps=4 format=3 uid="uid://button_primary"]
@@ -131,7 +131,7 @@ text = "Button"
 script = ExtResource("1")
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/PrimaryButton.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/PrimaryButton.cs`):
 
 ```csharp
 using Godot;
@@ -211,7 +211,7 @@ public partial class PrimaryButton : Button
 }
 ```
 
-### React Form Input 鈫?Godot LineEdit
+### React Form Input → Godot LineEdit
 
 **React (vitegame)**:
 
@@ -255,7 +255,7 @@ export function TextInput({ label, error, ...props }: TextInputProps) {
 
 **Godot (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/TextInput.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/TextInput.tscn`):
 
 ```
 [gd_scene load_steps=3 format=3 uid="uid://input_text"]
@@ -279,7 +279,7 @@ modulate = Color(1, 0.2, 0.2, 1)
 visible = false
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/TextInput.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/TextInput.cs`):
 
 ```csharp
 using Godot;
@@ -444,9 +444,9 @@ public partial class TextInput : VBoxContainer
 
 ---
 
-## 2. 甯冨眬绯荤粺杩佺Щ
+## 2. 布局系统迁移
 
-### Flexbox 鈫?VBoxContainer/HBoxContainer
+### Flexbox → VBoxContainer/HBoxContainer
 
 **React Flexbox (vitegame)**:
 
@@ -482,7 +482,7 @@ export function UserCard({ username, level, avatar }: UserCardProps) {
 
 **Godot Container (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/UserCard.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/UserCard.tscn`):
 
 ```
 [gd_scene load_steps=2 format=3 uid="uid://card_user"]
@@ -532,7 +532,7 @@ text = "Profile"
 text = "Settings"
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/UserCard.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/UserCard.cs`):
 
 ```csharp
 using Godot;
@@ -601,7 +601,7 @@ public partial class UserCard : PanelContainer
 
 ---
 
-## 3. 鐘舵€佺鐞嗚縼绉?
+## 3. 状态管理迁移
 
 ### React useState 鈫?Godot Properties + Signals
 
@@ -640,7 +640,7 @@ export function HealthBar({ maxHealth = 100 }: { maxHealth?: number }) {
 
 **Godot Properties (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/HealthBar.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/HealthBar.tscn`):
 
 ```
 [gd_scene load_steps=2 format=3 uid="uid://bar_health"]
@@ -679,7 +679,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/HealthBar.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/HealthBar.cs`):
 
 ```csharp
 using Godot;
@@ -798,11 +798,11 @@ public partial class HealthBar : Control
 
 ---
 
-## 4. Godot Theme 绯荤粺
+## 4. Godot Theme 系统
 
-### 鍒涘缓涓婚璧勬簮
+### 创建主题资源
 
-**Theme 鏂囦欢** (`Game.Godot/Themes/default_theme.tres`):
+**Theme 文件** (`Game.Godot/Themes/default_theme.tres`):
 
 ```
 [gd_resource type="Theme" load_steps=10 format=3 uid="uid://theme_default"]
@@ -853,16 +853,16 @@ Label/font_sizes/font_size = 16
 Label/colors/font_color = Color(0.2, 0.2, 0.2, 1)
 ```
 
-### 搴旂敤 Theme
+### 应用 Theme
 
-**鏂瑰紡 1锛氬湪鍦烘櫙涓簲鐢?*
+**方式 1：在场景中应用**
 
 ```
 [node name="UI" type="Control"]
 theme = preload("res://Themes/default_theme.tres")
 ```
 
-**鏂瑰紡 2锛氬湪椤圭洰璁剧疆涓叏灞€搴旂敤**
+**方式 2：在项目设置中全局应用**
 
 ```ini
 # project.godot
@@ -872,7 +872,7 @@ theme = preload("res://Themes/default_theme.tres")
 theme/custom="res://Themes/default_theme.tres"
 ```
 
-**鏂瑰紡 3锛氶€氳繃浠ｇ爜搴旂敤**
+**方式 3：通过代码应用**
 
 ```csharp
 public override void _Ready()
@@ -884,22 +884,22 @@ public override void _Ready()
 
 ---
 
-## 5. 鍝嶅簲寮忓竷灞€
+## 5. 响应式布局
 
-### Anchor 涓?Margin 绯荤粺
+### Anchor 与 Margin 系统
 
-**Godot Anchor 棰勮**:
+**Godot Anchor 预设**:
 
-| Preset | 璇存槑 | Anchor Values |
+| Preset | 说明 | Anchor Values |
 |--------|------|--------------|
-| Top Left | 宸︿笂瑙?| (0, 0, 0, 0) |
-| Top Right | 鍙充笂瑙?| (1, 0, 1, 0) |
-| Bottom Left | 宸︿笅瑙?| (0, 1, 0, 1) |
-| Bottom Right | 鍙充笅瑙?| (1, 1, 1, 1) |
-| Center | 灞呬腑 | (0.5, 0.5, 0.5, 0.5) |
-| Full Rect | 濉弧鐖跺鍣?| (0, 0, 1, 1) |
+| Top Left | 左上角 | (0, 0, 0, 0) |
+| Top Right | 右上角 | (1, 0, 1, 0) |
+| Bottom Left | 左下角 | (0, 1, 0, 1) |
+| Bottom Right | 右下角 | (1, 1, 1, 1) |
+| Center | 居中 | (0.5, 0.5, 0.5, 0.5) |
+| Full Rect | 填满父容器 | (0, 0, 1, 1) |
 
-**鍝嶅簲寮忕ず渚?*:
+**响应式示例**:
 
 ```csharp
 // Game.Godot/Scripts/UI/ResponsivePanel.cs
@@ -948,9 +948,9 @@ public partial class ResponsivePanel : Panel
 
 ---
 
-## 6. 琛ㄥ崟澶勭悊涓庨獙璇?
+## 6. 表单处理与验证
 
-### React Form 鈫?Godot Form Container
+### React Form → Godot Form Container
 
 **React Form (vitegame)**:
 
@@ -1014,7 +1014,7 @@ export function LoginForm() {
 
 **Godot Form (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/LoginForm.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/LoginForm.tscn`):
 
 ```
 [gd_scene load_steps=3 format=3 uid="uid://form_login"]
@@ -1038,7 +1038,7 @@ secret = true
 text = "Login"
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/LoginForm.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/LoginForm.cs`):
 
 ```csharp
 using Godot;
@@ -1130,9 +1130,9 @@ public partial class LoginForm : VBoxContainer
 
 ---
 
-## 7. 鍒楄〃涓庡彲婊氬姩鍐呭
+## 7. 列表与可滚动内容
 
-### React List 鈫?Godot ScrollContainer + VBoxContainer
+### React List → Godot ScrollContainer + VBoxContainer
 
 **React List (vitegame)**:
 
@@ -1166,7 +1166,7 @@ export function UserList({ users }: { users: User[] }) {
 
 **Godot List (godotgame)**:
 
-**鍦烘櫙鏂囦欢** (`Game.Godot/Scenes/UI/UserList.tscn`):
+**场景文件** (`Game.Godot/Scenes/UI/UserList.tscn`):
 
 ```
 [gd_scene load_steps=2 format=3 uid="uid://list_user"]
@@ -1196,7 +1196,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 8
 ```
 
-**C# 鑴氭湰** (`Game.Godot/Scripts/UI/UserList.cs`):
+**C# 脚本** (`Game.Godot/Scripts/UI/UserList.cs`):
 
 ```csharp
 using Godot;
@@ -1291,9 +1291,9 @@ public partial class UserList : Panel
 
 ---
 
-## 8. 娴嬭瘯绛栫暐
+## 8. 测试策略
 
-### GdUnit4 UI 娴嬭瘯
+### GdUnit4 UI 测试
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -1314,7 +1314,7 @@ public partial class ExampleTest
 }
 ```
 
-### xUnit UI Logic 娴嬭瘯
+### xUnit UI Logic 测试
 
 ```csharp
 // Game.Core.Tests/UI/HealthBarLogicTests.cs
@@ -1380,9 +1380,9 @@ public class HealthBarLogicTests
 
 ---
 
-## 9. Accessibility (鍙闂€?
+## 9. Accessibility (可访问性)
 
-### 閿洏瀵艰埅鏀寔
+### 键盘导航支持
 
 ```csharp
 // Game.Godot/Scripts/UI/AccessibleButton.cs
@@ -1447,9 +1447,9 @@ public partial class AccessibleButton : Button
 
 ---
 
-## 10. CI 闆嗘垚
+## 10. CI 集成
 
-### UI 娴嬭瘯 (GitHub Actions)
+### UI 测试 (GitHub Actions)
 
 ```yaml
 # .github/workflows/ui-tests.yml
@@ -1492,24 +1492,24 @@ jobs:
 
 ---
 
-## 瀹屾垚鏍囧噯
+## 完成标准
 
-- [ ] 鎵€鏈夋牳蹇?UI 缁勪欢宸茶縼绉伙紙Button, TextInput, Label, Panel, List锛?
-- [ ] 甯冨眬绯荤粺宸蹭粠 Flexbox 杩佺Щ鍒?Container 鑺傜偣
-- [ ] Theme 璧勬簮宸插垱寤哄苟搴旂敤
-- [ ] 鍝嶅簲寮忓竷灞€鏀寔 (Anchor/Margin)
-- [ ] 琛ㄥ崟楠岃瘉閫昏緫宸茶縼绉?
-- [ ] GdUnit4 UI 娴嬭瘯瑕嗙洊涓昏鍦烘櫙
-- [ ] 閿洏瀵艰埅涓?Accessibility 鏀寔
-- [ ] CI 闆嗘垚 UI 娴嬭瘯閫氳繃
+- [ ] 所有核心 UI 组件已迁移（Button, TextInput, Label, Panel, List）
+- [ ] 布局系统已从 Flexbox 迁移到 Container 节点
+- [ ] Theme 资源已创建并应用
+- [ ] 响应式布局支持 (Anchor/Margin)
+- [ ] 表单验证逻辑已迁移
+- [ ] GdUnit4 UI 测试覆盖主要场景
+- [ ] 键盘导航与 Accessibility 支持
+- [ ] CI 集成 UI 测试通过
 
 ---
 
-## 涓嬩竴姝?
+## 下一步
 
-瀹屾垚鏈樁娈靛悗锛岀户缁細
+完成本阶段后，继续：
 
-鉃★笍 [Phase-8-Scene-Design.md](Phase-8-Scene-Design.md) 鈥?Scene Tree 涓?Node 璁捐
+➡️ [Phase-8-Scene-Design.md](Phase-8-Scene-Design.md) — Scene Tree 与 Node 设计
 
 ## 最小迁移清单 / Minimal UI Checklist
 
@@ -1633,4 +1633,5 @@ GetTree().CurrentScene = screen;
 
 - `Game.Godot/Examples/Screens/DemoScreen.tscn`：演示 Modal/Toast 用法。
 - 使用方式：在编辑器直接打开该场景，或在你的 Screen 中实例化并调用相应方法。
+
 

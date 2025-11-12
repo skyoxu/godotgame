@@ -1,37 +1,37 @@
-﻿# Phase 10: Jest 鈫?xUnit 鍗曞厓娴嬭瘯杩佺Щ
+# Phase 10: Jest → xUnit 单元测试迁移
 
-> 鐘舵€? 璁捐闃舵
-> 棰勪及宸ユ椂: 8-12 澶?
-> 椋庨櫓绛夌骇: 涓?
-> 鍓嶇疆鏉′欢: Phase 1-9 瀹屾垚
-
----
-
-## 鐩爣
-
-灏?vitegame 鐨?Jest + TypeScript 鍗曞厓娴嬭瘯杩佺Щ鍒?godotgame 鐨?xUnit + C# 鍗曞厓娴嬭瘯锛屽缓绔嬬被鍨嬪畨鍏ㄧ殑娴嬭瘯濂椾欢涓?AI-first 瑕嗙洊鐜囬棬绂併€?
+> 状态: 设计阶段
+> 预估工时: 8-12 天
+> 风险等级: 中
+> 前置条件: Phase 1-9 完成
 
 ---
 
-## 鎶€鏈爤瀵规瘮
+## 目标
 
-| 鍔熻兘 | vitegame (Node.js) | godotgame (.NET 8) |
+将 vitegame 的 Jest + TypeScript 单元测试迁移到 godotgame 的 xUnit + C# 单元测试，建立类型安全的测试套件与 AI-first 覆盖率门禁。
+
+---
+
+## 技术栈对比
+
+| 功能 | vitegame (Node.js) | godotgame (.NET 8) |
 |-----|-------------------|-------------------|
-| 娴嬭瘯妗嗘灦 | Jest 29 | xUnit 2.x |
-| 鏂█搴?| Jest expect() | FluentAssertions |
-| 娴嬭瘯闅旂 | describe/it 宓屽 | [Fact]/[Theory] 鎵佸钩 |
-| 娴嬭瘯鍙?| jest.mock / jest.fn | Moq / NSubstitute / Fakes |
-| 鍙傛暟鍖栨祴璇?| test.each() | [Theory] + [InlineData] |
-| 鐢熷懡鍛ㄦ湡 | beforeEach/afterEach | Constructor/IDisposable |
-| 瑕嗙洊鐜?| c8 / istanbul | coverlet |
-| 杩愯鍣?| jest CLI | dotnet test |
-| CI 闆嗘垚 | npm test | dotnet test --logger trx |
+| 测试框架 | Jest 29 | xUnit 2.x |
+| 断言库 | Jest expect() | FluentAssertions |
+| 测试隔离 | describe/it 嵌套 | [Fact]/[Theory] 扁平 |
+| 测试双 | jest.mock / jest.fn | Moq / NSubstitute / Fakes |
+| 参数化测试 | test.each() | [Theory] + [InlineData] |
+| 生命周期 | beforeEach/afterEach | Constructor/IDisposable |
+| 覆盖率 | c8 / istanbul | coverlet |
+| 运行器 | jest CLI | dotnet test |
+| CI 集成 | npm test | dotnet test --logger trx |
 
 ---
 
-## Jest 娴嬭瘯缁撴瀯鍥為【
+## Jest 测试结构回顾
 
-### 鍏稿瀷 Jest 娴嬭瘯 (vitegame)
+### 典型 Jest 测试 (vitegame)
 
 ```typescript
 // src/domain/entities/Player.test.ts
@@ -115,9 +115,9 @@ describe('Player', () => {
 
 ---
 
-## xUnit 娴嬭瘯缁撴瀯
+## xUnit 测试结构
 
-### 绛変环 xUnit 娴嬭瘯 (godotgame)
+### 等价 xUnit 测试 (godotgame)
 
 ```csharp
 // Game.Core.Tests/Domain/Entities/PlayerTests.cs
@@ -130,7 +130,7 @@ using Xunit;
 namespace Game.Core.Tests.Domain.Entities;
 
 /// <summary>
-/// Player 瀹炰綋鍗曞厓娴嬭瘯
+/// Player 实体单元测试
 /// </summary>
 public class PlayerTests : IDisposable
 {
@@ -279,11 +279,11 @@ public class PlayerTests : IDisposable
 
 ---
 
-## 鏍稿績杩佺Щ妯″紡
+## 核心迁移模式
 
-### 1. describe/it 鈫?[Fact]/[Theory]
+### 1. describe/it → [Fact]/[Theory]
 
-**Jest (宓屽缁撴瀯)**:
+**Jest (嵌套结构)**:
 
 ```typescript
 describe('Player', () => {
@@ -299,7 +299,7 @@ describe('Player', () => {
 });
 ```
 
-**xUnit (鎵佸钩缁撴瀯 + 鍛藉悕绾﹀畾)**:
+**xUnit (扁平结构 + 命名约定)**:
 
 ```csharp
 public class PlayerTests
@@ -318,33 +318,33 @@ public class PlayerTests
 }
 ```
 
-**鍛藉悕绾﹀畾**:
-- **鏍煎紡**: `MethodName_Scenario_ExpectedBehavior`
-- **绀轰緥**:
+**命名约定**:
+- **格式**: `MethodName_Scenario_ExpectedBehavior`
+- **示例**:
   - `TakeDamage_WithNegativeAmount_ThrowsArgumentException`
   - `Constructor_WithNullTime_ThrowsArgumentNullException`
   - `Move_WithValidCoordinates_UpdatesPosition`
 
 ---
 
-### 2. expect() 鈫?FluentAssertions
+### 2. expect() → FluentAssertions
 
-**Jest 鏂█ 鈫?FluentAssertions 鏄犲皠琛?*:
+**Jest 断言 → FluentAssertions 映射表**:
 
-| Jest | FluentAssertions | 璇存槑 |
+| Jest | FluentAssertions | 说明 |
 |------|-----------------|------|
-| `expect(x).toBe(y)` | `x.Should().Be(y)` | 鍊肩浉绛?|
-| `expect(x).toEqual(y)` | `x.Should().BeEquivalentTo(y)` | 娣卞害鐩哥瓑 |
-| `expect(x).toBeNull()` | `x.Should().BeNull()` | Null 妫€鏌?|
-| `expect(x).toBeDefined()` | `x.Should().NotBeNull()` | 闈?Null |
-| `expect(x).toBeTruthy()` | `x.Should().BeTrue()` | 鐪熷€?|
-| `expect(x).toBeGreaterThan(y)` | `x.Should().BeGreaterThan(y)` | 澶т簬 |
-| `expect(x).toContain(y)` | `x.Should().Contain(y)` | 鍖呭惈 |
-| `expect(arr).toHaveLength(n)` | `arr.Should().HaveCount(n)` | 闀垮害/鏁伴噺 |
-| `expect(fn).toThrow()` | `fn.Should().Throw<Exception>()` | 寮傚父 |
-| `expect(mock).toHaveBeenCalled()` | `mock.Verify(m => m.Method(), Times.Once)` | Mock 璋冪敤 |
+| `expect(x).toBe(y)` | `x.Should().Be(y)` | 值相等 |
+| `expect(x).toEqual(y)` | `x.Should().BeEquivalentTo(y)` | 深度相等 |
+| `expect(x).toBeNull()` | `x.Should().BeNull()` | Null 检查 |
+| `expect(x).toBeDefined()` | `x.Should().NotBeNull()` | 非 Null |
+| `expect(x).toBeTruthy()` | `x.Should().BeTrue()` | 真值 |
+| `expect(x).toBeGreaterThan(y)` | `x.Should().BeGreaterThan(y)` | 大于 |
+| `expect(x).toContain(y)` | `x.Should().Contain(y)` | 包含 |
+| `expect(arr).toHaveLength(n)` | `arr.Should().HaveCount(n)` | 长度/数量 |
+| `expect(fn).toThrow()` | `fn.Should().Throw<Exception>()` | 异常 |
+| `expect(mock).toHaveBeenCalled()` | `mock.Verify(m => m.Method(), Times.Once)` | Mock 调用 |
 
-**绀轰緥杩佺Щ**:
+**示例迁移**:
 
 ```typescript
 // Jest
@@ -366,9 +366,9 @@ act.Should().Throw<ArgumentException>()
 
 ---
 
-### 3. beforeEach/afterEach 鈫?Constructor/IDisposable
+### 3. beforeEach/afterEach → Constructor/IDisposable
 
-**Jest 鐢熷懡鍛ㄦ湡**:
+**Jest 生命周期**:
 
 ```typescript
 describe('Player', () => {
@@ -389,7 +389,7 @@ describe('Player', () => {
 });
 ```
 
-**xUnit 鐢熷懡鍛ㄦ湡**:
+**xUnit 生命周期**:
 
 ```csharp
 public class PlayerTests : IDisposable
@@ -418,10 +418,10 @@ public class PlayerTests : IDisposable
 }
 ```
 
-**Class Fixtures (鍏变韩涓婁笅鏂?**:
+**Class Fixtures (共享上下文)**:
 
 ```csharp
-// 褰撻渶瑕佸湪澶氫釜娴嬭瘯闂村叡浜槀璐电殑鍒濆鍖栵紙濡傛暟鎹簱杩炴帴锛?
+// 当需要在多个测试间共享昂贵的初始化（如数据库连接）
 public class DatabaseFixture : IDisposable
 {
     public SqliteDataStore DataStore { get; }
@@ -458,9 +458,9 @@ public class UserRepositoryTests : IClassFixture<DatabaseFixture>
 
 ---
 
-### 4. test.each() 鈫?[Theory] + [InlineData]
+### 4. test.each() → [Theory] + [InlineData]
 
-**Jest 鍙傛暟鍖栨祴璇?*:
+**Jest 参数化测试**:
 
 ```typescript
 describe('Player.takeDamage', () => {
@@ -476,7 +476,7 @@ describe('Player.takeDamage', () => {
 });
 ```
 
-**xUnit 鍙傛暟鍖栨祴璇?*:
+**xUnit 参数化测试**:
 
 ```csharp
 public class PlayerTests
@@ -501,7 +501,7 @@ public class PlayerTests
 }
 ```
 
-**MemberData (澶嶆潅鏁版嵁)**:
+**MemberData (复杂数据)**:
 
 ```csharp
 public class PlayerTests
@@ -533,7 +533,7 @@ public class PlayerTests
 
 ---
 
-### 5. jest.mock 鈫?Moq / NSubstitute / Fakes
+### 5. jest.mock → Moq / NSubstitute / Fakes
 
 **Jest Mock**:
 
@@ -551,7 +551,7 @@ player.update();
 expect(mockTime.getDeltaTime).toHaveBeenCalled();
 ```
 
-**閫夋嫨 1: Moq (楠岃瘉琛屼负)**:
+**选择 1: Moq (验证行为)**:
 
 ```csharp
 using Moq;
@@ -568,7 +568,7 @@ player.Update();
 mockTime.Verify(t => t.GetDeltaTime(), Times.Once);
 ```
 
-**閫夋嫨 2: NSubstitute (鏇寸畝娲?**:
+**选择 2: NSubstitute (更简洁)**:
 
 ```csharp
 using NSubstitute;
@@ -585,7 +585,7 @@ player.Update();
 mockTime.Received(1).GetDeltaTime();
 ```
 
-**閫夋嫨 3: Fake 瀹炵幇 (鎺ㄨ崘鐢ㄤ簬绠€鍗曞満鏅?**:
+**选择 3: Fake 实现 (推荐用于简单场景)**:
 
 ```csharp
 // Game.Core.Tests/Fakes/FakeTime.cs
@@ -612,41 +612,41 @@ var player = new Player(fakeTime);
 player.Update();
 ```
 
-**Fake vs Mock 閫夋嫨鍘熷垯**:
+**Fake vs Mock 选择原则**:
 
-| 鍦烘櫙 | 浣跨敤 Fake | 浣跨敤 Mock (Moq/NSubstitute) |
+| 场景 | 使用 Fake | 使用 Mock (Moq/NSubstitute) |
 |-----|----------|---------------------------|
-| 绠€鍗曠姸鎬佸璞?| [OK] FakeTime, FakeInput | 鍚?|
-| 闇€瑕侀獙璇佽皟鐢ㄦ鏁?椤哄簭 | 鍚?| [OK] Mock |
-| 澶嶆潅渚濊禆/澶氭柟娉曡皟鐢?| 鍚?| [OK] Mock |
-| 璺ㄦ祴璇曞鐢?| [OK] 鍏变韩 Fake | 鍚︼紙姣忔祴璇曞垱寤?Mock锛?|
-| 鍙鎬т紭鍏?| [OK] 鏇寸洿瑙?| [璀﹀憡] 瀛︿範鏇茬嚎 |
+| 简单状态对象 | [OK] FakeTime, FakeInput | 否 |
+| 需要验证调用次数/顺序 | 否 | [OK] Mock |
+| 复杂依赖/多方法调用 | 否 | [OK] Mock |
+| 跨测试复用 | [OK] 共享 Fake | 否（每测试创建 Mock） |
+| 可读性优先 | [OK] 更直观 | [警告] 学习曲线 |
 
 ---
 
-## AAA 妯″紡 (Arrange-Act-Assert)
+## AAA 模式 (Arrange-Act-Assert)
 
-### 鏍囧噯 AAA 缁撴瀯
+### 标准 AAA 结构
 
 ```csharp
 [Fact]
 public void TakeDamage_WithValidAmount_ShouldReduceHealth()
 {
-    // Arrange (鍑嗗娴嬭瘯鏁版嵁鍜屼緷璧?
+    // Arrange (准备测试数据和依赖)
     var fakeTime = new FakeTime();
     var player = new Player(fakeTime);
     const int damage = 30;
     const int expectedHealth = 70;
 
-    // Act (鎵ц琚祴鎿嶄綔)
+    // Act (执行被测操作)
     player.TakeDamage(damage);
 
-    // Assert (楠岃瘉缁撴灉)
+    // Assert (验证结果)
     player.Health.Should().Be(expectedHealth);
 }
 ```
 
-### 澶嶆潅 AAA 绀轰緥
+### 复杂 AAA 示例
 
 ```csharp
 [Fact]
@@ -657,7 +657,7 @@ public void Move_WithCollision_ShouldStopAtBoundary()
     var player = new Player(fakeTime);
     var mockCollisionDetector = new Mock<ICollisionDetector>();
 
-    // 璁剧疆纰版挒妫€娴嬪櫒鍦?x=500 澶勮繑鍥炵鎾?
+    // 设置碰撞检测器在 x=500 处返回碰撞
     mockCollisionDetector
         .Setup(cd => cd.CheckCollision(It.IsAny<Vector2D>()))
         .Returns((Vector2D pos) => pos.X >= 500);
@@ -665,10 +665,10 @@ public void Move_WithCollision_ShouldStopAtBoundary()
     player.SetCollisionDetector(mockCollisionDetector.Object);
 
     // Act
-    player.Move(600, 100); // 灏濊瘯绉诲姩鍒?x=600
+    player.Move(600, 100); // 尝试移动到 x=600
 
     // Assert
-    player.Position.X.Should().Be(499); // 搴旇鍋滃湪杈圭晫
+    player.Position.X.Should().Be(499); // 应该停在边界
     player.Position.Y.Should().Be(100);
     mockCollisionDetector.Verify(
         cd => cd.CheckCollision(It.IsAny<Vector2D>()),
@@ -679,9 +679,9 @@ public void Move_WithCollision_ShouldStopAtBoundary()
 
 ---
 
-## 寮傛娴嬭瘯杩佺Щ
+## 异步测试迁移
 
-### Jest 寮傛娴嬭瘯
+### Jest 异步测试
 
 ```typescript
 // Jest async/await
@@ -697,7 +697,7 @@ describe('UserService', () => {
 });
 ```
 
-### xUnit 寮傛娴嬭瘯
+### xUnit 异步测试
 
 ```csharp
 // xUnit async Task
@@ -734,9 +734,9 @@ public class UserServiceTests
 
 ---
 
-## 娴嬭瘯鍒嗙被涓庤繃婊?
+## 测试分类与过滤
 
-### [Trait] 鏍囪
+### [Trait] 标记
 
 ```csharp
 // Game.Core.Tests/Domain/Entities/PlayerTests.cs
@@ -770,27 +770,27 @@ public class PlayerTests
 }
 ```
 
-### 杩愯鐗瑰畾鍒嗙被娴嬭瘯
+### 运行特定分类测试
 
 ```bash
-# 鍙繍琛屽崟鍏冩祴璇?
+# 只运行单元测试
 dotnet test --filter "Category=Unit"
 
-# 杩愯鐗瑰畾鍔熻兘鐨勬祴璇?
+# 运行特定功能的测试
 dotnet test --filter "Feature=Player"
 
-# 杩愯楂樹紭鍏堢骇娴嬭瘯
+# 运行高优先级测试
 dotnet test --filter "Priority=High"
 
-# 缁勫悎杩囨护
+# 组合过滤
 dotnet test --filter "Category=Unit&Feature=Player"
 ```
 
 ---
 
-## 瑕嗙洊鐜囬厤缃笌闂ㄧ
+## 覆盖率配置与门禁
 
-### coverlet 閰嶇疆 (Game.Core.Tests.csproj)
+### coverlet 配置 (Game.Core.Tests.csproj)
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -819,15 +819,15 @@ dotnet test --filter "Category=Unit&Feature=Player"
 </Project>
 ```
 
-### 瑕嗙洊鐜囧懡浠?
+### 覆盖率命令
 
 ```bash
-# 鐢熸垚瑕嗙洊鐜囨姤鍛?
+# 生成覆盖率报告
 dotnet test Game.Core.Tests/Game.Core.Tests.csproj \
   --collect:"XPlat Code Coverage" \
   --results-directory ./TestResults
 
-# 浣跨敤 ReportGenerator 鐢熸垚 HTML 鎶ュ憡
+# 使用 ReportGenerator 生成 HTML 报告
 dotnet tool install -g dotnet-reportgenerator-globaltool
 
 reportgenerator \
@@ -836,7 +836,7 @@ reportgenerator \
   -reporttypes:Html
 ```
 
-### 瑕嗙洊鐜囬棬绂佽剼鏈?
+### 覆盖率门禁脚本
 
 ```javascript
 // scripts/quality_gates.mjs
@@ -878,42 +878,42 @@ checkCoverage().catch(err => {
 
 ---
 
-## 娴嬭瘯缁勭粐鏈€浣冲疄璺?
+## 测试组织最佳实践
 
-### 鎺ㄨ崘鐩綍缁撴瀯
+### 推荐目录结构
 
 ```
 Game.Core.Tests/
-鈹溾攢鈹€ Domain/
-鈹?  鈹溾攢鈹€ Entities/
-鈹?  鈹?  鈹溾攢鈹€ PlayerTests.cs
-鈹?  鈹?  鈹溾攢鈹€ EnemyTests.cs
-鈹?  鈹?  鈹斺攢鈹€ ItemTests.cs
-鈹?  鈹溾攢鈹€ ValueObjects/
-鈹?  鈹?  鈹溾攢鈹€ Vector2DTests.cs
-鈹?  鈹?  鈹斺攢鈹€ HealthPointsTests.cs
-鈹?  鈹斺攢鈹€ Services/
-鈹?      鈹溾攢鈹€ GameLogicServiceTests.cs
-鈹?      鈹斺攢鈹€ ScoreServiceTests.cs
-鈹溾攢鈹€ Infrastructure/
-鈹?  鈹溾攢鈹€ Repositories/
-鈹?  鈹?  鈹溾攢鈹€ UserRepositoryTests.cs
-鈹?  鈹?  鈹斺攢鈹€ SaveGameRepositoryTests.cs
-鈹?  鈹斺攢鈹€ Migrations/
-鈹?      鈹斺攢鈹€ DatabaseMigrationTests.cs
-鈹溾攢鈹€ Fakes/
-鈹?  鈹溾攢鈹€ FakeTime.cs
-鈹?  鈹溾攢鈹€ FakeInput.cs
-鈹?  鈹溾攢鈹€ FakeDataStore.cs
-鈹?  鈹斺攢鈹€ FakeLogger.cs
-鈹斺攢鈹€ Fixtures/
-    鈹斺攢鈹€ DatabaseFixture.cs
+├── Domain/
+│   ├── Entities/
+│   │   ├── PlayerTests.cs
+│   │   ├── EnemyTests.cs
+│   │   └── ItemTests.cs
+│   ├── ValueObjects/
+│   │   ├── Vector2DTests.cs
+│   │   └── HealthPointsTests.cs
+│   └── Services/
+│       ├── GameLogicServiceTests.cs
+│       └── ScoreServiceTests.cs
+├── Infrastructure/
+│   ├── Repositories/
+│   │   ├── UserRepositoryTests.cs
+│   │   └── SaveGameRepositoryTests.cs
+│   └── Migrations/
+│       └── DatabaseMigrationTests.cs
+├── Fakes/
+│   ├── FakeTime.cs
+│   ├── FakeInput.cs
+│   ├── FakeDataStore.cs
+│   └── FakeLogger.cs
+└── Fixtures/
+    └── DatabaseFixture.cs
 ```
 
-### 鍛藉悕绾﹀畾
+### 命名约定
 
 ```csharp
-// Good: 娴嬭瘯鍛藉悕娓呮櫚
+// Good: 测试命名清晰
 [Fact]
 public void Constructor_WithValidParameters_ShouldInitializeProperties()
 
@@ -923,7 +923,7 @@ public void TakeDamage_WithNegativeAmount_ThrowsArgumentException()
 [Fact]
 public void Move_WhenOutOfBounds_ClampsToMaxBoundary()
 
-// Bad: 娴嬭瘯鍛藉悕鍚硦
+// Bad: 测试命名含糊
 [Fact]
 public void Test1()
 
@@ -936,12 +936,12 @@ public void TestTakeDamage()
 
 ---
 
-## 娴嬭瘯鏁版嵁鏋勫缓鍣ㄦā寮?
+## 测试数据构建器模式
 
-### 闂锛氬鏉傚璞″垱寤?
+### 问题：复杂对象创建
 
 ```csharp
-// Bad: 姣忎釜娴嬭瘯閮介噸澶嶅垱寤哄鏉傚璞?
+// Bad: 每个测试都重复创建复杂对象
 [Fact]
 public void Test1()
 {
@@ -968,13 +968,13 @@ public void Test2()
         Health = 50,
         MaxHealth = 100,
         Position = new Vector2D(100, 100),
-        // ... 閲嶅鍒涘缓
+        // ... 重复创建
     };
     // test...
 }
 ```
 
-### 瑙ｅ喅鏂规锛欱uilder Pattern
+### 解决方案：Builder Pattern
 
 ```csharp
 // Game.Core.Tests/Builders/PlayerBuilder.cs
@@ -1051,7 +1051,7 @@ public class PlayerBuilder
     }
 }
 
-// 浣跨敤绀轰緥
+// 使用示例
 public class PlayerTests
 {
     [Fact]
@@ -1089,9 +1089,9 @@ public class PlayerTests
 
 ---
 
-## 鐗瑰畾鍦烘櫙娴嬭瘯妯″紡
+## 特定场景测试模式
 
-### 1. 寮傚父娴嬭瘯
+### 1. 异常测试
 
 ```csharp
 [Fact]
@@ -1121,7 +1121,7 @@ public void Constructor_WithNullTime_ThrowsArgumentNullException()
 }
 ```
 
-### 2. 浜嬩欢/淇″彿娴嬭瘯
+### 2. 事件/信号测试
 
 ```csharp
 [Fact]
@@ -1164,7 +1164,7 @@ public void TakeDamage_WhenHealthReachesZero_ShouldRaiseDeathEvent()
 }
 ```
 
-### 3. 鏃堕棿渚濊禆娴嬭瘯
+### 3. 时间依赖测试
 
 ```csharp
 [Fact]
@@ -1201,7 +1201,7 @@ public void Cooldown_AfterElapsedTime_ShouldExpire()
 }
 ```
 
-### 4. 鐘舵€佽浆鎹㈡祴璇?
+### 4. 状态转换测试
 
 ```csharp
 [Theory]
@@ -1242,9 +1242,9 @@ public void TransitionTo_WithInvalidTransition_ShouldThrowInvalidOperationExcept
 
 ---
 
-## 娴嬭瘯鏇胯韩瀹屾暣绀轰緥
+## 测试替身完整示例
 
-### FakeTime 瀹炵幇
+### FakeTime 实现
 
 ```csharp
 // Game.Core.Tests/Fakes/FakeTime.cs
@@ -1281,7 +1281,7 @@ public class FakeTime : ITime
 }
 ```
 
-### FakeInput 瀹炵幇
+### FakeInput 实现
 
 ```csharp
 // Game.Core.Tests/Fakes/FakeInput.cs
@@ -1327,14 +1327,14 @@ public class FakeInput : IInput
     public bool IsActionJustPressed(string action)
     {
         var result = _justPressedActions.GetValueOrDefault(action, false);
-        _justPressedActions[action] = false; // 娑堣垂
+        _justPressedActions[action] = false; // 消费
         return result;
     }
 
     public bool IsActionJustReleased(string action)
     {
         var result = _justReleasedActions.GetValueOrDefault(action, false);
-        _justReleasedActions[action] = false; // 娑堣垂
+        _justReleasedActions[action] = false; // 消费
         return result;
     }
 
@@ -1360,7 +1360,7 @@ public class FakeInput : IInput
 }
 ```
 
-### FakeDataStore 瀹炵幇
+### FakeDataStore 实现
 
 ```csharp
 // Game.Core.Tests/Fakes/FakeDataStore.cs
@@ -1388,7 +1388,7 @@ public class FakeDataStore : IDataStore
     public void Execute(string sql, params object[] parameters)
     {
         EnsureOpen();
-        // 绠€鍖栧疄鐜帮細涓嶇湡姝ｈВ鏋?SQL锛屼粎鐢ㄤ簬娴嬭瘯
+        // 简化实现：不真正解析 SQL，仅用于测试
     }
 
     public T? QuerySingle<T>(string sql, params object[] parameters) where T : class
@@ -1443,9 +1443,9 @@ public class FakeDataStore : IDataStore
 
 ---
 
-## CI 闆嗘垚
+## CI 集成
 
-### GitHub Actions 閰嶇疆
+### GitHub Actions 配置
 
 ```yaml
 # .github/workflows/tests.yml
@@ -1520,50 +1520,24 @@ jobs:
 
 ---
 
-## 瀹屾垚鏍囧噯
+## 完成标准
 
-- [ ] 鎵€鏈?Jest 鍗曞厓娴嬭瘯宸茶縼绉诲埌 xUnit
-- [ ] 浣跨敤 FluentAssertions 鏇夸唬 Jest expect()
-- [ ] AAA 妯″紡鍦ㄦ墍鏈夋祴璇曚腑涓€鑷村簲鐢?
-- [ ] 娴嬭瘯鍛藉悕绗﹀悎 `MethodName_Scenario_ExpectedBehavior` 绾﹀畾
-- [ ] [Theory] + [InlineData] 鐢ㄤ簬鍙傛暟鍖栨祴璇?
-- [ ] Fake 瀹炵幇鎻愪緵缁欐牳蹇冪鍙?(ITime, IInput, IDataStore, ILogger)
-- [ ] Builder 妯″紡鐢ㄤ簬澶嶆潅瀵硅薄鍒涘缓
-- [ ] 瑕嗙洊鐜囪揪鍒?鈮?0% 琛岃鐩栫巼锛屸墺85% 鍒嗘敮瑕嗙洊鐜?
-- [ ] coverlet 閰嶇疆姝ｇ‘锛岀敓鎴?Cobertura 鎶ュ憡
-- [ ] CI 绠￠亾鍖呭惈鍗曞厓娴嬭瘯鎵ц鍜岃鐩栫巼闂ㄧ
-- [ ] 娴嬭瘯鍒嗙被浣跨敤 [Trait] 鏍囪锛圕ategory, Feature, Priority锛?
+- [ ] 所有 Jest 单元测试已迁移到 xUnit
+- [ ] 使用 FluentAssertions 替代 Jest expect()
+- [ ] AAA 模式在所有测试中一致应用
+- [ ] 测试命名符合 `MethodName_Scenario_ExpectedBehavior` 约定
+- [ ] [Theory] + [InlineData] 用于参数化测试
+- [ ] Fake 实现提供给核心端口 (ITime, IInput, IDataStore, ILogger)
+- [ ] Builder 模式用于复杂对象创建
+- [ ] 覆盖率达到 ≥90% 行覆盖率，≥85% 分支覆盖率
+- [ ] coverlet 配置正确，生成 Cobertura 报告
+- [ ] CI 管道包含单元测试执行和覆盖率门禁
+- [ ] 测试分类使用 [Trait] 标记（Category, Feature, Priority）
 
 ---
 
-## 涓嬩竴姝?
+## 下一步
 
-瀹屾垚鏈樁娈靛悗锛岀户缁細
+完成本阶段后，继续：
 
-[鍙傝€僝 [Phase-11-Scene-Integration-Tests-REVISED.md](Phase-11-Scene-Integration-Tests-REVISED.md) 鈥?鍦烘櫙娴嬭瘯璁捐锛圙dUnit4锛?
-
-## 模板规范 / Template Guidelines
-
-- 结构：
-  - xUnit：`Game.Core.Tests/**`（.NET 8 + xUnit + FluentAssertions）
-  - GdUnit4：`tests/**`（Godot 4，示例测试默认关闭）
-- 命名：文件名 `<Type>Tests.cs`，类名 `<Type>Tests`；GdUnit 用 `*_Tests.gd`
-- 守卫：示例测试受 `TEMPLATE_DEMO=1` 控制，默认跳过（模板更干净）
-
-## 快速命令 / Quick Commands
-
-- 运行 .NET 测试：`./scripts/ci/run_dotnet_tests.ps1`
-- 运行 Godot 测试：`./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"`
-- 一键测试（可含示例）：`./scripts/test.ps1 [-GodotBin <path>] [-IncludeDemo]`
-
-## 覆盖率 / Coverage
-
-- 可通过引入 `coverlet.msbuild` 启用 `/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura`；模板默认不强制开启（保持轻量）
-
-
-## 覆盖率（coverlet.collector） / Coverage
-
-- 已包含 `coverlet.collector`，可直接运行：
-  - `dotnet test Game.sln --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura`
-- 脚本：`./scripts/ci/run_dotnet_coverage.ps1` 收集并存放到 `logs/ci/<ts>/dotnet-coverage/`
-
+[参考] [Phase-11-Scene-Integration-Tests-REVISED.md](Phase-11-Scene-Integration-Tests-REVISED.md) — 场景测试设计（GdUnit4）

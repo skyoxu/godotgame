@@ -1,42 +1,42 @@
-﻿# Phase 9: Signal System / 信号系统规范（CloudEvents → Godot Signals）
+# Phase 9: CloudEvents → Godot Signals 迁移
 
-> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-
----
-
-## 鐩爣
-
-灏?vitegame 鐨?CloudEvents 浜嬩欢绯荤粺杩佺Щ鍒?godotgame 鐨?Godot Signals锛屽缓绔嬬被鍨嬪畨鍏ㄧ殑淇″彿鏋舵瀯涓庤法鍦烘櫙閫氫俊妯″紡銆?
+> 状态: 设计阶段
+> 预估工时: 5-7 天
+> 风险等级: 中
+> 前置条件: Phase 1-8 完成
 
 ---
 
-## 鎶€鏈爤瀵规瘮
+## 目标
 
-| 鍔熻兘 | vitegame (CloudEvents) | godotgame (Godot Signals) |
+将 vitegame 的 CloudEvents 事件系统迁移到 godotgame 的 Godot Signals，建立类型安全的信号架构与跨场景通信模式。
+
+---
+
+## 技术栈对比
+
+| 功能 | vitegame (CloudEvents) | godotgame (Godot Signals) |
 |-----|----------------------|--------------------------|
-| 浜嬩欢瀹氫箟 | TypeScript 鎺ュ彛 + CloudEvent<T> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-| 浜嬩欢鍙戝皠 | eventBus.publish() | EmitSignal() |
-| 浜嬩欢璁㈤槄 | eventBus.subscribe() | Connect() |
-| 鍙傛暟浼犻€?| CloudEvent data 瀛楁 | Signal 鏂规硶鍙傛暟 |
-| 绫诲瀷瀹夊叏 | TypeScript 娉涘瀷 | C# Delegate 绛惧悕 |
-| 瑙ｈ€︽ā寮?| EventBus 涓粙 | Direct Signals + EventBus |
-| 璺ㄥ満鏅€氫俊 | 鍏ㄥ眬 EventBus | Autoload EventBus + Signals |
+| 事件定义 | TypeScript 接口 + CloudEvent<T> | C# [Signal] delegate |
+| 事件发射 | eventBus.publish() | EmitSignal() |
+| 事件订阅 | eventBus.subscribe() | Connect() |
+| 参数传递 | CloudEvent data 字段 | Signal 方法参数 |
+| 类型安全 | TypeScript 泛型 | C# Delegate 签名 |
+| 解耦模式 | EventBus 中介 | Direct Signals + EventBus |
+| 跨场景通信 | 全局 EventBus | Autoload EventBus + Signals |
 
 ---
 
-## CloudEvents 瑙勮寖鍥為【 (vitegame)
+## CloudEvents 规范回顾 (vitegame)
 
-### CloudEvents 缁撴瀯
+### CloudEvents 结构
 
 ```typescript
 // src/shared/contracts/events.ts
 
 import type { CloudEvent } from 'cloudevents';
 
-// 鍩虹浜嬩欢缁撴瀯
+// 基础事件结构
 interface CeBase {
   specversion: '1.0';
   id: string;
@@ -46,10 +46,10 @@ interface CeBase {
   datacontenttype?: string;
 }
 
-// 娉涘瀷 CloudEvent
-type AppEvent<T> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+// 泛型 CloudEvent
+type AppEvent<T> = CloudEvent<T>;
 
-// 鍏蜂綋浜嬩欢绀轰緥
+// 具体事件示例
 interface PlayerDamagedData {
   playerId: string;
   damage: number;
@@ -59,7 +59,7 @@ interface PlayerDamagedData {
 
 type PlayerDamagedEvent = AppEvent<PlayerDamagedData>;
 
-// 宸ュ巶鍑芥暟
+// 工厂函数
 export function createPlayerDamagedEvent(
   data: PlayerDamagedData
 ): PlayerDamagedEvent {
@@ -74,32 +74,32 @@ export function createPlayerDamagedEvent(
 }
 ```
 
-### EventBus 浣跨敤 (vitegame)
+### EventBus 使用 (vitegame)
 
 ```typescript
 // src/services/EventBus.ts
 
 class EventBus {
-  private handlers = new Map<string, Set<(event: CloudEvent<any>) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+  private handlers = new Map<string, Set<(event: CloudEvent<any>) => void>>();
 
-  subscribe<T>(eventType: string, handler: (event: CloudEvent<T>) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+  subscribe<T>(eventType: string, handler: (event: CloudEvent<T>) => void): () => void {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, new Set());
     }
     this.handlers.get(eventType)!.add(handler);
 
-    // 杩斿洖鍙栨秷璁㈤槄鍑芥暟
-    return () => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    // 返回取消订阅函数
+    return () => this.unsubscribe(eventType, handler);
   }
 
   publish<T>(event: CloudEvent<T>): void {
     const handlers = this.handlers.get(event.type);
     if (handlers) {
-      handlers.forEach(handler => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+      handlers.forEach(handler => handler(event));
     }
   }
 
-  unsubscribe<T>(eventType: string, handler: (event: CloudEvent<T>) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+  unsubscribe<T>(eventType: string, handler: (event: CloudEvent<T>) => void): void {
     this.handlers.get(eventType)?.delete(handler);
   }
 }
@@ -107,7 +107,7 @@ class EventBus {
 export const eventBus = new EventBus();
 ```
 
-### 浣跨敤绀轰緥 (vitegame)
+### 使用示例 (vitegame)
 
 ```typescript
 // src/entities/Player.ts
@@ -121,8 +121,8 @@ export class Player {
   constructor(maxHealth: number) {
     this.health = maxHealth;
 
-    // 璁㈤槄浼ゅ浜嬩欢
-    eventBus.subscribe('app.player.damaged', (event) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    // 订阅伤害事件
+    eventBus.subscribe('app.player.damaged', (event) => {
       console.log(`Player damaged: ${event.data.damage} damage`);
     });
   }
@@ -130,7 +130,7 @@ export class Player {
   takeDamage(amount: number, source: string): void {
     this.health -= amount;
 
-    // 鍙戝竷浜嬩欢
+    // 发布事件
     const event = createPlayerDamagedEvent({
       playerId: this.id,
       damage: amount,
@@ -145,9 +145,9 @@ export class Player {
 
 ---
 
-## Godot Signals 鏍稿績姒傚康
+## Godot Signals 核心概念
 
-### Signal 瀹氫箟鏂瑰紡
+### Signal 定义方式
 
 ```csharp
 // Game.Godot/Scripts/PlayerController.cs
@@ -158,19 +158,19 @@ namespace Game.Godot.Scripts;
 
 public partial class PlayerController : CharacterBody2D
 {
-    // 鏂瑰紡 1: 鏃犲弬鏁颁俊鍙?
+    // 方式 1: 无参数信号
     [Signal]
     public delegate void DeathEventHandler();
 
-    // 鏂瑰紡 2: 鍗曞弬鏁颁俊鍙?
+    // 方式 2: 单参数信号
     [Signal]
     public delegate void HealthChangedEventHandler(int newHealth);
 
-    // 鏂瑰紡 3: 澶氬弬鏁颁俊鍙?
+    // 方式 3: 多参数信号
     [Signal]
     public delegate void DamagedEventHandler(int damage, string source, int remainingHealth);
 
-    // 鏂瑰紡 4: 澶嶆潅鍙傛暟淇″彿锛堜娇鐢ㄧ被锛?
+    // 方式 4: 复杂参数信号（使用类）
     [Signal]
     public delegate void StateChangedEventHandler(PlayerState oldState, PlayerState newState);
 
@@ -182,22 +182,22 @@ public partial class PlayerController : CharacterBody2D
         int oldHealth = _health;
         _health = Mathf.Max(0, _health - amount);
 
-        // 鍙戝皠淇″彿锛堟柟寮?1锛氬懡鍚嶅弬鏁帮級
+        // 发射信号（方式 1：命名参数）
         EmitSignal(SignalName.Damaged, amount, source, _health);
 
-        // 鍙戝皠淇″彿锛堟柟寮?2锛氬瓧绗︿覆鍚嶇О锛?
+        // 发射信号（方式 2：字符串名称）
         // EmitSignal("damaged", amount, source, _health);
 
-        // 鍙戝皠淇″彿锛堟柟寮?3锛歯ameof锛?
+        // 发射信号（方式 3：nameof）
         // EmitSignal(nameof(Damaged), amount, source, _health);
 
-        // 鍋ュ悍鍊煎彉鍖栦俊鍙?
+        // 健康值变化信号
         if (_health != oldHealth)
         {
             EmitSignal(SignalName.HealthChanged, _health);
         }
 
-        // 姝讳骸淇″彿
+        // 死亡信号
         if (_health == 0)
         {
             EmitSignal(SignalName.Death);
@@ -217,7 +217,7 @@ public partial class PlayerController : CharacterBody2D
 }
 ```
 
-### Signal 杩炴帴鏂瑰紡
+### Signal 连接方式
 
 ```csharp
 // Game.Godot/Scripts/HealthBarUI.cs
@@ -238,24 +238,24 @@ public partial class HealthBarUI : Control
         _healthLabel = GetNode<Label>("HealthLabel");
         _player = GetNode<PlayerController>("/root/Main/Player");
 
-        // 鏂瑰紡 1: 鐩存帴杩炴帴鍒版柟娉曪紙鎺ㄨ崘锛?
+        // 方式 1: 直接连接到方法（推荐）
         _player.HealthChanged += OnPlayerHealthChanged;
 
-        // 鏂瑰紡 2: 浣跨敤 Callable.From 鍖呰 Lambda
+        // 方式 2: 使用 Callable.From 包装 Lambda
         _player.Damaged += Callable.From<int, string, int>((damage, source, remaining) =>
         {
             GD.Print($"Player took {damage} damage from {source}");
             AnimateDamage();
         });
 
-        // 鏂瑰紡 3: 浣跨敤 Connect 鏂规硶锛堝瓧绗︿覆鍚嶇О锛?
+        // 方式 3: 使用 Connect 方法（字符串名称）
         _player.Connect(PlayerController.SignalName.Death, Callable.From(OnPlayerDeath));
 
-        // 鏂瑰紡 4: 浣跨敤 Connect 鏂规硶锛堝甫 flags锛?
+        // 方式 4: 使用 Connect 方法（带 flags）
         _player.Connect(
             PlayerController.SignalName.StateChanged,
             Callable.From<PlayerState, PlayerState>(OnPlayerStateChanged),
-            (uint)ConnectFlags.OneShot // 涓€娆℃€ц繛鎺?
+            (uint)ConnectFlags.OneShot // 一次性连接
         );
     }
 
@@ -273,12 +273,12 @@ public partial class HealthBarUI : Control
 
     private void OnPlayerStateChanged(PlayerState oldState, PlayerState newState)
     {
-        GD.Print($"Player state changed: {oldState} -> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+        GD.Print($"Player state changed: {oldState} -> {newState}");
     }
 
     private void AnimateDamage()
     {
-        // 浼ゅ闂儊鍔ㄧ敾
+        // 伤害闪烁动画
         var tween = CreateTween();
         tween.TweenProperty(_progressBar, "modulate", Colors.Red, 0.1);
         tween.TweenProperty(_progressBar, "modulate", Colors.White, 0.1);
@@ -286,7 +286,7 @@ public partial class HealthBarUI : Control
 
     public override void _ExitTree()
     {
-        // 鏂紑淇″彿杩炴帴锛堥槻姝㈠唴瀛樻硠婕忥級
+        // 断开信号连接（防止内存泄漏）
         if (IsInstanceValid(_player))
         {
             _player.HealthChanged -= OnPlayerHealthChanged;
@@ -295,28 +295,28 @@ public partial class HealthBarUI : Control
 }
 ```
 
-### Signal 涓庢柟娉曡皟鐢ㄧ殑閫夋嫨
+### Signal 与方法调用的选择
 
-| 鍦烘櫙 | 浣跨敤 Signal | 浣跨敤鏂规硶璋冪敤 |
+| 场景 | 使用 Signal | 使用方法调用 |
 |-----|-----------|------------|
-| 鐖惰妭鐐硅皟鐢ㄥ瓙鑺傜偣 | 鍚?| 鏄紙鐩存帴璋冪敤锛?|
-| 瀛愯妭鐐归€氱煡鐖惰妭鐐?| 鏄?| 鍚︼紙杩濆弽渚濊禆鏂瑰悜锛?|
-| 鍚岀骇鑺傜偣閫氫俊 | 鏄?| [璀﹀憡]锛堥渶閫氳繃鍏卞悓鐖惰妭鐐癸級 |
-| 璺ㄥ満鏅€氫俊 | 鏄紙閫氳繃 EventBus锛?| 鍚?|
-| 涓€瀵瑰閫氱煡 | 鏄?| 鍚?|
-| 瑙ｈ€︽ā鍧?| 鏄?| 鍚?|
-| 鎬ц兘鍏抽敭璺緞 | [璀﹀憡]锛堟湁寮€閿€锛?| 鏄?|
+| 父节点调用子节点 | 否 | 是（直接调用） |
+| 子节点通知父节点 | 是 | 否（违反依赖方向） |
+| 同级节点通信 | 是 | [警告]（需通过共同父节点） |
+| 跨场景通信 | 是（通过 EventBus） | 否 |
+| 一对多通知 | 是 | 否 |
+| 解耦模块 | 是 | 否 |
+| 性能关键路径 | [警告]（有开销） | 是 |
 
 ---
 
-## CloudEvents 鈫?Signals 杩佺Щ妯″紡
+## CloudEvents → Signals 迁移模式
 
-### 妯″紡 1: 绠€鍗曚簨浠惰縼绉?
+### 模式 1: 简单事件迁移
 
 **CloudEvents (vitegame)**:
 
 ```typescript
-// 浜嬩欢瀹氫箟
+// 事件定义
 interface CoinCollectedData {
   coinId: string;
   value: number;
@@ -324,11 +324,11 @@ interface CoinCollectedData {
 
 type CoinCollectedEvent = AppEvent<CoinCollectedData>;
 
-// 鍙戝竷浜嬩欢
+// 发布事件
 eventBus.publish(createCoinCollectedEvent({ coinId: '123', value: 10 }));
 
-// 璁㈤槄浜嬩欢
-eventBus.subscribe('app.game.coin.collected', (event) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+// 订阅事件
+eventBus.subscribe('app.game.coin.collected', (event) => {
   score += event.data.value;
 });
 ```
@@ -358,7 +358,7 @@ public partial class Coin : Area2D
     {
         if (body is PlayerController)
         {
-            // 鍙戝皠淇″彿
+            // 发射信号
             EmitSignal(SignalName.Collected, CoinId, Value);
             QueueFree();
         }
@@ -373,7 +373,7 @@ public partial class ScoreManager : Node
 
     public override void _Ready()
     {
-        // 璁㈤槄鎵€鏈夐噾甯佺殑鏀堕泦淇″彿
+        // 订阅所有金币的收集信号
         var coins = GetTree().GetNodesInGroup("coins");
         foreach (Node coin in coins)
         {
@@ -392,12 +392,12 @@ public partial class ScoreManager : Node
 }
 ```
 
-### 妯″紡 2: 澶嶆潅浜嬩欢鏁版嵁杩佺Щ
+### 模式 2: 复杂事件数据迁移
 
 **CloudEvents (vitegame)**:
 
 ```typescript
-// 澶嶆潅浜嬩欢鏁版嵁
+// 复杂事件数据
 interface EnemyDefeatedData {
   enemyId: string;
   enemyType: string;
@@ -412,7 +412,7 @@ interface EnemyDefeatedData {
 
 type EnemyDefeatedEvent = AppEvent<EnemyDefeatedData>;
 
-// 鍙戝竷
+// 发布
 eventBus.publish(createEnemyDefeatedEvent({
   enemyId: 'enemy-123',
   enemyType: 'goblin',
@@ -431,7 +431,7 @@ public class EnemyRewards
 {
     public int Experience { get; set; }
     public int Gold { get; set; }
-    public List<string> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    public List<string> Items { get; set; } = new();
 }
 
 // Game.Godot/Scripts/Enemy.cs
@@ -467,15 +467,15 @@ public partial class Enemy : CharacterBody2D
 
         if (_health <= 0)
         {
-            // 鏋勯€犲鍔辨暟鎹?
+            // 构造奖励数据
             var rewards = new EnemyRewards
             {
                 Experience = Experience,
                 Gold = Gold,
-                Items = new List<string> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+                Items = new List<string> { "sword" }
             };
 
-            // 鍙戝皠淇″彿
+            // 发射信号
             EmitSignal(SignalName.Defeated, EnemyId, EnemyType, Position, rewards, attackerId);
             QueueFree();
         }
@@ -509,7 +509,7 @@ public partial class RewardManager : Node
         GD.Print($"Enemy {enemyId} ({enemyType}) defeated at {position}");
         GD.Print($"Rewards: {rewards.Experience} XP, {rewards.Gold} gold");
 
-        // 搴旂敤濂栧姳鍒扮帺瀹?
+        // 应用奖励到玩家
         var player = GetNode<PlayerController>($"/root/Main/Players/{killedBy}");
         if (player != null)
         {
@@ -520,19 +520,19 @@ public partial class RewardManager : Node
 }
 ```
 
-### 妯″紡 3: EventBus 璺ㄥ満鏅€氫俊
+### 模式 3: EventBus 跨场景通信
 
 **CloudEvents EventBus (vitegame)**:
 
 ```typescript
-// 鍏ㄥ眬浜嬩欢鎬荤嚎
+// 全局事件总线
 export const globalEventBus = new EventBus();
 
-// 鍦烘櫙 A 鍙戝竷
+// 场景 A 发布
 globalEventBus.publish(createGameStateChangedEvent({ state: 'paused' }));
 
-// 鍦烘櫙 B 璁㈤槄
-globalEventBus.subscribe('app.game.state.changed', (event) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+// 场景 B 订阅
+globalEventBus.subscribe('app.game.state.changed', (event) => {
   console.log('Game state:', event.data.state);
 });
 ```
@@ -549,26 +549,26 @@ using System.Collections.Generic;
 namespace Game.Godot.Autoloads;
 
 /// <summary>
-/// 鍏ㄥ眬浜嬩欢鎬荤嚎锛圓utoload 鍗曚緥锛?
-/// 鐢ㄤ簬璺ㄥ満鏅€氫俊鍜屾澗鑰﹀悎
+/// 全局事件总线（Autoload 单例）
+/// 用于跨场景通信和松耦合
 /// </summary>
 public partial class EventBus : Node
 {
     public static EventBus Instance { get; private set; } = null!;
 
-    // 娓告垙鐘舵€佷簨浠?
+    // 游戏状态事件
     [Signal]
     public delegate void GameStateChangedEventHandler(string newState);
 
-    // 鐜╁鍏ㄥ眬浜嬩欢
+    // 玩家全局事件
     [Signal]
     public delegate void PlayerLevelUpEventHandler(string playerId, int newLevel);
 
-    // 鎴愬氨瑙ｉ攣浜嬩欢
+    // 成就解锁事件
     [Signal]
     public delegate void AchievementUnlockedEventHandler(string achievementId, string title);
 
-    // 绯荤粺閫氱煡浜嬩欢
+    // 系统通知事件
     [Signal]
     public delegate void SystemNotificationEventHandler(string message, string severity);
 
@@ -577,25 +577,25 @@ public partial class EventBus : Node
         Instance = this;
     }
 
-    // 杈呭姪鏂规硶锛氬彂甯冩父鎴忕姸鎬佸彉鍖?
+    // 辅助方法：发布游戏状态变化
     public void PublishGameStateChanged(string newState)
     {
         EmitSignal(SignalName.GameStateChanged, newState);
     }
 
-    // 杈呭姪鏂规硶锛氬彂甯冪帺瀹跺崌绾?
+    // 辅助方法：发布玩家升级
     public void PublishPlayerLevelUp(string playerId, int newLevel)
     {
         EmitSignal(SignalName.PlayerLevelUp, playerId, newLevel);
     }
 
-    // 杈呭姪鏂规硶:鍙戝竷鎴愬氨瑙ｉ攣
+    // 辅助方法:发布成就解锁
     public void PublishAchievementUnlocked(string achievementId, string title)
     {
         EmitSignal(SignalName.AchievementUnlocked, achievementId, title);
     }
 
-    // 杈呭姪鏂规硶:鍙戝竷绯荤粺閫氱煡
+    // 辅助方法:发布系统通知
     public void PublishSystemNotification(string message, string severity = "info")
     {
         EmitSignal(SignalName.SystemNotification, message, severity);
@@ -603,7 +603,7 @@ public partial class EventBus : Node
 }
 ```
 
-**鍦?project.godot 涓敞鍐?*:
+**在 project.godot 中注册**:
 
 ```ini
 [autoload]
@@ -612,7 +612,7 @@ EventBus="*res://Autoloads/EventBus.cs"
 ServiceLocator="*res://Autoloads/ServiceLocator.cs"
 ```
 
-**浣跨敤 EventBus**:
+**使用 EventBus**:
 
 ```csharp
 // Game.Godot/Scripts/GameStateManager.cs
@@ -626,7 +626,7 @@ public partial class GameStateManager : Node
         _currentState = "paused";
         GetTree().Paused = true;
 
-        // 閫氳繃 EventBus 鍙戝竷鍏ㄥ眬浜嬩欢
+        // 通过 EventBus 发布全局事件
         EventBus.Instance.PublishGameStateChanged("paused");
     }
 
@@ -645,7 +645,7 @@ public partial class PauseMenuUI : Control
 {
     public override void _Ready()
     {
-        // 璁㈤槄 EventBus 鍏ㄥ眬浜嬩欢
+        // 订阅 EventBus 全局事件
         EventBus.Instance.GameStateChanged += OnGameStateChanged;
     }
 
@@ -671,7 +671,7 @@ public partial class NotificationManager : Control
     {
         _notificationLabel = GetNode<Label>("NotificationLabel");
 
-        // 璁㈤槄绯荤粺閫氱煡
+        // 订阅系统通知
         EventBus.Instance.SystemNotification += OnSystemNotification;
         EventBus.Instance.AchievementUnlocked += OnAchievementUnlocked;
     }
@@ -681,9 +681,9 @@ public partial class NotificationManager : Control
         _notificationLabel.Text = message;
         _notificationLabel.Modulate = severity switch
         {
-            "error" => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-            "warning" => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-            _ => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+            "error" => Colors.Red,
+            "warning" => Colors.Yellow,
+            _ => Colors.White
         };
 
         ShowNotification();
@@ -713,20 +713,20 @@ public partial class NotificationManager : Control
 
 ---
 
-## Signal 鎬ц兘浼樺寲
+## Signal 性能优化
 
-### 浼樺寲 1: 閬垮厤棰戠箒鐨?Connect/Disconnect
+### 优化 1: 避免频繁的 Connect/Disconnect
 
 ```csharp
-// FAIL 閿欒锛氭瘡甯ч兘杩炴帴鍜屾柇寮€
+// FAIL 错误：每帧都连接和断开
 public override void _Process(double delta)
 {
     _player.HealthChanged += OnHealthChanged;
-    // ... 澶勭悊閫昏緫
+    // ... 处理逻辑
     _player.HealthChanged -= OnHealthChanged;
 }
 
-// 姝ｇ‘锛氬湪 _Ready 鍜?_ExitTree 涓鐞嗚繛鎺?
+// 正确：在 _Ready 和 _ExitTree 中管理连接
 public override void _Ready()
 {
     _player.HealthChanged += OnHealthChanged;
@@ -741,10 +741,10 @@ public override void _ExitTree()
 }
 ```
 
-### 浼樺寲 2: 浣跨敤 OneShot 杩炴帴锛堜竴娆℃€т簨浠讹級
+### 优化 2: 使用 OneShot 连接（一次性事件）
 
 ```csharp
-// 涓€娆℃€ц繛鎺ワ紙鑷姩鏂紑锛?
+// 一次性连接（自动断开）
 _enemy.Defeated += Callable.From(() =>
 {
     GD.Print("Enemy defeated once!");
@@ -756,10 +756,10 @@ _enemy.Connect(
 );
 ```
 
-### 浼樺寲 3: 浣跨敤 Deferred 寤惰繜澶勭悊
+### 优化 3: 使用 Deferred 延迟处理
 
 ```csharp
-// 寤惰繜鍒扮┖闂插抚澶勭悊锛堥伩鍏嶅湪鐗╃悊甯т腑淇敼鍦烘櫙鏍戯級
+// 延迟到空闲帧处理（避免在物理帧中修改场景树）
 _player.Connect(
     PlayerController.SignalName.Death,
     Callable.From(OnPlayerDeath),
@@ -768,21 +768,21 @@ _player.Connect(
 
 private void OnPlayerDeath()
 {
-    // 姝ゆ柟娉曚細鍦ㄧ┖闂插抚璋冪敤锛屽畨鍏ㄥ湴淇敼鍦烘櫙鏍?
+    // 此方法会在空闲帧调用，安全地修改场景树
     GetTree().ChangeSceneToFile("res://Scenes/GameOver.tscn");
 }
 ```
 
-### 浼樺寲 4: 閬垮厤杩囧鍙傛暟浼犻€?
+### 优化 4: 避免过多参数传递
 
 ```csharp
-// FAIL 閿欒锛氫紶閫掕繃澶氬弬鏁?
+// FAIL 错误：传递过多参数
 [Signal]
 public delegate void ComplexEventEventHandler(
     string id, string name, int value, float time, Vector2 pos, Vector2 vel, Color color, bool flag
 );
 
-// 姝ｇ‘锛氫娇鐢ㄦ暟鎹被
+// 正确：使用数据类
 public class EventData
 {
     public string Id { get; set; } = string.Empty;
@@ -801,12 +801,12 @@ public delegate void ComplexEventEventHandler(EventData data);
 
 ---
 
-## Signal 鍛藉悕绾﹀畾
+## Signal 命名约定
 
-### 鍛藉悕瑙勫垯
+### 命名规则
 
 ```csharp
-// 1. 浜嬩欢鍚嶇О锛歅ascalCase + 鍔ㄨ瘝杩囧幓寮?
+// 1. 事件名称：PascalCase + 动词过去式
 [Signal]
 public delegate void HealthChangedEventHandler(int newHealth);
 
@@ -816,21 +816,21 @@ public delegate void DamagedEventHandler(int amount);
 [Signal]
 public delegate void StateEnteredEventHandler(string stateName);
 
-// 2. Handler 鍚庣紑锛欵ventHandler
+// 2. Handler 后缀：EventHandler
 public delegate void CollectedEventHandler(string itemId);
 
-// 3. 淇″彿鍙傛暟锛氭弿杩版€у懡鍚?
+// 3. 信号参数：描述性命名
 [Signal]
 public delegate void ItemPickedUpEventHandler(string itemId, string itemName, int quantity);
 
-// 4. 甯冨皵鐘舵€佸彉鍖栵細浣跨敤 Toggled/Changed
+// 4. 布尔状态变化：使用 Toggled/Changed
 [Signal]
 public delegate void VisibilityToggledEventHandler(bool isVisible);
 
 [Signal]
 public delegate void EnabledChangedEventHandler(bool isEnabled);
 
-// 5. 鐢熷懡鍛ㄦ湡浜嬩欢锛氫娇鐢ㄥ姩浣滆瘝
+// 5. 生命周期事件：使用动作词
 [Signal]
 public delegate void SpawnedEventHandler();
 
@@ -841,7 +841,7 @@ public delegate void DestroyedEventHandler();
 public delegate void InitializedEventHandler();
 ```
 
-### 浜嬩欢绫诲瀷鍒嗙被
+### 事件类型分类
 
 ```csharp
 // Game.Godot/Scripts/EventCategories.cs
@@ -849,7 +849,7 @@ public delegate void InitializedEventHandler();
 namespace Game.Godot.Scripts;
 
 /// <summary>
-/// 鐜╁鐩稿叧浜嬩欢
+/// 玩家相关事件
 /// </summary>
 public partial class PlayerEvents
 {
@@ -863,7 +863,7 @@ public partial class PlayerEvents
 }
 
 /// <summary>
-/// 娓告垙鐘舵€佷簨浠?
+/// 游戏状态事件
 /// </summary>
 public partial class GameStateEvents
 {
@@ -875,7 +875,7 @@ public partial class GameStateEvents
 }
 
 /// <summary>
-/// 鐗╁搧/鑳屽寘浜嬩欢
+/// 物品/背包事件
 /// </summary>
 public partial class InventoryEvents
 {
@@ -886,7 +886,7 @@ public partial class InventoryEvents
 }
 
 /// <summary>
-/// UI 浜嬩欢
+/// UI 事件
 /// </summary>
 public partial class UIEvents
 {
@@ -900,9 +900,9 @@ public partial class UIEvents
 
 ---
 
-## Signal 娴嬭瘯绛栫暐
+## Signal 测试策略
 
-### GdUnit4 Signal 娴嬭瘯
+### GdUnit4 Signal 测试
 
 ```csharp
 // C# equivalent (Godot 4 + C# + GdUnit4)
@@ -923,7 +923,7 @@ public partial class ExampleTest
 }
 ```
 
-### xUnit Signal 娴嬭瘯锛堜娇鐢?Fake锛?
+### xUnit Signal 测试（使用 Fake）
 
 ```csharp
 // Game.Core.Tests/Fakes/FakeSignalEmitter.cs
@@ -935,7 +935,7 @@ namespace Game.Core.Tests.Fakes;
 
 public class FakeSignalEmitter
 {
-    private Dictionary<string, List<Delegate>> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    private Dictionary<string, List<Delegate>> _handlers = new();
 
     public void Connect(string signalName, Delegate handler)
     {
@@ -1025,8 +1025,8 @@ public class PlayerSignalTests
         int subscriber1Count = 0;
         int subscriber2Count = 0;
 
-        emitter.Connect("test_signal", () => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-        emitter.Connect("test_signal", () => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+        emitter.Connect("test_signal", () => subscriber1Count++);
+        emitter.Connect("test_signal", () => subscriber2Count++);
 
         // Act
         emitter.Emit("test_signal");
@@ -1043,7 +1043,7 @@ public class PlayerSignalTests
         // Arrange
         var emitter = new FakeSignalEmitter();
         int callCount = 0;
-        Action handler = () => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+        Action handler = () => callCount++;
 
         emitter.Connect("test_signal", handler);
 
@@ -1060,9 +1060,9 @@ public class PlayerSignalTests
 
 ---
 
-## Signal 鏂囨。鍖?
+## Signal 文档化
 
-### XML 鏂囨。娉ㄩ噴
+### XML 文档注释
 
 ```csharp
 // Game.Godot/Scripts/PlayerController.cs
@@ -1072,12 +1072,12 @@ namespace Game.Godot.Scripts;
 public partial class PlayerController : CharacterBody2D
 {
     /// <summary>
-    /// 褰撶帺瀹剁敓鍛藉€煎彂鐢熷彉鍖栨椂鍙戝皠銆?
+    /// 当玩家生命值发生变化时发射。
     /// </summary>
-    /// <param name="newHealth">鏂扮殑鐢熷懡鍊硷紙0 鍒?MaxHealth锛?/param>
+    /// <param name="newHealth">新的生命值（0 到 MaxHealth）</param>
     /// <example>
     /// <code>
-    /// player.HealthChanged += (newHealth) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    /// player.HealthChanged += (newHealth) => {
     ///     GD.Print($"Player health: {newHealth}");
     /// };
     /// </code>
@@ -1086,36 +1086,36 @@ public partial class PlayerController : CharacterBody2D
     public delegate void HealthChangedEventHandler(int newHealth);
 
     /// <summary>
-    /// 褰撶帺瀹跺彈鍒颁激瀹虫椂鍙戝皠锛堝湪 HealthChanged 涔嬪墠锛夈€?
+    /// 当玩家受到伤害时发射（在 HealthChanged 之前）。
     /// </summary>
-    /// <param name="damage">浼ゅ鏁板€?/param>
-    /// <param name="source">浼ゅ鏉ユ簮锛堝 "enemy", "trap", "fall"锛?/param>
-    /// <param name="remainingHealth">鍓╀綑鐢熷懡鍊?/param>
+    /// <param name="damage">伤害数值</param>
+    /// <param name="source">伤害来源（如 "enemy", "trap", "fall"）</param>
+    /// <param name="remainingHealth">剩余生命值</param>
     /// <remarks>
-    /// 姝や俊鍙烽€傜敤浜庢挱鏀句激瀹抽煶鏁堛€佹樉绀轰激瀹虫暟瀛椼€佽Е鍙戝彈鍑诲姩鐢荤瓑銆?
+    /// 此信号适用于播放伤害音效、显示伤害数字、触发受击动画等。
     /// </remarks>
     [Signal]
     public delegate void DamagedEventHandler(int damage, string source, int remainingHealth);
 
     /// <summary>
-    /// 褰撶帺瀹舵浜℃椂鍙戝皠锛堢敓鍛藉€奸檷鑷?0锛夈€?
+    /// 当玩家死亡时发射（生命值降至 0）。
     /// </summary>
     /// <remarks>
-    /// 姝や俊鍙峰彧浼氬湪鐢熷懡鍊奸娆￠檷鑷?0 鏃跺彂灏勪竴娆°€?
-    /// 閫傜敤浜庤Е鍙戞浜″姩鐢汇€佹樉绀烘父鎴忕粨鏉熺晫闈€佽褰曟浜＄粺璁＄瓑銆?
+    /// 此信号只会在生命值首次降至 0 时发射一次。
+    /// 适用于触发死亡动画、显示游戏结束界面、记录死亡统计等。
     /// </remarks>
     [Signal]
     public delegate void DeathEventHandler();
 
     /// <summary>
-    /// 褰撶帺瀹剁姸鎬佸彂鐢熷彉鍖栨椂鍙戝皠锛堝 Idle 鈫?Running 鈫?Jumping锛夈€?
+    /// 当玩家状态发生变化时发射（如 Idle → Running → Jumping）。
     /// </summary>
-    /// <param name="oldState">鏃х姸鎬?/param>
-    /// <param name="newState">鏂扮姸鎬?/param>
+    /// <param name="oldState">旧状态</param>
+    /// <param name="newState">新状态</param>
     /// <example>
     /// <code>
-    /// player.StateChanged += (oldState, newState) => 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-    ///     GD.Print($"Player state: {oldState} -> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+    /// player.StateChanged += (oldState, newState) => {
+    ///     GD.Print($"Player state: {oldState} -> {newState}");
     ///     AnimationPlayer.Play(newState.ToString());
     /// };
     /// </code>
@@ -1127,51 +1127,51 @@ public partial class PlayerController : CharacterBody2D
 
 ---
 
-## 杩佺Щ妫€鏌ユ竻鍗?
+## 迁移检查清单
 
-### 浜嬩欢瀹氫箟杩佺Щ
+### 事件定义迁移
 
-- [ ] CloudEvents 绫诲瀷瀹氫箟 鈫?[Signal] delegate 瀹氫箟
-- [ ] CloudEvent<T> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-- [ ] 浜嬩欢宸ュ巶鍑芥暟 鈫?EmitSignal() 璋冪敤
-- [ ] 浜嬩欢鍛藉悕瑙勮寖锛坅pp.entity.action 鈫?EntityActionEventHandler锛?
+- [ ] CloudEvents 类型定义 → [Signal] delegate 定义
+- [ ] CloudEvent<T> 数据结构 → Signal 参数列表
+- [ ] 事件工厂函数 → EmitSignal() 调用
+- [ ] 事件命名规范（app.entity.action → EntityActionEventHandler）
 
-### 浜嬩欢鍙戝皠杩佺Щ
+### 事件发射迁移
 
-- [ ] eventBus.publish() 鈫?EmitSignal(SignalName.XXX, ...)
-- [ ] 浜嬩欢鍙傛暟搴忓垪鍖?鈫?鐩存帴浼犻€掑弬鏁帮紙鎴栦娇鐢ㄦ暟鎹被锛?
-- [ ] 浜嬩欢婧?(source) 鈫?闅愬紡锛堥€氳繃鍙戝皠鑺傜偣锛夋垨鏄惧紡浼犻€?
+- [ ] eventBus.publish() → EmitSignal(SignalName.XXX, ...)
+- [ ] 事件参数序列化 → 直接传递参数（或使用数据类）
+- [ ] 事件源 (source) → 隐式（通过发射节点）或显式传递
 
-### 浜嬩欢璁㈤槄杩佺Щ
+### 事件订阅迁移
 
-- [ ] eventBus.subscribe() 鈫?signal += handler
-- [ ] 璁㈤槄鍙栨秷 (unsubscribe) 鈫?signal -= handler
-- [ ] 璁㈤槄鐢熷懡鍛ㄦ湡绠＄悊锛坃Ready 璁㈤槄锛宊ExitTree 鍙栨秷锛?
+- [ ] eventBus.subscribe() → signal += handler
+- [ ] 订阅取消 (unsubscribe) → signal -= handler
+- [ ] 订阅生命周期管理（_Ready 订阅，_ExitTree 取消）
 
-### EventBus 杩佺Щ
+### EventBus 迁移
 
-- [ ] 鍏ㄥ眬 EventBus 鈫?Autoload EventBus.cs
-- [ ] 璺ㄥ満鏅簨浠?鈫?EventBus.Instance.XXXChanged 淇″彿
-- [ ] EventBus.publish/subscribe 鈫?EventBus.EmitSignal/Connect
+- [ ] 全局 EventBus → Autoload EventBus.cs
+- [ ] 跨场景事件 → EventBus.Instance.XXXChanged 信号
+- [ ] EventBus.publish/subscribe → EventBus.EmitSignal/Connect
 
-### 娴嬭瘯杩佺Щ
+### 测试迁移
 
-- [ ] Jest 浜嬩欢娴嬭瘯 鈫?GdUnit4 GdUnitSignalSpy
-- [ ] 娴嬭瘯浜嬩欢鍙戝皠 鈫?signal_spy.is_emitted()
-- [ ] 娴嬭瘯浜嬩欢鍙傛暟 鈫?signal_spy.get_last_args()
-- [ ] xUnit 閫昏緫娴嬭瘯 鈫?FakeSignalEmitter
+- [ ] Jest 事件测试 → GdUnit4 GdUnitSignalSpy
+- [ ] 测试事件发射 → signal_spy.is_emitted()
+- [ ] 测试事件参数 → signal_spy.get_last_args()
+- [ ] xUnit 逻辑测试 → FakeSignalEmitter
 
-### 鏂囨。杩佺Щ
+### 文档迁移
 
-- [ ] CloudEvents 濂戠害鏂囨。 鈫?Signal XML 鏂囨。娉ㄩ噴
-- [ ] 浜嬩欢鍙傛暟璇存槑 鈫?<param> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
-- [ ] 浣跨敤绀轰緥 鈫?<example> 状态: 模板规范（最小集已落地）`n> 前置: Phase 1-8 完成
+- [ ] CloudEvents 契约文档 → Signal XML 文档注释
+- [ ] 事件参数说明 → <param> 标签
+- [ ] 使用示例 → <example> 标签
 
 ---
 
-## 鎬ц兘鍩哄噯
+## 性能基准
 
-### Signal 鎬ц兘娴嬭瘯
+### Signal 性能测试
 
 ```csharp
 // Game.Godot.Tests/Performance/SignalPerformanceTest.cs
@@ -1188,13 +1188,13 @@ public partial class SignalPerformanceTest : Node
 
     public override void _Ready()
     {
-        // 娴嬭瘯 1: 鍗曡闃呰€呮€ц兘
+        // 测试 1: 单订阅者性能
         TestSingleSubscriber();
 
-        // 娴嬭瘯 2: 澶氳闃呰€呮€ц兘
+        // 测试 2: 多订阅者性能
         TestMultipleSubscribers();
 
-        // 娴嬭瘯 3: 鍙傛暟浼犻€掓€ц兘
+        // 测试 3: 参数传递性能
         TestParameterPassing();
     }
 
@@ -1230,7 +1230,7 @@ public partial class SignalPerformanceTest : Node
 
         GD.Print($"10 subscribers: {sw.ElapsedMilliseconds}ms for 100k emissions");
 
-        // 娓呯悊
+        // 清理
         for (int i = 0; i < 10; i++)
         {
             TestSignal -= OnTestSignal;
@@ -1255,25 +1255,25 @@ public partial class SignalPerformanceTest : Node
 
     private void OnTestSignal(int value)
     {
-        // 绌哄鐞嗗櫒
+        // 空处理器
     }
 }
 ```
 
-### 鎬ц兘闃堝€?
+### 性能阈值
 
-| 鍦烘櫙 | 鐩爣闃堝€?|
+| 场景 | 目标阈值 |
 |-----|---------|
-| 鍗曡闃呰€?100k 鍙戝皠 | < 50ms |
-| 10 璁㈤槄鑰?100k 鍙戝皠 | < 200ms |
-| 鍙傛暟浼犻€?100k 鍙戝皠 | < 60ms |
-| EventBus 鍏ㄥ眬浜嬩欢 1k 鍙戝皠 | < 10ms |
+| 单订阅者 100k 发射 | < 50ms |
+| 10 订阅者 100k 发射 | < 200ms |
+| 参数传递 100k 发射 | < 60ms |
+| EventBus 全局事件 1k 发射 | < 10ms |
 
 ---
 
-## CI 闆嗘垚
+## CI 集成
 
-### Signal 鍚堣妫€鏌?(GitHub Actions)
+### Signal 合规检查 (GitHub Actions)
 
 ```yaml
 # .github/workflows/signal-compliance.yml
@@ -1304,7 +1304,7 @@ jobs:
       - name: Check Signal Naming Convention
         shell: pwsh
         run: |
-          # 妫€鏌?[Signal] 鍛藉悕鏄惁绗﹀悎 EventHandler 鍚庣紑
+          # 检查 [Signal] 命名是否符合 EventHandler 后缀
           $violations = Select-String -Path "Game.Godot/**/*.cs" -Pattern "\[Signal\].*delegate.*(?<!EventHandler)\(\);" -Encoding UTF8
 
           if ($violations) {
@@ -1316,7 +1316,7 @@ jobs:
       - name: Check Signal Documentation
         shell: pwsh
         run: |
-          # 妫€鏌?[Signal] 鏄惁鏈?XML 鏂囨。娉ㄩ噴
+          # 检查 [Signal] 是否有 XML 文档注释
           $files = Get-ChildItem -Path "Game.Godot/Scripts" -Filter "*.cs" -Recurse
           $undocumented = @()
 
@@ -1349,52 +1349,23 @@ jobs:
 
 ---
 
-## 瀹屾垚鏍囧噯
+## 完成标准
 
-- [ ] 鎵€鏈?CloudEvents 浜嬩欢瀹氫箟宸茶縼绉诲埌 [Signal] delegate
-- [ ] EventBus Autoload 宸插垱寤哄苟鍦?project.godot 娉ㄥ唽
-- [ ] 鎵€鏈変簨浠跺彂灏勫凡浠?eventBus.publish() 杩佺Щ鍒?EmitSignal()
-- [ ] 鎵€鏈変簨浠惰闃呭凡浠?eventBus.subscribe() 杩佺Щ鍒?signal += handler
-- [ ] 淇″彿鍛藉悕绗﹀悎绾﹀畾锛圥ascalCase + EventHandler 鍚庣紑锛?
-- [ ] 鎵€鏈変俊鍙锋湁 XML 鏂囨。娉ㄩ噴锛?summary>, <param>, <example>锛?
-- [ ] GdUnit4 淇″彿娴嬭瘯瑕嗙洊涓昏鍦烘櫙锛圙dUnitSignalSpy锛?
-- [ ] xUnit 閫昏緫娴嬭瘯瑕嗙洊淇″彿閫昏緫锛團akeSignalEmitter锛?
-- [ ] 淇″彿鎬ц兘娴嬭瘯杈惧埌鍩哄噯闃堝€?
-- [ ] CI 绠￠亾鍖呭惈淇″彿鍚堣妫€鏌?
+- [ ] 所有 CloudEvents 事件定义已迁移到 [Signal] delegate
+- [ ] EventBus Autoload 已创建并在 project.godot 注册
+- [ ] 所有事件发射已从 eventBus.publish() 迁移到 EmitSignal()
+- [ ] 所有事件订阅已从 eventBus.subscribe() 迁移到 signal += handler
+- [ ] 信号命名符合约定（PascalCase + EventHandler 后缀）
+- [ ] 所有信号有 XML 文档注释（<summary>, <param>, <example>）
+- [ ] GdUnit4 信号测试覆盖主要场景（GdUnitSignalSpy）
+- [ ] xUnit 逻辑测试覆盖信号逻辑（FakeSignalEmitter）
+- [ ] 信号性能测试达到基准阈值
+- [ ] CI 管道包含信号合规检查
 
 ---
 
-## 涓嬩竴姝?
+## 下一步
 
-瀹屾垚鏈樁娈靛悗,缁х画:
+完成本阶段后,继续:
 
-鉃★笍 [Phase-10-Unit-Tests.md](Phase-10-Unit-Tests.md) 鈥?xUnit 鍗曞厓娴嬭瘯杩佺Щ
-
-
-
-
-## 命名规范 / Naming
-
-- Godot 信号：snake_case（`pressed`, `text_changed`）
-- UI 事件（Screen 内/发布到总线）：`screen.<name>.<action>`
-- 领域事件（EventBus）：`core.<context>.<event>` / 既有域名（`player.health.changed`）
-
-## 订阅与解除订阅 / Subscriptions
-
-- 推荐使用 `SignalScope` + `NodeWithSignals` 统一管理连接，在 `_ExitTree` 自动清理
-- 示例（C#）：见 `Game.Godot/Scripts/Utils/SignalScope.cs` 与 `NodeWithSignals.cs`
-
-## 与 EventBus 协同 / With EventBus
-
-- UI 发布 `screen.*` 事件或调用服务；领域事件通过 `/root/EventBus` 订阅；跨边界使用 JSON 数据
-
-## 测试建议 / Testing
-
-- 连接→触发→断言；`queue_free`→再触发→不抛错/不泄漏；必要时采用 Headless 模式
-
-
-## 示例 / Examples
-
-- 组件：`Game.Godot/Examples/Components/EventListenerPanel.tscn`（继承 ControlWithSignals，Enter() 订阅 EventBus）
-- 测试：`tests/UI/SignalScope_Tests.gd`（发布事件 → 断言收到 → 释放 → 再发布不报错）
-
+➡️ [Phase-10-Unit-Tests.md](Phase-10-Unit-Tests.md) — xUnit 单元测试迁移

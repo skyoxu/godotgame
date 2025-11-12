@@ -40,14 +40,18 @@ jobs:
             ~\.nuget\packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
 
+      - name: Prepare test project link
+        shell: pwsh
+        run: |
+          ./scripts/ci/prepare_gd_tests.ps1 -ProjectPath 'Tests.Godot' -RuntimeDir 'Game.Godot'
+
       - name: Run GdUnit4 tests
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
-          ./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN"
+          ./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN" -ProjectPath 'Tests.Godot'
 
       - name: Headless smoke (no export)
         shell: pwsh
         run: |
-          ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 5
-
+          ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 5 -ProjectPath '.'

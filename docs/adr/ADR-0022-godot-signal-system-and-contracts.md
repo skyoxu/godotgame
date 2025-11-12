@@ -1,27 +1,8 @@
----
-ADR-ID: ADR-0022
-title: Godot Signal System and Contracts
-status: Accepted
-decision-time: '2025-11-08'
-deciders: [Architecture Team]
-archRefs: [CH08]
-depends-on: [ADR-0018]
-supersedes: [ADR-0004]
----
-
 # ADR-0022: Godot Signal System and Contracts
 
-## Context
-Map vitegame event bus/CloudEvents contracts to Godot Signals with clear naming and ownership.
+- Status: Proposed
+- Context: Migration Phase-2; CH04 system context and event flows; replace CloudEvents bus with Godot Signals for in-process events
+- Decision: Use Godot Signals for intra-scene and global Autoload events; standardize event naming ${DOMAIN_PREFIX}.<entity>.<action>; centralize event/DTO definitions under Scripts/Core/Contracts/** and reference (do not duplicate) in docs
+- Consequences: Decoupled scene communication; contracts remain SSoT; overlay 08 chapters must cite CH01/02/03 policies rather than copy thresholds
+- References: docs/migration/Phase-9-Signal-System.md, docs/architecture/base/04-system-context-c4-event-flows-v2.md, docs/architecture/base/08-功能纵切-template.md
 
-## Decision
-- Use Signals for intra-scene events; Autoload singleton as global bus when needed.
-- Naming: `snake_case` for signals; document payload shapes in contracts.
-- Decouple: emit/subscribe via small adapter methods; avoid direct node coupling.
-
-## Consequences
-- Positive: simpler runtime model; editor-visible wiring; fewer runtime deps.
-- Negative: requires contract docs and discipline to avoid tight coupling.
-
-## References
-- Godot Signals docs
