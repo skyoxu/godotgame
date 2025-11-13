@@ -33,7 +33,7 @@ SecurityAudit="res://Game.Godot/Scripts/Security/SecurityAudit.cs"
 PerformanceTracker="res://Game.Godot/Scripts/Perf/PerformanceTracker.cs"
 SentryClient="res://Game.Godot/Scripts/Obs/SentryClient.cs"
 FeatureFlags="res://Game.Godot/Scripts/Config/FeatureFlags.cs"
-CompositionRoot="res://Game.Godot/Autoloads/CompositionRoot.cs"
+CompositionRoot="*res://Game.Godot/Autoloads/CompositionRoot.cs"
 
 [display]
 
