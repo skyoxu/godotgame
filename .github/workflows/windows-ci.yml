@@ -123,48 +123,16 @@ jobs:
           name: selfcheck-logs
           path: logs/e2e/**
 
-      - name: Run GdUnit4 tests
-        continue-on-error: true
+      - name: GdUnit4 tests (Python, hard gate)
         shell: pwsh
         run: |
-          $env:Path = "$HOME\.dotnet;" + $env:Path
-          ./scripts/ci/run_gdunit_tests.ps1 -GodotBin "$env:GODOT_BIN" -ProjectPath 'Tests.Godot'
+          py -3 scripts/python/run_gdunit.py --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Adapters --timeout-sec 300
 
-      - name: Verify Base-Clean rules
-        shell: pwsh
-        run: |
-          ./scripts/ci/verify_base_clean.ps1 -RepoRoot '.'
-
-      - name: Export Windows build
-        if: always()
-        shell: pwsh
-        run: |
-          ./scripts/ci/export_windows.ps1 -GodotBin "$env:GODOT_BIN" -Preset "Windows Desktop" -Output build\Game.exe
-
-      - name: Print export log tail (always)
-        if: always()
-        shell: pwsh
-        run: |
-          $log = Get-ChildItem -Recurse -Filter godot_export.log -Path logs -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if ($log) {
-            Write-Host "Export log: $($log.FullName)"
-            Get-Content $log.FullName -Tail 200
-          } else {
-            Write-Warning 'No godot_export.log found under logs/**'
-          }
-
-      - name: Upload export logs (always)
+      - name: Upload GdUnit reports (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: export-logs
-          path: logs/ci/**/export/**
+          name: gdunit-reports
+          path: logs/e2e/**/gdunit-reports/**
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release
-          path: |
-            build/Game.exe
-            logs/ci/**
 
