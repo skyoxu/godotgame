@@ -124,6 +124,19 @@ jobs:
           py -3 scripts/python/run_dotnet.py --solution Game.sln --configuration Debug
           if ($LASTEXITCODE -ne 0) { Write-Warning 'Coverage soft gate failed'; exit 0 }
 
+      - name: Encoding scan (Python, soft gate)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          py -3 scripts/python/check_encoding.py --since-today
+
+      - name: Upload encoding logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: encoding-logs
+          path: logs/ci/**/encoding/**
+
       - name: Godot self-check (Python)
         shell: pwsh
         run: |
