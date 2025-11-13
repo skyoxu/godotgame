@@ -35,4 +35,22 @@ public class EventBusTests
         ));
         Assert.Equal(1, called);
     }
+
+    [Fact]
+    public async Task Subscriber_exception_is_swallowed_and_others_still_called()
+    {
+        var bus = new InMemoryEventBus();
+        int ok = 0;
+        bus.Subscribe(async _ => { throw new InvalidOperationException("boom"); });
+        bus.Subscribe(async _ => { ok++; await Task.CompletedTask; });
+
+        await bus.PublishAsync(new DomainEvent(
+            Type: "evt",
+            Source: nameof(EventBusTests),
+            Data: null,
+            Timestamp: DateTime.UtcNow,
+            Id: Guid.NewGuid().ToString()
+        ));
+        Assert.Equal(1, ok);
+    }
 }
