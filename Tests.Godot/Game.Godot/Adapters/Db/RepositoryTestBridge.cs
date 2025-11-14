@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Game.Core.Domain.Entities;
 using Game.Core.Ports;
@@ -53,5 +53,4 @@ public partial class RepositoryTestBridge : Node
         var s = repo.GetAsync(userId, slot).GetAwaiter().GetResult();
         return s?.Data;
     }
-}
-
+    public string[] ListSaveJsonByUser(string userId)\n    {\n        var repo = new SaveGameRepository(GetDb());\n        var list = repo.ListByUserAsync(userId).GetAwaiter().GetResult();\n        return list.ConvertAll(s => s.Data ?? string.Empty).ToArray();\n    }\n}\n
