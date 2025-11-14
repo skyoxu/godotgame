@@ -40,6 +40,9 @@ tmp/
 **/obj/
 .vs/
 TestResults/
+# Keep GdUnit4 CLI runner scripts inside plugin bin
+!Tests.Godot/addons/gdUnit4/bin/
+!Tests.Godot/addons/gdUnit4/bin/**
 # Godot/VS misc metadata not for VCS
 *.uid
 tmp_patch.txt
