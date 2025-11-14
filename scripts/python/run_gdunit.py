@@ -58,7 +58,8 @@ def main():
             apath = 'res://' + apath.replace('\\', '/').lstrip('/')
         cmd += ['-a', apath]
     rc, out = run_cmd(cmd, cwd=proj, timeout=args.timeout_sec*1000)
-    with open(os.path.join(out_dir, 'gdunit-console.txt'), 'w', encoding='utf-8') as f:
+    console_path = os.path.join(out_dir, 'gdunit-console.txt')
+    with open(console_path, 'w', encoding='utf-8') as f:
         f.write(out)
 
     # Generate HTML log frame (optional)
@@ -66,11 +67,32 @@ def main():
 
     # Archive reports
     reports_dir = os.path.join(proj, 'reports')
+    dest = args.report_dir if args.report_dir else os.path.join(out_dir, 'gdunit-reports')
+    # Always create a destination folder with at least the console log and a summary
+    if os.path.isdir(dest):
+        shutil.rmtree(dest, ignore_errors=True)
+    os.makedirs(dest, exist_ok=True)
+    # Copy console log for diagnosis
+    try:
+        shutil.copy2(console_path, os.path.join(dest, 'gdunit-console.txt'))
+    except Exception:
+        pass
+    # Copy reports if they exist
     if os.path.isdir(reports_dir):
-        dest = args.report_dir if args.report_dir else os.path.join(out_dir, 'gdunit-reports')
-        if os.path.isdir(dest):
-            shutil.rmtree(dest, ignore_errors=True)
-        shutil.copytree(reports_dir, dest)
+        for name in os.listdir(reports_dir):
+            src = os.path.join(reports_dir, name)
+            dst = os.path.join(dest, name)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src, dst)
+    # Write a small summary json for CI
+    try:
+        import json
+        with open(os.path.join(dest, 'run-summary.json'), 'w', encoding='utf-8') as f:
+            json.dump({'rc': rc, 'project': proj, 'added': args.add, 'timeout_sec': args.timeout_sec}, f, ensure_ascii=False)
+    except Exception:
+        pass
     print(f'GDUNIT_DONE rc={rc} out={out_dir}')
     return 0 if rc == 0 else rc
 
