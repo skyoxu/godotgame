@@ -8,8 +8,8 @@ func _db() -> Node:
 
 func test_try_open_user_path_should_succeed() -> void:
     var db = _db()
-    var p := "user://utdb_%d/game.db" % Time.get_unix_time_from_system()
-    var ok := db.TryOpen(p)
+    var p = "user://utdb_%d/game.db" % Time.get_unix_time_from_system()
+    var ok = db.TryOpen(p)
     assert_bool(ok).is_true()
     # Create a temp table and verify it exists
     db.Execute("CREATE TABLE IF NOT EXISTS tmp_ut(id INTEGER PRIMARY KEY);")
@@ -19,15 +19,14 @@ func test_try_open_user_path_should_succeed() -> void:
 
 func test_try_open_absolute_path_should_fail() -> void:
     var db = _db()
-    var p := "C:/temp/evil.db"
-    var ok := db.TryOpen(p)
+    var p = "C:/temp/evil.db"
+    var ok = db.TryOpen(p)
     assert_bool(ok).is_false()
     assert_str(str(db.LastError)).to_lower().contains("user://")
 
 func test_try_open_traversal_should_fail() -> void:
     var db = _db()
-    var p := "user://../evil.db"
-    var ok := db.TryOpen(p)
+    var p = "user://../evil.db"
+    var ok = db.TryOpen(p)
     assert_bool(ok).is_false()
     assert_str(str(db.LastError)).to_lower().contains("not allowed")
-
