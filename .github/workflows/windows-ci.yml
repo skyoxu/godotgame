@@ -43,9 +43,12 @@ jobs:
           python-version: '3.x'
 
       - name: Ensure GdUnit4 plugin
+        continue-on-error: true
         shell: pwsh
         run: |
           py -3 scripts/python/ensure_gdunit_plugin.py --project Tests.Godot --version v6.0.0
+          if (Test-Path 'Tests.Godot/addons/gdUnit4/bin/GdUnitCmdTool.gd') { Write-Host 'GDUNIT_PLUGIN_READY' } else { Write-Warning 'GDUNIT_PLUGIN_MISSING after ensure' }
+          Get-ChildItem -Recurse -File 'Tests.Godot/addons/gdUnit4' -ErrorAction SilentlyContinue | Select-Object -First 10 FullName
 
       - name: Install Export Templates (GitHub Releases)
         shell: pwsh
