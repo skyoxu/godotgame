@@ -95,6 +95,14 @@ jobs:
         run: |
           py -3 scripts/python/ci_pipeline.py all --solution Game.sln --configuration Debug --godot-bin "$env:GODOT_BIN" --build-solutions
 
+      - name: Upload CI logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: logs/ci/**
+          if-no-files-found: ignore
+
       - name: Dotnet coverage (soft gate via Python, thresholds optional)
         shell: pwsh
         continue-on-error: true
@@ -118,9 +126,11 @@ jobs:
 
       - name: Upload self-check logs (always)
         if: always()
-        uses: actions/upload-artifact@v4`n        with:`n          if-no-files-found: ignore
+        uses: actions/upload-artifact@v4
+        with:
           name: selfcheck-logs
           path: logs/e2e/**
+          if-no-files-found: ignore
 
       - name: GdUnit4 tests (Python, hard gate)
         shell: pwsh
@@ -141,9 +151,11 @@ jobs:
 
       - name: Upload GdUnit reports (always)
         if: always()
-        uses: actions/upload-artifact@v4`n        with:`n          if-no-files-found: ignore
+        uses: actions/upload-artifact@v4
+        with:
           name: gdunit-reports
           path: logs/e2e/**/gdunit-reports/**
+          if-no-files-found: ignore
 
 
 

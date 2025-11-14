@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload GdUnit reports (always)
         if: always()
-        uses: actions/upload-artifact@v4`n        with:`n          if-no-files-found: ignore
+        uses: actions/upload-artifact@v4`n        with:`n          if-no-files-found: ignore`n          if-no-files-found: ignore
           name: gdunit-reports
           path: logs/e2e/**/gdunit-reports/**
 
