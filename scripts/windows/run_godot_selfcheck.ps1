@@ -29,7 +29,8 @@ function New-LogDir([string]$Kind) {
 }
 
 $outDir = New-LogDir -Kind 'e2e'
-$consoleLog = Join-Path $outDir 'godot-selfcheck-console.txt'
+$ts = Get-Date -Format 'HHmmssfff'
+$consoleLog = Join-Path $outDir ("godot-selfcheck-console-" + $ts + ".txt")
 
 $godot = Find-Godot -Hint $GodotBin
 if (-not $godot) {
@@ -38,7 +39,7 @@ if (-not $godot) {
 }
 
 if ($BuildSolutions) {
-  & $godot --headless --no-window --build-solutions 2>&1 | Tee-Object -FilePath (Join-Path $outDir 'godot-buildsolutions.txt') | Out-Null
+  & $godot --headless --no-window --build-solutions 2>&1 | Tee-Object -FilePath (Join-Path $outDir ("godot-buildsolutions-" + $ts + ".txt")) | Out-Null
 }
 
 $args = @('--headless','--no-window','-s','res://Game.Godot/Scripts/Diagnostics/CompositionRootSelfCheck.gd')

@@ -10,13 +10,13 @@ func before() -> void:
     add_child(auto_free(_input))
 
 func test_time_adapter_has_delta() -> void:
-    await process_frame
-    var d := _time.DeltaSeconds
+    await get_tree().process_frame
+    var d = _time.DeltaSeconds
     assert_float(d).is_greater_equal(0.0)
 
 func test_input_adapter_methods_exist() -> void:
-    var pressed := _input.IsPressed("ui_accept")
+    var pressed = _input.IsPressed("ui_accept")
     assert_bool(pressed or not pressed).is_true() # sanity of return type
-    var axis := _input.GetAxis("ui_left", "ui_right")
+    var axis = _input.GetAxis("ui_left", "ui_right")
     assert_float(axis).is_between(-1.0, 1.0)
 

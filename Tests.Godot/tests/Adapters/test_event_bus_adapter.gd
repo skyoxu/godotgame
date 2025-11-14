@@ -14,6 +14,6 @@ func _on_evt(_type, _source, _data_json, _id, _spec, _ct, _ts):
 func test_publish_simple_emits_signal() -> void:
     _emitted = false
     _bus.PublishSimple("test.evt", "gdunit", "{}")
-    await process_frame
+    await get_tree().process_frame
     assert_bool(_emitted).is_true()
 

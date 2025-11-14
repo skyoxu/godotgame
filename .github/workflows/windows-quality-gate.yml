@@ -118,7 +118,7 @@ jobs:
         shell: pwsh
         continue-on-error: true
         run: |
-          py -3 scripts/python/run_gdunit.py --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Adapters --timeout-sec 240
+          py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Adapters --add tests/Security --add tests/Integration --add tests/UI --add tests/Adapters/Db --timeout-sec 480 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/quality"
 
       - name: Upload GdUnit reports (always)
         if: always()
@@ -126,6 +126,9 @@ jobs:
         with:
           name: gdunit-reports
           path: logs/e2e/**/gdunit-reports/**
+
+
+
 
 
 

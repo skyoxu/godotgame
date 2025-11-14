@@ -8,7 +8,7 @@ public partial class PrimaryButton : Button
     public enum ButtonSize { Small, Medium, Large }
 
     [Export] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
-    [Export] public ButtonSize Size { get; set; } = ButtonSize.Medium;
+    [Export] public new ButtonSize Size { get; set; } = ButtonSize.Medium;
 
     public override void _Ready()
     {
@@ -54,3 +54,4 @@ public partial class PrimaryButton : Button
         CustomMinimumSize = size;
     }
 }
+

@@ -1,10 +1,9 @@
-using Godot;
+﻿using Godot;
 using Game.Godot.Adapters;
 using Game.Godot.Adapters.Db;
 using System.Collections.Generic;
 using System;
 using System.Text.Json;
-using System.Collections.Generic;
 
 namespace Game.Godot.Scripts.UI;
 
@@ -116,3 +115,4 @@ public partial class InventoryPanel : Control
         }
     }
 }
+

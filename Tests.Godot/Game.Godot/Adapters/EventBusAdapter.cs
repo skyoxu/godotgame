@@ -19,7 +19,8 @@ public partial class EventBusAdapter : Node, IEventBus
     public Task PublishAsync(DomainEvent evt)
     {
         // Emit Godot signal for scene-level listeners
-        var dataJson = System.Text.Json.JsonSerializer.Serialize(evt.Data);
+        var dataJson = evt.Data is string s ? (string.IsNullOrWhiteSpace(s) ? "{}" : s)
+                                            : System.Text.Json.JsonSerializer.Serialize(evt.Data);
         EmitSignal(SignalName.DomainEventEmitted, evt.Type, evt.Source, dataJson, evt.Id, evt.SpecVersion, evt.DataContentType, evt.Timestamp.ToString("o"));
 
         // Notify in-process subscribers

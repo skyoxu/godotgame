@@ -32,7 +32,15 @@
       "Bash(py -3:*)",
       "Bash(dir:*)",
       "Bash(xcopy:*)",
-      "Bash(iconv:*)"
+      "Bash(iconv:*)",
+      "Bash(claude skill:*)",
+      "Bash(claude --version:*)",
+      "Bash(claude plugin marketplace add:*)",
+      "Bash(claude plugin install:*)",
+      "Bash(claude plugin list)",
+      "Bash(claude plugin --help:*)",
+      "Bash(claude plugin marketplace list)",
+      "Read(//c/buildgame/vitegame/docs/**)"
     ],
     "deny": [],
     "ask": []

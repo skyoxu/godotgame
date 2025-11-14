@@ -40,6 +40,9 @@ tmp/
 **/obj/
 .vs/
 TestResults/
+# Godot/VS misc metadata not for VCS
+*.uid
+tmp_patch.txt
 
 # Local .NET SDK/runtime placed in repo (should not be versioned)
 .dotnet/

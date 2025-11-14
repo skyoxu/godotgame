@@ -34,6 +34,8 @@ def main():
     ap.add_argument('--project', default='Tests.Godot')
     ap.add_argument('--add', action='append', default=[], help='Add directory or suite path(s). E.g., tests/Adapters or res://tests/Adapters')
     ap.add_argument('--timeout-sec', type=int, default=600, help='Timeout seconds for test run (default 600)')
+    ap.add_argument('--prewarm', action='store_true', help='Prewarm: build solutions before running tests')
+    ap.add_argument('--rd', dest='report_dir', default=None, help='Custom destination to copy reports into (defaults to logs/e2e/<date>/gdunit-reports)')
     args = ap.parse_args()
 
     root = os.getcwd()
@@ -42,9 +44,13 @@ def main():
     out_dir = os.path.join(root, 'logs', 'e2e', date)
     os.makedirs(out_dir, exist_ok=True)
 
+    # Optional prewarm
+    if args.prewarm:
+        _rcp, _outp = run_cmd([args.godot_bin, '--headless', '--path', proj, '--build-solutions', '--quit'], cwd=proj, timeout=300_000)
+
     # Run tests
     # Build command with optional -a filters
-    cmd = [args.godot_bin, '--headless', '--path', proj, '-s', '-d', 'res://addons/gdUnit4/bin/GdUnitCmdTool.gd']
+    cmd = [args.godot_bin, '--headless', '--path', proj, '-s', '-d', 'res://addons/gdUnit4/bin/GdUnitCmdTool.gd', '--ignoreHeadlessMode']
     for a in args.add:
         apath = a
         if not apath.startswith('res://'):
@@ -61,7 +67,7 @@ def main():
     # Archive reports
     reports_dir = os.path.join(proj, 'reports')
     if os.path.isdir(reports_dir):
-        dest = os.path.join(out_dir, 'gdunit-reports')
+        dest = args.report_dir if args.report_dir else os.path.join(out_dir, 'gdunit-reports')
         if os.path.isdir(dest):
             shutil.rmtree(dest, ignore_errors=True)
         shutil.copytree(reports_dir, dest)

@@ -126,7 +126,19 @@ jobs:
       - name: GdUnit4 tests (Python, hard gate)
         shell: pwsh
         run: |
-          py -3 scripts/python/run_gdunit.py --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Adapters --timeout-sec 300
+          py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Adapters --add tests/Security --timeout-sec 300 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/adapters-security"
+
+      - name: GdUnit4 integration tests (Python, soft gate)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Integration --add tests/Adapters/Db --timeout-sec 480 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/integration"
+
+      - name: GdUnit4 UI tests (Python, soft gate)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/UI --timeout-sec 480 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/ui"
 
       - name: Upload GdUnit reports (always)
         if: always()
@@ -134,5 +146,7 @@ jobs:
         with:
           name: gdunit-reports
           path: logs/e2e/**/gdunit-reports/**
+
+
 
 
