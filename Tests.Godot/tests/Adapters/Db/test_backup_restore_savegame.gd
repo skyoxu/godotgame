@@ -6,8 +6,7 @@ func _new_db(name: String) -> Node:
         db = ClassDB.instantiate("SqliteDataStore")
     else:
         var s = load("res://Game.Godot/Adapters/SqliteDataStore.cs")
-        db = Node.new()
-        db.set_script(s)
+        db = s.new()
     db.name = name
     get_tree().get_root().add_child(auto_free(db))
     await get_tree().process_frame
@@ -66,8 +65,9 @@ func test_backup_restore_savegame() -> void:
     assert_bool(db.has_method("TryOpen")).is_true()
     var ok = db.TryOpen(path)
     assert_bool(ok).is_true()
-    if db.has_method("Execute"):
-        db.Execute("PRAGMA journal_mode=DELETE;")
+    var h = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
+    add_child(auto_free(h))
+    h.ExecSql("PRAGMA journal_mode=DELETE;")
     # Ensure schema exists and clean
     helper.CreateSchema()
     helper.ClearAll()
@@ -82,8 +82,9 @@ func test_backup_restore_savegame() -> void:
     assert_bool(bridge.UpsertSave(uid, 1, json)).is_true()
 
     # checkpoint WAL to persist changes into main db file, then close and copy to backup
-    if db.has_method("Execute"):
-        db.Execute("PRAGMA wal_checkpoint(TRUNCATE);")
+    var h2 = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
+    add_child(auto_free(h2))
+    h2.ExecSql("PRAGMA wal_checkpoint(TRUNCATE);")
     db.Close()
     await get_tree().process_frame
     var backup_dir = "user://backup_%s" % Time.get_unix_time_from_system()

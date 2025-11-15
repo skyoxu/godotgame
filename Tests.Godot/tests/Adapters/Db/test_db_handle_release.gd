@@ -29,7 +29,9 @@ func test_handle_released_after_close_allows_rw_open() -> void:
     var ok = db.TryOpen(path)
     assert_bool(ok).is_true()
     # create small write to ensure file exists
-    db.Execute("CREATE TABLE IF NOT EXISTS t(a INTEGER);")
+    var h = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
+    add_child(auto_free(h))
+    h.ExecSql("CREATE TABLE IF NOT EXISTS t(a INTEGER);")
     db.Close()
     await get_tree().process_frame
     var f = FileAccess.open(_abs(path), FileAccess.ModeFlags.READ_WRITE)

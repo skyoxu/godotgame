@@ -39,7 +39,9 @@ func test_close_rename_and_reopen_succeeds() -> void:
     var db = await _new_db("SqlDb")
     _force_managed()
     assert_bool(db.TryOpen(path)).is_true()
-    db.Execute("CREATE TABLE IF NOT EXISTS t(a INTEGER);")
+    var h = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
+    add_child(auto_free(h))
+    h.ExecSql("CREATE TABLE IF NOT EXISTS t(a INTEGER);")
     db.Close()
     await get_tree().process_frame
     var abs_old = _abs(path)

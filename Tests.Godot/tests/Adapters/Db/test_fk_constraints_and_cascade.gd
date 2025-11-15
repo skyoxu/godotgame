@@ -6,8 +6,7 @@ func _new_db(name: String) -> Node:
         db = ClassDB.instantiate("SqliteDataStore")
     else:
         var s = load("res://Game.Godot/Adapters/SqliteDataStore.cs")
-        db = Node.new()
-        db.set_script(s)
+        db = s.new()
     db.name = name
     get_tree().get_root().add_child(auto_free(db))
     await get_tree().process_frame
@@ -25,9 +24,9 @@ func test_fk_on_delete_cascade_works() -> void:
     var db = await _new_db("SqlDb")
     _force_managed()
     assert_bool(db.TryOpen(path)).is_true()
-    db.Execute("PRAGMA foreign_keys=ON;")
     var helper = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
     add_child(auto_free(helper))
+    helper.ExecSql("PRAGMA foreign_keys=ON;")
     helper.ExecSql("CREATE TABLE IF NOT EXISTS p(id TEXT PRIMARY KEY);")
     helper.ExecSql("CREATE TABLE IF NOT EXISTS c(id TEXT PRIMARY KEY, pid TEXT, FOREIGN KEY(pid) REFERENCES p(id) ON DELETE CASCADE);")
     helper.ExecSql("INSERT OR IGNORE INTO p(id) VALUES('A');")

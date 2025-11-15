@@ -29,10 +29,11 @@ func test_migration_ensure_min_version() -> void:
     assert_bool(ok).is_true()
     helper.CreateSchema()
     # simulate downgrade
-    db.Execute("UPDATE schema_version SET version=@0 WHERE id=1;", 0)
+    var h2 = preload("res://Game.Godot/Adapters/Db/DbTestHelper.cs").new()
+    add_child(auto_free(h2))
+    h2.ExecSql("UPDATE schema_version SET version=0 WHERE id=1;")
     var before:int = helper.GetSchemaVersion()
     assert_int(before).is_less(1)
     helper.EnsureMinVersion(1)
     var after:int = helper.GetSchemaVersion()
     assert_int(after).is_greater_equal(1)
-
