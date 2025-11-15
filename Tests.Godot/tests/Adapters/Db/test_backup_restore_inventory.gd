@@ -10,6 +10,10 @@ func _new_db(name: String) -> Node:
         db.set_script(s)
     db.name = name
     get_tree().get_root().add_child(auto_free(db))
+    await get_tree().process_frame
+    if not db.has_method("TryOpen"):
+        # give engine another frame to bind C# methods
+        await get_tree().process_frame
     return db
 
 static func _mkdirs_user(abs_path: String) -> bool:
