@@ -58,6 +58,9 @@ public class SqlInventoryRepository : IInventoryRepository
             {
                 _db.Execute("INSERT INTO inventory_items(user_id,item_id,qty,updated_at) VALUES(@0,@1,@2,@3);",
                     UserId, kv.Key, Math.Max(0, kv.Value), now);
+                // Test-only: allow simulating an error to verify rollback
+                if ((System.Environment.GetEnvironmentVariable("DB_SIMULATE_REPLACEALL_ERROR") ?? "0") == "1")
+                    throw new InvalidOperationException("Simulated ReplaceAll error");
             }
             _db.CommitTransaction();
         }

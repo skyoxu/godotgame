@@ -21,6 +21,10 @@ public class SaveGameRepository : ISaveGameRepository
         if (save.CreatedAt == 0) save.CreatedAt = now;
         save.UpdatedAt = now;
 
+        // Test-only: allow simulating an error to verify rollback behavior in tests
+        if ((System.Environment.GetEnvironmentVariable("DB_SIMULATE_SAVE_UPSERT_ERROR") ?? "0") == "1")
+            throw new InvalidOperationException("Simulated SaveGame upsert error");
+
         _db.Execute("INSERT INTO saves(id,user_id,slot_number,data,created_at,updated_at) VALUES(@0,@1,@2,@3,@4,@5) " +
                     "ON CONFLICT(id) DO UPDATE SET user_id=@1, slot_number=@2, data=@3, updated_at=@5;",
             save.Id, save.UserId, save.SlotNumber, save.Data, save.CreatedAt, save.UpdatedAt);

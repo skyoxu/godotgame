@@ -83,7 +83,7 @@ public partial class SqliteDataStore : Node, ISqlDatabase
     public bool TryOpen(string dbPath)
     {
         try { Open(dbPath); LastError = null; return true; }
-        catch (Exception ex) { LastError = ex.Message; return false; }
+        catch (Exception ex) { LastError = ex.Message; Audit("db.open.fail", ex.Message, dbPath); return false; }
     }
 
     public bool TableExists(string name)
@@ -98,13 +98,21 @@ public partial class SqliteDataStore : Node, ISqlDatabase
         {
             var s = FormatSqlWithParameters(sql, parameters);
             var ok = _pluginDb!.Call("Query", s).AsBool();
-            if (!ok) throw new InvalidOperationException("SQL execution failed (plugin)");
+            if (!ok) { Audit("db.exec.fail", "plugin_query_failed", Truncate(sql, 120)); throw new InvalidOperationException("SQL execution failed (plugin)"); }
             return 0;
         }
         else
         {
-            using var cmd = BuildCommand(sql, parameters);
-            return cmd.ExecuteNonQuery();
+            try
+            {
+                using var cmd = BuildCommand(sql, parameters);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Audit("db.exec.fail", ex.Message, Truncate(sql, 120));
+                throw;
+            }
         }
     }
 
@@ -114,7 +122,7 @@ public partial class SqliteDataStore : Node, ISqlDatabase
         {
             var s = FormatSqlWithParameters(sql, parameters);
             var ok = _pluginDb!.Call("Query", s).AsBool();
-            if (!ok) throw new InvalidOperationException("SQL query failed (plugin)");
+            if (!ok) { Audit("db.query.fail", "plugin_query_failed", Truncate(sql, 120)); throw new InvalidOperationException("SQL query failed (plugin)"); }
             var resultObj = _pluginDb.Get("QueryResult");
             var arr = resultObj.As<global::Godot.Collections.Array>();
             var list = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object?>>();
@@ -133,21 +141,29 @@ public partial class SqliteDataStore : Node, ISqlDatabase
         }
         else
         {
-            using var cmd = BuildCommand(sql, parameters);
-            using var reader = cmd.ExecuteReader();
-            var list = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object?>>();
-            while (reader.Read())
+            try
             {
-                var row = new System.Collections.Generic.Dictionary<string, object?>();
-                for (int i = 0; i < reader.FieldCount; i++)
+                using var cmd = BuildCommand(sql, parameters);
+                using var reader = cmd.ExecuteReader();
+                var list = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object?>>();
+                while (reader.Read())
                 {
-                    var name = reader.GetName(i);
-                    var val = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                    row[name] = val;
+                    var row = new System.Collections.Generic.Dictionary<string, object?>();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        var name = reader.GetName(i);
+                        var val = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                        row[name] = val;
+                    }
+                    list.Add(row);
                 }
-                list.Add(row);
+                return list;
             }
-            return list;
+            catch (Exception ex)
+            {
+                Audit("db.query.fail", ex.Message, Truncate(sql, 120));
+                throw;
+            }
         }
     }
 
@@ -311,6 +327,36 @@ public partial class SqliteDataStore : Node, ISqlDatabase
             }
         }
         return cmd;
+    }
+
+    private static void Audit(string action, string reason, string target)
+    {
+        try
+        {
+            var date = System.DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var root = System.Environment.GetEnvironmentVariable("AUDIT_LOG_ROOT");
+            if (string.IsNullOrEmpty(root)) root = System.IO.Path.Combine("logs", "ci", date);
+            System.IO.Directory.CreateDirectory(root);
+            var path = System.IO.Path.Combine(root, "security-audit.jsonl");
+            var caller = System.Environment.UserName;
+            var obj = new System.Collections.Generic.Dictionary<string, object?>
+            {
+                ["ts"] = System.DateTime.UtcNow.ToString("o"),
+                ["action"] = action,
+                ["reason"] = reason,
+                ["target"] = target,
+                ["caller"] = caller
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(obj);
+            System.IO.File.AppendAllText(path, json + System.Environment.NewLine);
+        }
+        catch { }
+    }
+
+    private static string Truncate(string s, int max)
+    {
+        if (string.IsNullOrEmpty(s)) return s ?? string.Empty;
+        return s.Length <= max ? s : s.Substring(0, max);
     }
 }
 

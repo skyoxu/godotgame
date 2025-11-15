@@ -21,9 +21,13 @@ public partial class DbTestHelper : Node
     public void CreateSchema()
     {
         var db = GetDb();
+        // Core domain tables
         db.Execute("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT UNIQUE, created_at INTEGER, last_login INTEGER);");
         db.Execute("CREATE TABLE IF NOT EXISTS saves (id TEXT PRIMARY KEY, user_id TEXT, slot_number INTEGER, data TEXT, created_at INTEGER, updated_at INTEGER);");
         db.Execute("CREATE TABLE IF NOT EXISTS inventory_items (user_id TEXT, item_id TEXT, qty INTEGER, updated_at INTEGER, PRIMARY KEY(user_id, item_id));");
+        // Schema versioning meta (single row id=1)
+        db.Execute("CREATE TABLE IF NOT EXISTS schema_version (id INTEGER PRIMARY KEY CHECK(id=1), version INTEGER NOT NULL);");
+        db.Execute("INSERT OR IGNORE INTO schema_version(id,version) VALUES(1,1);");
     }
 
     public void ClearAll()
@@ -32,5 +36,27 @@ public partial class DbTestHelper : Node
         try { db.Execute("DELETE FROM inventory_items;"); } catch { }
         try { db.Execute("DELETE FROM saves;"); } catch { }
         try { db.Execute("DELETE FROM users;"); } catch { }
+    }
+
+    public int GetSchemaVersion()
+    {
+        var db = GetDb();
+        try
+        {
+            var rows = db.Query("SELECT version FROM schema_version WHERE id=1;");
+            if (rows.Count == 0) return -1;
+            var v = rows[0]["version"];
+            if (v == null) return -1;
+            return Convert.ToInt32(v);
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    public void SetEnv(string key, string value)
+    {
+        System.Environment.SetEnvironmentVariable(key, value);
     }
 }

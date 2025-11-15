@@ -37,4 +37,18 @@ public partial class InventoryRepoBridge : Node
         repo.ReplaceAllAsync(new Dictionary<string, int> { { itemId, qty } }).GetAwaiter().GetResult();
         return true;
     }
+
+    public bool TryReplaceAllToSingle(string itemId, int qty)
+    {
+        try
+        {
+            var repo = new SqlInventoryRepository(GetDb());
+            repo.ReplaceAllAsync(new Dictionary<string, int> { { itemId, qty } }).GetAwaiter().GetResult();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

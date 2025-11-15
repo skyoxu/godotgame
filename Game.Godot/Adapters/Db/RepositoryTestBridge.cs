@@ -47,6 +47,21 @@ public partial class RepositoryTestBridge : Node
         return true;
     }
 
+    public bool TryUpsertSave(string userId, int slot, string data)
+    {
+        try
+        {
+            var repo = new SaveGameRepository(GetDb());
+            var save = new SaveGame { UserId = userId, SlotNumber = slot, Data = data };
+            repo.UpsertAsync(save).GetAwaiter().GetResult();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public string? GetSaveData(string userId, int slot)
     {
         var repo = new SaveGameRepository(GetDb());
@@ -61,4 +76,3 @@ public partial class RepositoryTestBridge : Node
         return list.ConvertAll(s => s.Data ?? string.Empty).ToArray();
     }
 }
-
