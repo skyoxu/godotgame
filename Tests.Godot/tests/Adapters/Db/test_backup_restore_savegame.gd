@@ -36,6 +36,20 @@ static func _copy_file(src: String, dst: String) -> bool:
     if w == null:
         return false
     w.store_buffer(data)
+    var wal := src + "-wal"
+    var shm := src + "-shm"
+    if FileAccess.file_exists(wal):
+        var rw := FileAccess.open(wal, FileAccess.READ)
+        if rw != null:
+            var dw := FileAccess.open(dst + "-wal", FileAccess.WRITE)
+            if dw != null:
+                dw.store_buffer(rw.get_buffer(rw.get_length()))
+    if FileAccess.file_exists(shm):
+        var rs := FileAccess.open(shm, FileAccess.READ)
+        if rs != null:
+            var ds := FileAccess.open(dst + "-shm", FileAccess.WRITE)
+            if ds != null:
+                ds.store_buffer(rs.get_buffer(rs.get_length()))
     return true
 
 func test_backup_restore_savegame() -> void:
