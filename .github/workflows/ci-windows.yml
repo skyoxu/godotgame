@@ -195,3 +195,4 @@ jobs:
           $out = "logs/ci/${{ github.run_id }}/schema-dump.json"
           py -3 scripts/python/db_schema_dump.py --glob "$env:APPDATA\Godot\app_userdata\GodotGame\*.db" --out "$out"
           Write-Host "SCHEMA_DUMP_OUT=$out"
+
