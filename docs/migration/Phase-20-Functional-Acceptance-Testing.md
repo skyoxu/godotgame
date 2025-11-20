@@ -68,6 +68,21 @@
 
 ## 2. 功能验收架构
 
+### 2.0 Godot 模板变体（当前状态）
+
+> 本节说明：当前仓库是一个可复制的 Godot+C# 模板，并不存在一个一一对应的 vitegame 原始游戏版本。以下功能验收蓝图更多用于“未来实际游戏项目”作为检查清单，本模板阶段只要求核心骨干（Core + Scenes + Tests + Smoke/Perf）完整且可复用。
+
+- 模板级功能与测试基线（已落地）：
+  - 核心逻辑：`Game.Core` 中的值对象、服务、事件总线等已通过 xUnit 测试覆盖（见 Phase 10）；
+  - 场景与 UI：Tests.Godot 中的 Adapters/Integration/UI/Security 测试覆盖主菜单、HUD、SettingsPanel、ScreenNavigator 等关键场景（见 Phase 8–11）；
+  - 数据与安全：SQLite 适配层（SqliteDataStore）、Settings ConfigFile、HTTP/DB 安全审计通过 GdUnit4 + JSONL 日志验证（见 Phase 6–7、14）；
+  - 冒烟与性能：Headless Smoke（`[TEMPLATE_SMOKE_READY]`）与帧时间 P95 门禁（`[PERF] ... p95_ms=...` + `check_perf_budget.ps1`）提供最小可玩性与性能基线（见 Phase 12、15）。
+
+- 未在模板阶段实现的部分：
+  - 与 vitegame 的逐功能对标（具体游戏关卡、角色/敌人行为、成就系统等）需要在实际项目中基于本模板扩展；
+  - 兼容性报告、用户体验评估与完整数据迁移脚本属于项目级工作，不计入模板 DoD；
+  - 相应工作项统一收敛到 Phase-20 Backlog，并由后续真实项目根据自身 PRD 逐条落地。
+
 ### 2.1 验收维度定义
 
 #### 维度 A: 游戏功能完整性（Game Mechanics）

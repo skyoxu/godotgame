@@ -29,10 +29,16 @@ import sys
 
 def run_ci_pipeline(solution: str, configuration: str, godot_bin: str, build_solutions: bool) -> int:
     args = [
-        "py", "-3", "scripts/python/ci_pipeline.py", "all",
-        "--solution", solution,
-        "--configuration", configuration,
-        "--godot-bin", godot_bin,
+        "py",
+        "-3",
+        "scripts/python/ci_pipeline.py",
+        "all",
+        "--solution",
+        solution,
+        "--configuration",
+        configuration,
+        "--godot-bin",
+        godot_bin,
     ]
     if build_solutions:
         args.append("--build-solutions")
@@ -41,20 +47,94 @@ def run_ci_pipeline(solution: str, configuration: str, godot_bin: str, build_sol
     return proc.returncode
 
 
+def run_gdunit_hard(godot_bin: str) -> int:
+    """Run 硬门禁 GdUnit4 小集（Adapters/Config + Security）。
+
+    设计目标：
+    - 与 ci-windows.yml 中的硬门禁集合保持一致；
+    - 报告输出到 logs/e2e/quality-gates/gdunit-hard。
+    """
+
+    args = [
+        "py",
+        "-3",
+        "scripts/python/run_gdunit.py",
+        "--prewarm",
+        "--godot-bin",
+        godot_bin,
+        "--project",
+        "Tests.Godot",
+        "--add",
+        "tests/Adapters/Config",
+        "--add",
+        "tests/Security",
+        "--timeout-sec",
+        "300",
+        "--rd",
+        "logs/e2e/quality-gates/gdunit-hard",
+    ]
+    proc = subprocess.run(args, text=True)
+    return proc.returncode
+
+
+def run_smoke_headless(godot_bin: str) -> int:
+    """调用 Python 版 headless smoke，严格模式判定。
+
+    - 使用 Main 场景作为入口；
+    - mode=strict：至少需要 marker 或 [DB] opened 才视为通过。
+    """
+
+    args = [
+        "py",
+        "-3",
+        "scripts/python/smoke_headless.py",
+        "--godot-bin",
+        godot_bin,
+        "--project",
+        ".",
+        "--scene",
+        "res://Game.Godot/Scenes/Main.tscn",
+        "--timeout-sec",
+        "5",
+        "--mode",
+        "strict",
+    ]
+    proc = subprocess.run(args, text=True)
+    return proc.returncode
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_all = sub.add_parser("all", help="run all quality gates (delegates to ci_pipeline.py")
+    p_all = sub.add_parser("all", help="run quality gates (ci_pipeline + optional GdUnit/Smoke)")
     p_all.add_argument("--solution", default="Game.sln")
     p_all.add_argument("--configuration", default="Debug")
     p_all.add_argument("--godot-bin", required=True)
     p_all.add_argument("--build-solutions", action="store_true")
+    p_all.add_argument("--gdunit-hard", action="store_true", help="run hard GdUnit set (Adapters/Config + Security)")
+    p_all.add_argument("--smoke", action="store_true", help="run headless smoke (strict marker/DB check)")
 
     args = parser.parse_args()
 
     if args.cmd == "all":
-        return run_ci_pipeline(args.solution, args.configuration, args.godot_bin, args.build_solutions)
+        # 1) 基础门禁：dotnet + self-check + 编码扫描
+        rc = run_ci_pipeline(args.solution, args.configuration, args.godot_bin, args.build_solutions)
+        hard_failed = rc != 0
+
+        # 2) 可选硬门禁：GdUnit4 小集
+        if args.gdunit_hard:
+            gd_rc = run_gdunit_hard(args.godot_bin)
+            if gd_rc != 0:
+                hard_failed = True
+
+        # 3) 可选硬门禁：headless smoke（严格模式）
+        if args.smoke:
+            sm_rc = run_smoke_headless(args.godot_bin)
+            if sm_rc != 0:
+                hard_failed = True
+
+        return 0 if not hard_failed else 1
 
     print("Unsupported command", file=sys.stderr)
     return 1
@@ -62,4 +142,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

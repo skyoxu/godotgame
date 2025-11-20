@@ -58,6 +58,23 @@
 
 ## 2. 文档更新架构
 
+### 2.0 Godot 模板变体（当前状态）
+
+> 本节说明：当前仓库是一个可复制的 Godot 4.5 + C# 模板，而不是单一项目的完整迁移成果。Phase 1–21 的文档更多扮演“模板设计与迁移蓝图”的角色，Phase 22 文档分层架构则用于指导后续基于本模板创建的真实游戏项目如何组织文档与发布说明。本模板阶段只要求提供清晰的技术文档骨架与基础发布说明脚手架。
+
+- 模板级文档现状（已落地）：
+  - 架构与决策：`docs/architecture/base/**` + `docs/adr/**` + `docs/migration/Phase-1..21.md`，已覆盖技术栈、架构决策与迁移阶段蓝图；
+  - 开发者指南：`AGENTS.md` / `CLAUDE.md` / `mcpuse.md` 描述了 AI/工具协作、质量门禁与目录规范；
+  - 测试与质量：`docs/testing-framework.md` / Phase‑7/9/13/15 Backlog 文件，记录测试金字塔、质量门禁与日志规范；
+  - 发布说明脚手架：`docs/release/RELEASE_NOTES_TEMPLATE.md` + `scripts/ci/generate_release_notes.ps1` 提供 Release Notes 模板与自动生成最小骨架的脚本。
+
+- 模板阶段未实现的部分：
+  - 针对具体产品/游戏的 Executive Summary、Migration Report、Operations Manual、User Manual/FAQ 等项目级文档；
+  - 从 CI 汇总 JSON（如 ci-pipeline-summary/export summary/release profile）自动填充 Release Notes 的逻辑（目前仍需人工补全关键结果与变更摘要）；
+  - 文档完整性与链接检查的 CI 门禁（例如“Phase 1–21 是否全部存在”、“重要文档是否在索引中出现”等）。
+
+> 这些工作更适合在具体项目仓库中基于模板文档骨架实现，Phase‑22 Backlog 用于记录模板视角下的“项目级文档与发布说明增强”蓝图。
+
 ### 2.1 文档分层体系
 
 ```

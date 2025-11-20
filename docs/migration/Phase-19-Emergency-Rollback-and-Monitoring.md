@@ -54,6 +54,25 @@
 
 ## 2. 应急回滚架构
 
+### 2.0 Godot+C# 变体（当前模板状态）
+
+> 本节描述的是 **当前 godotgame 模板在“回滚与监控”方面的实际能力**。上文中的自动化回滚流程（Sentry Release Health 轮询、标记 revoked、ReleaseManager.cs 等）仍处于蓝图阶段，对应工作统一收敛到 Phase-19 Backlog。
+
+- 现有能力：
+  - 质量门禁与导出：
+    - 通过 `scripts/ci/quality_gate.ps1` + `scripts/python/quality_gates.py` 跑 dotnet/GdUnit4/selfcheck/encoding，以及可选的导出与 EXE 冒烟（见 Phase‑17）。
+    - `scripts/ci/export_windows.ps1` + `scripts/ci/smoke_exe.ps1` 已可在本地/CI 中产出并基本验证 `build/Game.exe`。
+  - 发布工作流：
+    - `.github/workflows/windows-release.yml` 提供手动触发的 Windows Release 流程：下载 Godot、导出 EXE、上传构建产物为 Artifact；
+    - Release Notes 可通过 `scripts/ci/generate_release_notes.ps1` + `docs/release/RELEASE_NOTES_TEMPLATE.md` 脚手架生成。
+
+- 尚未实现的部分：
+  - 未集成 Sentry Godot SDK，也未实现基于 Release Health 的自动门禁或回滚脚本；
+  - 未实现周期性监控 Crash-Free Sessions/Error Rate 的 GitHub Actions Job；
+  - 未实现 ReleaseManager.cs 或类似机制在客户端启动时检查“当前 Release 是否已撤销”。
+
+> 当前模板的应急策略：对实际项目而言，当发现某个版本存在严重问题时，应由人工通过 Windows Release 工作流重新构建并分发前一稳定版本；自动监控与自动回滚逻辑建议在项目落地期按 Phase‑19 Backlog 的蓝图逐步实现。
+
 ### 2.1 回滚流程图
 
 ```

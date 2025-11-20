@@ -102,3 +102,37 @@
   - 当前 Phase 14 仅要求 `SecurityAudit` + `SqliteDataStore` + `SecurityHttpClient` 提供最小安全基线和审计输出；
   - 本 Backlog 文件用于记录蓝图中尚未落地的安全增强，避免在 Phase 14 内部继续无限扩张范围。
 
+---
+
+## 当前模板实现小结（2025-11，状态快照）
+
+为便于后续维护，这里补充一段“当前 Godot 模板已经落实的安全测试与技债状态”说明：
+
+- DB 路径安全用例（已实现）
+  - 文件：`Tests.Godot/tests/Security/test_db_path_rejection.gd`
+  - 行为：通过 `SqliteDataStore.TryOpen` 验证 `user://` 正常，绝对路径与 `user://../` 路径穿越返回 `false`。
+  - 作用：将 Phase‑14 文档中“仅允许 res:///user://、禁止穿越”的 DB 口径落实为可执行测试。
+
+- DB open 失败审计用例（已实现）
+  - 文件：`Tests.Godot/tests/Security/test_db_open_denied_writes_audit_log.gd`
+  - 行为：对绝对路径调用 `TryOpen` 失败后，读取 `logs/ci/<date>/security-audit.jsonl` 最后一条记录，并断言 `action == "db.open.fail"`。
+  - 作用：验证 `SqliteDataStore.TryOpen` 的审计逻辑真实落盘，而不仅仅停留在文档描述。
+
+- HTTP 阻断 Signal 用例（已实现）
+  - 文件：`Tests.Godot/tests/Integration/Security/test_security_http_block_signal.gd`
+  - 行为：创建 `SecurityHttpClient` 节点，拒绝一个 `http://` URL，并断言发出了 `RequestBlocked(reason, url)` Signal 且 URL 以 `http://` 开头。
+  - 作用：为 Phase‑14 Backlog 中提到的“安全相关 Signal 契约验证”提供了一条基础示例，用于后续扩展。
+
+- `test_db_audit_exec_query_fail.gd` 状态（保留为 SKIP 技术债占位）
+  - 文件：`Tests.Godot/tests/Security/test_db_audit_exec_query_fail.gd`
+  - 现状：
+    - `_new_db` 使用显式类型 `var db: Node = null`，避免 GDScript 4.5 对 `null` 推断失败的 Parser Error；
+    - 测试主体仅发出 `push_warning("SKIP: exec/query audit covered by open-fail test; no try/catch in GDScript")` 并 `assert_bool(true)`，不再尝试触发 C# Execute/Query 异常；
+    - 缩进已统一整理，但 GdUnit4 对“历史 Tab/空格混用”的解析仍可能给出缩进警告，建议在 Godot 编辑器内用“缩进转换”功能再次保存以彻底清除。
+  - 作用：
+    - 明确告知后续维护者：exec/query 级别的审计逻辑目前由“open-fail 测试 + C# 端 Audit 调用”间接覆盖；
+    - 避免因 GDScript 无 try/catch 在 headless CI 中引发 Debugger Break，同时保留未来若引入 try/catch 或桥接类时扩展此用例的空间。
+
+> 结论：
+> - Phase 14 在当前模板中，DB/HTTP/Config 的“路径与审计基线”已经通过多条 GdUnit 用例落地；
+> - `test_db_audit_exec_query_fail.gd` 被刻意降级为 SKIP 占位，提示后续若要测试 Execute/Query 级别审计，应优先引入更安全的桥接方式（例如 DbTestHelper/C# 侧包裹）而不是在 GDScript 中直接触发异常。

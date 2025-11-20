@@ -55,6 +55,22 @@
 
 ## 2. 性能优化架构
 
+### 2.0 Godot 模板变体（当前状态）
+
+> 本节说明：当前仓库是 Godot 4.5 + C# 的可复制模板，尚未绑定具体游戏内容。Phase‑21 文档中的性能优化蓝图（复杂关卡、AI、资源压缩、GC 调优等）主要面向基于本模板创建的实际游戏项目，本模板阶段只要求提供“可采集性能数据 + 基本门禁”的基础设施。
+
+- 模板级性能基线与工具（已落地）：
+  - 帧时间采集：`Game.Godot/Scripts/Perf/PerformanceTracker.cs` 作为 Autoload，定期输出 `[PERF] frames=... avg_ms=.. p50_ms=.. p95_ms=.. p99_ms=..` 控制台标记，并写 `user://logs/perf/perf.json`；
+  - Perf 门禁：`scripts/ci/check_perf_budget.ps1` 从 `headless.log` 中解析最近一次 `[PERF]` 标记的 `p95_ms`，与 `MaxP95Ms`（可在 CI 中设置）比较，作为可选性能门禁（见 Phase‑15）；
+  - 冒烟与功能基线：Phase‑12 的 headless smoke（`[TEMPLATE_SMOKE_READY]`）与 Phase‑20 的功能验收指导为性能优化提供“前提：功能先完整”的约束。
+
+- 未在模板阶段实现的部分：
+  - 与具体游戏玩法相关的性能瓶颈分析（复杂 AI、粒子系统、大地图加载等）；
+  - 资源层的纹理/音频压缩策略、GC 模式调整、对象池等优化措施；
+  - 跨版本的 Before/After 性能报告与长期趋势跟踪。
+
+> 这些工作更适合作为“项目级性能优化任务”在私有仓库中实施，本模板通过 Phase‑15/12/20 提供可观测的性能与功能基线。Phase‑21 Backlog 用于记录可在项目中启用的优化蓝图。
+
 ### 2.1 优化工作流
 
 ```

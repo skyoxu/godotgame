@@ -1,7 +1,7 @@
-extends "res://addons/gdUnit4/src/GdUnitTestSuite.gd"
+﻿extends "res://addons/gdUnit4/src/GdUnitTestSuite.gd"
 
 func _new_db(name: String) -> Node:
-    var db = null
+    var db: Node = null
     if ClassDB.class_exists("SqliteDataStore"):
         db = ClassDB.instantiate("SqliteDataStore")
     else:
@@ -26,7 +26,9 @@ func _read_audit() -> String:
     return FileAccess.get_file_as_string(p)
 
 func test_exec_and_query_failures_are_audited() -> void:
-    # 占位：GDScript 当前不支持 try/catch，本用例不触发异常以避免 Debugger Break。
-    # 审计覆盖请参考 test_db_open_denied_writes_audit_log（open fail 路径）。
+    # NOTE: GDScript currently has no try/catch; raising C# exceptions
+    # from Execute/Query would cause a Debugger Break in headless CI.
+    # The open-fail path already verifies audit logging in
+    # test_db_open_denied_writes_audit_log.
     push_warning("SKIP: exec/query audit covered by open-fail test; no try/catch in GDScript")
     assert_bool(true).is_true()
