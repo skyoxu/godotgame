@@ -1,46 +1,22 @@
-# Godot+C# 模板快速开始（AI 协作视角）
-
-> 目标读者：BMAD 游戏专家代理、task-master-ai、SuperClaude/Claude Code、Codex CLI，以及需要理解本模板“技术前提 + 命令入口”的人类开发者。
-
-本项目是 **Windows-only 的 Godot 4.5.1 + C# 游戏模板**，用于支撑 ARC42/C4 + ADR 的 AI 驱动开发工作流。这里只描述 Godot 变体相关的约束与入口，不再展开 Electron/vitegame 细节。
-
+﻿# Godot+C# 妯℃澘蹇€熷紑濮嬶紙AI 鍗忎綔瑙嗚锛?
+> 鐩爣璇昏€咃細BMAD 娓告垙涓撳浠ｇ悊銆乼ask-master-ai銆丼uperClaude/Claude Code銆丆odex CLI锛屼互鍙婇渶瑕佺悊瑙ｆ湰妯℃澘鈥滄妧鏈墠鎻?+ 鍛戒护鍏ュ彛鈥濈殑浜虹被寮€鍙戣€呫€?
+鏈」鐩槸 **Windows-only 鐨?Godot 4.5.1 + C# 娓告垙妯℃澘**锛岀敤浜庢敮鎾?ARC42/C4 + ADR 鐨?AI 椹卞姩寮€鍙戝伐浣滄祦銆傝繖閲屽彧鎻忚堪 Godot 鍙樹綋鐩稿叧鐨勭害鏉熶笌鍏ュ彛锛屼笉鍐嶅睍寮€ Electron/vitegame 缁嗚妭銆?
 ---
 
-## 1. 技术前提 SSoT（供 BMAD/PRD 使用）
-
-- 平台与运行环境
-  - 仅支持 Windows 桌面环境；CI 目标为 `windows-latest`。
-  - 引擎：Godot 4.5.1 .NET（mono）控制台版，环境变量/参数统一命名为 `GODOT_BIN`。
-  - .NET：8.x，用于 `Game.Core` 与 Godot C# 脚本编译与单元测试。
-
-- 架构分层（Godot 变体）
-  - `Game.Core`：纯 C# 域模型与服务，不引用 Godot API，可通过 xUnit 快速测试。
-  - `Game.Godot`：适配层与场景脚本，仅在这里使用 Godot API（Nodes/Signals/Autoload）。
-  - `Tests.Godot`：GdUnit4 场景集成测试项目（headless，禁用真实 UI 输入事件）。
-
-- 持久化与配置
-  - Settings 单一事实来源（SSoT）：`ConfigFile` → `user://settings.cfg`（ADR-0023）。
-  - 领域数据：SQLite，通过 `SqliteDataStore` 适配器访问，仅允许 `user://` 路径，禁止 `..` 穿越，失败写审计 JSONL（ADR-0006）。
-
-- 事件系统
-  - Core 事件：`DomainEvent` + `EventBus` + `EventBusAdapter`（C#），在 Godot 中以 `DomainEventEmitted` Signal 暴露。
-  - 命名规范：
-    - UI 菜单：`ui.menu.<action>`（如 `ui.menu.start`, `ui.menu.settings`, `ui.menu.quit`）。
-    - Screen 生命周期：`screen.<name>.<action>`（如 `screen.start.loaded`, `screen.settings.saved`）。
-    - 领域事件（推荐）：`core.<entity>.<action>`（如 `core.score.updated`, `core.health.updated`, `core.game.started`）。
-    - Demo 示例：`demo.*` 仅用于模板演示，不建议出现在真实业务事件中。
-  - 历史事件名：`game.started` / `score.changed` / `player.health.changed` 仅保留在部分测试与兼容路径中，新 Story/任务必须使用 `core.*.*` / `ui.menu.*` / `screen.*.*`。
-
-> 对 BMAD：生成 PRD 时，凡涉及事件/持久化/安全/测试的条目，应优先遵循上述约束，并在 CH05/CH06/CH07/Phase-9 文档中查找 Godot 变体说明，不要默认 Web/Electron 模式。
-
+## 1. 鎶€鏈墠鎻?SSoT锛堜緵 BMAD/PRD 浣跨敤锛?
+- 骞冲彴涓庤繍琛岀幆澧?  - 浠呮敮鎸?Windows 妗岄潰鐜锛汣I 鐩爣涓?`windows-latest`銆?  - 寮曟搸锛欸odot 4.5.1 .NET锛坢ono锛夋帶鍒跺彴鐗堬紝鐜鍙橀噺/鍙傛暟缁熶竴鍛藉悕涓?`GODOT_BIN`銆?  - .NET锛?.x锛岀敤浜?`Game.Core` 涓?Godot C# 鑴氭湰缂栬瘧涓庡崟鍏冩祴璇曘€?
+- 鏋舵瀯鍒嗗眰锛圙odot 鍙樹綋锛?  - `Game.Core`锛氱函 C# 鍩熸ā鍨嬩笌鏈嶅姟锛屼笉寮曠敤 Godot API锛屽彲閫氳繃 xUnit 蹇€熸祴璇曘€?  - `Game.Godot`锛氶€傞厤灞備笌鍦烘櫙鑴氭湰锛屼粎鍦ㄨ繖閲屼娇鐢?Godot API锛圢odes/Signals/Autoload锛夈€?  - `Tests.Godot`锛欸dUnit4 鍦烘櫙闆嗘垚娴嬭瘯椤圭洰锛坔eadless锛岀鐢ㄧ湡瀹?UI 杈撳叆浜嬩欢锛夈€?
+- 鎸佷箙鍖栦笌閰嶇疆
+  - Settings 鍗曚竴浜嬪疄鏉ユ簮锛圫SoT锛夛細`ConfigFile` 鈫?`user://settings.cfg`锛圓DR-0023锛夈€?  - 棰嗗煙鏁版嵁锛歋QLite锛岄€氳繃 `SqliteDataStore` 閫傞厤鍣ㄨ闂紝浠呭厑璁?`user://` 璺緞锛岀姝?`..` 绌胯秺锛屽け璐ュ啓瀹¤ JSONL锛圓DR-0006锛夈€?
+- 浜嬩欢绯荤粺
+  - Core 浜嬩欢锛歚DomainEvent` + `EventBus` + `EventBusAdapter`锛圕#锛夛紝鍦?Godot 涓互 `DomainEventEmitted` Signal 鏆撮湶銆?  - 鍛藉悕瑙勮寖锛?    - UI 鑿滃崟锛歚ui.menu.<action>`锛堝 `ui.menu.start`, `ui.menu.settings`, `ui.menu.quit`锛夈€?    - Screen 鐢熷懡鍛ㄦ湡锛歚screen.<name>.<action>`锛堝 `screen.start.loaded`, `screen.settings.saved`锛夈€?    - 棰嗗煙浜嬩欢锛堟帹鑽愶級锛歚core.<entity>.<action>`锛堝 `core.score.updated`, `core.health.updated`, `core.game.started`锛夈€?    - Demo 绀轰緥锛歚demo.*` 浠呯敤浜庢ā鏉挎紨绀猴紝涓嶅缓璁嚭鐜板湪鐪熷疄涓氬姟浜嬩欢涓€?  - 鍘嗗彶浜嬩欢鍚嶏細`game.started` / `score.changed` / `player.health.changed` 浠呬繚鐣欏湪閮ㄥ垎娴嬭瘯涓庡吋瀹硅矾寰勪腑锛屾柊 Story/浠诲姟蹇呴』浣跨敤 `core.*.*` / `ui.menu.*` / `screen.*.*`銆?
+> 瀵?BMAD锛氱敓鎴?PRD 鏃讹紝鍑℃秹鍙婁簨浠?鎸佷箙鍖?瀹夊叏/娴嬭瘯鐨勬潯鐩紝搴斾紭鍏堥伒寰笂杩扮害鏉燂紝骞跺湪 CH05/CH06/CH07/Phase-9 鏂囨。涓煡鎵?Godot 鍙樹綋璇存槑锛屼笉瑕侀粯璁?Web/Electron 妯″紡銆?
 ---
 
-## 2. 从 PRD 到 tasks.json 的约束（供 task-master-ai 使用）
+## 2. 浠?PRD 鍒?tasks.json 鐨勭害鏉燂紙渚?task-master-ai 浣跨敤锛?
+褰?task-master-ai 灏?PRD 杞崲涓?`tasks.json` 鏃讹紝寤鸿閬靛畧浠ヤ笅缁撴瀯涓庡洖閾捐鍒欙細
 
-当 task-master-ai 将 PRD 转换为 `tasks.json` 时，建议遵守以下结构与回链规则：
-
-- 任务元数据结构（建议模板）
-
+- 浠诲姟鍏冩暟鎹粨鏋勶紙寤鸿妯℃澘锛?
 ```jsonc
 {
   "id": "PH8-SCORE-001",
@@ -54,28 +30,17 @@
 }
 ```
 
-- layer 建议
-  - `core`：只改 `Game.Core/**` 与 `Game.Core.Tests/**`。
-  - `adapter`：只改 `Game.Godot/Adapters/**`（含 Db/Config/Security/EventBus 等）。
-  - `scene`：改 `Game.Godot/Scenes/**` 与 `Game.Godot/Scripts/**` 中的 UI/Glue/Navigation。
-  - `test`：改 `Game.Core.Tests/**` 或 `Tests.Godot/tests/**`。
-  - `doc`：改 `docs/adr/**`, `docs/architecture/base/**`, `docs/migration/**` 等。
-
-- 回链要求
-  - 每个任务必须至少引用 1 条 **已接受的 ADR**（如 ADR-0004/0005/0006/0023），确保技术决策来源唯一。
-  - 若任务修改安全/观察性/质量门禁口径，应在任务描述中指明需新增或 Supersede 的 ADR（并由人类/AI 另起 ADR 草案）。
-  - 若任务落在 Phase-8 之后（Scene/Glue/E2E 等），应引用相应 Phase 文档与 overlays 中的 08 章节。
-
-> 对 task-master-ai：生成 `tasks.json` 时，请将 Godot 特有任务类型（scene glue、GdUnit tests、ConfigFile/SQLite 适配）显式标记为对应 layer，并保持 ADR/Phase 回链，不要创造“无来源的技术决策”。
-
+- layer 寤鸿
+  - `core`锛氬彧鏀?`Game.Core/**` 涓?`Game.Core.Tests/**`銆?  - `adapter`锛氬彧鏀?`Game.Godot/Adapters/**`锛堝惈 Db/Config/Security/EventBus 绛夛級銆?  - `scene`锛氭敼 `Game.Godot/Scenes/**` 涓?`Game.Godot/Scripts/**` 涓殑 UI/Glue/Navigation銆?  - `test`锛氭敼 `Game.Core.Tests/**` 鎴?`Tests.Godot/tests/**`銆?  - `doc`锛氭敼 `docs/adr/**`, `docs/architecture/base/**`, `docs/migration/**` 绛夈€?
+- 鍥為摼瑕佹眰
+  - 姣忎釜浠诲姟蹇呴』鑷冲皯寮曠敤 1 鏉?**宸叉帴鍙楃殑 ADR**锛堝 ADR-0004/0005/0006/0023锛夛紝纭繚鎶€鏈喅绛栨潵婧愬敮涓€銆?  - 鑻ヤ换鍔′慨鏀瑰畨鍏?瑙傚療鎬?璐ㄩ噺闂ㄧ鍙ｅ緞锛屽簲鍦ㄤ换鍔℃弿杩颁腑鎸囨槑闇€鏂板鎴?Supersede 鐨?ADR锛堝苟鐢变汉绫?AI 鍙﹁捣 ADR 鑽夋锛夈€?  - 鑻ヤ换鍔¤惤鍦?Phase-8 涔嬪悗锛圫cene/Glue/E2E 绛夛級锛屽簲寮曠敤鐩稿簲 Phase 鏂囨。涓?overlays 涓殑 08 绔犺妭銆?
+> 瀵?task-master-ai锛氱敓鎴?`tasks.json` 鏃讹紝璇峰皢 Godot 鐗规湁浠诲姟绫诲瀷锛坰cene glue銆丟dUnit tests銆丆onfigFile/SQLite 閫傞厤锛夋樉寮忔爣璁颁负瀵瑰簲 layer锛屽苟淇濇寔 ADR/Phase 鍥為摼锛屼笉瑕佸垱閫犫€滄棤鏉ユ簮鐨勬妧鏈喅绛栤€濄€?
 ---
 
-## 3. 常用命令入口（供 AI 工具与人类共用）
+## 3. 甯哥敤鍛戒护鍏ュ彛锛堜緵 AI 宸ュ叿涓庝汉绫诲叡鐢級
 
-本模板优先通过 Python 脚本统一驱动 CI/测试/Smoke。推荐优先使用 `scripts/python/dev_cli.py` 暴露的子命令，而不是在上层工具重复拼接长命令行。
-
-### 3.1 dev_cli 子命令（推荐调用方式）
-
+鏈ā鏉夸紭鍏堥€氳繃 Python 鑴氭湰缁熶竴椹卞姩 CI/娴嬭瘯/Smoke銆傛帹鑽愪紭鍏堜娇鐢?`scripts/python/dev_cli.py` 鏆撮湶鐨勫瓙鍛戒护锛岃€屼笉鏄湪涓婂眰宸ュ叿閲嶅鎷兼帴闀垮懡浠よ銆?
+### 3.1 dev_cli 瀛愬懡浠わ紙鎺ㄨ崘璋冪敤鏂瑰紡锛?
 ```bash
 py -3 scripts/python/dev_cli.py run-ci-basic \
   --godot-bin "C:\Godot\Godot_v4.5.1-stable_mono_win64_console.exe"
@@ -96,68 +61,39 @@ py -3 scripts/python/dev_cli.py run-smoke-strict \
 ```
 
 - `run-ci-basic`
-  - 调用 `ci_pipeline.py all`，执行：dotnet 测试 + 自检（CompositionRoot）+ 编码扫描。
-  - 用于基础健康检查，不包含 GdUnit 与 Smoke。
-
+  - 璋冪敤 `ci_pipeline.py all`锛屾墽琛岋細dotnet 娴嬭瘯 + 鑷锛圕ompositionRoot锛? 缂栫爜鎵弿銆?  - 鐢ㄤ簬鍩虹鍋ュ悍妫€鏌ワ紝涓嶅寘鍚?GdUnit 涓?Smoke銆?
 - `run-quality-gates`
-  - 调用 `quality_gates.py all`，可选 `--gdunit-hard` 与 `--smoke`：
-    - `--gdunit-hard`：运行 Adapters/Config + Security GdUnit 小集（硬门禁）。
-    - `--smoke`：运行严格 headless Smoke（需要检测到 `[TEMPLATE_SMOKE_READY]` 或 `[DB] opened`）。
-
+  - 璋冪敤 `quality_gates.py all`锛屽彲閫?`--gdunit-hard` 涓?`--smoke`锛?    - `--gdunit-hard`锛氳繍琛?Adapters/Config + Security GdUnit 灏忛泦锛堢‖闂ㄧ锛夈€?    - `--smoke`锛氳繍琛屼弗鏍?headless Smoke锛堥渶瑕佹娴嬪埌 `[TEMPLATE_SMOKE_READY]` 鎴?`[DB] opened`锛夈€?
 - `run-gdunit-hard`
-  - 直接调用 `run_gdunit.py`，只跑 `tests/Adapters/Config` 与 `tests/Security` 集合，报告输出到 `logs/e2e/dev-cli/gdunit-hard`。
-
+  - 鐩存帴璋冪敤 `run_gdunit.py`锛屽彧璺?`tests/Adapters/Config` 涓?`tests/Security` 闆嗗悎锛屾姤鍛婅緭鍑哄埌 `logs/e2e/dev-cli/gdunit-hard`銆?
 - `run-gdunit-full`
-  - 直接调用 `run_gdunit.py`，跑 Adapters + Security + Integration + UI 集合，报告输出到 `logs/e2e/dev-cli/gdunit-full`。
-
+  - 鐩存帴璋冪敤 `run_gdunit.py`锛岃窇 Adapters + Security + Integration + UI 闆嗗悎锛屾姤鍛婅緭鍑哄埌 `logs/e2e/dev-cli/gdunit-full`銆?
 - `run-smoke-strict`
-  - 调用 `smoke_headless.py`，以严格模式跑 Main 场景 Smoke，作为快速可玩性冒烟入口。
-
-> 对 SuperClaude/Claude Code/Codex CLI：上层 MCP 工具可统一个接 dev_cli 的子命令，不需要重复维护脚本参数细节。
-
+  - 璋冪敤 `smoke_headless.py`锛屼互涓ユ牸妯″紡璺?Main 鍦烘櫙 Smoke锛屼綔涓哄揩閫熷彲鐜╂€у啋鐑熷叆鍙ｃ€?
+> 瀵?SuperClaude/Claude Code/Codex CLI锛氫笂灞?MCP 宸ュ叿鍙粺涓€涓帴 dev_cli 鐨勫瓙鍛戒护锛屼笉闇€瑕侀噸澶嶇淮鎶よ剼鏈弬鏁扮粏鑺傘€?
 ---
 
-## 4. 最小“AI 驱动工作流”示例
+## 4. 鏈€灏忊€淎I 椹卞姩宸ヤ綔娴佲€濈ず渚?
+### 4.1 BMAD 鈫?PRD锛堥珮灞傦級
 
-### 4.1 BMAD → PRD（高层）
+1. BMAD 娓告垙涓撳浠ｇ悊璇诲彇锛?   - `CLAUDE.md`, `AGENTS.md`锛堝崗浣滆鍒欙級锛?   - `docs/architecture/base/**`锛圕H01鈥揅H07锛夛紱
+   - `docs/adr/**`锛堢壒鍒槸 ADR鈥?004/0005/0006/0023锛夛紱
+   - 鏈枃浠讹紙Godot 鎶€鏈墠鎻愶級銆?2. 鐢熸垚 PRD 鏃讹細
+   - 灏嗚緭鍏?鐘舵€佹洿鏂?瀛樺偍/SLO 璁捐鎴愰€傞厤 Godot+C#锛歋cene+Signal+ConfigFile+SQLite锛岃€岄潪娴忚鍣?UI/HTTP API 涓轰腑蹇冦€?
+### 4.2 task-master-ai 鈫?tasks.json
 
-1. BMAD 游戏专家代理读取：
-   - `CLAUDE.md`, `AGENTS.md`（协作规则）；
-   - `docs/architecture/base/**`（CH01–CH07）；
-   - `docs/adr/**`（特别是 ADR‑0004/0005/0006/0023）；
-   - 本文件（Godot 技术前提）。
-2. 生成 PRD 时：
-   - 将输入/状态更新/存储/SLO 设计成适配 Godot+C#：Scene+Signal+ConfigFile+SQLite，而非浏览器 UI/HTTP API 为中心。
+1. 璇诲彇 PRD + ADR/Phase 鏂囨。锛屾寜鏈枃浠剁 2 鑺傜殑缁撴瀯鐢熸垚 `tasks.json`锛?   - 姣忎釜浠诲姟鎸囧畾 `layer`銆乣adr_refs`銆乣chapter_refs`銆乣overlay_refs`锛?   - 鏄庣‘鍝簺浠诲姟鏄?Core銆佸摢浜涙槸 Adapter/Scene銆佸摢浜涙槸 Tests/Docs銆?2. 灏?`tasks.json` 鏀惧叆鏈粨搴擄紙渚嬪 `docs/tasks/tasks.json`锛夛紝渚?SuperClaude/Claude Code 娑堣垂銆?
+### 4.3 SuperClaude/Claude Code + Codex CLI 鎵ц浠诲姟
 
-### 4.2 task-master-ai → tasks.json
-
-1. 读取 PRD + ADR/Phase 文档，按本文件第 2 节的结构生成 `tasks.json`：
-   - 每个任务指定 `layer`、`adr_refs`、`chapter_refs`、`overlay_refs`；
-   - 明确哪些任务是 Core、哪些是 Adapter/Scene、哪些是 Tests/Docs。
-2. 将 `tasks.json` 放入本仓库（例如 `docs/tasks/tasks.json`），供 SuperClaude/Claude Code 消费。
-
-### 4.3 SuperClaude/Claude Code + Codex CLI 执行任务
-
-- SuperClaude/Claude Code：
-  - 逐条读取 `tasks.json`，根据 layer/refs 决定修改 `Game.Core`、`Game.Godot`、`Tests.Godot` 或文档；
-  - 使用本模板已有的脚本和工作流（通过 dev_cli）进行单元测试和 GdUnit 场景测试；
-  - 最终通过官方 subagents/skills 工具进行 code review 与测试结果汇总。
-
-- Codex CLI（当前助手）：
-  - 作为辅助代理，优先遵循 `AGENTS.md` 与本文件约束；
-  - 在需要验证代码/测试/CI 时优先调用：
+- SuperClaude/Claude Code锛?  - 閫愭潯璇诲彇 `tasks.json`锛屾牴鎹?layer/refs 鍐冲畾淇敼 `Game.Core`銆乣Game.Godot`銆乣Tests.Godot` 鎴栨枃妗ｏ紱
+  - 浣跨敤鏈ā鏉垮凡鏈夌殑鑴氭湰鍜屽伐浣滄祦锛堥€氳繃 dev_cli锛夎繘琛屽崟鍏冩祴璇曞拰 GdUnit 鍦烘櫙娴嬭瘯锛?  - 鏈€缁堥€氳繃瀹樻柟 subagents/skills 宸ュ叿杩涜 code review 涓庢祴璇曠粨鏋滄眹鎬汇€?
+- Codex CLI锛堝綋鍓嶅姪鎵嬶級锛?  - 浣滀负杈呭姪浠ｇ悊锛屼紭鍏堥伒寰?`AGENTS.md` 涓庢湰鏂囦欢绾︽潫锛?  - 鍦ㄩ渶瑕侀獙璇佷唬鐮?娴嬭瘯/CI 鏃朵紭鍏堣皟鐢細
     - `py -3 scripts/python/dev_cli.py run-ci-basic ...`
-    - `py -3 scripts/python/dev_cli.py run-quality-gates ...`。
-
+    - `py -3 scripts/python/dev_cli.py run-quality-gates ...`銆?
 ---
 
-## 5. 后续扩展建议（仅模板视角）
-
-- 当某个项目准备上线时：
-  - 优先从 Phase‑16/ADR‑0003 Backlog 中选择 Sentry Release Health 接入方案；
-  - 结合 Phase‑15/Phase‑21 Backlog，收紧 Perf P95 门禁（按场景/用例维度细化）。
-
-- 对模板本身，不建议继续在 Phase 文档细节上无限扩展，而是优先：
-  - 保持本文件与 `PROJECT_CAPABILITIES_STATUS.md` 一致；
-  - 保证 dev_cli 与现有脚本的行为稳定，为多代理协作提供清晰的“命令 SSoT”。
+## 5. 鍚庣画鎵╁睍寤鸿锛堜粎妯℃澘瑙嗚锛?
+- 褰撴煇涓」鐩噯澶囦笂绾挎椂锛?  - 浼樺厛浠?Phase鈥?6/ADR鈥?003 Backlog 涓€夋嫨 Sentry Release Health 鎺ュ叆鏂规锛?  - 缁撳悎 Phase鈥?5/Phase鈥?1 Backlog锛屾敹绱?Perf P95 闂ㄧ锛堟寜鍦烘櫙/鐢ㄤ緥缁村害缁嗗寲锛夈€?
+- 瀵规ā鏉挎湰韬紝涓嶅缓璁户缁湪 Phase 鏂囨。缁嗚妭涓婃棤闄愭墿灞曪紝鑰屾槸浼樺厛锛?  - 淇濇寔鏈枃浠朵笌 `PROJECT_CAPABILITIES_STATUS.md` 涓€鑷达紱
+  - 淇濊瘉 dev_cli 涓庣幇鏈夎剼鏈殑琛屼负绋冲畾锛屼负澶氫唬鐞嗗崗浣滄彁渚涙竻鏅扮殑鈥滃懡浠?SSoT鈥濄€?
 

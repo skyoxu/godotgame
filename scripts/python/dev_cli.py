@@ -79,7 +79,7 @@ def cmd_run_gdunit_hard(args: argparse.Namespace) -> int:
         "--add",
         "tests/Adapters/Config",
         "--add",
-        "tests/Security",
+        "tests/Security/Hard",
         "--timeout-sec",
         "300",
         "--rd",
@@ -102,7 +102,7 @@ def cmd_run_gdunit_full(args: argparse.Namespace) -> int:
         "--add",
         "tests/Adapters",
         "--add",
-        "tests/Security",
+        "tests/Security/Hard",
         "--add",
         "tests/Integration",
         "--add",
@@ -187,4 +187,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

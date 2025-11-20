@@ -147,7 +147,7 @@ jobs:
         run: |
           py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot `
             --add tests/Adapters/Config `
-            --add tests/Security `
+            --add tests/Security/Hard `
             --timeout-sec 300 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/adapters-security"
 
       - name: GdUnit4 integration tests (Python, soft gate)

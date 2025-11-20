@@ -67,7 +67,7 @@ def run_gdunit_hard(godot_bin: str) -> int:
         "--add",
         "tests/Adapters/Config",
         "--add",
-        "tests/Security",
+        "tests/Security/Hard",
         "--timeout-sec",
         "300",
         "--rd",
