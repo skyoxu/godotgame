@@ -250,6 +250,8 @@ tests/                          # GdUnit4 测试目录
 │   └── SceneTransitionTests.gd
 └── E2E/                        # 端到端冒烟测试
     └── GameFlowSmokeTests.gd
+
+在本模板中，场景层烟囱用例约定放在 `tests/Scenes/Smoke` 子目录中，质量门禁或更重的场景回归测试可以放在 `Scenes` 的其他子目录，并由质量工作流单独调度。
 ```
 
 ### 示例测试
