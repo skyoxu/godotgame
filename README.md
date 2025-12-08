@@ -4,6 +4,25 @@
 
 即开即用，可复制的 Godot 4 + .NET（Windows-only）项目模板。
 
+## About This Template
+
+Production-ready Godot 4.5 + C# game template with enterprise-grade tooling.
+
+### Why This Template
+- **Migrated from**: vitegame (Electron + Phaser) → Godot 4.5 + C# .NET 8
+- **Purpose**: Eliminate setup overhead with pre-configured best practices
+- **For**: Windows desktop games (simulation, management, strategy)
+
+### Key Features
+- **AI-Friendly**: Optimized for BMAD, SuperClaude, Claude Code workflows
+- **Quality Gates**: Coverage (≥90%), Performance (P95≤20ms), Security baseline
+- **Testable Architecture**: Ports & Adapters + 80% xUnit + 15% GdUnit4
+- **Complete Stack**: Godot 4.5, C# .NET 8, xUnit, GdUnit4, godot-sqlite, Sentry
+
+📖 **Full technical details**: See `CLAUDE.md`
+
+---
+
 ## 3‑Minute From Zero to Export（3 分钟从 0 到导出）
 
 1) 安装 Godot .NET（mono）并设置环境：
