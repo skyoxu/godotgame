@@ -29,15 +29,17 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 
 ## Quick Links
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
+- Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
 - Windows-only 快速指引：`docs/migration/Phase-17-Windows-Only-Quickstart.md`
 - FeatureFlags 快速指引：`docs/migration/Phase-18-Staged-Release-and-Canary-Strategy.md`
 - 导出清单：`docs/migration/Phase-17-Export-Checklist.md`
 - Headless 冒烟：`docs/migration/Phase-12-Headless-Smoke-Tests.md`
- - Actions 快速链路验证（Dry Run）：`.github/workflows/windows-smoke-dry-run.yml`
+- Actions 快速链路验证（Dry Run）：`.github/workflows/windows-smoke-dry-run.yml`
 - 场景设计：`docs/migration/Phase-8-Scene-Design.md`
 - 测试体系：`docs/migration/Phase-10-Unit-Tests.md`
 - 安全基线：`docs/migration/Phase-14-Godot-Security-Baseline.md`
- - 手动发布指引：`docs/release/WINDOWS_MANUAL_RELEASE.md`
+- 手动发布指引：`docs/release/WINDOWS_MANUAL_RELEASE.md`
+- Release/Sentry 软门禁与工作流说明：`docs/workflows/GM-NG-T2-playable-guide.md`
 
 ## Notes
 - DB 后端：默认插件优先；`GODOT_DB_BACKEND=plugin|managed` 可控。
@@ -65,4 +67,3 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
   - `application/file_description`（文件描述），`application/*_version`（版本）
   - 图标：`application/icon`（推荐 ICO：`res://icon.ico`；当前为 `res://icon.svg`）
 - 修改后，运行 `Windows Export Slim` 或 `Windows Release (Manual)` 验证导出产物。
-
