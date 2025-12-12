@@ -19,7 +19,7 @@ Production-ready Godot 4.5 + C# game template with enterprise-grade tooling.
 - **Testable Architecture**: Ports & Adapters + 80% xUnit + 15% GdUnit4
 - **Complete Stack**: Godot 4.5, C# .NET 8, xUnit, GdUnit4, godot-sqlite, Sentry
 
-📖 **Full technical details**: See `CLAUDE.md`
+**Full technical details**: See `CLAUDE.md`
 
 ---
 
@@ -59,6 +59,12 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - 安全基线：`docs/migration/Phase-14-Godot-Security-Baseline.md`
 - 手动发布指引：`docs/release/WINDOWS_MANUAL_RELEASE.md`
 - Release/Sentry 软门禁与工作流说明：`docs/workflows/GM-NG-T2-playable-guide.md`
+
+## Task / ADR / PRD 工具
+- `scripts/python/task_links_validate.py` —— 检查 NG/GM 任务与 ADR / 章节 / Overlay 的回链完整性（CI 已在用，作为门禁）。
+- `scripts/python/verify_task_mapping.py` —— 抽样检查 NG/GM → tasks.json 的元数据完整度（owner / layer / adr_refs / chapter_refs 等）。
+- `scripts/python/validate_task_master_triplet.py` —— 全面校验三份任务文件之间的结构一致性（link + layer + depends_on + 映射），适合作为本地或后续 CI 的结构总检。
+- `scripts/python/prd_coverage_report.py` —— 生成 PRD → 任务的覆盖报表（软检查，不参与门禁，用于观察覆盖程度）。
 
 ## Notes
 - DB 后端：默认插件优先；`GODOT_DB_BACKEND=plugin|managed` 可控。

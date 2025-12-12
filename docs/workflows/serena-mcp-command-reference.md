@@ -70,10 +70,10 @@ find_symbol "Guild" --substring_matching=true --depth=1
 
 ```bash
 # 精确查找 GuildCreated 事件的定义
-find_symbol "GuildCreated" --relative_path "Scripts/Core/Contracts/Guild/" --include_body=true
+find_symbol "GuildCreated" --relative_path "Game.Core/Contracts/Guild/" --include_body=true
 
 # 返回示例：
-# namespace Game.Contracts.Guild;
+# namespace Game.Core.Contracts.Guild;
 # public sealed record GuildCreated(string GuildId, ...)
 # {
 #     public const string EventType = "core.guild.created";
@@ -257,7 +257,7 @@ search_for_pattern "// TODO:.*" --context_lines_after=2
 
 ```bash
 # 查找所有 EventType 常量定义
-search_for_pattern "public const string EventType = \".*\"" --paths_include_glob "Scripts/Core/Contracts/**/*.cs"
+search_for_pattern "public const string EventType = \".*\"" --paths_include_glob "Game.Core/Contracts/**/*.cs"
 
 # 返回所有事件契约的 EventType 定义
 ```
@@ -509,7 +509,7 @@ read_file "<relative_path>" [--start_line=N] [--end_line=M]
 ##### 场景 1：查看完整文件
 
 ```bash
-read_file "Scripts/Core/Contracts/Guild/GuildCreated.cs"
+read_file "Game.Core/Contracts/Guild/GuildCreated.cs"
 ```
 
 ##### 场景 2：只读文件片段
@@ -654,7 +654,7 @@ read_memory "task-1.1-findings"
 find_symbol "Guild" --substring_matching=true --depth=1
 
 # 步骤 2：精确定位 - 查看契约
-find_symbol "GuildCreated" --relative_path "Scripts/Core/Contracts/Guild/" --include_body=true
+find_symbol "GuildCreated" --relative_path "Game.Core/Contracts/Guild/" --include_body=true
 
 # 步骤 3：依赖分析 - 理解使用模式
 find_referencing_symbols "IGuildRepository" --relative_path "Scripts/Core/Interfaces/IGuildRepository.cs"
