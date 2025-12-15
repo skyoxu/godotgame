@@ -32,6 +32,9 @@ LPT9
 
 # Build and test artifacts
 build/
+# Keep SuperClaude-compatible scripts (source code) under scripts/sc/build
+!scripts/sc/build/
+!scripts/sc/build/**
 reports/
 logs/
 gitlog/
@@ -55,6 +58,10 @@ tmp_patch.txt
 .idea/
 .vscode/
 
+# Python caches
+__pycache__/
+*.pyc
+
 # Windows/macOS system files
 Thumbs.db
 .DS_Store
@@ -62,6 +69,7 @@ Thumbs.db
 # Common local user files
 *.user
 *.suo
+.claude/settings.local.json.bak
 
 # Debug symbols/build outputs not meant for VCS
 *.pdb
