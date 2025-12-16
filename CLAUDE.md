@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Starting a fresh session? Read these in order:**
 
-1. **This file** (`CLAUDE.md`) - You're already here ✓
+1. **This file** (`CLAUDE.md`) - You're already here [OK]
 2. **Project indexes** - Context entry points:
    - `architecture_base.index` - Architecture docs (CH01-CH12 + ADRs)
    - `prd_chunks.index` - PRD fragments index
@@ -99,7 +99,7 @@ docs/
   architecture/
     base/                 # SSoT：跨切面与系统骨干（01–07、09、10）
       01-introduction-and-goals-v2.md
-      02-security-baseline-electron-v2.md
+      02-security-baseline-godot-v2.md
       03-observability-sentry-logging-v2.md
       04-system-context-c4-event-flows-v2.md
       05-data-models-and-storage-ports-v2.md

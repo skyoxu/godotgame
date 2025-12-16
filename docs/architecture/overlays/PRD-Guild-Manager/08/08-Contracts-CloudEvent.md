@@ -1,6 +1,7 @@
 ---
 PRD-ID: PRD-Guild-Manager
 Title: CloudEvent 契约更新（事件封装与字段）
+Arch-Refs: [CH01, CH03]
 ADR-Refs:
   - ADR-0004
   - ADR-0005

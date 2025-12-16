@@ -10,6 +10,7 @@
 
 - .NET 8 SDK
 - Python 3（通过 Windows `py -3` 启动）
+- 提示：请优先使用 `py -3`，避免 `python.exe` 指向 Microsoft Store alias 导致脚本无法运行
 - Godot 4.5.1 .NET（建议使用 console 版本，便于收集输出）
 
 ### 环境变量（一次性）

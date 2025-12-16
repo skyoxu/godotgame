@@ -218,7 +218,7 @@ Base 文档使用 `${DOMAIN_PREFIX}` 占位符：
 ### A.1 ADR 文件
 ```
 docs/adr/ADR-0004-event-bus-and-contracts.md
-docs/adr/ADR-0018-godot-csharp-tech-stack.md
+docs/adr/ADR-0018-godot-runtime-and-distribution.md
 docs/adr/ADR-0005-quality-gates.md
 docs/adr/ADR-0023-settings-ssot-configfile.md
 docs/adr/ADR-0011-windows-only-platform-and-ci.md

@@ -1,6 +1,7 @@
 ---
 PRD-ID: PRD-Guild-Manager
 Title: 预加载白名单（Preload Whitelist）契约调整
+Arch-Refs: [CH01, CH03]
 ADR-Refs:
   - ADR-0004
   - ADR-0005
@@ -8,7 +9,7 @@ Test-Refs:
   - tests/unit/contracts/contracts-preload-whitelist.spec.ts
   - tests/e2e/contracts/contracts-docs-sync.spec.ts
 Contracts-Refs:
-  - src/shared/contracts/electron/preload-whitelist.ts
+  - src/shared/contracts/LegacyDesktopShell/preload-whitelist.ts
 Status: Proposed
 ---
 
@@ -21,8 +22,8 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/electron/preload-whitelist.ts`
-- 受影响模块：Electron 预加载桥、渲染进程 API 访问路径
+- 合同文件：`src/shared/contracts/LegacyDesktopShell/preload-whitelist.ts`
+- 受影响模块：LegacyDesktopShell 预加载桥、渲染进程 API 访问路径
 
 验收要点（就地）
 
@@ -31,4 +32,4 @@ Status: Proposed
 
 回归与风控
 
-- 仅通过 contextBridge 白名单暴露 API；禁止放宽 Electron 安全基线（详见 ADR‑0002）
+- 仅通过 contextBridge 白名单暴露 API；禁止放宽 LegacyDesktopShell 安全基线（详见 ADR‑0002）

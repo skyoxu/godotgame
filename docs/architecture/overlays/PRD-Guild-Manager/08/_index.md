@@ -1,6 +1,7 @@
 ---
 PRD-ID: PRD-Guild-Manager
 Title: 08 章功能纵切索引（契约与测试对齐）
+Arch-Refs: [CH01, CH03]
 Updated: true
 ---
 

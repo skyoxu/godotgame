@@ -1,6 +1,7 @@
 ---
 PRD-ID: PRD-Guild-Manager
 Title: 质量指标（Quality Metrics）契约更新
+Arch-Refs: [CH01, CH03]
 ADR-Refs:
   - ADR-0004
   - ADR-0005

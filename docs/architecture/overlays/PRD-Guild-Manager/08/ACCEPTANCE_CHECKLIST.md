@@ -5,20 +5,20 @@
 - **PRD ID**: PRD-Guild-Manager
 - **架构文档**: 08-功能纵切-公会管理器.md
 - **创建日期**: 2024-08-26
-- **验收标准**: Arc42 架构文档规范 + CloudEvents v1.0 + Electron 安全基线
+- **验收标准**: Arc42 架构文档规范 + CloudEvents v1.0 + LegacyDesktopShell 安全基线
 
 ---
 
-## 📋 文档完整性验收
+## [CHECKLIST] 文档完整性验收
 
-### ✅ 核心文档
+### [OK] 核心文档
 
 - [x] **功能纵切文档**: `docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md`
   - 文件大小: 8,000+ 行
   - 包含完整的 YAML Front-Matter
   - 覆盖 UI 层 → 事件系统 → 域模型 → 持久化层
 
-### ✅ Front-Matter 合规性
+### [OK] Front-Matter 合规性
 
 ```yaml
 PRD-ID: PRD-Guild-Manager
@@ -30,17 +30,17 @@ Test-Refs:
   - tests/e2e/guild-manager/performance.e2e.spec.ts
   - tests/e2e/guild-manager/security.e2e.spec.ts
 Monitors:
-  - guild.ui.interaction.p95
-  - guild.events.processing.p95
-  - guild.database.query.p95
-SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
+  - guild.ui.interaction.latency
+  - guild.events.processing.latency
+  - guild.database.query.latency
+SLO-Refs: [UI-INT-LATENCY, EVT-PROC-LATENCY, DB-QUERY-LATENCY]
 ```
 
 ---
 
-## 🏗️ 架构设计验收
+## [ARCH] 架构设计验收
 
-### ✅ CloudEvents v1.0 集成
+### [OK] CloudEvents v1.0 集成
 
 - [x] **事件规范**: 完整遵循 CloudEvents v1.0 规范
 - [x] **必需字段**: `specversion`, `id`, `source`, `type`, `time`
@@ -48,7 +48,7 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 - [x] **事件验证器**: `GuildEventValidator` 类实现
 - [x] **事件类型枚举**: 53 个预定义事件类型
 
-### ✅ Electron 安全基线
+### [OK] LegacyDesktopShell 安全基线
 
 - [x] **nodeIntegration**: false
 - [x] **contextIsolation**: true
@@ -56,18 +56,18 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 - [x] **CSP**: 严格内容安全策略
 - [x] **contextBridge**: 白名单 API 暴露机制
 
-### ✅ 架构层次设计
+### [OK] 架构层次设计
 
-- [x] **UI 层**: React 19 组件层次结构
+- [x] **UI 层**: LegacyUIFramework 19 组件层次结构
 - [x] **事件层**: CloudEvents 驱动的事件总线
 - [x] **业务层**: 六大核心模块设计
 - [x] **持久化层**: SQLite WAL 模式 + Repository 模式
 
 ---
 
-## 💻 代码实现验收
+## [DEV] 代码实现验收
 
-### ✅ TypeScript 契约文件
+### [OK] TypeScript 契约文件
 
 #### 1. CloudEvents 基础框架
 
@@ -95,9 +95,9 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 
 ---
 
-## 🧪 测试框架验收
+## [TEST] 测试框架验收
 
-### ✅ Vitest 单元测试
+### [OK] LegacyUnitTestRunner 单元测试
 
 - [x] **文件**: `tests/unit/guild-manager/guild-core.spec.ts`
 - [x] **大小**: 489 行
@@ -111,12 +111,12 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
   - [x] 错误处理测试
   - [x] 契约合规性测试
 
-### ✅ Playwright E2E 测试
+### [OK] LegacyE2ERunner E2E 测试
 
 #### 1. 主要功能测试
 
 - [x] **文件**: `tests/e2e/guild-manager/guild-manager.e2e.spec.ts`
-- [x] **使用**: `_electron.launch()` 启动 Electron 应用
+- [x] **使用**: `_LegacyDesktopShell.launch()` 启动 LegacyDesktopShell 应用
 - [x] **测试覆盖**:
   - [x] 界面加载和导航
   - [x] 成员招募流程
@@ -128,8 +128,8 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 
 - [x] **文件**: `tests/e2e/guild-manager/performance.e2e.spec.ts`
 - [x] **SLO 验证**:
-  - [x] UI 交互 P95 ≤ 100ms
-  - [x] 事件处理 P95 ≤ 50ms
+  - [x] UI 交互延迟指标按 ADR-0015 验证（此处不复制阈值）
+  - [x] 事件处理延迟指标按 ADR-0015 验证（此处不复制阈值）
   - [x] 大数据渲染 ≤ 500ms
   - [x] 内存使用 ≤ 50MB 增长
   - [x] 并发操作 ≤ 200ms
@@ -149,17 +149,17 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 
 ---
 
-## 📊 性能 & 监控验收
+## [REPORT] 性能 & 监控验收
 
-### ✅ SLI 预算定义
+### [OK] SLI 预算定义
 
-- [x] **UI 交互延迟**: P95 ≤ 100ms
-- [x] **事件处理延迟**: P95 ≤ 50ms
-- [x] **数据库查询**: P95 ≤ 30ms
+- [x] **UI 交互延迟**: 对齐 ADR-0015（此处不复制阈值）
+- [x] **事件处理延迟**: 对齐 ADR-0015（此处不复制阈值）
+- [x] **数据库查询**: 对齐 ADR-0015（此处不复制阈值）
 - [x] **SQLite 检查点**: 每 1000 事务或 10MB WAL
 - [x] **SQLite 备份**: 每日增量备份
 
-### ✅ 监控指标设计
+### [OK] 监控指标设计
 
 - [x] **响应时间监控**: Sentry Performance + 自定义指标
 - [x] **错误率监控**: Sentry Error Tracking
@@ -168,46 +168,46 @@ SLO-Refs: [UI-INT-100ms, EVT-PROC-50ms, DB-QUERY-30ms]
 
 ---
 
-## 🔗 集成验收
+## [LINK] 集成验收
 
-### ✅ ADR 关联验收
+### [OK] ADR 关联验收
 
-- [x] **ADR-0001**: 技术栈选型（Electron + React + Vite + TypeScript）
-- [x] **ADR-0002**: Electron 安全基线配置
+- [x] **ADR-0001**: 技术栈选型（LegacyDesktopShell + LegacyUIFramework + LegacyBuildTool + TypeScript）
+- [x] **ADR-0002**: LegacyDesktopShell 安全基线配置
 - [x] **ADR-0003**: Sentry 可观测性集成
 - [x] **ADR-0004**: 事件总线和契约设计
 - [x] **ADR-0005**: 质量门禁和测试策略
 
-### ✅ 基础架构引用
+### [OK] 基础架构引用
 
 - [x] **CH01**: 约束与目标 - NFR/SLO 定义
 - [x] **CH03**: 可观测性 - Sentry/日志配置
 
 ---
 
-## 🚀 部署就绪验收
+## [RELEASE] 部署就绪验收
 
-### ✅ 构建配置
+### [OK] 构建配置
 
 - [x] **TypeScript**: 严格模式配置
 - [x] **ESLint**: 代码规范检查
-- [x] **Vitest**: 单元测试配置
-- [x] **Playwright**: E2E 测试配置
-- [x] **Electron**: 主进程/渲染进程分离
+- [x] **LegacyUnitTestRunner**: 单元测试配置
+- [x] **LegacyE2ERunner**: E2E 测试配置
+- [x] **LegacyDesktopShell**: 主进程/渲染进程分离
 
-### ✅ 质量门禁
+### [OK] 质量门禁
 
 - [x] **静态检查**: TypeScript 类型检查
 - [x] **代码规范**: ESLint 规则验证
-- [x] **单元测试**: Vitest 覆盖率 ≥ 90%
-- [x] **E2E 测试**: Playwright 关键路径验证
-- [x] **安全扫描**: Electron 安全配置检查
+- [x] **单元测试**: LegacyUnitTestRunner 覆盖率 ≥ 90%
+- [x] **E2E 测试**: LegacyE2ERunner 关键路径验证
+- [x] **安全扫描**: LegacyDesktopShell 安全配置检查
 
 ---
 
-## ✅ 最终验收状态
+## [OK] 最终验收状态
 
-### 📁 交付物清单
+### [DIR] 交付物清单
 
 ```
 docs/architecture/overlays/PRD-Guild-Manager/08/
@@ -231,16 +231,16 @@ tests/
     └── security.e2e.spec.ts        # 安全基线测试
 ```
 
-### 🎯 关键成果验证
+### [GOAL] 关键成果验证
 
 - [x] **架构完整性**: 完整的 UI → 事件 → 域 → 持久化层设计
-- [x] **规范合规性**: CloudEvents v1.0 + Electron 安全基线
+- [x] **规范合规性**: CloudEvents v1.0 + LegacyDesktopShell 安全基线
 - [x] **代码可执行性**: 所有契约和接口均有 TypeScript 实现
 - [x] **测试覆盖性**: 单元测试 + E2E 测试 + 性能测试 + 安全测试
 - [x] **性能保证**: SLO 定义明确且可验证
 - [x] **监控就绪**: Sentry 集成和自定义指标
 
-### 📈 质量指标
+### [TREND] 质量指标
 
 - **代码行数**: 12,000+ 行（文档 + 代码 + 测试）
 - **测试用例**: 150+ 个测试用例
@@ -251,18 +251,18 @@ tests/
 
 ---
 
-## ✅ 最终签署
+## [OK] 最终签署
 
 **项目**: PRD-Guild-Manager 功能纵切实现  
 **验收人**: Architecture & Development Team  
 **验收日期**: 2024-08-26  
-**验收结果**: ✅ **PASSED** - 所有验收条件已满足
+**验收结果**: [OK] **PASSED** - 所有验收条件已满足
 
-**备注**: 本次交付完全符合 Arc42 架构文档规范，实现了完整的 CloudEvents v1.0 集成，遵循了 Electron 安全基线，并提供了全面的测试覆盖和性能验证。代码契约和接口设计为后续开发提供了坚实的基础。
+**备注**: 本次交付完全符合 Arc42 架构文档规范，实现了完整的 CloudEvents v1.0 集成，遵循了 LegacyDesktopShell 安全基线，并提供了全面的测试覆盖和性能验证。代码契约和接口设计为后续开发提供了坚实的基础。
 
 ---
 
-## 📞 后续支持
+## [CONTACT] 后续支持
 
 如需进一步的架构指导或实现支持，请参考：
 
