@@ -66,6 +66,7 @@
 目录：`docs/workflows/`
 
 - `docs/workflows/GM-NG-T2-playable-guide.md`：可玩度/Release 工作流与 Sentry 软门禁说明
+- `docs/workflows/doc-stack-convergence-guide.md`：文档口径全量收敛（Base/Migration 扫描、取证与验证）
 - `docs/workflows/serena-mcp-command-reference.md`：Serena / Codex CLI 常用命令
 - `docs/workflows/superclaude-command-reference.md`：SuperClaude 工作流说明
 - `docs/workflows/task-master-superclaude-integration.md`：Taskmaster + SuperClaude 集成（如仅做 Godot 桌面模板，可先跳过 Web/旧桌面壳 相关段落）
