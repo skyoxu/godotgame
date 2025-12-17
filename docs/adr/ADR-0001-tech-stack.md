@@ -137,7 +137,7 @@ superseded-by: [ADR-0018]
 ## References
 
 - **CH章节关联**: CH01, CH07
-- **相关ADR**: ADR-0002-LegacyDesktopShell-security, ADR-0005-quality-gates
+- **相关ADR**: ADR-0002-legacy-desktop-shell-security-baseline, ADR-0005-quality-gates
 - **外部文档**:
   - [LegacyDesktopShell Release Timeline](https://www.LegacyDesktopShelljs.org/docs/tutorial/releases)
   - [LegacyUIFramework 19 Migration Guide](https://LegacyUIFramework.dev/blog/2024/04/25/LegacyUIFramework-19)

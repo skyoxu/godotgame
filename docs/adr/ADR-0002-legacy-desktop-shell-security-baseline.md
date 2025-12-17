@@ -1,6 +1,6 @@
 ---
 ADR-ID: ADR-0002
-title: LegacyDesktopShell安全基线 - 三层拦截与沙箱策略
+title: LegacyDesktopShell 安全基线 - 三层拦截与沙箱策略
 status: Superseded
 decision-time: '2025-08-17'
 deciders: [架构团队, 安全团队]
@@ -33,7 +33,7 @@ supersedes: []
 superseded-by: [ADR-0019]
 ---
 
-# ADR-0002: LegacyDesktopShell安全基线
+# ADR-0002: LegacyDesktopShell 安全基线
 
 > 本 ADR 为历史记录：已被 `docs/adr/ADR-0019-godot-security-baseline.md` 替代；当前模板运行时为 Godot（非 LegacyDesktopShell）。
 

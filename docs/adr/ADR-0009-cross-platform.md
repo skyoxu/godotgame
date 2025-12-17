@@ -1121,7 +1121,7 @@ export class PlatformPerformanceOptimizer {
 ## References
 
 - **CH章节关联**: CH09, CH01, CH10
-- **相关ADR**: ADR-0001-tech-stack, ADR-0008-deployment-release, ADR-0002-LegacyDesktopShell-security
+- **相关ADR**: ADR-0001-tech-stack, ADR-0008-deployment-release, ADR-0002-legacy-desktop-shell-security-baseline
 - **外部文档**:
   - [LegacyDesktopShell Platform APIs](https://www.LegacyDesktopShelljs.org/docs/api/process)
   - [Windows Design Guidelines](https://docs.microsoft.com/en-us/windows/apps/design/)

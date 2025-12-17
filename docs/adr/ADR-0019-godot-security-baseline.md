@@ -14,5 +14,5 @@
   - 安全相关改动必须附带就地验收（xUnit/GdUnit4）与审计产物（logs/ 路径见 6.3）。
   - Overlay 的 08 章仅引用本基线，不复制阈值；契约与事件统一落盘 Game.Core/Contracts/**
   - CI 中新增/保留安全作业 `godot-e2e --suite security`；release‑health 门禁保持不变（ADR‑0003）。
-- Supersedes: ADR-0002-LegacyDesktopShell-security
+- Supersedes: ADR-0002-legacy-desktop-shell-security-baseline
 - References: ADR-0011-windows-only-platform-and-ci, ADR-0003-observability-release-health, docs/architecture/base/02-security-baseline-godot-v2.md
