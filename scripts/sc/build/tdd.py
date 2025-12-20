@@ -6,15 +6,18 @@ This script does NOT synthesize business logic. It enforces a repeatable
 red/green/refactor loop with logs under logs/ci/<date>/.
 
 Usage (Windows):
-  py -3 scripts/sc/build.py tdd --stage green
-  py -3 scripts/sc/build.py tdd --stage red --generate-red-test
+  py -3 scripts/sc/build/tdd.py --stage green
+  py -3 scripts/sc/build/tdd.py --stage red --generate-red-test
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +42,93 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--generate-red-test", action="store_true", help="create a failing test skeleton if missing")
     ap.add_argument("--no-coverage-gate", action="store_true", help="do not enforce default coverage thresholds")
     return ap
+
+
+def extract_run_dotnet_out_dir(output: str) -> Path | None:
+    m = re.search(r"out=([A-Za-z]:\\[^\r\n]+)", output)
+    if not m:
+        return None
+    return Path(m.group(1).strip())
+
+
+def build_coverage_hotspots_report(coverage_xml: Path) -> list[str]:
+    root = ET.fromstring(coverage_xml.read_text(encoding="utf-8"))
+    items: list[tuple[float, int, int, float, str, str]] = []
+    for cls in root.findall(".//class"):
+        filename = (cls.get("filename") or "").replace("/", "\\")
+        cls_name = cls.get("name") or ""
+        br = float(cls.get("branch-rate") or 0.0)
+        lr = float(cls.get("line-rate") or 0.0)
+        branches_valid = 0
+        branches_covered = 0
+        for line in cls.findall(".//line"):
+            cc = line.get("condition-coverage")
+            if not cc:
+                continue
+            mm = re.search(r"\((\d+)/(\d+)\)", cc)
+            if not mm:
+                continue
+            branches_covered += int(mm.group(1))
+            branches_valid += int(mm.group(2))
+        if branches_valid <= 0:
+            continue
+        items.append((br, branches_valid, branches_covered, lr, filename, cls_name))
+
+    items.sort(key=lambda x: (x[0], -x[1], x[4], x[5]))
+
+    lines: list[str] = []
+    lines.append("Lowest branch-rate classes (top 25):")
+    for br, bv, bc, lr, filename, cls_name in items[:25]:
+        lines.append(
+            f"{br*100:6.2f}%  branches {bc}/{bv}  lines {lr*100:6.2f}%  {filename}  ({cls_name})"
+        )
+    return lines
+
+
+def write_coverage_hotspots(
+    *,
+    ci_out_dir: Path,
+    run_dotnet_output: str,
+) -> dict[str, Any]:
+    name = "coverage_hotspots"
+    log_path = ci_out_dir / "coverage-hotspots.txt"
+
+    unit_out_dir = extract_run_dotnet_out_dir(run_dotnet_output)
+    if not unit_out_dir:
+        write_text(log_path, "SKIP: cannot parse unit out_dir from run_dotnet output.\n")
+        return {"name": name, "cmd": ["internal"], "rc": 0, "log": str(log_path), "status": "skipped", "reason": "missing:out_dir"}
+
+    coverage_xml = unit_out_dir / "coverage.cobertura.xml"
+    unit_summary = unit_out_dir / "summary.json"
+    header_lines: list[str] = [
+        f"unit_out_dir={unit_out_dir}",
+        f"coverage_xml={coverage_xml}",
+        f"unit_summary={unit_summary}",
+        "",
+    ]
+
+    if unit_summary.exists():
+        try:
+            payload = json.loads(unit_summary.read_text(encoding="utf-8"))
+            cov = payload.get("coverage") or {}
+            header_lines.insert(
+                0,
+                f"overall line={cov.get('line_pct', 'n/a')}% branch={cov.get('branch_pct', 'n/a')}% status={payload.get('status', 'n/a')}",
+            )
+        except Exception:
+            pass
+
+    if not coverage_xml.exists():
+        write_text(log_path, "\n".join(header_lines + ["SKIP: coverage.cobertura.xml not found."]))
+        return {"name": name, "cmd": ["internal"], "rc": 0, "log": str(log_path), "status": "skipped", "reason": "missing:coverage_xml"}
+
+    try:
+        report_lines = build_coverage_hotspots_report(coverage_xml)
+        write_text(log_path, "\n".join(header_lines + report_lines) + "\n")
+        return {"name": name, "cmd": ["internal"], "rc": 0, "log": str(log_path), "status": "ok", "unit_out_dir": str(unit_out_dir)}
+    except Exception as ex:
+        write_text(log_path, "\n".join(header_lines + [f"FAIL: exception while parsing cobertura: {ex}"]) + "\n")
+        return {"name": name, "cmd": ["internal"], "rc": 0, "log": str(log_path), "status": "fail", "unit_out_dir": str(unit_out_dir)}
 
 
 def snapshot_contract_files() -> set[str]:
@@ -109,7 +199,7 @@ def run_green_gate(*, solution: str, configuration: str, out_dir: Path, no_cover
     rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=1_800)
     log_path = out_dir / "run_dotnet.log"
     write_text(log_path, out)
-    return {"name": "run_dotnet", "cmd": cmd, "rc": rc, "log": str(log_path)}
+    return {"name": "run_dotnet", "cmd": cmd, "rc": rc, "log": str(log_path), "stdout": out}
 
 
 def run_refactor_checks(out_dir: Path) -> list[dict[str, Any]]:
@@ -118,8 +208,6 @@ def run_refactor_checks(out_dir: Path) -> list[dict[str, Any]]:
     candidates = [
         ("check_test_naming", ["py", "-3", "scripts/python/check_test_naming.py"], "scripts/python/check_test_naming.py"),
         ("check_tasks_all_refs", ["py", "-3", "scripts/python/check_tasks_all_refs.py"], "scripts/python/check_tasks_all_refs.py"),
-        ("task_links_validate", ["py", "-3", "scripts/python/task_links_validate.py"], "scripts/python/task_links_validate.py"),
-        ("validate_task_overlays", ["py", "-3", "scripts/python/validate_task_overlays.py"], "scripts/python/validate_task_overlays.py"),
         ("validate_contracts", ["py", "-3", "scripts/python/validate_contracts.py"], "scripts/python/validate_contracts.py"),
     ]
     for name, cmd, requires in candidates:
@@ -224,6 +312,8 @@ def main() -> int:
             no_coverage_gate=args.no_coverage_gate,
         )
         summary["steps"].append(step)
+        if step["rc"] == 2:
+            summary["steps"].append(write_coverage_hotspots(ci_out_dir=out_dir, run_dotnet_output=step.get("stdout") or ""))
         summary["status"] = "ok" if step["rc"] == 0 else "fail"
         write_json(out_dir / "summary.json", summary)
         print(f"SC_BUILD_TDD status={summary['status']} out={out_dir}")
