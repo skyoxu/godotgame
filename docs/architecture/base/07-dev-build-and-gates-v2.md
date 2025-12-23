@@ -4,7 +4,7 @@ status: base-SSoT
 generated_variant: deep-optimized
 ssot_scope: chapter-07-only
 reuse_level: base-clean
-adr_refs: [ADR-0011, ADR-0018, ADR-0024, ADR-0015, ADR-0019, ADR-0003]
+adr_refs: [ADR-0011, ADR-0018, ADR-0025, ADR-0015, ADR-0019, ADR-0003]
 placeholders: Unknown Product, unknown-product, gamedev, dev, 0.0.0, production, dev-team, dev-project
 derived_from: 07-dev-build-and-gates-v2.md
 last_generated: 2025-12-16

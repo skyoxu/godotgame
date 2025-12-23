@@ -19,7 +19,7 @@ impact-scope:
   - scripts/
   - .github/workflows/
 tech-tags: [quality-gates, windows, godot, csharp, dotnet, xunit, gdunit4, perf, encoding]
-depends-on: [ADR-0011, ADR-0018, ADR-0019, ADR-0003, ADR-0015, ADR-0024, ADR-0020]
+depends-on: [ADR-0011, ADR-0018, ADR-0019, ADR-0003, ADR-0015, ADR-0025, ADR-0020]
 depended-by: [ADR-0008]
 supersedes: []
 ---

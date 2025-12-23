@@ -1,7 +1,7 @@
 ---
 title: 08 crosscutting and feature slices.base
 status: base-SSoT
-adr_refs: [ADR-0018, ADR-0019, ADR-0003, ADR-0004, ADR-0005, ADR-0020, ADR-0024]
+adr_refs: [ADR-0018, ADR-0019, ADR-0003, ADR-0004, ADR-0005, ADR-0020, ADR-0025]
 placeholders: unknown-app, Unknown Product, unknown-product, ${DOMAIN_PREFIX}, ${PRD_ID}
 derived_from: arc42 §8 (crosscutting concepts), C4 (Context/Container) minimal
 last_generated: 2025-12-16

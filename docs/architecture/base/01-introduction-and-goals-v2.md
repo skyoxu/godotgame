@@ -1,7 +1,7 @@
 ---
 title: 01 introduction and goals v2
 status: base-SSoT
-adr_refs: [ADR-0018, ADR-0019, ADR-0003, ADR-0004, ADR-0020, ADR-0015, ADR-0011, ADR-0024]
+adr_refs: [ADR-0018, ADR-0019, ADR-0003, ADR-0004, ADR-0020, ADR-0015, ADR-0011, ADR-0025]
 placeholders: unknown-app, Unknown Product, unknown-product, ${DOMAIN_PREFIX}, ${PRD_ID}, dev-team, dev-project, dev, production
 ---
 
@@ -19,7 +19,7 @@ placeholders: unknown-app, Unknown Product, unknown-product, ${DOMAIN_PREFIX}, $
 
 - 平台：仅 Windows（构建、测试、导出、CI 均以 Windows 为准）。
 - 运行时：Godot 4.5.1（.NET）+ C#（.NET 8 LTS）（见 ADR-0018）。
-- 分层：Scenes（Godot 装配/信号）→ Adapters（仅封装 Godot API）→ Core（纯 C# 领域，可 xUnit 单测）（见 ADR-0024）。
+- 分层：Scenes（Godot 装配/信号）→ Adapters（仅封装 Godot API）→ Core（纯 C# 领域，可 xUnit 单测）（见 ADR-0025）。
 - 契约：事件/DTO/端口类型的单一事实来源为 `Game.Core/Contracts/**`，禁止在文档复制粘贴造成口径漂移（见 ADR-0020、ADR-0004）。
 - 安全：默认拒绝越权文件访问与非白名单出网；仅允许 `res://`（只读）与 `user://`（读写）（见 ADR-0019）。
 - 日志与取证：测试/门禁/扫描输出统一落盘 `logs/**`，便于排障与归档（见 `docs/testing-framework.md`）。
@@ -32,7 +32,7 @@ placeholders: unknown-app, Unknown Product, unknown-product, ${DOMAIN_PREFIX}, $
 - 性能：提供最小可执行的帧时间 P95 门禁与工件（见 ADR-0015、09 章）。
 - 安全：路径/网络/外链/权限具备 allow/deny/invalid 三态与审计输出（见 ADR-0019）。
 - 可观测：Sentry Releases + Sessions 用于 Crash-Free 门禁；本地结构化日志可回溯（见 ADR-0003、03 章）。
-- 可测试：领域逻辑无需启动引擎即可单测（xUnit）；关键场景信号链路可在 headless 下验收（GdUnit4）（见 ADR-0024）。
+- 可测试：领域逻辑无需启动引擎即可单测（xUnit）；关键场景信号链路可在 headless 下验收（GdUnit4）（见 ADR-0025）。
 
 ## 1.4 系统上下文（C4 Context，最小）
 

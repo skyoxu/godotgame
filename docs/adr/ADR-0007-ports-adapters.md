@@ -13,7 +13,7 @@ verification:
   - path: Game.Godot/Adapters/
     assert: Adapters implement ports using Godot APIs
 tech-tags: [ports-adapters, hexagonal-architecture, godot, csharp, testing]
-depends-on: [ADR-0018, ADR-0024]
+depends-on: [ADR-0018, ADR-0025]
 depended-by: []
 supersedes: []
 ---

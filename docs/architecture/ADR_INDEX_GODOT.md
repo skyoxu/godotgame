@@ -10,8 +10,8 @@
 - ADR-0021: C# 领域层架构 — `docs/adr/ADR-0021-csharp-domain-layer-architecture.md`
 - ADR-0022: Godot Signal 与契约约定 — `docs/adr/ADR-0022-godot-signal-system-and-contracts.md`
 - ADR-0023: Settings SSoT = ConfigFile（user://） — `docs/adr/ADR-0023-settings-ssot-configfile.md`
-- ADR-0024: Godot 测试策略（xUnit + GdUnit4） — `docs/adr/ADR-0024-godot-test-strategy.md`
-- ADR-0025: Godot 测试策略（TDD + GdUnit4） — `docs/adr/ADR-0025-godot-test-strategy.md`
+- ADR-0024: 模板谱系与命名口径（Template Lineage & Naming） — `docs/adr/ADR-0024-template-lineage-and-naming.md`
+- ADR-0025: Godot 测试策略（xUnit + GdUnit4） — `docs/adr/ADR-0025-godot-test-strategy.md`
 - ADR-0026: 事件发布失败策略（PublishAsync Failure Semantics） — `docs/adr/ADR-0026-event-publish-failure-strategy.md`
 - ADR-0027: 所有权唯一写入口（Ownership Write Entry） — `docs/adr/ADR-0027-ownership-write-entry.md`
 
