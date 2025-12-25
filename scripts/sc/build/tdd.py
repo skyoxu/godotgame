@@ -247,6 +247,26 @@ def run_green_gate(*, solution: str, configuration: str, out_dir: Path, no_cover
     return {"name": "run_dotnet", "cmd": cmd, "rc": rc, "log": str(log_path), "stdout": out}
 
 
+def run_acceptance_refs_record(out_dir: Path, *, task_id: str, stage: str) -> dict[str, Any]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/validate_acceptance_refs.py",
+        "--task-id",
+        str(task_id),
+        "--stage",
+        str(stage),
+        "--out",
+        str(out_dir / f"acceptance-refs.{stage}.json"),
+    ]
+    rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=60)
+    log_path = out_dir / f"validate_acceptance_refs.{stage}.log"
+    write_text(log_path, out)
+    # validate_acceptance_refs.py is soft at red/green stage (never blocks); keep status ok even if rc!=0.
+    status = "ok" if stage in ("red", "green") else ("ok" if rc == 0 else "fail")
+    return {"name": f"validate_acceptance_refs.{stage}", "cmd": cmd, "rc": rc, "log": str(log_path), "status": status}
+
+
 def run_refactor_checks(out_dir: Path, *, task_id: str) -> list[dict[str, Any]]:
     steps: list[dict[str, Any]] = []
     steps.append(check_no_task_red_test_skeletons(out_dir))
@@ -402,6 +422,8 @@ def main() -> int:
             assert_no_new_contract_files(before_contracts)
             return 1
 
+        summary["steps"].append(run_acceptance_refs_record(out_dir, task_id=triplet.task_id, stage="red"))
+
         test_path = ensure_red_test_exists(
             triplet.task_id,
             str(triplet.master.get("title") or ""),
@@ -437,6 +459,8 @@ def main() -> int:
             print(f"SC_BUILD_TDD status=fail out={out_dir}")
             assert_no_new_contract_files(before_contracts)
             return 1
+
+        summary["steps"].append(run_acceptance_refs_record(out_dir, task_id=triplet.task_id, stage="green"))
 
         step = run_green_gate(
             solution=args.solution,

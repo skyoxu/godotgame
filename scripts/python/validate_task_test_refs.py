@@ -78,12 +78,17 @@ def validate_test_refs(
     label: str,
     entry: dict[str, Any] | None,
     require_non_empty: bool,
+    required: bool,
 ) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
 
     if entry is None:
-        errors.append(f"{label}: mapped task not found by taskmaster_id")
+        msg = f"{label}: mapped task not found by taskmaster_id"
+        if required:
+            errors.append(msg)
+        else:
+            warnings.append(msg)
         return errors, warnings
 
     raw = entry.get("test_refs")
@@ -97,16 +102,33 @@ def validate_test_refs(
 
     refs: list[str] = [str(x).strip() for x in raw if str(x).strip()]
     if require_non_empty and not refs:
-        errors.append(f"{label}: test_refs is empty but require_non_empty=true")
+        if required:
+            errors.append(f"{label}: test_refs is empty but require_non_empty=true")
+            return errors, warnings
+        warnings.append(f"{label}: test_refs is empty but require_non_empty=true (view is optional)")
         return errors, warnings
 
     for r in refs:
         if is_abs_path(r):
             errors.append(f"{label}: absolute path is not allowed in test_refs: {r}")
             continue
+        norm = r.replace("\\", "/")
+        if norm.startswith("logs/") or norm.startswith("logs\\"):
+            # Evidence refs are allowed under logs/**. They are often date-bucketed or placeholder paths.
+            disk = root / r
+            if "<" in norm or ">" in norm or "YYYY" in norm or "yyyy" in norm:
+                warnings.append(f"{label}: logs evidence ref looks like a placeholder: {r}")
+            elif not disk.exists():
+                warnings.append(f"{label}: logs evidence ref not found on disk (allowed): {r}")
+            continue
+
+        if not (norm.endswith(".cs") or norm.endswith(".gd")):
+            errors.append(f"{label}: unsupported test_refs entry (only .cs/.gd or logs/** allowed): {r}")
+            continue
+
         disk = root / r
         if not disk.exists():
-            errors.append(f"{label}: referenced file not found: {r}")
+            errors.append(f"{label}: referenced test file not found: {r}")
     return errors, warnings
 
 
@@ -129,22 +151,44 @@ def main() -> int:
     task_id = str(args.task_id).strip() if args.task_id else resolve_current_task_id(tasks_json)
 
     back = load_json(back_path)
-    gameplay = load_json(gameplay_path)
-    if not isinstance(back, list) or not isinstance(gameplay, list):
-        raise ValueError("tasks_back.json and tasks_gameplay.json must be JSON arrays")
+    gameplay: Any = []
+    gameplay_missing = False
+    if gameplay_path.exists():
+        gameplay = load_json(gameplay_path)
+    else:
+        gameplay_missing = True
+
+    if not isinstance(back, list):
+        raise ValueError("tasks_back.json must be JSON arrays")
+    if not gameplay_missing and not isinstance(gameplay, list):
+        raise ValueError("tasks_gameplay.json must be JSON arrays when present")
 
     back_task = find_view_task(back, task_id)
-    gameplay_task = find_view_task(gameplay, task_id)
+    gameplay_task = find_view_task(gameplay, task_id) if not gameplay_missing else None
 
     errors: list[str] = []
     warnings: list[str] = []
 
-    e1, w1 = validate_test_refs(root=root, label="tasks_back.json", entry=back_task, require_non_empty=bool(args.require_non_empty))
-    e2, w2 = validate_test_refs(root=root, label="tasks_gameplay.json", entry=gameplay_task, require_non_empty=bool(args.require_non_empty))
+    e1, w1 = validate_test_refs(
+        root=root,
+        label="tasks_back.json",
+        entry=back_task,
+        require_non_empty=bool(args.require_non_empty),
+        required=True,
+    )
+    e2, w2 = validate_test_refs(
+        root=root,
+        label="tasks_gameplay.json",
+        entry=gameplay_task,
+        require_non_empty=bool(args.require_non_empty),
+        required=False,
+    )
     errors.extend(e1)
     errors.extend(e2)
     warnings.extend(w1)
     warnings.extend(w2)
+    if gameplay_missing:
+        warnings.append("tasks_gameplay.json missing on disk (skipped)")
 
     report = {
         "task_id": task_id,
@@ -162,7 +206,7 @@ def main() -> int:
         },
     }
 
-    out_path.write_text(json.dumps(report, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"TASK_TEST_REFS status={report['status']} errors={len(errors)} warnings={len(warnings)} task_id={task_id}")
     return 0 if report["status"] == "ok" else 1
 

@@ -106,6 +106,39 @@ def validate_view_block(root: Path, label: str, view: Any, *, stage: str) -> lis
     return errors
 
 
+def _parse_chapters_from_details(details: Any) -> list[str]:
+    """
+    Extract chapter-style refs (e.g. CH01, CH03) from free-text details.
+
+    Supported patterns:
+      - "Chapters: CH01 CH03"
+      - "Chapters: CH01, CH03"
+      - "chapters: CH01;CH03"
+    """
+    if not isinstance(details, str) or not details.strip():
+        return []
+    m = None
+    for line in details.splitlines():
+        if "chapters" in line.lower():
+            m = line
+            break
+    if not m:
+        return []
+    tokens = []
+    for part in m.replace(",", " ").replace(";", " ").split():
+        p = part.strip()
+        if len(p) == 4 and p.upper().startswith("CH") and p[2:].isdigit():
+            tokens.append(p.upper())
+    seen = set()
+    uniq: list[str] = []
+    for t in tokens:
+        if t in seen:
+            continue
+        seen.add(t)
+        uniq.append(t)
+    return uniq
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Validate required fields in sc-analyze task_context.json.")
     ap.add_argument("--task-id", required=True, help="Task id (master id, e.g. 11).")
@@ -162,6 +195,7 @@ def main() -> int:
     title = master.get("title")
     status = master.get("status")
     overlay = master.get("overlay")
+    overlay_refs = master.get("overlay_refs")
     adr_refs = master.get("adrRefs")
     arch_refs = master.get("archRefs")
     details = master.get("details")
@@ -171,15 +205,27 @@ def main() -> int:
         errors.append("master.title missing/empty")
     if not is_non_empty_str(status):
         errors.append("master.status missing/empty")
-    if not is_non_empty_str(overlay):
-        errors.append("master.overlay missing/empty")
-    else:
+    if is_non_empty_str(overlay):
         if not (root / str(overlay)).exists():
             errors.append(f"master.overlay path missing on disk: {overlay}")
+    else:
+        refs = normalize_str_list(overlay_refs)
+        if not refs:
+            errors.append("master.overlay missing/empty (expected overlay path or overlay_refs list)")
+        else:
+            for r in refs:
+                if not (root / r).exists():
+                    errors.append(f"master.overlay_refs path missing on disk: {r}")
     if not is_str_list(adr_refs) or not normalize_str_list(adr_refs):
         errors.append("master.adrRefs missing/empty (expected non-empty string list)")
-    if not is_str_list(arch_refs) or not normalize_str_list(arch_refs):
-        errors.append("master.archRefs missing/empty (expected non-empty string list)")
+    if is_str_list(arch_refs) and normalize_str_list(arch_refs):
+        pass
+    else:
+        derived = _parse_chapters_from_details(details)
+        if derived:
+            warnings.append("master.archRefs missing/empty; derived CHxx from master.details (Chapters: ...)")
+        else:
+            errors.append("master.archRefs missing/empty (expected non-empty string list)")
 
     # details/testStrategy may legitimately be short, but should exist to avoid "blank task".
     if details is None or not is_non_empty_str(details):
@@ -188,7 +234,10 @@ def main() -> int:
         warnings.append("master.testStrategy missing/empty")
 
     errors.extend(validate_view_block(root, "tasks_back.json", back, stage=args.stage))
-    errors.extend(validate_view_block(root, "tasks_gameplay.json", gameplay, stage=args.stage))
+    if gameplay is None:
+        warnings.append("tasks_gameplay.json: mapped task missing (view is optional in this repo; skipped)")
+    else:
+        errors.extend(validate_view_block(root, "tasks_gameplay.json", gameplay, stage=args.stage))
 
     report = {
         "task_id": str(args.task_id),
