@@ -5,7 +5,7 @@
 ```
 Game.Core.Tests/                      # xUnit: 纯 C#（不依赖 Godot）
   Domain/                             # 领域实体/值对象
-  Services/                           # 领域服务/用例服务
+  Services/                           # 领域服务/用例服务（如 Turn/Economy）
   State/                              # 状态机/状态管理
   Repositories/                       # 仓储/存储适配（纯 C# 的契约或内存实现）
   Engine/                             # 纯 C# 的引擎骨架/胶水（非 Godot）
@@ -26,29 +26,29 @@ Tests.Godot/tests/                    # GdUnit4: Godot headless（依赖场景�
 
 目的：把“任务语义”变成可确定性验证的证据链，避免“done 不真实”。
 
-- `tasks_back.json[].acceptance[]` 与 `tasks_gameplay.json[].acceptance[]` 的**每一条**都必须以 `Refs:` 结尾（大小写不敏感）。
+- 对于“存在该任务条目”的视图（`tasks_back.json` 或 `tasks_gameplay.json`），其 `acceptance[]` 的**每一条**都必须以 `Refs:` 结尾（大小写不敏感）。  
+  若某任务只存在于其中一侧视图，另一侧视图允许缺失（warning/skip），但至少必须存在一侧视图。
 - `Refs:` 后仅允许写**仓库相对路径**，并且必须指向测试文件：
   - xUnit：`Game.Core.Tests/**/*.cs`
   - GdUnit4：`Tests.Godot/tests/**/*.gd`
 - 一个 acceptance 条目可对应多个测试文件（空格或逗号分隔）。
-- `Refs:` 里**不要**写绝对路径、不要写带空格的路径、不要写行号锚点（例如 `#L10`）。当前门禁只解析“文件路径”。
+- `Refs:` 里**不要**写绝对路径、不要写带空格的路径、不要写行号锚点（例如 `#L10`）。目前门禁只解析“文件路径”。
 - 注意：`Refs:` 使用**仓库根目录**相对路径（例如 `Tests.Godot/tests/...`）；而 GdUnit4 运行器常用的 `--add tests/...` 是以 `--project Tests.Godot` 为根目录的**项目内相对路径**，两者不要混用。
 
 示例（xUnit）：
 
 ```
-- When saving, invalid input is rejected. Refs: Game.Core.Tests/Domain/ExampleEntityTests.cs
+- When treasury deposits, non-negative amount is enforced. Refs: Game.Core.Tests/Domain/ExampleEntityTests.cs
 ```
 
 示例（GdUnit4）：
 
 ```
-- HUD updates UI after domain event. Refs: Tests.Godot/tests/UI/test_hud_updates_on_events.gd
+- HUD updates dice result after event. Refs: Tests.Godot/tests/UI/test_hud_updates_on_events.gd
 ```
 
-对应门禁（自动运行，无需手工记）：
-
-- `py -3 scripts/python/validate_acceptance_refs.py --task-id <id> --stage refactor ...`
+对应门禁（自动运行，无需手工记）：  
+- `py -3 scripts/python/validate_acceptance_refs.py --task-id <id> --stage refactor ...`  
 - `py -3 scripts/python/validate_task_test_refs.py --task-id <id> --require-non-empty ...`
 
 #### 3.2 `test_refs[]`（任务级汇总）如何维护
@@ -61,7 +61,8 @@ Tests.Godot/tests/                    # GdUnit4: Godot headless（依赖场景�
 
 规则：
 
-- `tasks_back.json[].test_refs` 与 `tasks_gameplay.json[].test_refs` 必须是非空列表（refactor 硬门禁）。
+- 对于“存在该任务条目”的视图，其 `test_refs` 必须是非空列表（refactor 硬门禁）。  
+  若某任务只存在于其中一侧视图，另一侧视图允许缺失（warning/skip），但至少必须存在一侧视图。
 - `test_refs` 至少包含本任务所有 acceptance `Refs:` 的并集（refactor 硬门禁）。
 
 推荐的更新方式（确定性脚本）：
@@ -77,7 +78,7 @@ py -3 scripts/python/update_task_test_refs_from_acceptance_refs.py --task-id <id
 | 任务类型（倾向） | 推荐 `Refs:` 路径前缀 | 文件命名规范 |
 |---|---|---|
 | 领域实体/值对象 | `Game.Core.Tests/Domain/` | `{Subject}Tests.cs` |
-| 领域服务/用例服务 | `Game.Core.Tests/Services/` | `{Subject}Tests.cs` |
+| 领域服务/回合/经济 | `Game.Core.Tests/Services/` | `{Subject}Tests.cs` |
 | 状态机/状态管理 | `Game.Core.Tests/State/` | `{Subject}Tests.cs` |
 | 适配器契约/仓储 | `Game.Core.Tests/Repositories/` | `{Subject}Tests.cs` |
 | 任务级验收（只在确实跨多个类时） | `Game.Core.Tests/Tasks/` | `Task<id><Topic>Tests.cs` |
@@ -109,12 +110,12 @@ py -3 scripts/python/update_task_test_refs_from_acceptance_refs.py --task-id <id
 
 ```csharp
 [Fact]
-public void ShouldRejectInput_WhenValueIsEmpty()
+public void ShouldDeductMoney_WhenBuyingCity()
 {
 }
 
 [Fact]
-public void GivenValidInput_WhenSaving_ThenStateIsPersisted()
+public void GivenEnoughMoney_WhenBuyingCity_ThenCityOwned()
 {
 }
 ```
@@ -129,7 +130,7 @@ public void GivenValidInput_WhenSaving_ThenStateIsPersisted()
 ```gdscript
 extends "res://addons/gdUnit4/src/GdUnitTestSuite.gd"
 
-func test_hud_updates_on_event() -> void:
+func test_hud_updates_on_dice_rolled_event() -> void:
     pass
 ```
 
@@ -137,4 +138,3 @@ func test_hud_updates_on_event() -> void:
 
 - 不要依赖真实时间 `create_timer()` + 窄容差断言；优先用信号/条件等待 + 超时上限。
 - headless 下不要依赖真实输入事件链；优先调用公开方法/发最小信号/发布领域事件。
-

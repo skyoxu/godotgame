@@ -10,7 +10,6 @@
 
 - .NET 8 SDK
 - Python 3（通过 Windows `py -3` 启动）
-- 提示：请优先使用 `py -3`，避免 `python.exe` 指向 Microsoft Store alias 导致脚本无法运行
 - Godot 4.5.1 .NET（建议使用 console 版本，便于收集输出）
 
 ### 环境变量（一次性）
@@ -114,7 +113,7 @@ using FluentAssertions;
 public class PlayerTests
 {
     [Fact]
-    public void Player_TakeDamage_ReducesHealth()
+    public void ShouldReduceHealth_WhenTakingDamage()
     {
         // Arrange
         var player = new Player(health: 100);
@@ -130,7 +129,7 @@ public class PlayerTests
     [InlineData(100, 50, 50)]
     [InlineData(100, 150, 0)]
     [InlineData(50, 25, 25)]
-    public void Player_TakeDamage_HandlesEdgeCases(int initialHealth, int damage, int expectedHealth)
+    public void ShouldHandleEdgeCases_WhenTakingDamage(int initialHealth, int damage, int expectedHealth)
     {
         // Arrange
         var player = new Player(health: initialHealth);
@@ -383,7 +382,7 @@ py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --proj
 ```
 
 > 提醒：启用 GdUnit4 文件日志时，Godot 会在 `%APPDATA%\\Godot\\app_userdata\\<ProjectName>\\logs\\` 产生 `godot*.log`；请确保这类日志会被归档/轮转，避免无限增长。
-> - 建议在 CI 中将该目录下的 `godot*.log` 复制/归档到仓库 `logs/e2e/<run_id>/godot-userlogs/`，并配置保留策略（例如只保留最近 N 次运行的日志）。
+> - 本仓库可用 `py -3 scripts/python/godot_userlog_manager.py --project Tests.Godot` 执行“归档到仓库 logs/ + 保留策略”。
 
 ## 端到端测试
 
@@ -455,11 +454,11 @@ py -3 scripts/python/ci_pipeline.py all --solution Game.sln --configuration Debu
 # GdUnit4（按套件分组运行，报告归档到 logs/e2e/<run_id>/gdunit-reports/**）
 py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Security/Hard --timeout-sec 480 --rd "logs/e2e/<run_id>/gdunit-reports/quality"
 
-# 任务回链校验（软门禁：任务 ↔ ADR/章节/Overlay 一致性）
-py -3 scripts/python/task_links_validate.py
+# Contracts 校验（模板中为软门禁，用于发现“契约 vs 文档/覆盖层”漂移）
+py -3 scripts/python/validate_contracts.py
 
-# Overlay 清单格式校验（软门禁：Front-Matter/ADR-Refs/Test-Refs）
-py -3 scripts/python/validate_task_overlays.py
+# 安全审计 JSONL 格式校验（模板中为可选门禁）
+py -3 scripts/python/validate_audit_logs.py
 ```
 
 ### 覆盖率报告
@@ -519,7 +518,7 @@ public class FakeTime : ITime
 ```
 Game.Core.Tests/                      # xUnit: 纯 C#（不依赖 Godot）
   Domain/                             # 领域实体/值对象
-  Services/                           # 领域服务/用例服务
+  Services/                           # 领域服务/用例服务（如 Turn/Economy）
   State/                              # 状态机/状态管理
   Repositories/                       # 仓储/存储适配（纯 C# 的契约或内存实现）
   Engine/                             # 纯 C# 的引擎骨架/胶水（非 Godot）
@@ -540,29 +539,29 @@ Tests.Godot/tests/                    # GdUnit4: Godot headless（依赖场景�
 
 目的：把“任务语义”变成可确定性验证的证据链，避免“done 不真实”。
 
-- `tasks_back.json[].acceptance[]` 与 `tasks_gameplay.json[].acceptance[]` 的**每一条**都必须以 `Refs:` 结尾（大小写不敏感）。
+- 对于“存在该任务条目”的视图（`tasks_back.json` 或 `tasks_gameplay.json`），其 `acceptance[]` 的**每一条**都必须以 `Refs:` 结尾（大小写不敏感）。  
+  若某任务只存在于其中一侧视图，另一侧视图允许缺失（warning/skip），但至少必须存在一侧视图。
 - `Refs:` 后仅允许写**仓库相对路径**，并且必须指向测试文件：
   - xUnit：`Game.Core.Tests/**/*.cs`
   - GdUnit4：`Tests.Godot/tests/**/*.gd`
 - 一个 acceptance 条目可对应多个测试文件（空格或逗号分隔）。
-- `Refs:` 里**不要**写绝对路径、不要写带空格的路径、不要写行号锚点（例如 `#L10`）。当前门禁只解析“文件路径”。
+- `Refs:` 里**不要**写绝对路径、不要写带空格的路径、不要写行号锚点（例如 `#L10`）。目前门禁只解析“文件路径”。
 - 注意：`Refs:` 使用**仓库根目录**相对路径（例如 `Tests.Godot/tests/...`）；而 GdUnit4 运行器常用的 `--add tests/...` 是以 `--project Tests.Godot` 为根目录的**项目内相对路径**，两者不要混用。
 
 示例（xUnit）：
 
 ```
-- When saving, invalid input is rejected. Refs: Game.Core.Tests/Domain/ExampleEntityTests.cs
+- When treasury deposits, non-negative amount is enforced. Refs: Game.Core.Tests/Domain/ExampleEntityTests.cs
 ```
 
 示例（GdUnit4）：
 
 ```
-- HUD updates UI after domain event. Refs: Tests.Godot/tests/UI/test_hud_updates_on_events.gd
+- HUD updates dice result after event. Refs: Tests.Godot/tests/UI/test_hud_updates_on_events.gd
 ```
 
-对应门禁（自动运行，无需手工记）：
-
-- `py -3 scripts/python/validate_acceptance_refs.py --task-id <id> --stage refactor ...`
+对应门禁（自动运行，无需手工记）：  
+- `py -3 scripts/python/validate_acceptance_refs.py --task-id <id> --stage refactor ...`  
 - `py -3 scripts/python/validate_task_test_refs.py --task-id <id> --require-non-empty ...`
 
 #### 3.2 `test_refs[]`（任务级汇总）如何维护
@@ -575,7 +574,8 @@ Tests.Godot/tests/                    # GdUnit4: Godot headless（依赖场景�
 
 规则：
 
-- `tasks_back.json[].test_refs` 与 `tasks_gameplay.json[].test_refs` 必须是非空列表（refactor 硬门禁）。
+- 对于“存在该任务条目”的视图，其 `test_refs` 必须是非空列表（refactor 硬门禁）。  
+  若某任务只存在于其中一侧视图，另一侧视图允许缺失（warning/skip），但至少必须存在一侧视图。
 - `test_refs` 至少包含本任务所有 acceptance `Refs:` 的并集（refactor 硬门禁）。
 
 推荐的更新方式（确定性脚本）：
@@ -591,7 +591,7 @@ py -3 scripts/python/update_task_test_refs_from_acceptance_refs.py --task-id <id
 | 任务类型（倾向） | 推荐 `Refs:` 路径前缀 | 文件命名规范 |
 |---|---|---|
 | 领域实体/值对象 | `Game.Core.Tests/Domain/` | `{Subject}Tests.cs` |
-| 领域服务/用例服务 | `Game.Core.Tests/Services/` | `{Subject}Tests.cs` |
+| 领域服务/回合/经济 | `Game.Core.Tests/Services/` | `{Subject}Tests.cs` |
 | 状态机/状态管理 | `Game.Core.Tests/State/` | `{Subject}Tests.cs` |
 | 适配器契约/仓储 | `Game.Core.Tests/Repositories/` | `{Subject}Tests.cs` |
 | 任务级验收（只在确实跨多个类时） | `Game.Core.Tests/Tasks/` | `Task<id><Topic>Tests.cs` |
@@ -623,12 +623,12 @@ py -3 scripts/python/update_task_test_refs_from_acceptance_refs.py --task-id <id
 
 ```csharp
 [Fact]
-public void ShouldRejectInput_WhenValueIsEmpty()
+public void ShouldDeductMoney_WhenBuyingCity()
 {
 }
 
 [Fact]
-public void GivenValidInput_WhenSaving_ThenStateIsPersisted()
+public void GivenEnoughMoney_WhenBuyingCity_ThenCityOwned()
 {
 }
 ```
@@ -643,7 +643,7 @@ public void GivenValidInput_WhenSaving_ThenStateIsPersisted()
 ```gdscript
 extends "res://addons/gdUnit4/src/GdUnitTestSuite.gd"
 
-func test_hud_updates_on_event() -> void:
+func test_hud_updates_on_dice_rolled_event() -> void:
     pass
 ```
 
@@ -662,7 +662,7 @@ func test_hud_updates_on_event() -> void:
 [InlineData(100, 30, 70)]
 [InlineData(50, 60, 0)]    // 伤害超过生命值
 [InlineData(100, 0, 100)]  // 零伤害
-public void Player_TakeDamage_VariousScenarios(int health, int damage, int expected)
+public void ShouldHandleVariousScenarios_WhenTakingDamage(int health, int damage, int expected)
 {
     var player = new Player(health);
     player.TakeDamage(damage);

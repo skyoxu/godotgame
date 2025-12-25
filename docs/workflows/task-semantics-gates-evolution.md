@@ -9,7 +9,6 @@
 ### 任务数据与上下文（本仓库状态相关）
 
 - 模板仓默认不提交真实的 `.taskmaster/tasks/*.json`（避免在未启用 Taskmaster 的项目中误触发 CI 门禁）；但为了方便迁移与演示，本仓库提供了示例文件：`examples/taskmaster/`。
-
 - `.taskmaster/tasks/tasks_back.json`（修改）：新增/更新部分任务的 `test_refs`、`acceptance Refs:` 等字段（具体以 diff 为准）。
 - `.taskmaster/tasks/tasks_gameplay.json`（修改）：同上。
 - `taskdoc/11.md`（修改）：用于 sc-analyze 的辅助上下文文档（Serena 导出的 symbols/refs；迁移到其他仓库时通常不需要带走）。
@@ -72,6 +71,11 @@
    - 引用文件存在；
    - 引用文件被纳入该任务的 `test_refs`（任务级证据清单）。
 
+补充口径（triplet 视图缺省）：
+
+- 允许任务只存在于 `tasks_back.json` 或只存在于 `tasks_gameplay.json`（另一侧视图 warning/skip），但至少必须存在一侧视图。
+- 对“存在该任务条目”的那一侧视图，继续严格要求 `overlay_refs/test_strategy/acceptance/test_refs` 按阶段满足门禁。
+
 ## 关键改动与原因（按执行链路）
 
 ### 1) 生成“任务上下文”并强制必填字段（fail-fast）
@@ -92,7 +96,7 @@
 
 约束分阶段：
 
-- `stage=red|green`：要求每条 acceptance 都必须有 `Refs:`（语法级），但不要求文件存在；
+- `stage=red|green`：要求每条 acceptance 都必须有 `Refs:`（语法级；只记录不阻断），但不要求文件存在；
 - `stage=refactor`：要求引用文件存在，并且必须包含在 `test_refs` 里（证据链闭环）。
 
 目的：把“验收条款”变成可追踪的证据，避免验收停留在口头或主观判断。
