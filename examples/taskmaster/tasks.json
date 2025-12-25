@@ -1,0 +1,27 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "11",
+        "title": "Example: task semantics gates demo",
+        "status": "in-progress",
+        "priority": "P1",
+        "details": "Demonstrate deterministic task semantics gates (task_context required fields, acceptance Refs, test_refs evidence).",
+        "testStrategy": "Use xUnit for core logic and GdUnit4 for UI/scene glue; map acceptance to Refs and keep test_refs non-empty at refactor stage.",
+        "adrRefs": [
+          "ADR-0005"
+        ],
+        "archRefs": [
+          "CH01",
+          "CH07"
+        ],
+        "overlay": "docs/architecture/overlays/PRD-Example/08/_index.md"
+      }
+    ],
+    "metadata": {
+      "example": true,
+      "note": "Copy these examples into .taskmaster/tasks only after you create real overlays + tests."
+    }
+  }
+}
+

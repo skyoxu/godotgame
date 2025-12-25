@@ -1,0 +1,35 @@
+[
+  {
+    "id": "EX-0011",
+    "taskmaster_id": 11,
+    "title": "Example: task semantics gates demo (back view)",
+    "layer": "docs",
+    "details": "Backlog/governance view: require overlay anchors, acceptance Refs, and non-empty test_refs at refactor stage.",
+    "adr_refs": [
+      "ADR-0005"
+    ],
+    "chapter_refs": [
+      "CH01",
+      "CH07"
+    ],
+    "overlay_refs": [
+      "docs/architecture/overlays/PRD-Example/08/_index.md",
+      "docs/architecture/overlays/PRD-Example/08/ACCEPTANCE_CHECKLIST.md",
+      "docs/architecture/overlays/PRD-Example/08/08-Feature-Slice-Example.md"
+    ],
+    "test_strategy": [
+      "xUnit: core rules stay in Game.Core (no Godot dependencies).",
+      "GdUnit4: UI/scene glue tests run headless via Tests.Godot/tests."
+    ],
+    "acceptance": [
+      "Core rule rejects invalid input. Refs: Game.Core.Tests/Domain/ExampleEntityTests.cs",
+      "UI updates after domain event. Refs: Tests.Godot/tests/UI/test_example_ui_updates_on_event.gd"
+    ],
+    "test_refs": [
+      "Game.Core.Tests/Domain/ExampleEntityTests.cs",
+      "Tests.Godot/tests/UI/test_example_ui_updates_on_event.gd"
+    ],
+    "note": "Example only. The referenced files do not exist by default in the template."
+  }
+]
+
