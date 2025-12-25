@@ -1,5 +1,6 @@
 ﻿# Godot 4+ specific ignores
 .godot/
+.serena/
 /android/
 
 # Windows reserved names
