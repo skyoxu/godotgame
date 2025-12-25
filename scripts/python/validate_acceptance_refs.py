@@ -113,7 +113,6 @@ def validate_view(
     label: str,
     entry: dict[str, Any] | None,
     stage: str,
-    required: bool,
 ) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -121,39 +120,20 @@ def validate_view(
     all_refs: list[str] = []
 
     if entry is None:
-        msg = f"{label}: mapped task not found by taskmaster_id"
-        if required:
-            errors.append(msg)
-            status = "fail"
-        else:
-            warnings.append(msg)
-            status = "skipped"
-        return {"label": label, "status": status, "errors": errors, "warnings": warnings, "items": items, "refs": all_refs}
+        errors.append(f"{label}: mapped task not found by taskmaster_id")
+        return {"label": label, "status": "fail", "errors": errors, "warnings": warnings, "items": items, "refs": all_refs}
 
     acceptance = entry.get("acceptance")
     if not isinstance(acceptance, list) or not [str(x).strip() for x in acceptance if str(x).strip()]:
         errors.append(f"{label}: acceptance missing/empty (expected non-empty list)")
-        return {
-            "label": label,
-            "status": "fail",
-            "errors": errors,
-            "warnings": warnings,
-            "items": items,
-            "refs": all_refs,
-        }
+        return {"label": label, "status": "fail", "errors": errors, "warnings": warnings, "items": items, "refs": all_refs}
 
     test_refs = entry.get("test_refs")
     test_refs_list: list[str] = []
     if test_refs is None:
-        if stage == "refactor":
-            errors.append(f"{label}: test_refs missing (expected list)")
-        else:
-            warnings.append(f"{label}: test_refs missing (expected list; allowed before refactor)")
+        errors.append(f"{label}: test_refs missing (expected list)")
     elif not isinstance(test_refs, list):
-        if stage == "refactor":
-            errors.append(f"{label}: test_refs must be a list")
-        else:
-            warnings.append(f"{label}: test_refs must be a list (allowed before refactor)")
+        errors.append(f"{label}: test_refs must be a list")
     else:
         test_refs_list = [str(x).strip().replace("\\", "/") for x in test_refs if str(x).strip()]
 
@@ -185,10 +165,7 @@ def validate_view(
                         item["errors"].append(f"ref must be included in test_refs at refactor stage: {r}")
 
         if item["status"] != "ok":
-            if stage == "refactor":
-                errors.extend([f"{label}: acceptance[{idx}]: {e}" for e in item["errors"]])
-            else:
-                warnings.extend([f"{label}: acceptance[{idx}]: {e}" for e in item["errors"]])
+            errors.extend([f"{label}: acceptance[{idx}]: {e}" for e in item["errors"]])
         items.append(item)
         all_refs.extend(norm_refs)
 
@@ -231,60 +208,33 @@ def main() -> int:
     task_id = str(args.task_id).strip() if args.task_id else resolve_current_task_id(tasks_json)
 
     back = load_json(back_path)
-    gameplay: Any = []
-    gameplay_missing = False
-    if gameplay_path.exists():
-        gameplay = load_json(gameplay_path)
-    else:
-        gameplay_missing = True
-
-    if not isinstance(back, list):
-        raise ValueError("tasks_back.json must be a JSON array")
-    if not gameplay_missing and not isinstance(gameplay, list):
-        raise ValueError("tasks_gameplay.json must be a JSON array when present")
+    gameplay = load_json(gameplay_path)
+    if not isinstance(back, list) or not isinstance(gameplay, list):
+        raise ValueError("tasks_back.json and tasks_gameplay.json must be JSON arrays")
 
     back_task = find_view_task(back, task_id)
-    gameplay_task = find_view_task(gameplay, task_id) if not gameplay_missing else None
+    gameplay_task = find_view_task(gameplay, task_id)
 
-    back_report = validate_view(root=root, label="tasks_back.json", entry=back_task, stage=args.stage, required=True)
-    game_report = validate_view(root=root, label="tasks_gameplay.json", entry=gameplay_task, stage=args.stage, required=False)
+    back_report = validate_view(root=root, label="tasks_back.json", entry=back_task, stage=args.stage)
+    game_report = validate_view(root=root, label="tasks_gameplay.json", entry=gameplay_task, stage=args.stage)
 
     errors = []
     errors.extend(back_report.get("errors") or [])
     errors.extend(game_report.get("errors") or [])
-    warnings = []
-    if gameplay_missing:
-        warnings.append("tasks_gameplay.json missing on disk (skipped)")
-    warnings.extend(back_report.get("warnings") or [])
-    warnings.extend(game_report.get("warnings") or [])
 
     report = {
         "task_id": task_id,
         "stage": args.stage,
         "status": "ok" if not errors else "fail",
         "errors": errors,
-        "warnings": warnings,
         "views": {
             "back": back_report,
             "gameplay": game_report,
         },
     }
 
-    out_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    # Soft behavior: red/green stages only record warnings, never block.
-    if args.stage in ("red", "green"):
-        print(
-            f"ACCEPTANCE_REFS status=ok errors=0 warnings={len(warnings)} task_id={task_id} stage={args.stage} (soft)"
-        )
-        return 0
-
-    print(
-        f"ACCEPTANCE_REFS status={report['status']} errors={len(errors)} warnings={len(warnings)} task_id={task_id} stage={args.stage}"
-    )
+    out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"ACCEPTANCE_REFS status={report['status']} errors={len(errors)} task_id={task_id} stage={args.stage}")
     return 0 if report["status"] == "ok" else 1
 
 

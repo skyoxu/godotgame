@@ -13,19 +13,12 @@ Checks:
 Usage:
   py -3 scripts/python/validate_task_overlays.py
   py -3 scripts/python/validate_task_overlays.py --task-file .taskmaster/tasks/tasks_gameplay.json
-
-Environment:
-  - TASKS_BACK_OVERLAY_REFS_POLICY=strict|opt-in|off
-    - strict (default): enforce overlay_refs anchors for every task in tasks_back.json
-    - opt-in: enforce only for tasks that declare overlay_refs
-    - off: disable the tasks_back.json overlay_refs anchor policy
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 from pathlib import Path
 from typing import Any, Optional
@@ -190,13 +183,6 @@ def validate_task_file(root: Path, task_file: Path, label: str, adr_ids: set[str
     passed = 0
     forced_errors: list[str] = []
 
-    tasks_back_policy = (os.environ.get("TASKS_BACK_OVERLAY_REFS_POLICY") or "strict").strip().lower()
-    if tasks_back_policy not in {"strict", "opt-in", "off"}:
-        print(
-            f"WARNING: unknown TASKS_BACK_OVERLAY_REFS_POLICY={tasks_back_policy!r}; falling back to 'strict'."
-        )
-        tasks_back_policy = "strict"
-
     for task in sorted(tasks, key=lambda x: str(x.get("id", ""))):
         tid = task.get("id")
 
@@ -218,40 +204,38 @@ def validate_task_file(root: Path, task_file: Path, label: str, adr_ids: set[str
         #     - <overlay_dir>/ACCEPTANCE_CHECKLIST.md
         #
         # overlay_dir is inferred from overlay_refs/overlay using docs/architecture/overlays/<PRD-ID>/08/... patterns.
-        if task_file.name == "tasks_back.json" and tasks_back_policy != "off":
+        if task_file.name == "tasks_back.json":
             overlay_refs_list: list[str] = []
             if isinstance(overlay_refs, list):
                 overlay_refs_list = [str(x) for x in overlay_refs if str(x).strip()]
             elif isinstance(overlay_refs, str) and overlay_refs.strip():
                 overlay_refs_list = [overlay_refs.strip()]
 
-            enforce_for_task = tasks_back_policy == "strict" or ("overlay_refs" in task)
-            if enforce_for_task:
-                if not overlay_refs_list:
+            if not overlay_refs_list:
+                forced_errors.append(
+                    f"{label} task {tid}: overlay_refs must not be empty; set overlay_refs to include docs/architecture/overlays/<PRD-ID>/08/_index.md and ACCEPTANCE_CHECKLIST.md"
+                )
+            else:
+                overlay_candidate = str(task.get("overlay") or "").strip()
+                overlay_dir = None
+                for cand in overlay_refs_list + ([overlay_candidate] if overlay_candidate else []):
+                    m = OVERLAY_DIR_RE.match(str(cand))
+                    if m:
+                        overlay_dir = m.group(1)
+                        break
+
+                if not overlay_dir:
                     forced_errors.append(
-                        f"{label} task {tid}: overlay_refs must not be empty; set overlay_refs to include docs/architecture/overlays/<PRD-ID>/08/_index.md and ACCEPTANCE_CHECKLIST.md"
+                        f"{label} task {tid}: cannot infer overlay_dir from overlay/overlay_refs; set overlay_refs to include docs/architecture/overlays/<PRD-ID>/08/_index.md and ACCEPTANCE_CHECKLIST.md"
                     )
                 else:
-                    overlay_candidate = str(task.get("overlay") or "").strip()
-                    overlay_dir = None
-                    for cand in overlay_refs_list + ([overlay_candidate] if overlay_candidate else []):
-                        m = OVERLAY_DIR_RE.match(str(cand))
-                        if m:
-                            overlay_dir = m.group(1)
-                            break
-
-                    if not overlay_dir:
-                        forced_errors.append(
-                            f"{label} task {tid}: cannot infer overlay_dir from overlay/overlay_refs; set overlay_refs to include docs/architecture/overlays/<PRD-ID>/08/_index.md and ACCEPTANCE_CHECKLIST.md"
-                        )
-                    else:
-                        required = [
-                            f"{overlay_dir}/_index.md",
-                            f"{overlay_dir}/ACCEPTANCE_CHECKLIST.md",
-                        ]
-                        missing = [x for x in required if x not in overlay_refs_list]
-                        if missing:
-                            forced_errors.append(f"{label} task {tid}: overlay_refs missing required anchors: {missing}")
+                    required = [
+                        f"{overlay_dir}/_index.md",
+                        f"{overlay_dir}/ACCEPTANCE_CHECKLIST.md",
+                    ]
+                    missing = [x for x in required if x not in overlay_refs_list]
+                    if missing:
+                        forced_errors.append(f"{label} task {tid}: overlay_refs missing required anchors: {missing}")
 
         if not overlays:
             continue

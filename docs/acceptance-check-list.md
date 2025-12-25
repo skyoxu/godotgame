@@ -57,13 +57,7 @@ py -3 scripts/sc/acceptance_check.py --task-id 10 --perf-p95-ms 20
 
 - 运行：`py -3 scripts/python/validate_task_overlays.py`
 - 校验 overlay 路径存在，并对 `ACCEPTANCE_CHECKLIST.md` 做 front-matter/章节结构检查
-
-可选配置（仅影响 `tasks_back.json` 的 overlay_refs 策略）：
-
-- `TASKS_BACK_OVERLAY_REFS_POLICY=strict|opt-in|off`
-  - `strict`（默认）：对每个任务强制 `overlay_refs` 且必须包含 `_index.md` 与 `ACCEPTANCE_CHECKLIST.md`
-  - `opt-in`：仅对声明了 `overlay_refs` 的任务强制锚点规则
-  - `off`：关闭该条强制规则
+- 对 `tasks_back.json`：每个任务必须提供 `overlay_refs`，且必须包含 `docs/architecture/overlays/<PRD-ID>/08/_index.md` 与 `docs/architecture/overlays/<PRD-ID>/08/ACCEPTANCE_CHECKLIST.md` 两个锚点（防止“任务视图”与“验收/契约 SSoT”漂移）。
 
 ### 5.4 `contracts`（硬门禁）
 
