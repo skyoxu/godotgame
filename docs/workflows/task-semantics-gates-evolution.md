@@ -347,6 +347,20 @@ py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id <id> --tdd
 py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id <id> --tdd-stage red-first --verify none
 ```
 
+#### 2.2.1 存量任务迁移工具（deterministic；可选）
+
+- `scripts/sc/backfill_task_test_refs.py`
+  - 意义：把 acceptance 条款中的 `Refs:`（证据文件）**确定性同步**到任务视图的 `test_refs`，并可选触发 LLM 生成缺失测试文件；只有加 `--write` 才会改写任务文件。
+  - 输出：`logs/ci/<YYYY-MM-DD>/sc-backfill-test-refs/`。
+
+- `scripts/python/backfill_acceptance_anchors_in_tests.py`
+  - 意义：为存量任务的一批测试文件补齐 `ACC:T<id>.<n>` anchors（一次性迁移工具），用于把旧仓库拉到 `validate_acceptance_anchors.py` 的“方法级绑定”硬门禁口径。
+  - 输出：`logs/ci/<YYYY-MM-DD>/backfill-acceptance-anchors/`。
+
+- `scripts/python/check_sc_internal_imports.py`
+  - 意义：止损检查，扫描 `scripts/sc/*.py` 的 `from _xxx import ...` 依赖，确保对应的 `scripts/sc/_xxx.py` 全部存在，避免同步漏文件导致入口脚本 ImportError。
+  - 用法：`py -3 scripts/python/check_sc_internal_imports.py --out logs/ci/<YYYY-MM-DD>/sc-internal-imports.json`
+
 #### 2.3 绿灯阶段（最小实现让测试变绿）
 
 - `scripts/sc/build.py`（TDD 绿灯）
