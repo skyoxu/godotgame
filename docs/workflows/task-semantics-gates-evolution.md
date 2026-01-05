@@ -82,6 +82,11 @@
 
 补充口径（triplet 视图缺省）：
 
+补充口径（治理口径原句）：
+
+- 允许缺一侧但至少存在一侧（back 或 gameplay）视图条目存在；存在的那一侧继续严格要求（acceptance/test_strategy/test_refs/回链/门禁）。
+
+
 - 允许任务只存在于 `tasks_back.json` 或只存在于 `tasks_gameplay.json`（另一侧视图 warning/skip），但至少必须存在一侧视图。
 - 对“存在该任务条目”的那一侧视图，继续严格要求 `overlay_refs/test_strategy/acceptance/test_refs` 按阶段满足门禁。
 
@@ -316,7 +321,7 @@ py -3 scripts/sc/llm_fill_acceptance_refs.py --all --write --rewrite-placeholder
 #### 2.2 创建测试文件与红灯阶段（LLM；只生成 Refs 指向的文件）
 
 - `scripts/sc/llm_generate_tests_from_acceptance_refs.py`
-  - 意义：为 acceptance 条款中的 `Refs:` **明确指向但不存在**的测试文件生成内容（`.cs`/`.gd`），并确保把 `ACC:T<id>.<n>` anchors 写入对应测试方法附近；可选跑 `scripts/sc/test.py` 做确定性验证。
+  - 意义：为 acceptance 条款中的 `Refs:` **明确指向但不存在**的测试文件生成内容（`.cs`/`.gd`），并在 prompt 中要求把 `ACC:T<id>.<n>` anchors 绑定到具体测试用例附近；最终在 refactor 阶段由 `scripts/python/validate_acceptance_anchors.py` 做硬门禁收口。可选跑 `scripts/sc/test.py` 做确定性验证。
   - 保守策略：只会创建 acceptance `Refs:` 里写明的路径；不会发明新路径/新文件名。
   - 输出：`logs/ci/<YYYY-MM-DD>/sc-llm-acceptance-tests/`（prompt/trace/last output/verify log）。
 
@@ -506,7 +511,7 @@ py -3 scripts/python/check_test_naming.py --style legacy
 
 #### A6) `scripts/sc/llm_generate_tests_from_acceptance_refs.py`
 
-- 意义：只为 acceptance `Refs:` **明确指向但不存在**的测试文件生成内容（`.cs`/`.gd`），并把 `ACC:T<id>.<n>` 写入对应测试方法附近；可选跑 `scripts/sc/test.py` 验证。
+- 意义：只为 acceptance `Refs:` **明确指向但不存在**的测试文件生成内容（`.cs`/`.gd`），并在 prompt 中要求把 `ACC:T<id>.<n>` 写入对应测试用例附近；refactor 阶段由 `scripts/python/validate_acceptance_anchors.py` 证明绑定。可选跑 `scripts/sc/test.py` 验证。
 - 输出：`logs/ci/<YYYY-MM-DD>/sc-llm-acceptance-tests/`（prompt/trace/verify log）。
 - 场景：你已经补齐 `Refs:`，希望自动生成缺失测试文件，并进入 TDD red/green/refactor。
 - 关键参数：
@@ -533,7 +538,7 @@ py -3 scripts/python/check_test_naming.py --style legacy
 
 - 意义：LLM 软审查。它会读取 diff + 任务上下文，并注入确定性 `sc-acceptance-check` 工件，输出“风险/建议/缺口”清单。
 - 模板：`scripts/sc/templates/llm_review/bmad-godot-review-template.txt`
-- 输出：`logs/ci/<YYYY-MM-DD>/sc-llm-review/`（prompts/outputs/summary）。
+- 输出：当提供 `--task-id` 时写入 `logs/ci/<YYYY-MM-DD>/sc-llm-review-task-<id>/`；否则写入 `logs/ci/<YYYY-MM-DD>/sc-llm-review/`。
 - 场景：确定性门禁通过，但你仍担心语义缺口/架构风险；或想把 BMAD checklist 结构化注入审查。
 - 关键参数：
   - `--review-profile bmad-godot` 或 `--review-template <path>`：选择模板。
@@ -599,6 +604,8 @@ py -3 scripts/python/check_test_naming.py --style legacy
   - `--require-executed-refs`：要求 anchors 的“本次执行证据”（TRX/JUnit）。
   - `--subtasks-coverage skip|warn|require`：子任务覆盖 gate。
 
+当前 `scripts/sc/acceptance_check.py` 的 risk 步骤会把风险结果汇总到该次验收的 `summary.json` 里（通过 `--only risk` 可单独运行），目前不会单独生成 `risk_summary.json` 文件。
+
 - 说明：验收步骤编排在 `scripts/sc/_acceptance_steps.py`，其中会调用下述确定性脚本（见 C 节）。
 
 ### C. acceptance_check 链接的确定性子脚本（建议只在排障时单独跑）
@@ -608,11 +615,30 @@ py -3 scripts/python/check_test_naming.py --style legacy
 #### C1) Refs/anchors/证据绑定
 
 - `scripts/python/validate_acceptance_refs.py`
-  - 作用：校验 acceptance 条款是否包含 `Refs:`；refactor 阶段还会校验文件存在且纳入 `test_refs`。
+  - 作用：校验 acceptance 条款的 `Refs:`（把自由文本变成可确定性校验）。规则包含：
+    - 每条 acceptance 必须包含 `Refs:`；
+    - Refs 必须是 repo 相对路径，且只能是允许的测试根目录前缀（`Game.Core.Tests/`、`Tests.Godot/tests/`、`Tests/`）下的 `.cs`/`.gd`；
+    - 文本↔Refs 类型一致性硬规则：
+      - 文本提到 xUnit ⇒ Refs 至少包含一个 `.cs`；
+      - 文本提到 GdUnit4 ⇒ Refs 至少包含一个 `.gd`；
+      - 文本提到 Game.Core ⇒ Refs 至少包含一个 `Game.Core.Tests/*.cs`；
+    - refactor 阶段：引用文件必须存在，且每个 ref 必须包含在该任务的 `test_refs` 里（证据链闭环）。
   - 参数：`--task-id <id> --stage red|green|refactor --out <json>`。
 
+说明："最多 5 行" 是为了避免 anchor 漂在文件顶部/注释区导致绑定不确定。
+
+补充：如果你希望放宽到"30 行内"（你之前提出的建议值），需要修改 `scripts/python/validate_acceptance_anchors.py` 内部常量（当前无 CLI 参数）。
+
+
 - `scripts/python/validate_acceptance_anchors.py`
-  - 作用：校验 `ACC:T<id>.<n>` anchors 的存在与“方法级绑定”形态（按阶段）。
+  - 作用：校验 `ACC:T<id>.<n>` anchors，提供确定性的"语义绑定"（避免 acceptance 只写了 Refs，但测试里没有声明覆盖）。
+  - 绑定规则（确定性，当前实现口径）：
+    - 对 task T<id> 的 acceptance 第 n 条（1-based），anchor 固定为 `ACC:T<id>.<n>`；
+    - refactor 阶段：至少一个 Refs 指向的测试文件必须包含该 anchor；
+    - refactor 阶段还要求"方法级绑定"：anchor 出现位置后"近距离"必须出现测试用例标记：
+      - C#：在 anchor 行之后最多 5 行内出现 `[Fact]` 或 `[Theory]`；
+      - GDScript（GdUnit4）：在 anchor 行之后最多 5 行内出现 `func test_...`；
+    - red/green 阶段：该门禁只做 skip（不阻断），让你先生成/跑通测试后再收口。
   - 参数：`--task-id <id> --stage red|green|refactor --out <json>`。
 
 - `scripts/python/validate_acceptance_execution_evidence.py`
