@@ -140,16 +140,18 @@ def run_checks(out_dir: Path, focus: str) -> list[dict[str, Any]]:
             ["py", "-3", "scripts/python/validate_task_overlays.py"],
             requires_relpaths=["scripts/python/validate_task_overlays.py", ".taskmaster/tasks/tasks.json"],
         )
+
+    # Contracts consistency (Overlay <-> Contracts).
+    if focus in ("all", "architecture", "quality"):
         run_check(
             "validate_contracts",
             ["py", "-3", "scripts/python/validate_contracts.py"],
             requires_relpaths=["scripts/python/validate_contracts.py"],
         )
-
         run_check(
-            "task_links_validate",
-            ["py", "-3", "scripts/python/task_links_validate.py"],
-            requires_relpaths=["scripts/python/task_links_validate.py", ".taskmaster/tasks/tasks.json"],
+            "check_domain_contracts",
+            ["py", "-3", "scripts/python/check_domain_contracts.py"],
+            requires_relpaths=["scripts/python/check_domain_contracts.py"],
         )
 
     # Quality checks.

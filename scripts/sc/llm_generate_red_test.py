@@ -151,48 +151,56 @@ def _build_prompt(*, task_id: str, context: dict[str, Any]) -> str:
         [
             "Hard constraints for generated code:",
             "- Output MUST be valid JSON only (no Markdown).",
-            '- The JSON MUST contain: {"file_path": "...", "content": "..."}.' ,
-            f"- file_path MUST be exactly: Game.Core.Tests/Tasks/Task{task_id}RedTests.cs",
-            "- content MUST be a complete C# xUnit test file (English-only comments/strings).",
-            "- Must compile under .NET 8; do not reference Godot APIs in Game.Core.Tests.",
-            "- Create at least 1 failing [Fact] test method (red stage).",
-            "- Use FluentAssertions for assertions if possible.",
-            "- Keep the test deterministic (no time, no randomness, no IO).",
+            "- The JSON MUST contain: {\"file_path\": \"...\", \"content\": \"...\"}.",
+            "- file_path MUST be: Game.Core.Tests/Tasks/Task<id>RedTests.cs for this task id.",
+            "- content MUST be UTF-8 text, C# only, English only (no Chinese in code/comments/strings).",
+            "- Use xUnit + FluentAssertions only; do not introduce new packages.",
+            "- Test naming MUST follow Should_ style (e.g. ShouldDoX_WhenY).",
+            "- The test(s) MUST reflect acceptance/test_strategy intent and MUST be failing under current code (red stage).",
+            "- Prefer a deterministic assertion failure over compile errors, but compile errors are acceptable if unavoidable.",
         ]
     )
 
-    prompt = "\n".join(
+    ctx = "\n".join(
         [
-            "You are a senior C# test engineer in a Godot+C# repo template.",
-            "Generate a task-aligned failing xUnit test file skeleton for the given task.",
-            "",
-            constraints,
-            "",
-            "Task context:",
-            f"- task_id: {task_id}",
+            "Task context (from sc-analyze triplet):",
+            f"- id: {task_id}",
             f"- title: {title}",
             f"- overlay: {overlay}",
-            f"- adrRefs: {adr_refs}",
-            f"- archRefs: {arch_refs}",
+            f"- adrRefs: {', '.join([str(x) for x in adr_refs])}",
+            f"- archRefs: {', '.join([str(x) for x in arch_refs])}",
             "",
-            "Back view:",
-            f"- test_strategy: {back_strategy}",
-            f"- acceptance: {back_acceptance}",
+            "Repository testing conventions excerpt (docs/testing-framework.md):",
+            testing_excerpt or "(missing)",
             "",
-            "Gameplay view:",
-            f"- test_strategy: {gameplay_strategy}",
-            f"- acceptance: {gameplay_acceptance}",
+            "tasks_back.test_strategy:",
+            json.dumps(back_strategy, ensure_ascii=False, indent=2),
             "",
-            "Optional taskdoc markdown (may be empty):",
-            taskdoc_md,
+            "tasks_back.acceptance:",
+            json.dumps(back_acceptance, ensure_ascii=False, indent=2),
             "",
-            "Repository testing framework excerpt (SSoT; may be empty):",
-            testing_excerpt,
+            "tasks_gameplay.test_strategy:",
+            json.dumps(gameplay_strategy, ensure_ascii=False, indent=2),
             "",
-            "Now output ONLY the required JSON object.",
+            "tasks_gameplay.acceptance:",
+            json.dumps(gameplay_acceptance, ensure_ascii=False, indent=2),
+            "",
+            "taskdoc (Serena context, may include symbols/paths):",
+            taskdoc_md or "(missing)",
         ]
     )
-    return prompt
+
+    instruction = "\n".join(
+        [
+            "You are generating a red test file for a Godot+C# repo.",
+            "The goal is to express task intent as a meaningful failing unit test skeleton.",
+            "Keep it minimal: 1-3 tests that cover the highest-value acceptance points that are unit-testable in Game.Core.",
+            "Do NOT write TODOs. Do NOT add new production code.",
+            "Only output the requested JSON object.",
+        ]
+    )
+
+    return "\n\n".join([constraints, ctx, instruction]).strip() + "\n"
 
 
 def main() -> int:
@@ -274,14 +282,7 @@ def main() -> int:
     write_text(trace_path, trace_out)
 
     last_msg = _read_text(last_msg_path) if last_msg_path.exists() else ""
-    meta = {
-        "task_id": task_id,
-        "rc": rc,
-        "cmd": cmd,
-        "prompt": str(prompt_path),
-        "trace": str(trace_path),
-        "last_msg": str(last_msg_path),
-    }
+    meta = {"task_id": task_id, "rc": rc, "cmd": cmd, "prompt": str(prompt_path), "trace": str(trace_path), "last_msg": str(last_msg_path)}
     write_json(out_dir / f"meta-{task_id}.json", meta)
 
     if rc != 0 or not last_msg.strip():

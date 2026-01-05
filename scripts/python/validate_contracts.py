@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Validate contract references between overlay docs and Contracts directory.
+
+This script is designed for the newguild Godot + C# template.
 
 Responsibilities:
 - Scan overlay 08 docs under docs/architecture/overlays/**/08/.
 - Extract contract paths like `Game.Core/Contracts/...cs`.
 - Check that referenced contract files exist.
+- Optionally detect contracts that are not referenced by any overlay doc.
 - Write a JSON report to logs/ci/<YYYY-MM-DD>/contracts-validate.json.
 
 Exit code:
 - 0 if no blocking issues are found.
-- 1 if referenced contract files are missing on disk.
-
-Notes:
-- Docs without any contract references are reported as warnings (non-blocking).
+- 1 if missing contract files or docs without any contract references are detected.
 """
 
 from __future__ import annotations
@@ -115,13 +115,19 @@ def build_report(root: Path) -> Dict[str, object]:
         for contract_path in contracts:
             contract_rel = contract_path.replace("\\", "/")
             if not (root / contract_rel).exists():
-                missing_contract_files.append({"doc": doc, "contract": contract_rel})
+                missing_contract_files.append(
+                    {"doc": doc, "contract": contract_rel}
+                )
 
-    # Docs that do not reference any contract at all (non-blocking)
-    docs_without_contracts = [doc for doc, contracts in doc_contracts.items() if not contracts]
+    # Docs that do not reference any contract at all
+    docs_without_contracts = [
+        doc for doc, contracts in doc_contracts.items() if not contracts
+    ]
 
     # Contracts that are present on disk but not referenced by any overlay doc
-    contracts_without_docs = [c for c in all_contracts if c not in referenced_contracts]
+    contracts_without_docs = [
+        c for c in all_contracts if c not in referenced_contracts
+    ]
 
     ok = not missing_contract_files
 
@@ -143,7 +149,10 @@ def write_report(root: Path, report: Dict[str, object]) -> Path:
     out_dir = root / "logs" / "ci" / date_str
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "contracts-validate.json"
-    out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     return out_path
 
 
@@ -177,4 +186,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
-

@@ -15,9 +15,15 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Dict, List, Set
 
 
-ADR_FOR_CH: dict[str, list[str]] = {
+ADR_FOR_CH: Dict[str, List[str]] = {
+    # Repo-level baseline / template lineage
+    # Note: ADR-0001 in this repo may contain legacy content; we still map it
+    # to the minimal CH set used by tasks to keep traceability checks consistent.
+    "ADR-0001": ["CH01", "CH07"],
+
     "ADR-0002": ["CH02"],
     "ADR-0019": ["CH02"],
     "ADR-0003": ["CH03"],
@@ -29,8 +35,14 @@ ADR_FOR_CH: dict[str, list[str]] = {
     "ADR-0008": ["CH10"],
     "ADR-0015": ["CH09"],
     "ADR-0018": ["CH01", "CH06", "CH07"],
+    "ADR-0020": ["CH05", "CH06"],
     "ADR-0025": ["CH06", "CH07"],
     "ADR-0023": ["CH05"],
+
+    # Project-specific ADRs (phase docs / template rules)
+    "ADR-0021": ["CH05", "CH06"],
+    "ADR-0022": ["CH04"],
+    "ADR-0024": ["CH01", "CH07"],
 }
 
 
@@ -38,9 +50,9 @@ def load_json_list(path: Path) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def collect_adr_ids(root: Path) -> set[str]:
+def collect_adr_ids(root: Path) -> Set[str]:
     adr_dir = root / "docs" / "adr"
-    ids: set[str] = set()
+    ids: Set[str] = set()
     if not adr_dir.exists():
         return ids
     for f in adr_dir.glob("ADR-*.md"):
@@ -50,21 +62,36 @@ def collect_adr_ids(root: Path) -> set[str]:
     return ids
 
 
-def collect_overlay_paths(root: Path) -> set[str]:
-    overlay_root = root / "docs" / "architecture" / "overlays" / "PRD-Guild-Manager" / "08"
-    if not overlay_root.exists():
-        return set()
-    paths: set[str] = set()
-    for p in overlay_root.glob("*"):
-        rel = p.relative_to(root)
-        paths.add(str(rel).replace("\\", "/"))
-    return paths
+def collect_overlay_paths(root: Path) -> Set[str]:
+    """
+    Collect overlay 08/* paths for all overlays under docs/architecture/overlays.
+    """
+    overlay_paths: Set[str] = set()
+
+    overlays_root = root / "docs" / "architecture" / "overlays"
+    if not overlays_root.exists():
+        return overlay_paths
+
+    for prd_dir in overlays_root.iterdir():
+        if not prd_dir.is_dir():
+            continue
+        chapter_dir = prd_dir / "08"
+        if not chapter_dir.exists():
+            continue
+        for p in chapter_dir.glob("*"):
+            rel = p.relative_to(root)
+            overlay_paths.add(str(rel).replace("\\", "/"))
+
+    return overlay_paths
 
 
-def check_tasks(tasks: list[dict], adr_ids: set[str], overlay_paths: set[str], label: str) -> bool:
+def check_tasks(tasks: list[dict], adr_ids: Set[str], overlay_paths: Set[str], label: str) -> bool:
     total = len(tasks)
     ok_count = 0
     print(f"\n=== Checking {label} ({total} tasks) ===")
+
+    # For depends_on validation we need the set of known ids within this file.
+    known_ids: Set[str] = {str(t.get("id")) for t in tasks if "id" in t}
 
     for t in sorted(tasks, key=lambda x: x.get("id", "")):
         tid = t.get("id")
@@ -88,8 +115,8 @@ def check_tasks(tasks: list[dict], adr_ids: set[str], overlay_paths: set[str], l
             print(f"- {tid}: missing chapter_refs (from ADR): {sorted(missing_ch)}")
             has_error = True
         if extra_ch:
-            print(f"- {tid}: extra chapter_refs (not implied by ADR map): {sorted(extra_ch)}")
-            has_error = True
+            # Optional improvement (A+B): allow extra chapters as warnings.
+            print(f"- {tid}: WARN extra chapter_refs (not implied by ADR map): {sorted(extra_ch)}")
 
         # overlay_refs only for tasks_back (label heuristic)
         if label.startswith("tasks_back"):
@@ -99,6 +126,14 @@ def check_tasks(tasks: list[dict], adr_ids: set[str], overlay_paths: set[str], l
                 if missing_overlays:
                     print(f"- {tid}: missing overlays {missing_overlays}")
                     has_error = True
+
+        # depends_on: ensure all referenced ids exist in the same task file.
+        # This is a local consistency check; cross-file mapping is handled elsewhere.
+        deps = [str(d) for d in t.get("depends_on") or []]
+        missing_deps = [d for d in deps if d not in known_ids]
+        if missing_deps:
+            print(f"- {tid}: depends_on references missing ids {missing_deps}")
+            has_error = True
 
         if not has_error:
             ok_count += 1

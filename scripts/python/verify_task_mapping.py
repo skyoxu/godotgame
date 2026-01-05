@@ -1,91 +1,171 @@
 #!/usr/bin/env python3
-"""验证任务映射完整性"""
+"""
+Verify that Taskmaster master tasks are properly mapped
+to tasks_back.json and tasks_gameplay.json views.
+
+This script is intended as a human-readable report, not a hard CI gate.
+All messages are ASCII-only to comply with repository guidelines.
+"""
 
 import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-def main():
+
+def load_json(path: Path) -> Any:
+    if not path.exists():
+        return None
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+def ascii_safe(value: str) -> str:
+    """
+    Return an ASCII-only representation of a string.
+    Non-ASCII characters are escaped as \\uXXXX sequences to keep output stable
+    across Windows console code pages.
+    """
+    try:
+        value.encode("ascii")
+        return value
+    except UnicodeEncodeError:
+        return value.encode("unicode_escape").decode("ascii")
+
+
+def build_view_index(tasks: List[Dict[str, Any]], view_name: str) -> Dict[int, Dict[str, Any]]:
+    """Index tasks by taskmaster_id for a given view (back/gameplay)."""
+    index: Dict[int, Dict[str, Any]] = {}
+    for task in tasks:
+        raw_tm_id = task.get("taskmaster_id")
+        if raw_tm_id is None:
+            continue
+        try:
+            tm_id = int(str(raw_tm_id))
+        except Exception:
+            continue
+        entry = index.setdefault(tm_id, {})
+        entry[view_name] = {
+            "id": task.get("id"),
+            "has_adr_refs": bool(task.get("adr_refs")),
+            "has_test_refs": bool(task.get("test_refs")),
+            "has_acceptance": bool(task.get("acceptance")),
+            "has_story_id": bool(task.get("story_id")),
+        }
+    return index
+
+
+def status_flag(value: bool) -> str:
+    return "[OK]" if value else "[MISS]"
+
+
+def main() -> None:
+    root = Path(".")
+    tasks_json_path = root / ".taskmaster" / "tasks" / "tasks.json"
+    back_path = root / ".taskmaster" / "tasks" / "tasks_back.json"
+    gameplay_path = root / ".taskmaster" / "tasks" / "tasks_gameplay.json"
+
     print("=" * 60)
-    print("任务映射验证报告")
+    print("Task mapping verification report")
     print("=" * 60)
 
-    # 读取 tasks.json
-    tasks_json_path = Path(".taskmaster/tasks/tasks.json")
-    with open(tasks_json_path, 'r', encoding='utf-8') as f:
-        tasks_data = json.load(f)
+    tasks_data = load_json(tasks_json_path)
+    if not tasks_data:
+        print(f"[ERROR] Cannot load master tasks from {tasks_json_path}")
+        return
 
-    # 读取原始文件
-    original_files = [
-        (".taskmaster/tasks/tasks_back.json", "NG"),
-        (".taskmaster/tasks/tasks_gameplay.json", "GM")
-    ]
+    master_tasks: List[Dict[str, Any]] = tasks_data.get("master", {}).get("tasks", [])
+    print(f"\nMaster tasks count: {len(master_tasks)}\n")
 
-    original_tasks = {}
-    for file_path, prefix in original_files:
-        path = Path(file_path)
-        if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
-                tasks = json.load(f)
-                for task in tasks:
-                    if task.get("taskmaster_id"):
-                        original_tasks[task["taskmaster_id"]] = {
-                            "id": task["id"],
-                            "file": file_path,
-                            "prefix": prefix,
-                            "has_adr_refs": len(task.get("adr_refs", [])) > 0,
-                            "has_test_refs": len(task.get("test_refs", [])) > 0,
-                            "has_acceptance": len(task.get("acceptance", [])) > 0,
-                            "has_story_id": bool(task.get("story_id"))
-                        }
+    back_tasks = load_json(back_path) or []
+    gameplay_tasks = load_json(gameplay_path) or []
 
-    # 检查 master tag 的任务
-    master_tasks = tasks_data.get("master", {}).get("tasks", [])
+    back_index = build_view_index(back_tasks, "back")
+    gameplay_index = build_view_index(gameplay_tasks, "gameplay")
 
-    print(f"\n检查 'master' Tag 中的 {len(master_tasks)} 个任务:\n")
+    combined_index: Dict[int, Dict[str, Any]] = {}
+    for tm_id, data in back_index.items():
+        combined_index.setdefault(tm_id, {}).update(data)
+    for tm_id, data in gameplay_index.items():
+        combined_index.setdefault(tm_id, {}).update(data)
 
-    success_count = 0
-    partial_count = 0
-    missing_count = 0
+    full_ok = 0
+    partial = 0
+    missing = 0
 
-    for task in master_tasks[:10]:  # 检查前10个任务
-        tm_id = task["id"]
-        title = task["title"][:40] + "..." if len(task["title"]) > 40 else task["title"]
-
-        print(f"任务 #{tm_id}: {title}")
-
-        if tm_id in original_tasks:
-            orig = original_tasks[tm_id]
-            print(f"  ✅ 映射成功: {orig['id']} ({orig['file']})")
-            print(f"     ADR引用: {'✅' if orig['has_adr_refs'] else '❌'}")
-            print(f"     测试文件: {'✅' if orig['has_test_refs'] else '❌'}")
-            print(f"     验收标准: {'✅' if orig['has_acceptance'] else '❌'}")
-            print(f"     Story ID: {'✅' if orig['has_story_id'] else '❌'}")
-
-            if all([orig['has_adr_refs'], orig['has_acceptance'], orig['has_story_id']]):
-                print(f"     状态: ✅ 完整元数据")
-                success_count += 1
-            else:
-                print(f"     状态: ⚠️ 部分元数据缺失")
-                partial_count += 1
+    for task in master_tasks:
+        raw_tm_id = task.get("id")
+        try:
+            tm_id = int(str(raw_tm_id))
+        except Exception:
+            tm_id = raw_tm_id
+        title = task.get("title", "")
+        if not isinstance(title, str):
+            title = str(title)
+        title = ascii_safe(title)
+        if isinstance(title, str) and len(title) > 40:
+            title_display = title[:40] + "..."
         else:
-            print(f"  ❌ 未找到原始任务映射")
-            missing_count += 1
+            title_display = title
+
+        print(f"Task #{raw_tm_id}: {title_display}")
+
+        mapping: Optional[Dict[str, Any]] = combined_index.get(tm_id)
+        if mapping is None:
+            print("  [MISS] No back/gameplay view found for this task.")
+            missing += 1
+            print()
+            continue
+
+        back_info = mapping.get("back")
+        gameplay_info = mapping.get("gameplay")
+
+        if back_info:
+            print(
+                f"  BACK  {back_info.get('id')}: "
+                f"adr_refs={status_flag(back_info['has_adr_refs'])}, "
+                f"test_refs={status_flag(back_info['has_test_refs'])}, "
+                f"acceptance={status_flag(back_info['has_acceptance'])}, "
+                f"story_id={status_flag(back_info['has_story_id'])}"
+            )
+        else:
+            print("  BACK  [MISS] no mapping entry")
+
+        if gameplay_info:
+            print(
+                f"  GAME  {gameplay_info.get('id')}: "
+                f"adr_refs={status_flag(gameplay_info['has_adr_refs'])}, "
+                f"test_refs={status_flag(gameplay_info['has_test_refs'])}, "
+                f"acceptance={status_flag(gameplay_info['has_acceptance'])}, "
+                f"story_id={status_flag(gameplay_info['has_story_id'])}"
+            )
+        else:
+            print("  GAME  [MISS] no mapping entry")
+
+        views = [v for v in (back_info, gameplay_info) if v is not None]
+        if not views:
+            missing += 1
+        else:
+            view_ok = any(
+                v["has_adr_refs"] and v["has_acceptance"] and v["has_story_id"]
+                for v in views
+            )
+            if view_ok:
+                print("  SUMMARY: [OK] mapping has core metadata in at least one view.")
+                full_ok += 1
+            else:
+                print("  SUMMARY: [WARN] mapping exists but metadata is incomplete.")
+                partial += 1
 
         print()
 
-    # 汇总统计
     print("=" * 60)
-    print("统计汇总")
+    print("Summary")
     print("=" * 60)
-    print(f"完整元数据: {success_count} 个 ✅")
-    print(f"部分元数据: {partial_count} 个 ⚠️")
-    print(f"缺失映射: {missing_count} 个 ❌")
-    print(f"总计: {success_count + partial_count + missing_count} 个")
+    total = len(master_tasks)
+    print(f"Tasks with complete mapping:   {full_ok}")
+    print(f"Tasks with partial metadata:   {partial}")
+    print(f"Tasks without any mapping:     {missing}")
+    print(f"Total master tasks inspected:  {total}")
 
-    if success_count == len(master_tasks[:10]):
-        print("\n✅ 所有检查的任务都成功加载了完整元数据！")
-    else:
-        print(f"\n⚠️ {partial_count + missing_count} 个任务存在元数据问题")
 
 if __name__ == "__main__":
     main()

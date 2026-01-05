@@ -80,8 +80,6 @@ BINARY_EXT = {
     ".sqlite",
     ".sav",
     ".bak",
-    ".pyc",
-    ".pyo",
 }
 
 # Exclude vendor/test asset folders and known binaries
@@ -91,23 +89,14 @@ EXCLUDE_SUBSTRINGS = [
     "Tests.Godot/addons/gdUnit4/src/reporters/html/template/css/",
     "Tests.Godot/addons/gdUnit4/src/ui/settings/",
     "gitlog/export-logs.zip",
-    "/__pycache__/",
-    "\\__pycache__\\",
 ]
 
 # Mojibake/garble indicators (heuristic, not a proof).
 MOJIBAKE_REGEXES = [
     ("FFFD_REPLACEMENT", re.compile("\uFFFD")),
     ("CJK_MOJIBAKE", re.compile(r"[闁閻鐟鍗鈧缂濞閸鎮绱锛绗閿鍊鎯缁婵锟斤拷]")),
-    # Common UTF-8->CP1252 mojibake sequences (expressed via unicode escapes to avoid self-flagging).
-    (
-        "CP1252_PUNCT",
-        re.compile(
-            "(?:\u00c2|\u00e2\u20ac\u2122|\u00e2\u20ac\u2019|\u00e2\u20ac\u201c|\u00e2\u20ac\u201d|\u00e2\u20ac\u2013|\u00e2\u20ac\u2014|\u00e2\u20ac\u2026)"
-        ),
-    ),
-    # UTF-8 BOM bytes shown as text ("ï»¿").
-    ("BOM_AS_TEXT", re.compile("\u00ef\u00bb\u00bf")),
+    ("CP1252_PUNCT", re.compile(r"(?:â€™|â€œ|â€�|â€”|â€˜|â€¢|â€¦|â„¢)")),
+    ("BOM_AS_TEXT", re.compile(r"ï»¿")),
 ]
 
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")

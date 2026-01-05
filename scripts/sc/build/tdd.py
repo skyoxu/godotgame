@@ -191,7 +191,7 @@ def run_dotnet_test_filtered(task_id: str, *, solution: str, configuration: str,
 
 
 def run_sc_analyze_task_context(*, task_id: str, out_dir: Path) -> dict[str, Any]:
-    # Ensure logs/ci/<date>/sc-analyze/task_context.<id>.json exists and is fresh enough for this TDD stage.
+    # Ensure logs/ci/<date>/sc-analyze/task_context.json exists and is fresh enough for this TDD stage.
     # We intentionally use the repo's deterministic analyzer (no LLM).
     cmd = [
         "py",
@@ -247,30 +247,9 @@ def run_green_gate(*, solution: str, configuration: str, out_dir: Path, no_cover
     return {"name": "run_dotnet", "cmd": cmd, "rc": rc, "log": str(log_path), "stdout": out}
 
 
-def run_acceptance_refs_record(out_dir: Path, *, task_id: str, stage: str) -> dict[str, Any]:
-    cmd = [
-        "py",
-        "-3",
-        "scripts/python/validate_acceptance_refs.py",
-        "--task-id",
-        str(task_id),
-        "--stage",
-        str(stage),
-        "--out",
-        str(out_dir / f"acceptance-refs.{stage}.json"),
-    ]
-    rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=60)
-    log_path = out_dir / f"validate_acceptance_refs.{stage}.log"
-    write_text(log_path, out)
-    # validate_acceptance_refs.py is soft at red/green stage (never blocks); keep status ok even if rc!=0.
-    status = "ok" if stage in ("red", "green") else ("ok" if rc == 0 else "fail")
-    return {"name": f"validate_acceptance_refs.{stage}", "cmd": cmd, "rc": rc, "log": str(log_path), "status": status}
-
-
 def run_refactor_checks(out_dir: Path, *, task_id: str) -> list[dict[str, Any]]:
     steps: list[dict[str, Any]] = []
     steps.append(check_no_task_red_test_skeletons(out_dir))
-
     # Hard gate: every task must have non-empty test_refs evidence in both task views.
     # This is enforced at refactor stage, when test files are expected to be stable.
     test_refs_script = repo_root() / "scripts" / "python" / "validate_task_test_refs.py"
@@ -340,6 +319,30 @@ def run_refactor_checks(out_dir: Path, *, task_id: str) -> list[dict[str, Any]]:
         }
     )
 
+    # Hard gate: referenced tests must contain ACC:T<id>.<n> anchors for each acceptance item.
+    anchors_cmd = [
+        "py",
+        "-3",
+        "scripts/python/validate_acceptance_anchors.py",
+        "--task-id",
+        str(task_id),
+        "--stage",
+        "refactor",
+        "--out",
+        str(out_dir / "acceptance-anchors.json"),
+    ]
+    anchors_rc, anchors_out = run_cmd(anchors_cmd, cwd=repo_root(), timeout_sec=60)
+    anchors_log = out_dir / "validate_acceptance_anchors.log"
+    write_text(anchors_log, anchors_out)
+    steps.append(
+        {
+            "name": "validate_acceptance_anchors",
+            "cmd": anchors_cmd,
+            "rc": anchors_rc,
+            "log": str(anchors_log),
+            "status": "ok" if anchors_rc == 0 else "fail",
+        }
+    )
     candidates = [
         ("check_test_naming", ["py", "-3", "scripts/python/check_test_naming.py", "--task-id", str(task_id), "--style", "strict"], "scripts/python/check_test_naming.py"),
         ("check_tasks_all_refs", ["py", "-3", "scripts/python/check_tasks_all_refs.py"], "scripts/python/check_tasks_all_refs.py"),
@@ -422,8 +425,6 @@ def main() -> int:
             assert_no_new_contract_files(before_contracts)
             return 1
 
-        summary["steps"].append(run_acceptance_refs_record(out_dir, task_id=triplet.task_id, stage="red"))
-
         test_path = ensure_red_test_exists(
             triplet.task_id,
             str(triplet.master.get("title") or ""),
@@ -460,8 +461,6 @@ def main() -> int:
             assert_no_new_contract_files(before_contracts)
             return 1
 
-        summary["steps"].append(run_acceptance_refs_record(out_dir, task_id=triplet.task_id, stage="green"))
-
         step = run_green_gate(
             solution=args.solution,
             configuration=args.configuration,
@@ -491,7 +490,36 @@ def main() -> int:
         summary["steps"].extend(steps)
         summary["status"] = "ok" if all(s["rc"] == 0 for s in steps) else "fail"
         write_json(out_dir / "summary.json", summary)
-        print(f"SC_BUILD_TDD status={summary['status']} out={out_dir}")
+
+        if summary["status"] != "ok":
+            failed = [s for s in steps if s.get("rc") != 0]
+            print(f"SC_BUILD_TDD status=fail out={out_dir} failed_steps={len(failed)}")
+
+            def _print_top_errors(json_path: Path, *, label: str, max_items: int = 12) -> None:
+                if not json_path.exists():
+                    return
+                try:
+                    payload = json.loads(json_path.read_text(encoding="utf-8"))
+                except Exception:
+                    return
+                errs = payload.get("errors")
+                if not isinstance(errs, list) or not errs:
+                    return
+                print(f"{label}:")
+                for e in [str(x) for x in errs[:max_items]]:
+                    print(f"  - {e}")
+                if len(errs) > max_items:
+                    print(f"  ... ({len(errs) - max_items} more)")
+
+            _print_top_errors(out_dir / "acceptance-refs.json", label="ACCEPTANCE_REFS_TOP_ERRORS")
+            _print_top_errors(out_dir / "task-test-refs.json", label="TASK_TEST_REFS_TOP_ERRORS")
+            print("Fix hints:")
+            print(f"  - Check logs: {out_dir}")
+            print(f"  - Ensure every acceptance item has 'Refs:' and referenced files exist")
+            print(f"  - Ensure refs are included in test_refs (or run update_task_test_refs_from_acceptance_refs.py)")
+        else:
+            print(f"SC_BUILD_TDD status=ok out={out_dir}")
+
         assert_no_new_contract_files(before_contracts)
         return 0 if summary["status"] == "ok" else 1
 

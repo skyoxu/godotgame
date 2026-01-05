@@ -94,7 +94,7 @@ def validate_test_refs(
     normalized: list[str] = []
 
     if entry is None:
-        errors.append(f"{label}: mapped task not found by taskmaster_id")
+        warnings.append(f"{label}: mapped task not found by taskmaster_id (skip)")
         return errors, warnings, normalized
 
     raw = entry.get("test_refs")
@@ -112,11 +112,19 @@ def validate_test_refs(
         return errors, warnings, normalized
 
     for r in normalized:
-        if is_abs_path(r):
-            errors.append(f"{label}: absolute path is not allowed in test_refs: {r}")
+        rr = str(r).strip().replace("\\", "/")
+        if is_abs_path(rr):
+            errors.append(f"{label}: absolute path is not allowed in test_refs: {rr}")
             continue
-        if not (root / r).exists():
-            errors.append(f"{label}: referenced file not found: {r}")
+        if not (rr.endswith(".cs") or rr.endswith(".gd")):
+            errors.append(f"{label}: test_refs entry must be a test file (.cs/.gd): {rr}")
+            continue
+        allowed_prefixes = ("Game.Core.Tests/", "Tests.Godot/tests/", "Tests/")
+        if not rr.startswith(allowed_prefixes):
+            errors.append(f"{label}: test_refs entry must be under test roots: {rr}")
+            continue
+        if not (root / rr).exists():
+            errors.append(f"{label}: referenced file not found: {rr}")
 
     return errors, warnings, normalized
 
@@ -150,7 +158,10 @@ def main() -> int:
     raw_ids: list[str] = []
     raw_ids.extend([str(x).strip() for x in (args.task_id or []) if str(x).strip()])
     raw_ids.extend([x.strip() for x in str(args.task_ids or "").split(",") if x.strip()])
-    task_ids = sorted(set(raw_ids), key=lambda x: int(x) if x.isdigit() else 10**9)
+    task_ids = sorted(set(raw_ids), key=lambda x: int(x) if x.isdigit() else x)
+    if not task_ids:
+        print("TASK_TRIPLET_AUDIT ERROR: no task ids provided")
+        return 2
 
     root = repo_root()
     out_dir = ci_dir("task-triplet-audit")
@@ -176,17 +187,18 @@ def main() -> int:
         errors: list[str] = []
         warnings: list[str] = []
 
-        overlay = (master or {}).get("overlay")
-        overlay_exists = bool(overlay and (root / str(overlay)).exists())
-        if not overlay:
-            warnings.append("tasks.json: overlay missing/empty")
-        elif not overlay_exists:
-            warnings.append("tasks.json: overlay file missing on disk")
+        if master is None:
+            errors.append("tasks.json: master task not found by id")
+
+        overlay = str((master or {}).get("overlay") or "")
+        overlay_exists = bool(overlay and (root / overlay).exists())
+        if overlay and not overlay_exists:
+            errors.append(f"tasks.json: overlay path missing on disk: {overlay}")
 
         adr_refs = (master or {}).get("adrRefs") or []
         arch_refs = (master or {}).get("archRefs") or []
         if not adr_refs:
-            warnings.append("tasks.json: adrRefs missing/empty (repo policy expects >=1 Accepted ADR for code changes)")
+            warnings.append("tasks.json: adrRefs missing/empty (repo rule expects >=1 Accepted ADR for code changes)")
         if not arch_refs:
             warnings.append("tasks.json: archRefs missing/empty")
 
@@ -206,6 +218,9 @@ def main() -> int:
         errors.extend(e2)
         warnings.extend(w1)
         warnings.extend(w2)
+
+        if back_task is None and gameplay_task is None:
+            errors.append("both tasks_back.json and tasks_gameplay.json mapped tasks are missing; at least one view must exist")
 
         discovered = auto_discover_task_tests(root, tid)
         if not discovered:
@@ -264,11 +279,7 @@ def main() -> int:
         "note": "Deterministic evidence audit only (not a semantic verifier). Use sc-acceptance-check + llm_review for semantic review.",
     }
 
-    (out_dir / "report.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    (out_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     md_lines: list[str] = []
     md_lines.append("# Task triplet delivery audit (proxy)")
@@ -284,9 +295,7 @@ def main() -> int:
         md_lines.append(f"- status: {t.get('status')}")
         md_lines.append(f"- overlay: {t['master'].get('overlay')} (exists={t['evidence'].get('overlay_exists')})")
         md_lines.append(f"- back.mapped: {t['back'].get('mapped')} gameplay.mapped: {t['gameplay'].get('mapped')}")
-        md_lines.append(
-            f"- back.test_refs: {len(t['back'].get('test_refs') or [])} gameplay.test_refs: {len(t['gameplay'].get('test_refs') or [])}"
-        )
+        md_lines.append(f"- back.test_refs: {len(t['back'].get('test_refs') or [])} gameplay.test_refs: {len(t['gameplay'].get('test_refs') or [])}")
         md_lines.append(f"- discovered_test_files: {len(t['evidence'].get('discovered_test_files') or [])}")
         if t["errors"]:
             md_lines.append("")

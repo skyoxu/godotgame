@@ -43,7 +43,7 @@ def is_pascal_case(name: str) -> bool:
         True if name is PascalCase, False otherwise
     """
     # PascalCase pattern: starts with uppercase, no underscores
-    pattern = r"^[A-Z][a-zA-Z0-9]*$"
+    pattern = r'^[A-Z][a-zA-Z0-9]*$'
     return bool(re.match(pattern, name))
 
 
@@ -60,7 +60,7 @@ def is_pascal_case_with_underscores(name: str) -> bool:
       - Each segment is PascalCase (no underscores within segments)
       - Segments are separated by a single underscore
     """
-    pattern = r"^[A-Z][a-zA-Z0-9]*(?:_[A-Z][a-zA-Z0-9]*)+$"
+    pattern = r'^[A-Z][a-zA-Z0-9]*(?:_[A-Z][a-zA-Z0-9]*)+$'
     return bool(re.match(pattern, name))
 
 
@@ -69,7 +69,7 @@ def is_should_style(name: str) -> bool:
     Strict style A (Should_):
       - ShouldDoX_WhenY
     """
-    return bool(re.match(r"^Should[A-Z][a-zA-Z0-9]*_When[A-Z][a-zA-Z0-9]*$", name))
+    return bool(re.match(r'^Should[A-Z][a-zA-Z0-9]*_When[A-Z][a-zA-Z0-9]*$', name))
 
 
 def is_given_when_then_style(name: str) -> bool:
@@ -77,17 +77,10 @@ def is_given_when_then_style(name: str) -> bool:
     Strict style B (Given_When_Then):
       - GivenX_WhenY_ThenZ
     """
-    return bool(
-        re.match(r"^Given[A-Z][a-zA-Z0-9]*_When[A-Z][a-zA-Z0-9]*_Then[A-Z][a-zA-Z0-9]*$", name)
-    )
+    return bool(re.match(r'^Given[A-Z][a-zA-Z0-9]*_When[A-Z][a-zA-Z0-9]*_Then[A-Z][a-zA-Z0-9]*$', name))
 
 
 def is_allowed_test_method_name(name: str, *, style: str) -> bool:
-    """
-    Approved patterns:
-      - legacy: PascalCase OR PascalCase_With_Underscores (tolerant; avoid breaking existing repos)
-      - strict: ShouldDoX_WhenY OR GivenX_WhenY_ThenZ (preferred for new task evidence)
-    """
     if style == "legacy":
         return is_pascal_case(name) or is_pascal_case_with_underscores(name)
     if style == "strict":
@@ -105,27 +98,27 @@ def extract_test_methods(file_path: Path) -> List[Tuple[int, str]]:
     Returns:
         List of tuples (line_number, method_name)
     """
-    test_methods: List[Tuple[int, str]] = []
+    test_methods = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
         # Look for [Fact] or [Theory] attributes followed by method definition
         for i, line in enumerate(lines, start=1):
             line = line.strip()
 
-            if line.startswith("[Fact]") or line.startswith("[Theory]"):
+            # Check if this line has [Fact] or [Theory] attribute
+            if line.startswith('[Fact]') or line.startswith('[Theory]'):
                 # Next non-empty line should be the method definition
-                for j in range(i, min(i + 5, len(lines) + 1)):
+                for j in range(i, min(i + 5, len(lines) + 1)):  # Check next few lines
                     next_line = lines[j - 1].strip()
-                    if not next_line or next_line.startswith("//") or next_line.startswith("["):
+                    if not next_line or next_line.startswith('//') or next_line.startswith('['):
                         continue
 
-                    method_match = re.search(
-                        r"\\b(?:public|private|internal)\\s+(?:async\\s+)?(?:void|Task(?:<[^>]+>)?)\\s+(\\w+)\\s*\\(",
-                        next_line,
-                    )
+                    # Extract method name from method signature
+                    # Pattern: public void MethodName() or public async Task MethodName()
+                    method_match = re.search(r'\b(?:public|private|internal)\s+(?:async\s+)?(?:void|Task(?:<[^>]+>)?)\s+(\w+)\s*\(', next_line)
                     if method_match:
                         method_name = method_match.group(1)
                         test_methods.append((j, method_name))
@@ -149,7 +142,8 @@ def scan_test_files(test_dir: Path, *, style: str) -> dict:
     """
     violations = {}
 
-    test_files = list(test_dir.rglob("*Tests.cs"))
+    # Find all *Tests.cs files
+    test_files = list(test_dir.rglob('*Tests.cs'))
 
     for test_file in test_files:
         test_methods = extract_test_methods(test_file)
@@ -239,7 +233,8 @@ def scan_specific_files(*, files: List[Path], style: str) -> dict:
     return violations
 
 
-def main() -> int:
+def main():
+    """Main entry point for the script."""
     ap = argparse.ArgumentParser(description="Validate test method naming conventions for Game.Core.Tests.")
     ap.add_argument("--style", choices=["legacy", "strict"], default="legacy", help="Naming style to enforce.")
     ap.add_argument("--task-id", default=None, help="If set, validate only the task's C# test_refs (.cs).")
@@ -272,6 +267,7 @@ def main() -> int:
         print("[OK] No violations found")
         return 0
 
+    # Report violations
     print("[FAIL] Test naming violations found:")
     print()
 
@@ -297,6 +293,5 @@ def main() -> int:
     return 1
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
-

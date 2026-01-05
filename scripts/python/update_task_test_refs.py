@@ -117,9 +117,7 @@ def main() -> int:
     changed_back = add_unique(back_refs, add_items)
     changed_game = add_unique(game_refs, add_items)
 
-    print(
-        f"UPDATE_TASK_TEST_REFS task_id={task_id} add={len(add_items)} changed_back={changed_back} changed_game={changed_game} write={bool(args.write)}"
-    )
+    print(f"UPDATE_TASK_TEST_REFS task_id={task_id} add={len(add_items)} changed_back={changed_back} changed_game={changed_game} write={bool(args.write)}")
     if not args.write:
         return 0
 
@@ -130,4 +128,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
