@@ -3,7 +3,7 @@
 ## 项目基本信息
 
 - **PRD ID**: PRD-Guild-Manager
-- **架构文档**: 08-功能纵切-公会管理器.md
+- **架构文档**: 08-Feature-Slice-Guild-Manager.md
 - **创建日期**: 2024-08-26
 - **验收标准**: Arc42 架构文档规范 + CloudEvents v1.0 + LegacyDesktopShell 安全基线
 
@@ -13,7 +13,7 @@
 
 ### [OK] 核心文档
 
-- [x] **功能纵切文档**: `docs/architecture/overlays/PRD-Guild-Manager/08/08-功能纵切-公会管理器.md`
+- [x] **功能纵切文档**: `docs/architecture/overlays/PRD-Guild-Manager/08/08-Feature-Slice-Guild-Manager.md`
   - 文件大小: 8,000+ 行
   - 包含完整的 YAML Front-Matter
   - 覆盖 UI 层 → 事件系统 → 域模型 → 持久化层
@@ -211,7 +211,7 @@ SLO-Refs: [UI-INT-LATENCY, EVT-PROC-LATENCY, DB-QUERY-LATENCY]
 
 ```
 docs/architecture/overlays/PRD-Guild-Manager/08/
-├── 08-功能纵切-公会管理器.md           # 主要架构文档 (8,000+ 行)
+├── 08-Feature-Slice-Guild-Manager.md  # 主要架构文档 (8,000+ 行)
 ├── ACCEPTANCE_CHECKLIST.md          # 本验收清单
 └── README.md                        # 目录说明
 
