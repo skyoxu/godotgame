@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Validate contract references between overlay docs and Contracts directory.
 
-This script is designed for the newguild Godot + C# template.
+This script is designed for this Godot + C# template.
 
 Responsibilities:
 - Scan overlay 08 docs under docs/architecture/overlays/**/08/.
