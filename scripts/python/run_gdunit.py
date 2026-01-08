@@ -152,6 +152,7 @@ def ensure_tests_project_junction(repo_root: str, project_abs: str, out_dir: str
             "--target-rel",
             "Game.Godot",
             "--create-if-missing",
+            "--fix-wrong-target",
         ]
         rc, out = run_cmd(cmd, cwd=repo_root, timeout=60_000)
         try:
