@@ -15,6 +15,7 @@ import os
 import shutil
 import subprocess
 import json
+import sys
 import time
 import xml.etree.ElementTree as ET
 
@@ -115,6 +116,54 @@ def write_text(path: str, content: str) -> None:
         f.write(content)
 
 
+def ensure_tests_project_junction(repo_root: str, project_abs: str, out_dir: str) -> None:
+    """
+    Hard gate: ensure Tests.Godot/Game.Godot is a Junction to the real Game.Godot.
+
+    This prevents drift between test resources and the actual game project.
+    """
+    try:
+        proj_name = os.path.basename(os.path.normpath(project_abs))
+        if proj_name != "Tests.Godot":
+            return
+
+        # Only enforce when the project is within repo root.
+        try:
+            common = os.path.commonpath([os.path.abspath(repo_root), os.path.abspath(project_abs)])
+        except ValueError:
+            return
+        if os.path.abspath(common) != os.path.abspath(repo_root):
+            return
+
+        ensure_script = os.path.join(repo_root, "scripts", "python", "ensure_tests_godot_junction.py")
+        if not os.path.isfile(ensure_script):
+            raise RuntimeError("ensure_tests_godot_junction_script_missing")
+
+        rel_project = os.path.relpath(project_abs, repo_root)
+        cmd = [
+            sys.executable,
+            ensure_script,
+            "--root",
+            repo_root,
+            "--tests-project",
+            rel_project,
+            "--link-name",
+            "Game.Godot",
+            "--target-rel",
+            "Game.Godot",
+            "--create-if-missing",
+        ]
+        rc, out = run_cmd(cmd, cwd=repo_root, timeout=60_000)
+        try:
+            write_text(os.path.join(out_dir, "ensure-tests-godot-junction.txt"), out)
+        except Exception:
+            pass
+        if rc != 0:
+            raise RuntimeError("ensure_tests_godot_junction_failed")
+    except Exception:
+        raise
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--godot-bin', required=True)
@@ -130,6 +179,9 @@ def main():
     date = dt.date.today().strftime('%Y-%m-%d')
     out_dir = os.path.join(root, 'logs', 'e2e', date)
     os.makedirs(out_dir, exist_ok=True)
+
+    # Hard gate before any Godot invocation.
+    ensure_tests_project_junction(repo_root=root, project_abs=proj, out_dir=out_dir)
 
     # Optional prewarm with fallback
     prewarm_rc = None
