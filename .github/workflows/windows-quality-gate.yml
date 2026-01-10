@@ -78,6 +78,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Forbid mirror path refs (hard)
+        shell: pwsh
+        run: |
+          py -3 scripts/python/forbid_mirror_path_refs.py --root .
+
       - name: Ensure GdUnit4 plugin
         shell: pwsh
         run: |

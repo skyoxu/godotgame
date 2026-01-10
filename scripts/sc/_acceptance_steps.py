@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,7 @@ from _step_result import StepResult
 from _subtasks_coverage_step import step_subtasks_coverage_llm
 from _taskmaster import TaskmasterTriplet
 from _test_quality import assess_test_quality
-from _util import repo_root, run_cmd, write_json, write_text
+from _util import repo_root, run_cmd, today_str, write_json, write_text
 
 
 ADR_STATUS_RE = re.compile(r"^\s*-?\s*(?:Status|status)\s*:\s*([A-Za-z]+)\s*$", re.MULTILINE)
@@ -501,6 +502,31 @@ def step_quality_rules(out_dir: Path, *, strict: bool) -> StepResult:
     status = "ok"
     if strict and verdict == "Needs Fix":
         status = "fail"
+
+    # Hard gate: forbid mirror path references (Tests.Godot/Game.Godot/**).
+    mirror_json = repo_root() / "logs" / "ci" / today_str() / "forbid-mirror-path-refs.json"
+    mirror_cmd = [
+        "py",
+        "-3",
+        "scripts/python/forbid_mirror_path_refs.py",
+        "--root",
+        str(repo_root()),
+    ]
+    mirror_rc, mirror_out = run_cmd(mirror_cmd, cwd=repo_root(), timeout_sec=60)
+    mirror_log = out_dir / "forbid-mirror-path-refs.log"
+    write_text(mirror_log, mirror_out)
+    if mirror_rc != 0:
+        status = "fail"
+        report = {**report, "mirror_path_refs": {"status": "fail", "rc": mirror_rc, "cmd": mirror_cmd, "log": str(mirror_log)}}
+    else:
+        report = {**report, "mirror_path_refs": {"status": "ok", "rc": mirror_rc, "cmd": mirror_cmd, "log": str(mirror_log)}}
+    # If the script produced a report under logs/ci, also copy it next to the acceptance report for convenience.
+    try:
+        if mirror_json.exists():
+            shutil.copy2(mirror_json, out_dir / mirror_json.name)
+    except Exception:
+        pass
+
     return StepResult(name="quality-rules", status=status, rc=0 if status == "ok" else 1, log=str(log_path), details=report)
 
 
