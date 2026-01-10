@@ -47,6 +47,15 @@ def _iter_cs_files(root: Path) -> Iterable[Path]:
             continue
         if any(seg in {".git", ".godot", "bin", "obj", "logs", "TestResults"} for seg in p.parts):
             continue
+        # Tests.Godot/Game.Godot is a Junction to Game.Godot (SSoT). Scanning it would
+        # duplicate findings and slow down gates. Always prefer the canonical path.
+        if "Tests.Godot" in p.parts and "Game.Godot" in p.parts:
+            try:
+                i = p.parts.index("Tests.Godot")
+                if i + 1 < len(p.parts) and p.parts[i + 1] == "Game.Godot":
+                    continue
+            except ValueError:
+                pass
         yield p
 
 
@@ -60,8 +69,6 @@ def _is_blocking_wait_hard_scope(rel: str) -> bool:
     if r.startswith("Game.Core/") and "/Services/" in r:
         return True
     if r.startswith("Game.Godot/") and "/Scripts/" in r and "/Examples/" not in r:
-        return True
-    if r.startswith("Tests.Godot/Game.Godot/") and "/Scripts/" in r and "/Examples/" not in r:
         return True
     return False
 
