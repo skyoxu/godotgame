@@ -121,7 +121,7 @@ overlays 的价值是“能落地且可审计”。建议每页只写以下 4 �
 
 事件命名遵循 ADR-0004（CloudEvents-like `type`）：
 
-- 领域事件：`core.sanguo.*`
+- 领域事件：`${DOMAIN_PREFIX}.*`（模板默认 `${DOMAIN_PREFIX}=core`）
 - UI 事件：`ui.*`
 - Screen/状态切换：`screen.*`
 
@@ -135,7 +135,7 @@ overlays 只做引用：
 
 - 写 `EventType`
 - 写触发点
-- 写契约文件路径（例如 `Game.Core/Contracts/Sanguo/EconomyEvents.cs`）
+- 写契约文件路径（例如 `Game.Core/Contracts/<Module>/EconomyEvents.cs`）
 
 ### 4.3 契约口径（SSoT 摘要版）
 
@@ -156,7 +156,7 @@ overlays 只做引用：
 **分层与依赖**
 
 - Contracts 不得依赖 `Godot.*` 命名空间，保持纯 .NET 可单测；与 Godot 交互只发生在 Adapter/Scene 层。
-- UI 相关事件（`ui.*`、`screen.*`）不进入领域 Contracts 的 “core.*” 范畴；领域事件只用 `core.sanguo.*`。
+- UI 相关事件（`ui.*`、`screen.*`）不进入领域 Contracts 的 “${DOMAIN_PREFIX}.*” 范畴；领域事件只用 `${DOMAIN_PREFIX}.*`。
 
 **验收与证据链**
 
@@ -171,11 +171,11 @@ overlays 只做引用：
 
 1) 口径文档（引用型）：
    - `docs/adr/ADR-0004-event-bus-and-contracts.md`
-   - `docs/architecture/overlays/PRD-SANGUO-T2/08/08-Contracts-CloudEvent.md`
-   - `docs/architecture/overlays/PRD-SANGUO-T2/08/08-Contracts-CloudEvents-Core.md`
-2) 契约目录（脚本生成，用于开工前对齐，非 SSoT）：
-   - `docs/workflows/contracts-catalog-prd-sanguo-t2.md`
-   - 生成脚本：`py -3 scripts/python/generate_contracts_catalog_prd_sanguo_t2.py`
+   - `docs/architecture/overlays/<PRD-ID>/08/08-Contracts-CloudEvent.md`（示例见 `PRD-Guild-Manager`）
+   - `docs/architecture/overlays/<PRD-ID>/08/08-Contracts-CloudEvents-Core.md`（示例见 `PRD-Guild-Manager`）
+2) 契约自检（脚本生成报告，用于开工前对齐，非 SSoT）：
+   - `py -3 scripts/python/check_domain_contracts.py`（输出到 `logs/ci/<YYYY-MM-DD>/domain-contracts-check/summary.json`）
+   - `py -3 scripts/python/generate_contracts_catalog.py --prd-id <PRD-ID>`（输出到 `logs/ci/<YYYY-MM-DD>/contracts-catalog/`；说明见 `docs/workflows/contracts-catalog-guide.md`）
 3) 确定性校验（防漂移）：
    - `py -3 scripts/python/validate_contracts.py`
    - `py -3 scripts/python/task_links_validate.py`

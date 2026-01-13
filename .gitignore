@@ -84,3 +84,8 @@ Godot_*.zip
 
 # Local: ignore cifix artifacts
 cifix*.*
+
+# Generated docs (do not version)
+docs/workflows/contracts-catalog-prd-*.md
+docs/workflows/generated/
+docs/workflows/generated/**

@@ -143,7 +143,7 @@ py -3 -m pip install jsonschema
 
 ### 2.2 Taskmaster 任务 Schema 扩展
 
-> 说明：在 newguild 中，Taskmaster 任务存放于 `.taskmaster/tasks/*.json`（如 tasks_back.json、tasks_gameplay.json、tasks_longterm.json）；下文以 tasks.json 字段示例表示单条任务记录的典型结构，具体字段命名以 `.taskmaster/tasks/*.json` 为准。
+> 说明：在使用本模板的项目中，Taskmaster 任务存放于 `.taskmaster/tasks/*.json`（如 tasks_back.json、tasks_gameplay.json、tasks_longterm.json）；下文以 tasks.json 字段示例表示单条任务记录的典型结构，具体字段命名以 `.taskmaster/tasks/*.json` 为准。
 
 Task Master 默认字段（概念示例）：
 ```json
@@ -215,7 +215,7 @@ SuperClaude v4 推荐的"黄金三角" MCP 工具组合:
 
 3. **LegacyE2ERunner MCP** (可选，主要面向 Web/LegacyDesktopShell 子项目)
    - 用途: E2E 回归测试自动化（仅当项目存在 HTML5/Web/LegacyDesktopShell 前端时适用），默认 Godot+C# 模板的 E2E 由 GdUnit4/headless Godot 承担。
-   - 场景: Web UI 测试、LegacyDesktopShell 包装应用的回归验证（newguild 默认不开启）。
+   - 场景: Web UI 测试、LegacyDesktopShell 包装应用的回归验证（模板默认不开启）。
    - 配置: 如需启用，需在项目层单独配置 LegacyE2ERunner 与 MCP 集成，不属于模板必备能力。
 
 ---
@@ -825,7 +825,7 @@ public class GuildContractsTests
 
 **外圈质量门禁（结构层校验 vs 行为层 TDD）**
 
-在 newguild 中，契约与事件的质量保障分为两圈：
+在使用本模板的项目中，契约与事件的质量保障分为两圈：
 
 - **内圈（行为层 TDD）**：
   - 使用 xUnit/GdUnit4 直接针对业务行为与状态机编写测试（例如 `GameTurnSystemTests`, `EventEngineTests`, `GameLoopContractsTests`）。
@@ -853,7 +853,7 @@ public class GuildContractsTests
 - 在实现阶段聚焦业务行为与可玩性（由单元/场景测试驱动）。
 - 在架构与长期维护阶段，靠结构校验脚本防止契约和文档慢慢偏离 ADR/Overlay 约定。
 
-#### 当前 newguild 实现状态（Guild 示例）
+#### 示例实现状态（Guild 示例）
 
 - Guild 领域事件套装已落地，并符合 ADR-0004 的 `core.<entity>.<action>` 约定：
   - `core.guild.created` → `Game.Core/Contracts/Guild/GuildCreated.cs`
@@ -1974,12 +1974,12 @@ def fill_pr_template(task_id: str) -> str:
 
 ```bash
 # 主分支保持在 main
-git worktree add ../newguild-task-1.1 -b feature/task-1.1
-git worktree add ../newguild-task-1.2 -b feature/task-1.2
+git worktree add ../worktree-task-1.1 -b feature/task-1.1
+git worktree add ../worktree-task-1.2 -b feature/task-1.2
 
 # 在不同终端/IDE 实例中分别处理
-# Terminal 1: cd ../newguild-task-1.1 && code .
-# Terminal 2: cd ../newguild-task-1.2 && code .
+# Terminal 1: cd ../worktree-task-1.1 && code .
+# Terminal 2: cd ../worktree-task-1.2 && code .
 ```
 
 **注意**：SQLite 数据库文件冲突，建议测试时使用内存数据库。
@@ -2501,7 +2501,7 @@ superclaude review --staged
 
 ## 10. Node / Web 生态说明（可选附加）
 
-- 在 newguild 模板中，**主线工具链** 是：`.taskmaster/tasks/*.json` + Python 脚本 + dotnet/xUnit + GdUnit4，用于驱动 PRD/Base/ADR 约束下的 Godot+C# 游戏开发。
+- 在本模板中，**主线工具链** 是：`.taskmaster/tasks/*.json` + Python 脚本 + dotnet/xUnit + GdUnit4，用于驱动 PRD/Base/ADR 约束下的 Godot+C# 游戏开发。
 - 文档中出现的 Node / NodePkg / LegacyE2ERunner MCP 等内容，默认视为 **仅在存在 Web/HTML5/LegacyDesktopShell 子项目时启用的可选能力**，不是本仓库的硬依赖。
 - 如果当前项目只构建原生 Windows Godot 游戏，可以暂时忽略所有 Node/LegacyUnitTestRunner/LegacyE2ERunner 相关命令与脚本，不影响 T2 场景和核心回合循环的实现与验证。
-- 当你未来引入 Web/LegacyDesktopShell 前端、需要前端专用 E2E/可用性测试时，可以参考文档中的 Node/LegacyUnitTestRunner/LegacyE2ERunner 段落，将其视为在 newguild 之上的“额外层”，并保持 ADR/任务回链与现有 Godot+C# 工具链一致。
+- 当你未来引入 Web/LegacyDesktopShell 前端、需要前端专用 E2E/可用性测试时，可以参考文档中的 Node/LegacyUnitTestRunner/LegacyE2ERunner 段落，将其视为在本模板之上的“额外层”，并保持 ADR/任务回链与现有 Godot+C# 工具链一致。

@@ -1,6 +1,6 @@
 # 从 GM/NG 任务驱动首个 T2 场景实现
 
-> 本文档总结当前对话中关于“如何从 GM/NG 任务驱动首个 T2 场景实现”的建议，作为 newguild 项目的工作流参考。
+> 本文档总结当前对话中关于“如何从 GM/NG 任务驱动首个 T2 场景实现”的建议，作为使用本模板的项目的工作流参考。
 
 ## 1. 先用 PRD + Overlay 锁定 T2 场景流
 
@@ -17,7 +17,7 @@
 
 根据 `.taskmaster/tasks/tasks_back.json` 与 `tasks_gameplay.json` 中的 `depends_on`，首个 T2 Playable 场景在 Taskmaster 语义下的最小依赖闭包为 6 个任务：
 
-1. **NG-0001** —— newguild 首个纵切 PRD ↔ Overlay 映射
+1. **NG-0001** —— 首个纵切 PRD ↔ Overlay 映射（示例）
    - 为 Guild Manager 核心循环建立一份“可落地”的 PRD 片段与 overlays/08 映射。
 2. **NG-0020** —— Guild Manager 首个三层垂直切片骨架
    - 在 Game.Core / Game.Godot / Tests.Godot 三层搭好与公会管理器相关的基础骨架与命名归属。

@@ -18,7 +18,7 @@
   - 只读投影（UI 更新、日志、回放记录）
   - 触发受控入口（例如由 Glue 层在主线程调用 Core 服务推进一步）
 - 禁止订阅者做：
-  - 直接修改 `SanguoPlayer` / `SanguoBoardState` 等 Core 状态
+  - 直接修改 Core 领域状态对象（例如 `PlayerState` / `BoardState` 等）
 
 ### 3) AI 策略必须确定性且线程安全
 
