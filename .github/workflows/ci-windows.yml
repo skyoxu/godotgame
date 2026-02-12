@@ -1,4 +1,4 @@
-﻿name: Windows CI
+name: Windows CI
 
 on:
   push:
@@ -41,6 +41,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
+      - name: Encoding hard gate (UTF-8/no-BOM/no-garble)
+        shell: pwsh
+        run: |
+          py -3 scripts/python/encoding_hard_gate.py
 
       - name: Ensure GdUnit4 plugin
         shell: pwsh
