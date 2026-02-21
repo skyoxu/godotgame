@@ -18,8 +18,8 @@ impact-scope:
   - Tests.Godot/
   - scripts/
   - .github/workflows/
-tech-tags: [quality-gates, windows, godot, csharp, dotnet, xunit, gdunit4, perf, encoding]
-depends-on: [ADR-0011, ADR-0018, ADR-0019, ADR-0003, ADR-0015, ADR-0025, ADR-0020]
+tech-tags: [quality-gates, windows, godot, csharp, dotnet, xunit, gdunit4, perf, encoding, security-profile]
+depends-on: [ADR-0011, ADR-0018, ADR-0019, ADR-0031, ADR-0003, ADR-0015, ADR-0025, ADR-0020]
 depended-by: [ADR-0008]
 supersedes: []
 ---
@@ -28,34 +28,48 @@ supersedes: []
 
 ## Context
 
-模板必须做到“复制即可跑 CI”：一旦门禁分散在多个脚本/文档/人工习惯中，就会出现口径漂移、重复执行与无法取证的问题。需要一个 Windows 友好的单入口，统一编排最小硬门禁，并将所有产物归档到 `logs/**`。
+模板必须做到“复制即可跑 CI”：一旦门禁分散在多个脚本和工作流里，就会出现“本地通过、CI 失败”或“同一问题重复审查”。
+当前项目采用 Godot + C#，门禁应默认对齐模板可复制场景，并允许按项目阶段切换强度。
 
 ## Decision
 
-### 1) 单入口（Windows）
+### 1) 单入口优先
 
-- PowerShell 入口：`scripts/ci/quality_gate.ps1`
-  - 作为本地/CI 的首选入口；可选启用导出/EXE 冒烟/性能门禁。
-- Python 编排入口：`scripts/python/quality_gates.py`
-  - 作为门禁编排的可扩展入口（默认对齐 CI 的最小集合）。
+- CI 与本地统一入口优先使用 Python 脚本编排（Windows 兼容）。
+- 所有门禁必须写入 `logs/**` 工件，保证可追溯与可审计。
 
 ### 2) 最小硬门禁集合（默认）
 
-- dotnet：编译与单元测试（xUnit）
-- Godot：headless self-check（启动 + 关键 Autoload 兜底）
+- dotnet：编译与单元测试（xUnit）。
+- Godot：headless self-check（启动 + 关键 Autoload 兜底）。
+- 编码：UTF-8 / 无 BOM / 无语义级乱码（文档与工作流关键目录）。
 
 ### 3) 可选硬门禁（按需启用）
 
-- GdUnit4 小集（安全/关键装配）：`--gdunit-hard`
-- Headless smoke（严格模式 marker/DB）：`--smoke`
-- 性能 P95 门禁：`-PerfP95Ms <ms>`（阈值口径见 ADR-0015）
+- GdUnit4 小集（安全/关键装配）。
+- Headless smoke（严格模式 marker/DB）。
+- 性能 P95 门禁（阈值口径见 ADR-0015）。
 
 ### 4) 软门禁（不阻断，但必须产出工件）
 
-- 编码/文档清洁：`scripts/python/check_encoding.py`
-- 契约引用对齐：`scripts/python/validate_contracts.py`
+- 契约引用对齐：`scripts/python/validate_contracts.py`。
+- 其他质量/可观测补充扫描。
 
-### 5) 工件（统一落盘）
+### 5) Security Profile 驱动门禁强度
+
+- 统一配置：`SECURITY_PROFILE=host-safe|strict`，默认 `host-safe`。
+- `host-safe`（模板默认）：
+  - `security-path-gate=require`
+  - `security-sql-gate=require`
+  - `security-audit-schema-gate=warn`
+  - `ui-event-json-guards=skip`
+  - `ui-event-source-verify=skip`
+  - `security-audit-evidence=skip`
+- `strict`（项目可选）：
+  - 上述安全门禁全部 `require`。
+- 安全 profile 语义来源见 ADR-0031；安全边界来源见 ADR-0019。
+
+### 6) 工件（统一落盘）
 
 - 单元测试：`logs/unit/<YYYY-MM-DD>/`
 - 引擎/场景：`logs/e2e/<YYYY-MM-DD>/`
@@ -63,16 +77,15 @@ supersedes: []
 
 ## Verification
 
-本地最小验收（PowerShell）：
+本地最小验收（Windows）：
 
 ```powershell
 pwsh -File scripts/ci/quality_gate.ps1 -GodotBin "$env:GODOT_BIN"
 ```
 
-CI 侧应能在 `logs/**` 中找到对应摘要与日志文件；失败时可直接定位到具体 gate 的输出。
+CI 侧应能在 `logs/**` 中找到对应摘要与日志文件；失败时可直接定位到具体 gate 输出。
 
 ## Consequences
 
 - 正向：门禁入口统一、Windows 兼容、失败可定位、产物可回溯。
-- 代价：需要保持“单入口优先”的纪律，避免把门禁逻辑散落到工作流脚本或文档示例中。
-
+- 代价：需要保持“单入口优先”的纪律，避免把门禁逻辑散落到示例脚本或临时 workflow 里。

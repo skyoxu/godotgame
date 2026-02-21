@@ -387,6 +387,13 @@ def _resolve_threat_model(value: str | None) -> str:
     return s if s in {"singleplayer", "modded", "networked"} else "singleplayer"
 
 
+def _resolve_security_profile(value: str | None) -> str:
+    s = str(value or "").strip().lower()
+    if not s:
+        s = str(os.environ.get("SECURITY_PROFILE") or "").strip().lower()
+    return s if s in {"host-safe", "strict"} else "host-safe"
+
+
 def _build_threat_model_context(threat_model: str) -> str:
     if threat_model == "networked":
         note = "Assume network features may exist or be added soon; prioritize boundary checks, rate limits, and allowlists."
@@ -398,6 +405,20 @@ def _build_threat_model_context(threat_model: str) -> str:
         [
             "Threat Model:",
             f"- mode: {threat_model}",
+            f"- guidance: {note}",
+        ]
+    )
+
+
+def _build_security_profile_context(security_profile: str) -> str:
+    if security_profile == "strict":
+        note = "Strict profile selected; security findings may be promoted from advisory to blocking if policy requires."
+    else:
+        note = "Host-safe profile selected; keep host boundary protections strict, avoid over-hardening local tamper checks."
+    return "\n".join(
+        [
+            "Security Profile:",
+            f"- profile: {security_profile}",
             f"- guidance: {note}",
         ]
     )
@@ -727,6 +748,12 @@ def main() -> int:
         help="Threat model hint for review prompts: singleplayer|modded|networked (default: env SC_THREAT_MODEL or singleplayer).",
     )
     ap.add_argument(
+        "--security-profile",
+        default=None,
+        choices=["host-safe", "strict"],
+        help="Security profile hint for review prompts: host-safe|strict (default: env SECURITY_PROFILE or host-safe).",
+    )
+    ap.add_argument(
         "--claude-agents-root",
         default=None,
         help="Claude agents root (default: env CLAUDE_AGENTS_ROOT or $env:USERPROFILE\\.claude\\agents). Used to load lst97 agent prompts.",
@@ -824,6 +851,8 @@ def main() -> int:
     ctx = _build_task_context(triplet)
     threat_model = _resolve_threat_model(args.threat_model)
     threat_ctx = _build_threat_model_context(threat_model)
+    security_profile = _resolve_security_profile(args.security_profile)
+    security_profile_ctx = _build_security_profile_context(security_profile)
     acceptance_ctx = ""
     acceptance_meta: dict[str, Any] | None = None
     if triplet:
@@ -928,6 +957,8 @@ def main() -> int:
             blocks.append(ctx)
         if threat_ctx:
             blocks.append(threat_ctx)
+        if security_profile_ctx:
+            blocks.append(security_profile_ctx)
         if acceptance_ctx:
             blocks.append(acceptance_ctx)
         if acceptance_semantic_ctx:
@@ -1018,6 +1049,7 @@ def main() -> int:
         "task_id": triplet.task_id if triplet else None,
         "strict": bool(args.strict),
         "threat_model": threat_model,
+        "security_profile": security_profile,
         "template_meta": template_meta,
         "acceptance_meta": acceptance_meta,
         "acceptance_semantic_meta": acceptance_semantic_meta,
@@ -1027,7 +1059,7 @@ def main() -> int:
     }
     write_json(out_dir / "summary.json", summary)
 
-    print(f"SC_LLM_REVIEW status={summary['status']} out={out_dir}")
+    print(f"SC_LLM_REVIEW status={summary['status']} profile={security_profile} out={out_dir}")
     return 0 if summary["status"] in ("ok", "warn") else 1
 
 
