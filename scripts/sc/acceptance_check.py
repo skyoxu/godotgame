@@ -68,6 +68,42 @@ def parse_task_id(value: str | None) -> str | None:
 
 REFS_RE = re.compile(r"\bRefs\s*:\s*(.+)$", flags=re.IGNORECASE)
 
+ALLOWED_SECURITY_PROFILES = {"host-safe", "strict"}
+ALLOWED_GATE_MODES = {"skip", "warn", "require"}
+
+
+def resolve_security_profile(value: str | None) -> str:
+    raw = str(value or os.environ.get("SECURITY_PROFILE") or "host-safe").strip().lower()
+    if raw not in ALLOWED_SECURITY_PROFILES:
+        print(f"[sc-acceptance-check] WARN: invalid security profile '{raw}', fallback to host-safe")
+        return "host-safe"
+    return raw
+
+
+def security_defaults_for_profile(profile: str) -> dict[str, str]:
+    defaults = {
+        "path": "require",
+        "sql": "require",
+        "audit_schema": "require",
+        "ui_json": "skip",
+        "ui_source": "skip",
+        "audit_evidence": "skip",
+    }
+    if profile == "strict":
+        defaults["ui_json"] = "warn"
+        defaults["ui_source"] = "warn"
+        defaults["audit_evidence"] = "warn"
+    return defaults
+
+
+def resolve_gate_mode(value: str | None, *, default_mode: str) -> str:
+    raw = str(value or "auto").strip().lower()
+    if raw == "auto":
+        return default_mode
+    if raw in ALLOWED_GATE_MODES:
+        return raw
+    return default_mode
+
 
 def _split_refs_blob(blob: str) -> list[str]:
     s = str(blob or "").replace("`", " ").replace(",", " ").replace(";", " ")
@@ -211,6 +247,12 @@ def main() -> int:
     ap.add_argument("--task-id", default=None, help="Taskmaster id (e.g. 10 or 10.3). Default: first status=in-progress task.")
     ap.add_argument("--godot-bin", default=None, help="Godot mono console path (or set env GODOT_BIN)")
     ap.add_argument(
+        "--security-profile",
+        default=None,
+        choices=["host-safe", "strict"],
+        help="Security profile. Default: env SECURITY_PROFILE or host-safe.",
+    )
+    ap.add_argument(
         "--out-per-task",
         action="store_true",
         help="Write outputs to logs/ci/<date>/sc-acceptance-check-task-<id>/ to avoid overwriting when running many tasks.",
@@ -224,39 +266,39 @@ def main() -> int:
     ap.add_argument("--require-executed-refs", action="store_true", help="fail if acceptance anchors cannot be proven executed in this run (TRX/JUnit evidence)")
     ap.add_argument(
         "--security-path-gate",
-        default="require",
-        choices=["skip", "warn", "require"],
-        help="Hard gate: path safety invariants (static). Default: require.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="Hard gate: path safety invariants (static). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--security-sql-gate",
-        default="require",
-        choices=["skip", "warn", "require"],
-        help="Hard gate: SQL injection anti-patterns (static). Default: require.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="Hard gate: SQL injection anti-patterns (static). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--security-audit-schema-gate",
-        default="require",
-        choices=["skip", "warn", "require"],
-        help="Hard gate: security-audit.jsonl schema keys exist in runtime code (static). Default: require.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="Hard gate: security-audit.jsonl schema keys exist in runtime code (static). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--ui-event-json-guards",
-        default="skip",
-        choices=["skip", "warn", "require"],
-        help="UI event gate: JSON size/max-depth guards (static). Default: skip.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="UI event gate: JSON size/max-depth guards (static). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--ui-event-source-verify",
-        default="skip",
-        choices=["skip", "warn", "require"],
-        help="UI event gate: if handler has `source`, require it is used (static). Default: skip.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="UI event gate: if handler has `source`, require it is used (static). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--security-audit-evidence",
-        default="skip",
-        choices=["skip", "warn", "require"],
-        help="Require runtime evidence of security-audit.jsonl for this run_id (requires tests). Default: skip.",
+        default="auto",
+        choices=["auto", "skip", "warn", "require"],
+        help="Require runtime evidence of security-audit.jsonl for this run_id (requires tests). Default: auto (from security profile).",
     )
     ap.add_argument(
         "--require-headless-e2e",
@@ -300,6 +342,14 @@ def main() -> int:
     if subtasks_mode not in ("skip", "warn", "require"):
         subtasks_mode = "skip"
     run_id = uuid.uuid4().hex
+    security_profile = resolve_security_profile(args.security_profile)
+    security_defaults = security_defaults_for_profile(security_profile)
+    security_path_mode = resolve_gate_mode(args.security_path_gate, default_mode=security_defaults["path"])
+    security_sql_mode = resolve_gate_mode(args.security_sql_gate, default_mode=security_defaults["sql"])
+    security_audit_schema_mode = resolve_gate_mode(args.security_audit_schema_gate, default_mode=security_defaults["audit_schema"])
+    ui_event_json_mode = resolve_gate_mode(args.ui_event_json_guards, default_mode=security_defaults["ui_json"])
+    ui_event_source_mode = resolve_gate_mode(args.ui_event_source_verify, default_mode=security_defaults["ui_source"])
+    audit_mode = resolve_gate_mode(args.security_audit_evidence, default_mode=security_defaults["audit_evidence"])
 
     if enabled("adr"):
         steps.append(step_adr_compliance(out_dir, triplet, strict_status=bool(args.strict_adr_status)))
@@ -338,16 +388,15 @@ def main() -> int:
         steps.append(
             step_security_hard(
                 out_dir,
-                path_mode=str(args.security_path_gate),
-                sql_mode=str(args.security_sql_gate),
-                audit_schema_mode=str(args.security_audit_schema_gate),
+                path_mode=security_path_mode,
+                sql_mode=security_sql_mode,
+                audit_schema_mode=security_audit_schema_mode,
             )
         )
-        steps.append(step_ui_event_security(out_dir, json_mode=str(args.ui_event_json_guards), source_mode=str(args.ui_event_source_verify)))
+        steps.append(step_ui_event_security(out_dir, json_mode=ui_event_json_mode, source_mode=ui_event_source_mode))
         steps.append(step_security_soft(out_dir))
 
     godot_bin = args.godot_bin or os.environ.get("GODOT_BIN")
-    audit_mode = str(args.security_audit_evidence or "skip").strip().lower()
     if enabled("tests"):
         test_type = "all" if has_gd_refs else "unit"
         if test_type != "unit" and not godot_bin:
@@ -464,6 +513,15 @@ def main() -> int:
         "steps": [s.__dict__ for s in steps],
         "out_dir": str(out_dir),
         "subtasks_coverage_mode": subtasks_mode,
+        "security_profile": security_profile,
+        "security_gate_modes": {
+            "path": security_path_mode,
+            "sql": security_sql_mode,
+            "audit_schema": security_audit_schema_mode,
+            "ui_json": ui_event_json_mode,
+            "ui_source": ui_event_source_mode,
+            "audit_evidence": audit_mode,
+        },
     }
     if risk_summary_rel:
         summary["risk_summary"] = risk_summary_rel
@@ -474,7 +532,7 @@ def main() -> int:
     write_json(out_dir / "summary.json", summary)
     write_markdown_report(out_dir, triplet, steps, metrics=metrics or None)
 
-    print(f"SC_ACCEPTANCE status={summary['status']} out={out_dir}")
+    print(f"SC_ACCEPTANCE status={summary['status']} profile={security_profile} out={out_dir}")
     return 0 if not hard_failed else 1
 
 

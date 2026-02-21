@@ -19,6 +19,10 @@ on:
         description: 'Fail if tasks_back/tasks_gameplay test_refs is empty for the resolved task id (default: false).'
         required: false
         default: 'false'
+      security_profile:
+        description: 'Security profile for acceptance-check (host-safe|strict). Default: host-safe.'
+        required: false
+        default: 'host-safe'
   push:
     branches: [ main ]
   pull_request:
@@ -31,6 +35,7 @@ jobs:
       GODOT_VERSION: '4.5.1'
       PYTHONIOENCODING: 'utf-8'
       PYTHONUTF8: '1'
+      SECURITY_PROFILE: 'host-safe'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -236,6 +241,12 @@ jobs:
           $strict = "${{ github.event_name == 'workflow_dispatch' && inputs.strict_adr_status || 'false' }}"
           $reqPerf = "${{ github.event_name == 'workflow_dispatch' && inputs.require_perf || 'false' }}"
           $reqRefs = "${{ github.event_name == 'workflow_dispatch' && inputs.require_task_test_refs || 'false' }}"
+          $securityProfile = "$env:SECURITY_PROFILE"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $inputProfile = "${{ inputs.security_profile }}"
+            if (-not [string]::IsNullOrWhiteSpace($inputProfile)) { $securityProfile = $inputProfile }
+          }
+          Write-Host "SC_SECURITY_PROFILE=$securityProfile"
 
           foreach ($id in $env:SC_TASK_IDS.Split(',')) {
             $only = @('adr','overlay','contracts','arch','build','security','quality','rules')
@@ -245,7 +256,7 @@ jobs:
             if ($reqPerf -eq "true") { $only += 'perf' }
             $onlyArg = $only -join ','
 
-            $args = @("py", "-3", "scripts/sc/acceptance_check.py", "--task-id", $id, "--only", $onlyArg)
+            $args = @("py", "-3", "scripts/sc/acceptance_check.py", "--task-id", $id, "--security-profile", $securityProfile, "--only", $onlyArg)
             if ($strict -eq "true") { $args += "--strict-adr-status" }
             if ($reqPerf -eq "true") { $args += "--require-perf" }
             if ($reqRefs -eq "true") { $args += "--require-task-test-refs" }
@@ -261,6 +272,22 @@ jobs:
               Move-Item $src $dst -Force
             }
           }
+
+      - name: Step summary (security profile)
+        if: always()
+        shell: pwsh
+        run: |
+          $profile = "$env:SECURITY_PROFILE"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $inputProfile = "${{ inputs.security_profile }}"
+            if (-not [string]::IsNullOrWhiteSpace($inputProfile)) {
+              $profile = $inputProfile.Trim().ToLowerInvariant()
+            }
+          }
+          if ($profile -ne "host-safe" -and $profile -ne "strict") {
+            $profile = "host-safe"
+          }
+          "SecurityProfile: $profile" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Upload CI logs (always)
         if: always()

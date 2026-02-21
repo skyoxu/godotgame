@@ -1,0 +1,28 @@
+# ADR-0031: Security Profile（host-safe 默认，strict 可选）
+
+- Status: Accepted
+- Context: 单机模板项目的核心目标是“可复制、可迭代、可交付”。若默认采用“本地数据不可篡改”的重安全口径，会导致迭代期门禁与开发目标冲突，产生持续返工与工期内耗。
+- Decision:
+  - 定义统一开关：`SECURITY_PROFILE=host-safe|strict`。
+  - 默认 profile：`host-safe`。
+  - `host-safe` 目标：保障主机边界与运行时安全，不将“本地数据不可篡改”作为模板硬要求。
+  - `strict` 目标：在 `host-safe` 之上，允许项目按需启用更强完整性与拒绝策略。
+  - 所有 profile 必须保留的底线：
+    - `res://` / `user://` 路径边界与越权拒绝；
+    - 禁止运行期动态加载外部代码；
+    - `OS.execute` 默认禁用；
+    - 外链仅 HTTPS + 白名单主机。
+  - `host-safe` 可降级项（默认不做硬门禁）：
+    - 本地存档签名/HMAC；
+    - 快照强一致拒绝策略；
+    - 审计链式哈希强制；
+    - trusted publisher 相关过度门禁。
+  - 异常处理语义：
+    - `host-safe`：本地快照不可信时“告警并继续/可恢复”；
+    - `strict`：可按项目要求改为拒绝或中止。
+  - CI 与 acceptance 必须按 `SECURITY_PROFILE` 解析安全门禁模式，避免“口头轻安全、实际重门禁”。
+- Consequences:
+  - 模板默认体验更贴近单机项目交付目标；
+  - 安全策略从“一刀切”改为“可解释、可切换、可审计”；
+  - 需要在评审与工作流中明确当前 profile，避免隐式默认造成误解。
+- References: ADR-0019-godot-security-baseline, ADR-0005-quality-gates

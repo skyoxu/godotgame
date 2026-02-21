@@ -10,6 +10,7 @@ jobs:
     runs-on: windows-latest
     env:
       GODOT_VERSION: '4.5.1'
+      SECURITY_PROFILE: 'host-safe'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -123,3 +124,15 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: |
           py -3 scripts/python/check_sentry_secrets.py
+
+      - name: Step summary (security profile)
+        if: always()
+        shell: pwsh
+        run: |
+          $profile = "$env:SECURITY_PROFILE"
+          if (-not $profile) { $profile = "host-safe" }
+          $profile = $profile.Trim().ToLowerInvariant()
+          if ($profile -ne "host-safe" -and $profile -ne "strict") {
+            $profile = "host-safe"
+          }
+          "SecurityProfile: $profile" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
