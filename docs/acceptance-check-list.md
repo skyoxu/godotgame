@@ -96,3 +96,16 @@ py -3 scripts/sc/acceptance_check.py --task-id 10 --perf-p95-ms 20
 - 通过 `--perf-p95-ms <ms>` 或 `PERF_P95_THRESHOLD_MS=<ms>` 启用
 - 从 `logs/ci/**/headless.log` 提取最新 `[PERF] ... p95_ms=...` 作为门禁依据
 
+
+## 7. Update (2026-02)
+
+- Security profile is explicit: pass `--security-profile host-safe|strict` in CI and local runs.
+- Add strong evidence options when needed:
+  - `--require-task-test-refs`
+  - `--require-executed-refs`
+  - `--out-per-task`
+- The following scripts are advisory only and do not replace this gate:
+  - `scripts/sc/llm_review.py`
+  - `scripts/sc/llm_extract_task_obligations.py`
+  - `scripts/sc/llm_check_subtasks_coverage.py`
+  - `scripts/sc/llm_semantic_gate_all.py`

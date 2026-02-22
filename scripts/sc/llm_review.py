@@ -30,6 +30,7 @@ from typing import Any
 
 from _acceptance_artifacts import build_acceptance_evidence
 from _deterministic_review import DETERMINISTIC_AGENTS, build_deterministic_review
+from _security_profile import build_security_profile_context, resolve_security_profile, security_profile_payload
 from _taskmaster import TaskmasterTriplet, resolve_triplet
 from _util import ci_dir, repo_root, run_cmd, split_csv, today_str, write_json, write_text
 
@@ -387,13 +388,6 @@ def _resolve_threat_model(value: str | None) -> str:
     return s if s in {"singleplayer", "modded", "networked"} else "singleplayer"
 
 
-def _resolve_security_profile(value: str | None) -> str:
-    s = str(value or "").strip().lower()
-    if not s:
-        s = str(os.environ.get("SECURITY_PROFILE") or "").strip().lower()
-    return s if s in {"host-safe", "strict"} else "host-safe"
-
-
 def _build_threat_model_context(threat_model: str) -> str:
     if threat_model == "networked":
         note = "Assume network features may exist or be added soon; prioritize boundary checks, rate limits, and allowlists."
@@ -405,20 +399,6 @@ def _build_threat_model_context(threat_model: str) -> str:
         [
             "Threat Model:",
             f"- mode: {threat_model}",
-            f"- guidance: {note}",
-        ]
-    )
-
-
-def _build_security_profile_context(security_profile: str) -> str:
-    if security_profile == "strict":
-        note = "Strict profile selected; security findings may be promoted from advisory to blocking if policy requires."
-    else:
-        note = "Host-safe profile selected; keep host boundary protections strict, avoid over-hardening local tamper checks."
-    return "\n".join(
-        [
-            "Security Profile:",
-            f"- profile: {security_profile}",
             f"- guidance: {note}",
         ]
     )
@@ -479,6 +459,47 @@ def _default_agent_prompt(agent: str) -> str:
 
 _VERDICT_RE = re.compile(r"(?mi)^\s*(?:#+\s*)?Verdict\s*:\s*(OK|Needs Fix)\s*$")
 
+_ANTI_TAMPER_TERMS = (
+    "anti-tamper",
+    "anti tamper",
+    "tamper",
+    "hmac",
+    "signature",
+    "checksum",
+    "chain hash",
+    "chain-hash",
+    "trusted publisher",
+    "snapshot integrity",
+    "save integrity",
+    "anti-cheat",
+    "anti cheat",
+)
+
+_HOST_SAFETY_BASELINE_TERMS = (
+    "path traversal",
+    "traversal",
+    "res://",
+    "user://",
+    "os.execute",
+    "dynamic load",
+    "dynamic assembly",
+    "https",
+    "allowlist",
+    "whitelist",
+    "sql injection",
+    "absolute path",
+)
+
+_HOST_SAFE_STRICT_INTENT_TERMS = (
+    "security_profile=strict",
+    "security_profile: strict",
+    "strict profile",
+    "anti-tamper required",
+    "tamper-proof required",
+    "hmac required",
+    "signature required",
+)
+
 
 def _parse_verdict(text: str) -> str | None:
     if not text:
@@ -487,6 +508,53 @@ def _parse_verdict(text: str) -> str | None:
     if not m:
         return None
     return str(m.group(1)).strip()
+
+
+def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
+    return any(t in text for t in terms)
+
+
+def _task_explicitly_requires_anti_tamper(task_blob: str) -> bool:
+    lower = str(task_blob or "").lower()
+    return _contains_any(lower, _HOST_SAFE_STRICT_INTENT_TERMS)
+
+
+def _override_verdict(text: str, verdict: str) -> str:
+    replaced, count = _VERDICT_RE.subn(f"Verdict: {verdict}", str(text or ""))
+    if count > 0:
+        return replaced
+    base = str(text or "").rstrip()
+    return f"{base}\nVerdict: {verdict}\n" if base else f"Verdict: {verdict}\n"
+
+
+def _normalize_host_safe_needs_fix(
+    *,
+    agent: str,
+    text: str,
+    security_profile: str,
+    task_requirements_blob: str,
+) -> tuple[str, str | None, dict[str, Any] | None]:
+    verdict = _parse_verdict(text)
+    if security_profile != "host-safe" or verdict != "Needs Fix":
+        return text, verdict, None
+
+    lower = str(text or "").lower()
+    if _task_explicitly_requires_anti_tamper(task_requirements_blob):
+        return text, verdict, {"demoted": False, "reason": "task_requires_anti_tamper"}
+    if _contains_any(lower, _HOST_SAFETY_BASELINE_TERMS):
+        return text, verdict, {"demoted": False, "reason": "host_safety_boundary_issue_present"}
+    if not _contains_any(lower, _ANTI_TAMPER_TERMS):
+        return text, verdict, {"demoted": False, "reason": "not_anti_tamper_only"}
+
+    normalized = str(text or "")
+    if "Host-safe normalization:" not in normalized:
+        normalized = (
+            normalized.rstrip()
+            + "\n\nHost-safe normalization:\n"
+            + "- SECURITY_PROFILE=host-safe: anti-tamper-only findings are advisory unless task/acceptance explicitly requires strict anti-tamper.\n"
+        )
+    normalized = _override_verdict(normalized, "OK")
+    return normalized, _parse_verdict(normalized), {"demoted": True, "reason": "anti_tamper_only_under_host_safe", "agent": agent}
 
 
 def _resolve_claude_agents_root(value: str | None) -> Path:
@@ -750,8 +818,8 @@ def main() -> int:
     ap.add_argument(
         "--security-profile",
         default=None,
-        choices=["host-safe", "strict"],
-        help="Security profile hint for review prompts: host-safe|strict (default: env SECURITY_PROFILE or host-safe).",
+        choices=["strict", "host-safe"],
+        help="Security review profile hint (default: env SECURITY_PROFILE or host-safe). host-safe de-emphasizes anti-tamper findings unless task explicitly requires them.",
     )
     ap.add_argument(
         "--claude-agents-root",
@@ -851,8 +919,8 @@ def main() -> int:
     ctx = _build_task_context(triplet)
     threat_model = _resolve_threat_model(args.threat_model)
     threat_ctx = _build_threat_model_context(threat_model)
-    security_profile = _resolve_security_profile(args.security_profile)
-    security_profile_ctx = _build_security_profile_context(security_profile)
+    security_profile = resolve_security_profile(args.security_profile)
+    security_ctx = build_security_profile_context(security_profile)
     acceptance_ctx = ""
     acceptance_meta: dict[str, Any] | None = None
     if triplet:
@@ -892,6 +960,7 @@ def main() -> int:
         except Exception:  # noqa: BLE001
             acceptance_semantic_ctx, acceptance_semantic_meta = "", {"status": "error"}
     diff_ctx = _build_diff_context(args)
+    task_requirements_blob = "\n".join([ctx, acceptance_ctx, acceptance_semantic_ctx, review_template])
 
     results: list[ReviewResult] = []
     hard_fail = False
@@ -942,6 +1011,7 @@ def main() -> int:
                     details={
                         "claude_agents_root": str(claude_agents_root),
                         "agent_prompt_source": _agent_prompt(agent, claude_agents_root=claude_agents_root, skip_agent_files=bool(args.skip_agent_prompts))[1].get("agent_prompt_source"),
+                        "security_profile": security_profile_payload(security_profile),
                         **(det.get("details") or {}),
                         "note": "Deterministic mapping: generated from sc-acceptance-check artifacts.",
                     },
@@ -957,8 +1027,8 @@ def main() -> int:
             blocks.append(ctx)
         if threat_ctx:
             blocks.append(threat_ctx)
-        if security_profile_ctx:
-            blocks.append(security_profile_ctx)
+        if security_ctx:
+            blocks.append(security_ctx)
         if acceptance_ctx:
             blocks.append(acceptance_ctx)
         if acceptance_semantic_ctx:
@@ -984,6 +1054,7 @@ def main() -> int:
                         "trace": str(trace_path.relative_to(repo_root())).replace("\\", "/"),
                         "claude_agents_root": str(claude_agents_root),
                         "agent_prompt_source": prompt_meta.get("agent_prompt_source"),
+                        "security_profile": security_profile_payload(security_profile),
                         "note": "--prompts-only: LLM execution skipped.",
                     },
                 )
@@ -1014,6 +1085,19 @@ def main() -> int:
             hard_fail = True
 
         verdict = _parse_verdict(last_msg)
+        verdict_normalization: dict[str, Any] | None = None
+        if last_msg and agent != semantic_agent:
+            normalized_msg, normalized_verdict, verdict_normalization = _normalize_host_safe_needs_fix(
+                agent=agent,
+                text=last_msg,
+                security_profile=security_profile,
+                task_requirements_blob=task_requirements_blob,
+            )
+            if normalized_msg != last_msg:
+                last_msg = normalized_msg
+                write_text(output_path, last_msg)
+            if normalized_verdict:
+                verdict = normalized_verdict
         if agent == semantic_agent:
             if semantic_gate == "warn" and verdict != "OK":
                 had_warnings = True
@@ -1032,9 +1116,11 @@ def main() -> int:
                     "trace": str(trace_path.relative_to(repo_root())).replace("\\", "/"),
                     "claude_agents_root": str(claude_agents_root),
                     "agent_prompt_source": prompt_meta.get("agent_prompt_source"),
+                    "security_profile": security_profile_payload(security_profile),
                     "total_timeout_sec": total_timeout_sec,
                     "agent_timeout_sec": effective_timeout,
                     "verdict": verdict,
+                    "verdict_normalization": verdict_normalization,
                     "note": "This step is best-effort. Use --strict to make it a hard gate.",
                 },
             )
@@ -1049,7 +1135,7 @@ def main() -> int:
         "task_id": triplet.task_id if triplet else None,
         "strict": bool(args.strict),
         "threat_model": threat_model,
-        "security_profile": security_profile,
+        "security_profile": security_profile_payload(security_profile),
         "template_meta": template_meta,
         "acceptance_meta": acceptance_meta,
         "acceptance_semantic_meta": acceptance_semantic_meta,
@@ -1059,7 +1145,7 @@ def main() -> int:
     }
     write_json(out_dir / "summary.json", summary)
 
-    print(f"SC_LLM_REVIEW status={summary['status']} profile={security_profile} out={out_dir}")
+    print(f"SC_LLM_REVIEW status={summary['status']} out={out_dir}")
     return 0 if summary["status"] in ("ok", "warn") else 1
 
 

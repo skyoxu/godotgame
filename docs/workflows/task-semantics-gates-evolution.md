@@ -757,3 +757,12 @@ py -3 scripts/python/check_test_naming.py --style legacy
   4) `py -3 scripts/sc/build.py tdd --task-id <id> --stage refactor`
   5) `py -3 scripts/sc/acceptance_check.py --task-id <id> --out-per-task --godot-bin "$env:GODOT_BIN" --perf-p95-ms 20`
   6) `py -3 scripts/sc/llm_review.py --task-id <id> --auto-commit --review-template scripts/sc/templates/llm_review/bmad-godot-review-template.txt`
+
+## 0) Delta alignment (2026-02)
+
+- `acceptance_check.py`: strengthened with `--security-profile`, `--require-task-test-refs`, `--require-executed-refs`, `--subtasks-coverage`, and `--out-per-task`.
+- `llm_review.py`: profile-aware risk context and task-scoped output path behavior.
+- `llm_extract_task_obligations.py`: stability controls via `--consensus-runs`, `--garbled-gate`, `--auto-escalate`.
+- `llm_check_subtasks_coverage.py`: supports `--consensus-runs`.
+- `llm_semantic_gate_all.py`: supports `--garbled-gate` precheck.
+- CI invariant: emit `SecurityProfile: <host-safe|strict>` in Step Summary.

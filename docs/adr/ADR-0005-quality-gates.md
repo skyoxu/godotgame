@@ -12,6 +12,10 @@ verification:
     assert: CI-aligned orchestration (dotnet + selfcheck + encoding; optional gdunit/smoke)
   - path: scripts/ci/check_perf_budget.ps1
     assert: Parses [PERF] p95_ms from headless.log and enforces threshold when enabled
+  - path: scripts/sc/acceptance_check.py
+    assert: Task-scoped deterministic acceptance gate supports security-profile aware controls
+  - path: .github/workflows/windows-quality-gate.yml
+    assert: Writes `SecurityProfile: <host-safe|strict>` to Step Summary
 impact-scope:
   - Game.Core/
   - Game.Godot/
@@ -89,3 +93,10 @@ CI 侧应能在 `logs/**` 中找到对应摘要与日志文件；失败时可直
 
 - 正向：门禁入口统一、Windows 兼容、失败可定位、产物可回溯。
 - 代价：需要保持“单入口优先”的纪律，避免把门禁逻辑散落到示例脚本或临时 workflow 里。
+
+## Addendum (2026-02 Security profile + 5 scripts)
+
+- `scripts/sc/acceptance_check.py` remains the blocking decision source for task delivery.
+- `scripts/sc/llm_review.py`, `scripts/sc/llm_extract_task_obligations.py`, `scripts/sc/llm_check_subtasks_coverage.py`, and `scripts/sc/llm_semantic_gate_all.py` are advisory/diagnostic by default.
+- CI must expose one explicit line in Step Summary: `SecurityProfile: <host-safe|strict>`.
+- Default profile stays `host-safe`; `strict` is opt-in per project phase.

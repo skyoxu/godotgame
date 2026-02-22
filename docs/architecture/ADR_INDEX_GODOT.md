@@ -22,3 +22,8 @@
 ## 附录（Addenda）
 - ADR-0005 Addendum: Godot+C# 质量门禁补充 — `docs/adr/addenda/ADR-0005-godot-quality-gates-addendum.md`
 - ADR-0006 Addendum: Godot 数据存储补充 — `docs/adr/addenda/ADR-0006-godot-data-storage-addendum.md`
+
+## Security Baseline Bundle
+
+- Evaluate security decisions as a bundle: `ADR-0019` + `ADR-0031` + `ADR-0005`.
+- Default posture is `host-safe`; `strict` is phase-based and explicit.

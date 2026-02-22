@@ -88,3 +88,19 @@ py -3 scripts/sc/llm_review.py --task-id 10 --base main
 # Git（智能提交，脚本会读取 .superclaude/commit-template.txt）
 py -3 scripts/sc/git.py commit --smart-commit --task-ref "#10.1"
 ```
+
+## Update (2026-02)
+
+- Hard gate source: `scripts/sc/acceptance_check.py` only.
+- Explicit security profile is recommended in all runs:
+  - `--security-profile host-safe` (default template posture)
+  - `--security-profile strict` (phase-based tightening)
+- Strong evidence options:
+  - `--require-task-test-refs`
+  - `--require-executed-refs`
+  - `--out-per-task`
+- LLM diagnostics updates:
+  - `llm_review.py` supports profile-aware risk context
+  - `llm_extract_task_obligations.py` supports consensus/garbled/escalation controls
+  - `llm_check_subtasks_coverage.py` supports consensus runs
+  - `llm_semantic_gate_all.py` supports garbled-text precheck
