@@ -9,7 +9,7 @@
 Production-ready Godot 4.5 + C# game template with enterprise-grade tooling.
 
 ### Why This Template
-- **Migrated from**: vitegame (Electron + Phaser) → Godot 4.5 + C# .NET 8
+- **Historical lineage**: this repository was originally bootstrapped from a legacy stack and is now fully standardized on Godot 4.5 + C# .NET 8 (Windows-only).
 - **Purpose**: Eliminate setup overhead with pre-configured best practices
 - **For**: Windows desktop games (simulation, management, strategy)
 
