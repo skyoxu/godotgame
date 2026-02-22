@@ -112,3 +112,8 @@
 
 - 统一目录：`logs/**`（单元/引擎冒烟/CI/性能/审计）
 - 建议先看：`logs/ci/<YYYY-MM-DD>/`（门禁与扫描报告）
+
+## Additional Workflow Links (2026-02)
+
+- `docs/workflows/task-semantics-gates-evolution.md`
+- `docs/workflows/acceptance-check-and-llm-review.md`

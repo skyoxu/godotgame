@@ -1,7 +1,7 @@
 ---
 title: 02 security baseline v2 (godot)
 status: base-SSoT
-adr_refs: [ADR-0019, ADR-0011, ADR-0003, ADR-0020]
+adr_refs: [ADR-0019, ADR-0031, ADR-0011, ADR-0005, ADR-0003, ADR-0020]
 placeholders: unknown-app, Unknown Product, ${DOMAIN_PREFIX}, dev-team, production
 ---
 
@@ -70,3 +70,9 @@ placeholders: unknown-app, Unknown Product, ${DOMAIN_PREFIX}, dev-team, producti
 
 - 场景/引擎侧（headless，含安全小集）：`py -3 scripts/python/quality_gates.py all --godot-bin "$env:GODOT_BIN" --gdunit-hard`
 - 聚合门禁：`pwsh -File scripts/ci/quality_gate.ps1`
+
+## 0.1 Security Profile Execution
+
+- Default profile is `host-safe`; `strict` is opt-in via `SECURITY_PROFILE`.
+- Profile switching changes local-integrity hardness only, not host boundary baselines.
+- CI should expose `SecurityProfile: <host-safe|strict>` for auditability.

@@ -18,3 +18,10 @@
   - CI 中安全门禁按 `SECURITY_PROFILE` 解析，避免“代码想快、门禁想严”的默认冲突。
 - Supersedes: ADR-0002-legacy-desktop-shell-security-baseline
 - References: ADR-0031-security-profile-host-safe-default, ADR-0011-windows-only-platform-and-ci, ADR-0003-observability-release-health, docs/architecture/base/02-security-baseline-godot-v2.md
+
+## Addendum (2026-02 Profile-aware gate mapping)
+
+- `scripts/sc/acceptance_check.py` is the deterministic gate that must resolve security defaults from `SECURITY_PROFILE`.
+- CI callers should pass `--security-profile` explicitly to remove ambiguity.
+- `windows-quality-gate` must write `SecurityProfile: <host-safe|strict>` in Step Summary.
+- Keep profile evidence in CI artifacts (`Step Summary` + `logs/ci/**`) for postmortem traceability.

@@ -26,3 +26,10 @@
   - 安全策略从“一刀切”改为“可解释、可切换、可审计”；
   - 需要在评审与工作流中明确当前 profile，避免隐式默认造成误解。
 - References: ADR-0019-godot-security-baseline, ADR-0005-quality-gates
+
+## Addendum (2026-02 Script-level mapping)
+
+- `scripts/sc/acceptance_check.py`: maps `host-safe|strict` to gate hardness.
+- `scripts/sc/llm_review.py` and `scripts/sc/llm_extract_task_obligations.py`: consume profile as risk context only.
+- `scripts/sc/llm_check_subtasks_coverage.py` and `scripts/sc/llm_semantic_gate_all.py`: semantic diagnostics only.
+- CI invariant: output `SecurityProfile: <host-safe|strict>` in Step Summary.

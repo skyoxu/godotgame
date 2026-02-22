@@ -50,7 +50,9 @@ from _acceptance_steps import (
     step_test_quality_soft,
     step_tests_all,
 )
+from _task1_env_evidence import step_task1_env_evidence
 from _risk_summary import write_risk_summary
+from _security_profile import normalize_gate_mode, resolve_security_profile, security_gate_defaults, security_profile_payload
 from _taskmaster import resolve_triplet
 from _unit_metrics import collect_unit_metrics
 from _util import ci_dir, repo_root, run_cmd, today_str, write_json, write_text
@@ -67,42 +69,6 @@ def parse_task_id(value: str | None) -> str | None:
 
 
 REFS_RE = re.compile(r"\bRefs\s*:\s*(.+)$", flags=re.IGNORECASE)
-
-ALLOWED_SECURITY_PROFILES = {"host-safe", "strict"}
-ALLOWED_GATE_MODES = {"skip", "warn", "require"}
-
-
-def resolve_security_profile(value: str | None) -> str:
-    raw = str(value or os.environ.get("SECURITY_PROFILE") or "host-safe").strip().lower()
-    if raw not in ALLOWED_SECURITY_PROFILES:
-        print(f"[sc-acceptance-check] WARN: invalid security profile '{raw}', fallback to host-safe")
-        return "host-safe"
-    return raw
-
-
-def security_defaults_for_profile(profile: str) -> dict[str, str]:
-    defaults = {
-        "path": "require",
-        "sql": "require",
-        "audit_schema": "require",
-        "ui_json": "skip",
-        "ui_source": "skip",
-        "audit_evidence": "skip",
-    }
-    if profile == "strict":
-        defaults["ui_json"] = "warn"
-        defaults["ui_source"] = "warn"
-        defaults["audit_evidence"] = "warn"
-    return defaults
-
-
-def resolve_gate_mode(value: str | None, *, default_mode: str) -> str:
-    raw = str(value or "auto").strip().lower()
-    if raw == "auto":
-        return default_mode
-    if raw in ALLOWED_GATE_MODES:
-        return raw
-    return default_mode
 
 
 def _split_refs_blob(blob: str) -> list[str]:
@@ -247,12 +213,6 @@ def main() -> int:
     ap.add_argument("--task-id", default=None, help="Taskmaster id (e.g. 10 or 10.3). Default: first status=in-progress task.")
     ap.add_argument("--godot-bin", default=None, help="Godot mono console path (or set env GODOT_BIN)")
     ap.add_argument(
-        "--security-profile",
-        default=None,
-        choices=["host-safe", "strict"],
-        help="Security profile. Default: env SECURITY_PROFILE or host-safe.",
-    )
-    ap.add_argument(
         "--out-per-task",
         action="store_true",
         help="Write outputs to logs/ci/<date>/sc-acceptance-check-task-<id>/ to avoid overwriting when running many tasks.",
@@ -265,40 +225,46 @@ def main() -> int:
     ap.add_argument("--require-task-test-refs", action="store_true", help="fail if tasks_back/tasks_gameplay test_refs is empty for the resolved task id")
     ap.add_argument("--require-executed-refs", action="store_true", help="fail if acceptance anchors cannot be proven executed in this run (TRX/JUnit evidence)")
     ap.add_argument(
+        "--security-profile",
+        default=None,
+        choices=["strict", "host-safe"],
+        help="Security posture profile (default: env SECURITY_PROFILE or host-safe). host-safe keeps host boundary checks hard, lowers anti-tamper defaults.",
+    )
+    ap.add_argument(
         "--security-path-gate",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="Hard gate: path safety invariants (static). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="Hard gate: path safety invariants (static). Default follows --security-profile.",
     )
     ap.add_argument(
         "--security-sql-gate",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="Hard gate: SQL injection anti-patterns (static). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="Hard gate: SQL injection anti-patterns (static). Default follows --security-profile.",
     )
     ap.add_argument(
         "--security-audit-schema-gate",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="Hard gate: security-audit.jsonl schema keys exist in runtime code (static). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="Hard gate: security-audit.jsonl schema keys exist in runtime code (static). Default follows --security-profile.",
     )
     ap.add_argument(
         "--ui-event-json-guards",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="UI event gate: JSON size/max-depth guards (static). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="UI event gate: JSON size/max-depth guards (static). Default follows --security-profile.",
     )
     ap.add_argument(
         "--ui-event-source-verify",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="UI event gate: if handler has `source`, require it is used (static). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="UI event gate: if handler has `source`, require it is used (static). Default follows --security-profile.",
     )
     ap.add_argument(
         "--security-audit-evidence",
-        default="auto",
-        choices=["auto", "skip", "warn", "require"],
-        help="Require runtime evidence of security-audit.jsonl for this run_id (requires tests). Default: auto (from security profile).",
+        default=None,
+        choices=["skip", "warn", "require"],
+        help="Require runtime evidence of security-audit.jsonl for this run_id (requires tests). Default follows --security-profile.",
     )
     ap.add_argument(
         "--require-headless-e2e",
@@ -341,15 +307,21 @@ def main() -> int:
     subtasks_mode = str(args.subtasks_coverage or "skip").strip().lower()
     if subtasks_mode not in ("skip", "warn", "require"):
         subtasks_mode = "skip"
-    run_id = uuid.uuid4().hex
+
     security_profile = resolve_security_profile(args.security_profile)
-    security_defaults = security_defaults_for_profile(security_profile)
-    security_path_mode = resolve_gate_mode(args.security_path_gate, default_mode=security_defaults["path"])
-    security_sql_mode = resolve_gate_mode(args.security_sql_gate, default_mode=security_defaults["sql"])
-    security_audit_schema_mode = resolve_gate_mode(args.security_audit_schema_gate, default_mode=security_defaults["audit_schema"])
-    ui_event_json_mode = resolve_gate_mode(args.ui_event_json_guards, default_mode=security_defaults["ui_json"])
-    ui_event_source_mode = resolve_gate_mode(args.ui_event_source_verify, default_mode=security_defaults["ui_source"])
-    audit_mode = resolve_gate_mode(args.security_audit_evidence, default_mode=security_defaults["audit_evidence"])
+    security_defaults = security_gate_defaults(security_profile)
+    security_path_mode = normalize_gate_mode(args.security_path_gate, security_defaults["path"])
+    security_sql_mode = normalize_gate_mode(args.security_sql_gate, security_defaults["sql"])
+    security_audit_schema_mode = normalize_gate_mode(args.security_audit_schema_gate, security_defaults["audit_schema"])
+    ui_event_json_mode = normalize_gate_mode(args.ui_event_json_guards, security_defaults["ui_event_json_guards"])
+    ui_event_source_mode = normalize_gate_mode(args.ui_event_source_verify, security_defaults["ui_event_source_verify"])
+    security_audit_evidence_mode = normalize_gate_mode(args.security_audit_evidence, security_defaults["audit_evidence"])
+
+    run_id = uuid.uuid4().hex
+    godot_bin = args.godot_bin or os.environ.get("GODOT_BIN")
+
+    if str(triplet.task_id) == "1" and enabled("tests"):
+        steps.append(step_task1_env_evidence(out_dir, godot_bin=godot_bin))
 
     if enabled("adr"):
         steps.append(step_adr_compliance(out_dir, triplet, strict_status=bool(args.strict_adr_status)))
@@ -396,13 +368,13 @@ def main() -> int:
         steps.append(step_ui_event_security(out_dir, json_mode=ui_event_json_mode, source_mode=ui_event_source_mode))
         steps.append(step_security_soft(out_dir))
 
-    godot_bin = args.godot_bin or os.environ.get("GODOT_BIN")
+    audit_mode = security_audit_evidence_mode
     if enabled("tests"):
         test_type = "all" if has_gd_refs else "unit"
         if test_type != "unit" and not godot_bin:
             steps.append(StepResult(name="tests-all", status="fail", rc=2, details={"error": "missing_godot_bin", "hint": "set --godot-bin or env GODOT_BIN"}))
         else:
-            steps.append(step_tests_all(out_dir, godot_bin, run_id=run_id, test_type=test_type))
+            steps.append(step_tests_all(out_dir, godot_bin, run_id=run_id, test_type=test_type, task_id=str(triplet.task_id)))
             if needs_headless:
                 steps.append(step_headless_e2e_evidence(out_dir, expected_run_id=run_id))
             if require_executed:
@@ -513,13 +485,13 @@ def main() -> int:
         "steps": [s.__dict__ for s in steps],
         "out_dir": str(out_dir),
         "subtasks_coverage_mode": subtasks_mode,
-        "security_profile": security_profile,
-        "security_gate_modes": {
+        "security_profile": security_profile_payload(security_profile),
+        "security_modes": {
             "path": security_path_mode,
             "sql": security_sql_mode,
             "audit_schema": security_audit_schema_mode,
-            "ui_json": ui_event_json_mode,
-            "ui_source": ui_event_source_mode,
+            "ui_event_json_guards": ui_event_json_mode,
+            "ui_event_source_verify": ui_event_source_mode,
             "audit_evidence": audit_mode,
         },
     }
@@ -532,7 +504,7 @@ def main() -> int:
     write_json(out_dir / "summary.json", summary)
     write_markdown_report(out_dir, triplet, steps, metrics=metrics or None)
 
-    print(f"SC_ACCEPTANCE status={summary['status']} profile={security_profile} out={out_dir}")
+    print(f"SC_ACCEPTANCE status={summary['status']} out={out_dir}")
     return 0 if not hard_failed else 1
 
 

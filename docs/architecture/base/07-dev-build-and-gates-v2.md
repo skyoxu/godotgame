@@ -4,7 +4,7 @@ status: base-SSoT
 generated_variant: deep-optimized
 ssot_scope: chapter-07-only
 reuse_level: base-clean
-adr_refs: [ADR-0011, ADR-0018, ADR-0025, ADR-0015, ADR-0019, ADR-0003]
+adr_refs: [ADR-0011, ADR-0018, ADR-0025, ADR-0015, ADR-0019, ADR-0031, ADR-0005, ADR-0003]
 placeholders: Unknown Product, unknown-product, gamedev, dev, 0.0.0, production, dev-team, dev-project
 derived_from: 07-dev-build-and-gates-v2.md
 last_generated: 2025-12-16
@@ -57,3 +57,10 @@ last_generated: 2025-12-16
 
 - 统一目录：`logs/**`
 - 优先查看：`logs/ci/<YYYY-MM-DD>/`（门禁编排摘要、编码/文档扫描、Release Health 等）
+
+### 3.3 Task-scoped acceptance (recommended)
+
+- Default profile: `host-safe`
+  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --security-profile host-safe`
+- Strict profile (phase-based):
+  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --security-profile strict --require-task-test-refs --require-executed-refs`

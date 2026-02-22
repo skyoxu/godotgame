@@ -56,3 +56,8 @@ monitoring-metrics:
 - [ ] Bash 片段显式步骤 `shell: bash` 且在步骤/注释中记录理由。
 - [ ] 回滚与通知步骤：使用 `if:` 判空；失败不拖垮主流程（必要时 `continue-on-error`）。
 - [ ] `validate-workflows` 校验通过，并纳入分支保护。
+
+## Addendum (2026-02 Security profile observability)
+
+- Quality workflows must publish `SecurityProfile: <host-safe|strict>` in Step Summary.
+- This line is part of CI audit evidence and should be treated as required metadata.

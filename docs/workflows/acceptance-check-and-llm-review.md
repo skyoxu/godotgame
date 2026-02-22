@@ -215,3 +215,12 @@ py -3 scripts/sc/llm_review.py --task-id 10 --base main --strict
 - 更新：`scripts/sc/README.md`（补充 llm_review 与 Claude agents 读取口径）
 
 > 说明：以上文件均属于“工具链/工作流层”，不应与游戏业务逻辑耦合。
+
+## 7. Update (2026-02)
+
+- `acceptance_check.py` (hard gate): profile-aware defaults via `--security-profile`; recommended to use `--require-task-test-refs` and `--require-executed-refs` for strict delivery phases.
+- `llm_review.py`: profile-aware risk context via `--security-profile`; task-specific output path is `sc-llm-review-task-<id>/` when `--task-id` is set.
+- `llm_extract_task_obligations.py`: use `--consensus-runs`, `--garbled-gate`, and `--auto-escalate` for stability.
+- `llm_check_subtasks_coverage.py`: supports `--consensus-runs`.
+- `llm_semantic_gate_all.py`: supports `--garbled-gate` precheck before LLM audit.
+- CI must emit: `SecurityProfile: <host-safe|strict>`.
