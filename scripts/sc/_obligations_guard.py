@@ -77,15 +77,45 @@ def _normalize_ws(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
-def _contains_excerpt(excerpt: str, raw_corpus: str, norm_corpus: str) -> bool:
+def _strip_prompt_prefixes(text: str) -> str:
+    value = _normalize_ws(text)
+    if not value:
+        return ""
+
+    patterns = [
+        r"^task\s*:\s*t\d+(?:\.\d+)?\s+",
+        r"^task\s*:\s*",
+        r"^master\s*title\s*:\s*",
+        r"^title\s*:\s*",
+        r"^任务标题\s*[:：]\s*",
+        r"^主标题\s*[:：]\s*",
+    ]
+    stripped = value
+    for _ in range(3):
+        original = stripped
+        for pattern in patterns:
+            stripped = re.sub(pattern, "", stripped, flags=re.IGNORECASE)
+        stripped = _normalize_ws(stripped)
+        if stripped == original:
+            break
+    return stripped
+
+
+def _contains_excerpt(excerpt: str, raw_corpus: str, norm_corpus: str) -> tuple[bool, bool]:
     if not excerpt:
-        return False
+        return False, False
     if excerpt in raw_corpus:
-        return True
+        return True, False
     norm_excerpt = _normalize_ws(excerpt)
     if not norm_excerpt:
-        return False
-    return norm_excerpt in norm_corpus
+        return False, False
+    if norm_excerpt in norm_corpus:
+        return True, False
+
+    stripped_excerpt = _strip_prompt_prefixes(norm_excerpt)
+    if stripped_excerpt and stripped_excerpt != norm_excerpt and stripped_excerpt in norm_corpus:
+        return True, True
+    return False, False
 
 
 def _is_anti_tamper_only(text: str) -> bool:
@@ -148,7 +178,7 @@ def apply_deterministic_guards(
     min_obligations: int,
     source_text_blocks: list[str],
     security_profile: str,
-) -> tuple[dict[str, Any], list[str], list[str], list[str]]:
+) -> tuple[dict[str, Any], list[str], list[str], list[str], dict[str, int]]:
     status = normalize_model_status(obj.get("status"))
     obligations = obj.get("obligations") or []
     if not isinstance(obligations, list):
@@ -158,6 +188,9 @@ def apply_deterministic_guards(
     det_issues: list[str] = []
     advisory_uncovered: list[str] = []
     hard_uncovered: list[str] = []
+    det_stats: dict[str, int] = {
+        "excerpt_prefix_stripped_matches": 0,
+    }
 
     if int(min_obligations) > 0 and len(obligations) < int(min_obligations):
         det_issues.append(f"DET_MIN_OBLIGATIONS<{int(min_obligations)}")
@@ -186,8 +219,12 @@ def apply_deterministic_guards(
 
         if not excerpt:
             det_issues.append(f"DET_SOURCE_EXCERPT_EMPTY:{oid}")
-        elif raw_corpus and not _contains_excerpt(excerpt, raw_corpus, norm_corpus):
-            det_issues.append(f"DET_SOURCE_EXCERPT_NOT_FOUND:{oid}")
+        elif raw_corpus:
+            matched, used_prefix_strip = _contains_excerpt(excerpt, raw_corpus, norm_corpus)
+            if not matched:
+                det_issues.append(f"DET_SOURCE_EXCERPT_NOT_FOUND:{oid}")
+            elif used_prefix_strip:
+                det_stats["excerpt_prefix_stripped_matches"] += 1
 
         if source.lower() != "master":
             sid = parse_subtask_source(source)
@@ -241,8 +278,9 @@ def apply_deterministic_guards(
     obj["status"] = status
     obj["uncovered_obligation_ids"] = hard_uncovered
     obj["advisory_uncovered_obligation_ids"] = advisory_uncovered
+    obj["deterministic_stats"] = det_stats
 
-    return obj, det_issues, hard_uncovered, advisory_uncovered
+    return obj, det_issues, hard_uncovered, advisory_uncovered, det_stats
 
 
 def render_obligations_report(obj: dict[str, Any]) -> str:
@@ -355,8 +393,9 @@ Schema:
 Rules:
 - Obligations MUST be falsifiable / auditable: avoid vague statements like "works correctly".
 - Avoid no-op loopholes: include at least one "must refuse / must not advance / state unchanged" obligation when applicable.
-- Use ONLY the provided task text (master.details/testStrategy + subtasks title/details/testStrategy) to derive obligations.
+- Use ONLY the provided task text (master.title/details/testStrategy + subtasks title/details/testStrategy) to derive obligations.
 - Each obligation MUST include source_excerpt copied verbatim from the provided task text; if you cannot cite an excerpt, do NOT include that obligation.
+- source_excerpt MUST NOT include prompt-only headers such as "Task:" or "Master title:".
 - Be conservative: mark covered ONLY when an acceptance item clearly implies it.
 - If ANY obligation is not covered => status must be "fail".
 - suggested_acceptance must be minimal and aligned to tasks_back/tasks_gameplay style (Chinese OK). Do NOT include any "Refs:" here.

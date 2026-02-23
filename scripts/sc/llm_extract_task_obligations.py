@@ -336,12 +336,12 @@ def main() -> int:
     obj["task_id"] = str(triplet.task_id)
     obj["status"] = status
 
-    source_blocks = [details, test_strategy]
+    source_blocks = [title, details, test_strategy]
     for item in subtasks:
         source_blocks.append(item.get("title", ""))
         source_blocks.append(item.get("details", ""))
         source_blocks.append(item.get("testStrategy", ""))
-    obj, det_issues, hard_uncovered, advisory_uncovered = apply_deterministic_guards(
+    obj, det_issues, hard_uncovered, advisory_uncovered, det_stats = apply_deterministic_guards(
         obj=obj,
         subtasks=subtasks,
         min_obligations=int(args.min_obligations),
@@ -365,6 +365,8 @@ def main() -> int:
     }
     summary["selected_run"] = int((selected or {}).get("run") or 0)
     summary["deterministic_issues"] = det_issues
+    summary["deterministic_stats"] = det_stats
+    summary["excerpt_prefix_stripped_matches"] = int(det_stats.get("excerpt_prefix_stripped_matches") or 0)
     summary["hard_uncovered_count"] = len(hard_uncovered)
     summary["advisory_uncovered_count"] = len(advisory_uncovered)
     summary["status"] = status
