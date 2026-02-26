@@ -225,12 +225,21 @@ def main() -> int:
             )
             reused_status = normalize_model_status(reused_obj.get("status"))
             if reused_status == "ok":
+                det_stats = {
+                    "excerpt_prefix_stripped_matches": int(
+                        reused_obj.get("source_excerpt_prefix_stripped_matches") or 0
+                    ),
+                }
                 summary["status"] = "ok"
                 summary["rc"] = 0
                 summary["reuse_hit"] = True
                 summary["reused_from"] = str(verdict_path).replace("\\", "/")
                 summary["reused_summary_source"] = str(reused_summary.get("out_dir") or "").strip()
                 summary["deterministic_issues"] = det_issues
+                summary["deterministic_stats"] = det_stats
+                summary["excerpt_prefix_stripped_matches"] = int(
+                    det_stats.get("excerpt_prefix_stripped_matches") or 0
+                )
                 summary["hard_uncovered_count"] = len(hard_uncovered)
                 summary["advisory_uncovered_count"] = len(advisory_uncovered)
                 trace_text = (
@@ -338,6 +347,11 @@ def main() -> int:
         source_text_blocks=source_blocks,
         security_profile=security_profile,
     )
+    det_stats = {
+        "excerpt_prefix_stripped_matches": int(
+            obj.get("source_excerpt_prefix_stripped_matches") or 0
+        ),
+    }
     status = normalize_model_status(obj.get("status"))
 
     summary["rc"] = 0 if run_verdicts else 1
@@ -355,6 +369,10 @@ def main() -> int:
     }
     summary["selected_run"] = int((selected or {}).get("run") or 0)
     summary["deterministic_issues"] = det_issues
+    summary["deterministic_stats"] = det_stats
+    summary["excerpt_prefix_stripped_matches"] = int(
+        det_stats.get("excerpt_prefix_stripped_matches") or 0
+    )
     summary["hard_uncovered_count"] = len(hard_uncovered)
     summary["advisory_uncovered_count"] = len(advisory_uncovered)
     summary["status"] = status
