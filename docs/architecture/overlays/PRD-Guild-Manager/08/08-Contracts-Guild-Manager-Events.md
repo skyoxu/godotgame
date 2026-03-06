@@ -22,7 +22,8 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/guild/guild-manager-events.ts`
+- 合同文件：`Game.Core/Contracts/Guild/GuildMemberJoined.cs`
+  - `Game.Core/Contracts/EventTypes.cs`
 - 受影响模块：公会管理场景的事件发布/订阅、前端状态同步
 
 验收要点（就地）

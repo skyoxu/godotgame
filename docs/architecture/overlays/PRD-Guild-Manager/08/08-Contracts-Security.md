@@ -24,7 +24,8 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/security.ts`
+- 合同文件：`Game.Core/Contracts/DomainEvent.cs`
+  - `Game.Core/Contracts/EventTypes.cs`
 - 受影响模块：安全事件、策略校验与日志告警链路
 
 验收要点

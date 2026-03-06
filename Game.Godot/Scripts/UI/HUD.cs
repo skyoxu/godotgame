@@ -1,5 +1,6 @@
 using Godot;
 using Game.Godot.Adapters;
+using Game.Core.Contracts;
 using System.Text.Json;
 
 namespace Game.Godot.Scripts.UI;
@@ -23,7 +24,7 @@ public partial class HUD : Control
 
     private void OnDomainEventEmitted(string type, string source, string dataJson, string id, string specVersion, string dataContentType, string timestampIso)
     {
-        if (type == "core.score.updated" || type == "score.changed")
+        if (type == EventTypes.ScoreUpdated || type == "score.changed")
         {
             try
             {
@@ -35,7 +36,7 @@ public partial class HUD : Control
             }
             catch { }
         }
-        else if (type == "core.health.updated" || type == "player.health.changed")
+        else if (type == EventTypes.HealthUpdated || type == "player.health.changed")
         {
             try
             {

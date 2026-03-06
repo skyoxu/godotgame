@@ -7,7 +7,7 @@ namespace Game.Core.Tests.Services;
 public class ScoreServiceTests
 {
     [Fact]
-    public void ComputeAddedScore_respects_multiplier_and_difficulty()
+    public void ComputeAddedScore_Respects_Multiplier_And_Difficulty()
     {
         var svc = new ScoreService();
         var cfg = new GameConfig(
@@ -27,7 +27,7 @@ public class ScoreServiceTests
     }
 
     [Fact]
-    public void Add_accumulates_and_reset_clears_score()
+    public void Add_Accumulates_And_Reset_Clears_Score()
     {
         var svc = new ScoreService();
         var cfg = new GameConfig(50, 100, 1.0, false, Difficulty.Medium);

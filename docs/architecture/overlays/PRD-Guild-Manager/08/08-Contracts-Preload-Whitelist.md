@@ -22,7 +22,7 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/LegacyDesktopShell/preload-whitelist.ts`
+- 合同文件：`Game.Core/Contracts/EventTypes.cs`
 - 受影响模块：LegacyDesktopShell 预加载桥、渲染进程 API 访问路径
 
 验收要点（就地）
