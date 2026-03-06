@@ -73,6 +73,8 @@
   - 必需步骤完整性校验（例如 `headless-e2e-evidence` 与 `acceptance-executed-refs` 已成功且可追溯）。
 - 若守卫未通过，测试应按“上下文不完整”路径退出，不得把历史工件或半成品工件当作失败依据。
 - 依赖真实工件的硬断言，统一放在 `post-evidence-integration` 阶段执行，不放在纯单元测试中。
+- 模板仓默认提供 Task 1 的环境证据后置硬门；复制到新项目后，如任务号或测试类名不同，可通过 `SC_POST_EVIDENCE_FILTER_TASK_<id>` 覆盖过滤器，或调整 `scripts/sc/_post_evidence_config.py`。
+- `ci-windows.yml` 在模板仓缺少真实 `.taskmaster/tasks/*.json` 时会显式 skip 这层门禁；业务仓补齐真实 Taskmaster triplet 后即自动启用。
 - 如新增工件型断言，同步更新：
   - `scripts/sc/_acceptance_orchestration.py`
   - `scripts/sc/_acceptance_evidence_steps.py`
@@ -85,7 +87,7 @@
 py -3 scripts/sc/analyze.py --format report
 
 # 构建（warn as error）
-py -3 scripts/sc/build.py NewRouge.csproj --type dev --clean
+py -3 scripts/sc/build.py GodotGame.csproj --type dev --clean
 
 # TDD 门禁编排
 py -3 scripts/sc/build.py tdd --stage red --generate-red-test

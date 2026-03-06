@@ -4,7 +4,7 @@ sc-build: Repo-specific build shim (Godot+C# template).
 
 Usage (Windows):
   py -3 scripts/sc/build.py
-  py -3 scripts/sc/build.py NewRouge.sln --type prod --clean --verbose
+  py -3 scripts/sc/build.py Game.sln --type prod --clean --verbose
 
 TDD helper (gated, non-generative):
   py -3 scripts/sc/build.py tdd --stage green
@@ -17,12 +17,13 @@ import os
 import sys
 from pathlib import Path
 
+from _repo_targets import resolve_build_target
 from _util import ci_dir, repo_root, run_cmd, write_json, write_text
 
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="sc-build (build shim)")
-    ap.add_argument("target", nargs="?", default="NewRouge.csproj", help="build target (.csproj/.sln)")
+    ap.add_argument("target", nargs="?", default=None, help="build target (.csproj/.sln); auto-resolved when omitted")
     ap.add_argument("--type", choices=["dev", "prod", "test"], default="dev")
     ap.add_argument("--clean", action="store_true")
     ap.add_argument("--optimize", action="store_true")
@@ -54,7 +55,12 @@ def main() -> int:
     if args.type == "prod" or args.optimize:
         config = "Release"
 
-    target = repo_root() / args.target
+    root = repo_root()
+    if args.target:
+        target = root / args.target
+    else:
+        resolved = resolve_build_target(root)
+        target = resolved if resolved is not None else (root / 'Game.sln')
     if not target.exists():
         print(f"[sc-build] ERROR: target not found: {target}")
         return 2
