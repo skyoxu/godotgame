@@ -250,6 +250,7 @@ def main() -> int:
             require_executed_refs=require_executed_refs,
             audit_evidence_mode=audit_evidence_mode,
             perf_p95_ms=perf_p95_ms,
+            task_id=int(str(triplet.task_id).split('.', 1)[0]),
         )
         summary = _build_summary(
             mode="dry-run-plan",

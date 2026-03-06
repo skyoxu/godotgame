@@ -9,6 +9,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import os
+
+from _post_evidence_config import get_post_evidence_report_dir, get_post_evidence_test_filter
+from _repo_targets import resolve_solution_file
 from _step_result import StepResult
 from _util import repo_root, run_cmd, today_str, write_json, write_text
 
@@ -126,3 +130,65 @@ def step_security_audit_evidence(out_dir: Path, *, expected_run_id: str) -> Step
     write_text(log_path, out)
     return StepResult(name="security-audit-executed-evidence", status="ok" if rc == 0 else "fail", rc=rc, cmd=cmd, log=str(log_path))
 
+
+
+def step_post_evidence_integration(
+    out_dir: Path,
+    *,
+    task_id: int,
+    expected_run_id: str,
+    godot_bin: str | None,
+) -> StepResult:
+    test_filter = get_post_evidence_test_filter(task_id)
+    if not test_filter:
+        return StepResult(
+            name="post-evidence-integration",
+            status="skipped",
+            rc=0,
+            details={"reason": "post_evidence_not_configured"},
+        )
+
+    root = repo_root()
+    report_dir_rel = get_post_evidence_report_dir(task_id)
+    report_dir = root / report_dir_rel
+    solution_file = resolve_solution_file(root)
+    solution_arg = solution_file.name if solution_file is not None else "Game.sln"
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/run_dotnet.py",
+        "--solution",
+        solution_arg,
+        "--configuration",
+        "Debug",
+        "--filter",
+        test_filter,
+        "--out-dir",
+        str(report_dir),
+    ]
+
+    previous_required = os.environ.get("TASK1_PREFLIGHT_REQUIRED")
+    os.environ["TASK1_PREFLIGHT_REQUIRED"] = "1"
+    try:
+        rc, out = run_cmd(cmd, cwd=root, timeout_sec=900)
+    finally:
+        if previous_required is None:
+            os.environ.pop("TASK1_PREFLIGHT_REQUIRED", None)
+        else:
+            os.environ["TASK1_PREFLIGHT_REQUIRED"] = previous_required
+
+    log_path = out_dir / "post-evidence-integration.log"
+    write_text(log_path, out)
+    return StepResult(
+        name="post-evidence-integration",
+        status="ok" if rc == 0 else "fail",
+        rc=rc,
+        cmd=cmd,
+        log=str(log_path),
+        details={
+            "task_id": task_id,
+            "expected_run_id": expected_run_id,
+            "report_dir": str(report_dir_rel).replace("\\", "/"),
+            "godot_bin_seen": bool(godot_bin),
+        },
+    )
