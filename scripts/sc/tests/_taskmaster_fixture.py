@@ -70,13 +70,24 @@ def _inject_task1(tasks_json: dict, tasks_back: list, tasks_gameplay: list) -> N
         })
 
 
+def _remove_tree_if_exists(path: Path) -> None:
+    if not path.exists():
+        return
+    if path.is_dir():
+        shutil.rmtree(path)
+        return
+    path.unlink()
+
+
 @contextmanager
 def staged_taskmaster_triplet(*, include_task1: bool = False) -> Iterator[Path]:
-    if _BACKUP_DIR.exists():
-        shutil.rmtree(_BACKUP_DIR)
+    _remove_tree_if_exists(_BACKUP_DIR)
     if TASKMASTER_DIR.exists():
         _BACKUP_DIR.parent.mkdir(parents=True, exist_ok=True)
-        TASKMASTER_DIR.rename(_BACKUP_DIR)
+        try:
+            TASKMASTER_DIR.rename(_BACKUP_DIR)
+        except FileNotFoundError:
+            pass
     TASKMASTER_DIR.mkdir(parents=True, exist_ok=True)
     try:
         tasks_json, tasks_back, tasks_gameplay = _example_triplet()
@@ -87,7 +98,6 @@ def staged_taskmaster_triplet(*, include_task1: bool = False) -> Iterator[Path]:
         _write_json(TASKMASTER_DIR / "tasks_gameplay.json", tasks_gameplay)
         yield TASKMASTER_DIR
     finally:
-        if TASKMASTER_DIR.exists():
-            shutil.rmtree(TASKMASTER_DIR)
+        _remove_tree_if_exists(TASKMASTER_DIR)
         if _BACKUP_DIR.exists():
             _BACKUP_DIR.rename(TASKMASTER_DIR)

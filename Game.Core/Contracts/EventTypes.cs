@@ -5,7 +5,7 @@ namespace Game.Core.Contracts;
 /// </summary>
 /// <remarks>
 /// ADR refs: ADR-0004, ADR-0020.
-/// Overlay ref: docs/architecture/overlays/PRD-NEWROUGE-GAME-0001/08/08-Contracts-M1.md
+/// Overlay ref: docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-CloudEvents-Core.md
 /// </remarks>
 public static class EventTypes
 {

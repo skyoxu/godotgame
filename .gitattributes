@@ -1,20 +1,25 @@
-* text=auto eol=crlf
+* text=auto eol=lf
 
-# Text files (force as text with CRLF in working tree)
-*.md      text eol=crlf
-*.txt     text eol=crlf
-*.cs      text diff=csharp eol=crlf
-*.csproj  text eol=crlf
-*.sln     text eol=crlf
-*.gd      text eol=crlf
-*.tscn    text eol=crlf
-*.tres    text eol=crlf
-*.json    text eol=crlf
-*.yml     text eol=crlf
-*.yaml    text eol=crlf
-*.xml     text eol=crlf
-*.ps1     text eol=crlf
+# Text files (repository-stable LF by default)
+*.md      text eol=lf
+*.txt     text eol=lf
+*.cs      text diff=csharp eol=lf
+*.csproj  text eol=lf
+*.sln     text eol=lf
+*.gd      text eol=lf
+*.tscn    text eol=lf
+*.tres    text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.xml     text eol=lf
+*.ps1     text eol=lf
 *.py      text eol=lf
+*.editorconfig text eol=lf
+
+# Windows command wrappers
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
 
 # Binary files (no EOL conversions)
 *.png  binary

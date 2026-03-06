@@ -5,7 +5,8 @@ namespace Game.Core.Contracts.Guild;
 /// Description: Emitted when a user joins a guild.
 /// </summary>
 /// <remarks>
-/// Follows ADR-0004 event contracts for the guild domain.
+/// ADR refs: ADR-0004, ADR-0031.
+/// Overlay ref: docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-Guild-Manager-Events.md
 /// </remarks>
 public sealed record GuildMemberJoined(
     string UserId,

@@ -21,7 +21,7 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/quality/metrics.ts`
+- 合同文件：`Game.Core/Contracts/EventTypes.cs`
 - 受影响模块：性能埋点、发布健康、报表聚合
 
 验收要点（就地）

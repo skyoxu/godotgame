@@ -22,7 +22,8 @@ Status: Proposed
 
 影响范围
 
-- 合同文件：`src/shared/contracts/cloudevents-core.ts`
+- 合同文件：`Game.Core/Contracts/DomainEvent.cs`
+  - `Game.Core/Contracts/EventTypes.cs`
 - 受影响模块：事件发布/订阅、日志与可观测性链路
 
 验收要点

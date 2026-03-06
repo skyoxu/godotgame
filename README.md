@@ -87,6 +87,10 @@ When you copy this template to create a new project, enable task-scoped gates af
 - Step Summary should contain `SecurityProfile: <host-safe|strict>`.
 - LLM scripts are diagnostic only and do not replace hard gates.
 
+4) Initialize `overlay_task_drift` only after real Taskmaster triplet files exist:
+- `py -3 scripts/python/remind_overlay_task_drift.py --write --overlay-index docs/architecture/overlays/PRD-Guild-Manager/08/_index.md`
+- Do not run `--write` in the bare template state; otherwise the baseline only records missing task files.
+
 <!-- END:NEW_PROJECT_SANGUO_ALIGNMENT -->
 
 ## Notes

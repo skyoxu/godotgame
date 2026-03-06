@@ -42,7 +42,7 @@ public class GameStateManagerTests
         );
 
     [Fact]
-    public async Task Save_load_delete_and_index_flow_works_with_compression()
+    public async Task Save_Load_Delete_And_Index_Flow_Works_With_Compression()
     {
         var store = new InMemoryDataStore();
         var opts = new GameStateManagerOptions(MaxSaves: 2, EnableCompression: true);
@@ -86,7 +86,7 @@ public class GameStateManagerTests
     }
 
     [Fact]
-    public async Task AutoSave_toggle_and_tick()
+    public async Task AutoSave_Toggle_And_Tick()
     {
         var store = new InMemoryDataStore();
         var mgr = new GameStateManager(store);
@@ -99,7 +99,7 @@ public class GameStateManagerTests
     }
 
     [Fact]
-    public async Task Save_throws_when_state_missing_or_title_too_long()
+    public async Task Save_Throws_When_State_Missing_Or_Title_Too_Long()
     {
         var store = new InMemoryDataStore();
         var mgr = new GameStateManager(store);
