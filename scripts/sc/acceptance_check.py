@@ -17,6 +17,7 @@ from _acceptance_orchestration import (
 )
 from _acceptance_report import write_markdown_report
 from _acceptance_runtime import (
+    apply_delivery_profile_defaults,
     build_parser,
     compute_perf_p95_ms,
     normalize_subtasks_mode,
@@ -198,6 +199,8 @@ def _run_self_check(args: Any) -> int:
 
 def main() -> int:
     args = build_parser().parse_args()
+    args = apply_delivery_profile_defaults(args)
+    os.environ["DELIVERY_PROFILE"] = str(args.delivery_profile)
     if bool(getattr(args, "self_check", False)):
         return _run_self_check(args)
     task_id = parse_task_id(args.task_id)
@@ -218,6 +221,7 @@ def main() -> int:
     require_executed_refs = bool(args.require_executed_refs)
 
     security_profile, security_modes = resolve_security_modes(args)
+    os.environ["SECURITY_PROFILE"] = str(security_profile)
     audit_evidence_mode = security_modes["audit_evidence"]
     perf_p95_ms = compute_perf_p95_ms(perf_p95_ms=args.perf_p95_ms, require_perf=bool(args.require_perf))
 

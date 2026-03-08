@@ -22,8 +22,29 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from _delivery_profile import default_security_profile_for_delivery, known_delivery_profiles, profile_test_defaults, resolve_delivery_profile
+from _security_profile import resolve_security_profile
 from _summary_schema import SummarySchemaError, validate_sc_test_summary
 from _util import ci_dir, repo_root, run_cmd, today_str, write_json, write_text
+
+
+DELIVERY_PROFILE_CHOICES = tuple(sorted(known_delivery_profiles()))
+
+
+def resolve_test_runtime(*, delivery_profile: str | None, security_profile: str | None, no_coverage_gate: bool) -> dict[str, Any]:
+    resolved_delivery_profile = resolve_delivery_profile(delivery_profile)
+    resolved_security_profile = resolve_security_profile(
+        security_profile or default_security_profile_for_delivery(resolved_delivery_profile)
+    )
+    defaults = profile_test_defaults(resolved_delivery_profile)
+    return {
+        "delivery_profile": resolved_delivery_profile,
+        "security_profile": resolved_security_profile,
+        "coverage_gate": bool(defaults.get("coverage_gate", True)) and not bool(no_coverage_gate),
+        "coverage_lines_min": max(0, int(defaults.get("coverage_lines_min", 90) or 0)),
+        "coverage_branches_min": max(0, int(defaults.get("coverage_branches_min", 85) or 0)),
+        "smoke_strict": bool(defaults.get("smoke_strict", True)),
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +53,18 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--task-id", default=None, help="Optional task id for smoke evidence file logs/ci/<date>/task-<id>.json")
     ap.add_argument("--solution", default="Game.sln")
     ap.add_argument("--configuration", default="Debug")
+    ap.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=DELIVERY_PROFILE_CHOICES,
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).",
+    )
+    ap.add_argument(
+        "--security-profile",
+        default=None,
+        choices=["strict", "host-safe"],
+        help="Security profile override (default derives from delivery profile).",
+    )
     ap.add_argument("--godot-bin", default=None, help="Godot mono console binary (required for e2e/all)")
     ap.add_argument("--run-id", default=None, help="Optional run identifier for evidence binding (default: auto-generate).")
     ap.add_argument("--smoke-scene", default="res://Game.Godot/Scenes/Main.tscn", help="Main scene for smoke test")
@@ -311,7 +344,7 @@ def run_gdunit_hard(
     }
 
 
-def run_smoke(out_dir: Path, godot_bin: str, scene: str, task_id: str | None = None) -> dict[str, Any]:
+def run_smoke(out_dir: Path, godot_bin: str, scene: str, task_id: str | None = None, *, strict: bool = True) -> dict[str, Any]:
     if scene.startswith("res://"):
         disk_path = repo_root() / scene[len("res://") :]
         if not disk_path.exists():
@@ -338,8 +371,9 @@ def run_smoke(out_dir: Path, godot_bin: str, scene: str, task_id: str | None = N
         scene,
         "--timeout-sec",
         "5",
-        "--strict",
     ]
+    if strict:
+        cmd.append("--strict")
     if str(task_id or "").strip():
         cmd += ["--task-id", str(task_id).strip()]
     rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=120)
@@ -356,6 +390,13 @@ def run_smoke(out_dir: Path, godot_bin: str, scene: str, task_id: str | None = N
 
 def main() -> int:
     args = build_parser().parse_args()
+    runtime = resolve_test_runtime(
+        delivery_profile=args.delivery_profile,
+        security_profile=args.security_profile,
+        no_coverage_gate=bool(args.no_coverage_gate),
+    )
+    os.environ["DELIVERY_PROFILE"] = str(runtime["delivery_profile"])
+    os.environ["SECURITY_PROFILE"] = str(runtime["security_profile"])
     out_dir = ci_dir("sc-test")
     run_id = str(args.run_id or "").strip() or uuid.uuid4().hex
     run_date = today_str()
@@ -401,9 +442,12 @@ def main() -> int:
         return 2
 
     if args.type in ("unit", "all"):
-        if not args.no_coverage_gate:
-            os.environ.setdefault("COVERAGE_LINES_MIN", "90")
-            os.environ.setdefault("COVERAGE_BRANCHES_MIN", "85")
+        if bool(runtime["coverage_gate"]):
+            os.environ["COVERAGE_LINES_MIN"] = str(runtime["coverage_lines_min"])
+            os.environ["COVERAGE_BRANCHES_MIN"] = str(runtime["coverage_branches_min"])
+        else:
+            os.environ.pop("COVERAGE_LINES_MIN", None)
+            os.environ.pop("COVERAGE_BRANCHES_MIN", None)
 
         step = run_unit(out_dir, args.solution, args.configuration, run_id=run_id, task_id=args.task_id)
         summary["steps"].append(step)
@@ -433,7 +477,7 @@ def main() -> int:
             hard_fail = True
 
         if not args.skip_smoke:
-            sm = run_smoke(out_dir, godot_bin, args.smoke_scene, task_id=args.task_id)
+            sm = run_smoke(out_dir, godot_bin, args.smoke_scene, task_id=args.task_id, strict=bool(runtime["smoke_strict"]))
             summary["steps"].append(sm)
             if not _persist_summary():
                 return 2

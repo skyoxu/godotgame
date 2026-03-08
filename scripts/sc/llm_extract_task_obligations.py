@@ -7,6 +7,12 @@ import sys
 from pathlib import Path
 from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _delivery_profile import (  # noqa: E402
+    build_delivery_profile_context,
+    default_security_profile_for_delivery,
+    profile_llm_obligations_defaults,
+    resolve_delivery_profile,
+)
 from _garbled_gate import parse_task_ids_csv, render_top_hits, scan_task_text_integrity  # noqa: E402
 from _obligations_guard import (  # noqa: E402
     apply_deterministic_guards,
@@ -47,16 +53,39 @@ from _security_profile import build_security_profile_context, resolve_security_p
 from _taskmaster import resolve_triplet  # noqa: E402
 from _util import ci_dir, repo_root, write_json, write_text  # noqa: E402
 PROMPT_VERSION = "obligations-v3"
+
+
+def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namespace:
+    delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
+    defaults = profile_llm_obligations_defaults(delivery_profile)
+    args.delivery_profile = delivery_profile
+    if args.timeout_sec is None:
+        args.timeout_sec = int(defaults.get("timeout_sec", 360) or 360)
+    if args.max_prompt_chars is None:
+        args.max_prompt_chars = int(defaults.get("max_prompt_chars", 80_000) or 80_000)
+    if args.consensus_runs is None:
+        args.consensus_runs = int(defaults.get("consensus_runs", 1) or 1)
+    if not str(args.garbled_gate or "").strip():
+        args.garbled_gate = str(defaults.get("garbled_gate") or "on")
+    return args
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="sc-llm-extract-task-obligations (obligations vs acceptance coverage)")
     parser.add_argument("--task-id", default=None, help="Taskmaster id (e.g. 17). Default: first status=in-progress task.")
-    parser.add_argument("--timeout-sec", type=int, default=360, help="codex exec timeout in seconds (default: 360).")
-    parser.add_argument("--max-prompt-chars", type=int, default=80_000, help="Max prompt size (default: 80000).")
-    parser.add_argument("--consensus-runs", type=int, default=1, help="Run N baseline rounds and use majority status (default: 1).")
+    parser.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=["playable-ea", "fast-ship", "standard"],
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).",
+    )
+    parser.add_argument("--timeout-sec", type=int, default=None, help="codex exec timeout in seconds (default: profile).")
+    parser.add_argument("--max-prompt-chars", type=int, default=None, help="Max prompt size (default: profile).")
+    parser.add_argument("--consensus-runs", type=int, default=None, help="Run N baseline rounds and use majority status (default: profile).")
     parser.add_argument("--min-obligations", type=int, default=0, help="Deterministic hard gate: minimum obligations count (default: 0).")
     parser.add_argument("--round-id", default="", help="Optional run id suffix for output directory isolation.")
     parser.add_argument("--security-profile", default=None, choices=["strict", "host-safe"], help="Security review profile (default: env SECURITY_PROFILE or host-safe).")
-    parser.add_argument("--garbled-gate", default="on", choices=["on", "off"], help="Run garbled-text precheck before LLM (default: on).")
+    parser.add_argument("--garbled-gate", default=None, choices=["on", "off"], help="Run garbled-text precheck before LLM (default: profile).")
     parser.add_argument("--auto-escalate", default="on", choices=["on", "off"], help="Auto escalate failed/unstable runs to --escalate-max-runs (default: on).")
     parser.add_argument("--escalate-max-runs", type=int, default=3, help="Max runs when auto escalation is triggered (default: 3).")
     parser.add_argument("--escalate-task-ids", default="", help="CSV task ids to force escalation to max runs (e.g. 2,12).")
@@ -65,7 +94,7 @@ def main() -> int:
     parser.add_argument("--explain-reuse-miss", action="store_true", help="When reuse-last-ok misses, emit mismatch dimensions for reuse key fields.")
     parser.add_argument("--dry-run-fingerprint", action="store_true", help="Print runtime fingerprint/input hash/reuse key and exit without LLM.")
     parser.add_argument("--self-check", action="store_true", help="Run local deterministic self-check only (no LLM/task resolution).")
-    args = parser.parse_args()
+    args = apply_delivery_profile_defaults(parser.parse_args())
     max_schema_errors = max(1, int(args.max_schema_errors))
     if bool(args.self_check):
         out_dir = ci_dir("sc-llm-obligations-self-check")
@@ -104,7 +133,10 @@ def main() -> int:
         acceptance_by_view["gameplay"] = list((triplet.gameplay or {}).get("acceptance") or [])
     acceptance_counts = compute_acceptance_dedup_stats(acceptance_by_view)
 
-    security_profile = resolve_security_profile(args.security_profile)
+    security_profile = resolve_security_profile(args.security_profile or default_security_profile_for_delivery(args.delivery_profile))
+    os.environ["DELIVERY_PROFILE"] = str(args.delivery_profile)
+    os.environ["SECURITY_PROFILE"] = str(security_profile)
+    delivery_profile_context = build_delivery_profile_context(args.delivery_profile)
     security_profile_context = build_security_profile_context(security_profile)
     summary: dict[str, Any] = build_summary_base(task_id=str(triplet.task_id), title=title, prompt_version=PROMPT_VERSION, out_dir_rel=str(out_dir.relative_to(repo_root())).replace("\\", "/"), subtasks_total=len(subtasks), views_present=sorted(acceptance_by_view.keys()), acceptance_counts=acceptance_counts, security_profile=security_profile, garbled_gate=str(args.garbled_gate), auto_escalate=str(args.auto_escalate), reuse_last_ok=bool(args.reuse_last_ok), max_schema_errors=max_schema_errors)
     runtime_code_fingerprint, runtime_code_fingerprint_parts = build_runtime_code_fingerprint({"build_obligation_prompt": build_obligation_prompt, "apply_deterministic_guards": apply_deterministic_guards, "validate_verdict_schema": validate_verdict_schema})
@@ -278,6 +310,7 @@ def main() -> int:
         acceptance_by_view=acceptance_by_view,
         security_profile=security_profile,
         security_profile_context=security_profile_context,
+        delivery_profile_context=delivery_profile_context,
     )
     prompt = safe_prompt_truncate(prompt, max_chars=int(args.max_prompt_chars))
     write_text(out_dir / "prompt.md", prompt)
