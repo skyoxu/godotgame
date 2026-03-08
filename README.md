@@ -54,6 +54,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - CI 工作流 `windows-quality-gate.yml` / `ci-windows.yml` 已接入 `delivery_profile` 输入，并会在 Step Summary 固化 `DeliveryProfile:` 与 `SecurityProfile:`。
 
 ## Quick Links
+- Delivery Profile 说明：`DELIVERY_PROFILE.md`
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
 - Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
 - Windows-only 快速指引：`docs/migration/Phase-17-Windows-Only-Quickstart.md`
