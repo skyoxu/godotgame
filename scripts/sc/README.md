@@ -9,7 +9,7 @@
 
 ## “当前任务”从哪里来
 
-- 默认读取 `.taskmaster/tasks/tasks.json` 中第一个 `status == "in-progress"` 的任务。
+- 默认优先读取 `.taskmaster/tasks/tasks.json` 中第一个 `status == "in-progress"` 的任务；模板仓缺少真实 triplet 时回退到 `examples/taskmaster/tasks.json`。
 - 可用 `--task-id <n>` 显式指定。
 - 三文件关联映射口径：
   - `tasks.json.master.tasks[].id` → `tasks_back[].taskmaster_id` → `tasks_gameplay[].taskmaster_id`
@@ -54,10 +54,12 @@
 - 性能门禁（可选硬门）：解析最新 `logs/ci/**/headless.log` 的 `[PERF] ... p95_ms=...` 并与阈值比较
   - 启用方式：`--perf-p95-ms <ms>` 或设置环境变量 `PERF_P95_THRESHOLD_MS=<ms>`
   - 快捷方式：`--require-perf`（legacy）：等价于启用性能硬门禁，阈值取 `PERF_P95_THRESHOLD_MS`，否则默认 20ms（口径见 ADR-0015）
-- 安全档位（建议显式）：
-  - `--security-profile host-safe`：默认推荐，保持主机边界硬门，反篡改默认降级
-  - `--security-profile strict`：发布收口/高风险改动，安全项全部硬门
-  - 解析顺序：CLI > `SECURITY_PROFILE` > 默认 `host-safe`
+- 交付档位（建议显式）：
+  - `--delivery-profile playable-ea`：最轻门禁，优先验证可玩性；默认派生 `security-profile=host-safe`
+  - `--delivery-profile fast-ship`：快速交付档位；默认派生 `security-profile=host-safe`
+  - `--delivery-profile standard`：标准收口档位；默认派生 `security-profile=strict`
+  - 解析顺序：CLI `--delivery-profile` > `DELIVERY_PROFILE` > `scripts/sc/config/delivery_profiles.json` 中的 `default_profile`（当前为 `fast-ship`）
+  - `--security-profile` 仅用于显式覆写派生结果；解析顺序：CLI > `SECURITY_PROFILE` > 由 `delivery-profile` 派生
 
 可选：如果你仍希望保留“LLM 口头审查”的等价体验（但不建议作为硬门禁），使用：
 `scripts/sc/llm_review.py` writes outputs to `logs/ci/<YYYY-MM-DD>/sc-llm-review/`; prefer calling it via the unified pipeline.
@@ -92,13 +94,14 @@ py -3 scripts/sc/build.py GodotGame.csproj --type dev --clean
 # TDD 门禁编排
 py -3 scripts/sc/build.py tdd --stage red --generate-red-test
 py -3 scripts/sc/build.py tdd --stage green
-py -3 scripts/sc/build.py tdd --stage refactor
-
 # Unified task-level entry (test + acceptance + llm review)
-py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --security-profile host-safe
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship
 
-# Strict profile for release hardening
-py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --security-profile strict
+# Standard profile for release hardening
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile standard
+
+# Optional: explicit security override when you intentionally break the default mapping
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship --security-profile strict
 
 # Optional: skip llm review (deterministic gates only)
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --skip-llm-review
