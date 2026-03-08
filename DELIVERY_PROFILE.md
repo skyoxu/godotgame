@@ -205,7 +205,7 @@ py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN
 
 ```powershell
 $env:DELIVERY_PROFILE='fast-ship'
-py -3 scripts/sc/test.py --type all --godot-bin "$env:GODOT_BIN"
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --skip-llm-review
 ```
 
 ### 8.3 CI 中切换
