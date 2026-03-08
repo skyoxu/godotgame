@@ -16,6 +16,12 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from _delivery_profile import (
+    default_security_profile_for_delivery,
+    profile_acceptance_defaults,
+    profile_llm_review_defaults,
+    resolve_delivery_profile,
+)
 from _summary_schema import SummarySchemaError, validate_pipeline_summary
 from _util import repo_root, run_cmd, today_str, write_json, write_text
 
@@ -27,14 +33,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--task-id", required=True, help="Task id (e.g. 1 or 1.3).")
     parser.add_argument("--run-id", default=None, help="Optional fixed run id. Auto-generated if omitted.")
     parser.add_argument("--godot-bin", default=None, help="Godot binary path (or env GODOT_BIN).")
-    parser.add_argument("--security-profile", default="host-safe", choices=["strict", "host-safe"])
+    parser.add_argument("--delivery-profile", default=None, choices=["playable-ea", "fast-ship", "standard"], help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).")
+    parser.add_argument("--security-profile", default=None, choices=["strict", "host-safe"])
     parser.add_argument("--skip-test", action="store_true", help="Skip sc-test step.")
     parser.add_argument("--skip-acceptance", action="store_true", help="Skip sc-acceptance-check step.")
     parser.add_argument("--skip-llm-review", action="store_true", help="Skip sc-llm-review step.")
-    parser.add_argument("--llm-agents", default="all", help="llm_review --agents value. Default: all.")
-    parser.add_argument("--llm-timeout-sec", type=int, default=900, help="llm_review total timeout.")
-    parser.add_argument("--llm-agent-timeout-sec", type=int, default=300, help="llm_review per-agent timeout.")
-    parser.add_argument("--llm-semantic-gate", default="require", choices=["skip", "warn", "require"])
+    parser.add_argument("--llm-agents", default=None, help="llm_review --agents value. Default follows delivery profile.")
+    parser.add_argument("--llm-timeout-sec", type=int, default=None, help="llm_review total timeout. Default follows delivery profile.")
+    parser.add_argument("--llm-agent-timeout-sec", type=int, default=None, help="llm_review per-agent timeout. Default follows delivery profile.")
+    parser.add_argument("--llm-semantic-gate", default=None, choices=["skip", "warn", "require"])
     parser.add_argument("--llm-base", default="main", help="llm_review --base value.")
     parser.add_argument("--llm-diff-mode", default="full", choices=["full", "summary", "none"], help="llm_review --diff-mode value.")
     parser.add_argument("--llm-no-uncommitted", action="store_true", help="Do not pass --uncommitted to llm_review.")
@@ -62,10 +69,12 @@ def _task_root_id(task_id: str) -> str:
     return str(task_id).strip().split(".", 1)[0].strip()
 
 
-def _prepare_env(run_id: str) -> None:
+def _prepare_env(run_id: str, delivery_profile: str, security_profile: str) -> None:
     os.environ["SC_PIPELINE_RUN_ID"] = run_id
     os.environ["SC_TEST_RUN_ID"] = run_id
     os.environ["SC_ACCEPTANCE_RUN_ID"] = run_id
+    os.environ["DELIVERY_PROFILE"] = delivery_profile
+    os.environ["SECURITY_PROFILE"] = security_profile
 
 
 def _pipeline_run_dir(task_id: str, run_id: str) -> Path:
@@ -130,6 +139,16 @@ def main() -> int:
         print("[sc-review-pipeline] ERROR: --allow-overwrite and --force-new-run-id are mutually exclusive.")
         return 2
 
+    delivery_profile = resolve_delivery_profile(args.delivery_profile)
+    security_profile = str(args.security_profile or default_security_profile_for_delivery(delivery_profile)).strip().lower()
+    acceptance_defaults = profile_acceptance_defaults(delivery_profile)
+    llm_defaults = profile_llm_review_defaults(delivery_profile)
+    llm_agents = str(args.llm_agents or llm_defaults.get("agents") or "all")
+    llm_timeout_sec = int(args.llm_timeout_sec or llm_defaults.get("timeout_sec") or 900)
+    llm_agent_timeout_sec = int(args.llm_agent_timeout_sec or llm_defaults.get("agent_timeout_sec") or 300)
+    llm_semantic_gate = str(args.llm_semantic_gate or llm_defaults.get("semantic_gate") or "require")
+    llm_strict = bool(args.llm_strict) or bool(llm_defaults.get("strict", False))
+
     requested_run_id = str(args.run_id or "").strip() or uuid.uuid4().hex
     run_id = requested_run_id
 
@@ -159,7 +178,7 @@ def main() -> int:
                 print(f"[sc-review-pipeline] ERROR: failed to clear existing output directory: {exc}")
                 return 2
 
-    _prepare_env(run_id)
+    _prepare_env(run_id, delivery_profile, security_profile)
     write_text(out_dir / "run_id.txt", run_id + "\n")
 
     summary: dict[str, Any] = {
@@ -207,7 +226,7 @@ def main() -> int:
 
     steps: list[tuple[str, list[str], int, bool]] = []
 
-    test_cmd = ["py", "-3", "scripts/sc/test.py", "--task-id", task_id, "--run-id", run_id]
+    test_cmd = ["py", "-3", "scripts/sc/test.py", "--task-id", task_id, "--run-id", run_id, "--delivery-profile", delivery_profile]
     if args.godot_bin:
         test_cmd += ["--godot-bin", str(args.godot_bin)]
     steps.append(("sc-test", test_cmd, 1800, args.skip_test))
@@ -221,11 +240,29 @@ def main() -> int:
         "--run-id",
         run_id,
         "--out-per-task",
+        "--delivery-profile",
+        delivery_profile,
         "--security-profile",
-        args.security_profile,
-        "--require-executed-refs",
-        "--require-headless-e2e",
+        security_profile,
     ]
+    if bool(acceptance_defaults.get("strict_adr_status", False)):
+        acceptance_cmd.append("--strict-adr-status")
+    if bool(acceptance_defaults.get("strict_test_quality", False)):
+        acceptance_cmd.append("--strict-test-quality")
+    if bool(acceptance_defaults.get("strict_quality_rules", False)):
+        acceptance_cmd.append("--strict-quality-rules")
+    if bool(acceptance_defaults.get("require_task_test_refs", False)):
+        acceptance_cmd.append("--require-task-test-refs")
+    if bool(acceptance_defaults.get("require_executed_refs", False)):
+        acceptance_cmd.append("--require-executed-refs")
+    if bool(acceptance_defaults.get("require_headless_e2e", False)):
+        acceptance_cmd.append("--require-headless-e2e")
+    subtasks_mode = str(acceptance_defaults.get("subtasks_coverage") or "skip")
+    if subtasks_mode in {"skip", "warn", "require"} and subtasks_mode != "skip":
+        acceptance_cmd += ["--subtasks-coverage", subtasks_mode]
+    perf_p95_ms = int(acceptance_defaults.get("perf_p95_ms") or 0)
+    if perf_p95_ms > 0:
+        acceptance_cmd += ["--perf-p95-ms", str(perf_p95_ms)]
     if args.godot_bin:
         acceptance_cmd += ["--godot-bin", str(args.godot_bin)]
     steps.append(("sc-acceptance-check", acceptance_cmd, 1800, args.skip_acceptance))
@@ -237,29 +274,29 @@ def main() -> int:
         "--task-id",
         task_id,
         "--security-profile",
-        args.security_profile,
+        security_profile,
         "--review-profile",
         "bmad-godot",
         "--review-template",
         args.review_template,
         "--semantic-gate",
-        args.llm_semantic_gate,
+        llm_semantic_gate,
         "--agents",
-        args.llm_agents,
+        llm_agents,
         "--base",
         args.llm_base,
         "--diff-mode",
         args.llm_diff_mode,
         "--timeout-sec",
-        str(args.llm_timeout_sec),
+        str(llm_timeout_sec),
         "--agent-timeout-sec",
-        str(args.llm_agent_timeout_sec),
+        str(llm_agent_timeout_sec),
     ]
     if not args.llm_no_uncommitted:
         llm_cmd.append("--uncommitted")
-    if args.llm_strict:
+    if llm_strict:
         llm_cmd.append("--strict")
-    steps.append(("sc-llm-review", llm_cmd, max(300, int(args.llm_timeout_sec) + 120), args.skip_llm_review))
+    steps.append(("sc-llm-review", llm_cmd, max(300, int(llm_timeout_sec) + 120), args.skip_llm_review))
 
     for step_name, cmd, timeout_sec, skipped in steps:
         if skipped:

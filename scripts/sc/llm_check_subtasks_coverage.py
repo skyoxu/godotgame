@@ -25,6 +25,7 @@ def _bootstrap_imports() -> None:
 
 _bootstrap_imports()
 
+from _delivery_profile import build_delivery_profile_context, profile_llm_semantic_gate_all_defaults, resolve_delivery_profile  # noqa: E402
 from _taskmaster import resolve_triplet  # noqa: E402
 from _util import ci_dir, repo_root, write_json, write_text  # noqa: E402
 from _obligations_extract_helpers import (  # noqa: E402
@@ -43,6 +44,21 @@ from _subtasks_coverage_schema import (  # noqa: E402
     validate_subtasks_coverage_schema,
 )
 from _subtasks_coverage_garbled import run_subtasks_coverage_garbled_precheck  # noqa: E402
+
+
+def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namespace:
+    delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
+    defaults = profile_llm_semantic_gate_all_defaults(delivery_profile)
+    args.delivery_profile = delivery_profile
+    if args.timeout_sec is None:
+        args.timeout_sec = int(defaults.get("timeout_sec", 300) or 300)
+    if args.max_prompt_chars is None:
+        args.max_prompt_chars = int(defaults.get("max_prompt_chars", 60_000) or 60_000)
+    if args.consensus_runs is None:
+        args.consensus_runs = int(defaults.get("consensus_runs", 1) or 1)
+    if not str(args.garbled_gate or "").strip():
+        args.garbled_gate = str(defaults.get("garbled_gate") or "on")
+    return args
 
 
 def _run_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int) -> tuple[int, str, list[str]]:
@@ -109,7 +125,14 @@ def _format_acceptance(view_name: str, acceptance: list[Any]) -> str:
     return "\n".join(out)
 
 
-def _build_prompt(*, task_id: str, title: str, subtasks: list[dict[str, Any]], acceptance_by_view: dict[str, list[Any]]) -> str:
+def _build_prompt(
+    *,
+    task_id: str,
+    title: str,
+    subtasks: list[dict[str, Any]],
+    acceptance_by_view: dict[str, list[Any]],
+    delivery_profile_context: str = "",
+) -> str:
     sub_lines = []
     for s in subtasks:
         sid = str(s.get("id") or "").strip()
@@ -161,6 +184,9 @@ Rules:
             "",
             f"Task: T{task_id} {title}",
             "",
+            "Delivery profile context:",
+            delivery_profile_context.strip() or "- profile: standard",
+            "",
             "Subtasks (from tasks.json):",
             *(sub_lines or ["- (none)"]),
             "",
@@ -175,9 +201,15 @@ Rules:
 def main() -> int:
     ap = argparse.ArgumentParser(description="sc-llm-check-subtasks-coverage (semantic subtasks vs acceptance check)")
     ap.add_argument("--task-id", default=None, help="Taskmaster id (e.g. 17). Default: first status=in-progress task.")
-    ap.add_argument("--timeout-sec", type=int, default=300, help="codex exec timeout in seconds (default: 300).")
-    ap.add_argument("--max-prompt-chars", type=int, default=60_000, help="Max prompt size (default: 60000).")
-    ap.add_argument("--consensus-runs", type=int, default=1, help="Run N rounds and use majority status (default: 1).")
+    ap.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=["playable-ea", "fast-ship", "standard"],
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).",
+    )
+    ap.add_argument("--timeout-sec", type=int, default=None, help="codex exec timeout in seconds (default: profile).")
+    ap.add_argument("--max-prompt-chars", type=int, default=None, help="Max prompt size (default: profile).")
+    ap.add_argument("--consensus-runs", type=int, default=None, help="Run N rounds and use majority status (default: profile).")
     ap.add_argument(
         "--strict-view-selection",
         action="store_true",
@@ -185,17 +217,18 @@ def main() -> int:
     )
     ap.add_argument(
         "--garbled-gate",
-        default="on",
+        default=None,
         choices=["on", "off"],
-        help="Run garbled-text precheck before LLM (default: on).",
+        help="Run garbled-text precheck before LLM (default: profile).",
     )
     ap.add_argument("--max-schema-errors", type=int, default=5, help="Max schema errors captured per run/final report (default: 5).")
     ap.add_argument("--round-id", default="", help="Optional run id suffix for output directory isolation.")
     ap.add_argument("--self-check", action="store_true", help="Run deterministic local self-check only (no LLM/task resolution).")
-    args = ap.parse_args()
+    args = apply_delivery_profile_defaults(ap.parse_args())
     max_schema_errors = max(1, int(args.max_schema_errors))
     selection_policy = "strict" if bool(args.strict_view_selection) else "default"
     garbled_gate = str(args.garbled_gate).strip().lower()
+    os.environ["DELIVERY_PROFILE"] = str(args.delivery_profile)
 
     if bool(args.self_check):
         out_dir = ci_dir("sc-llm-subtasks-coverage-self-check")
@@ -247,6 +280,7 @@ def main() -> int:
         "max_schema_errors": max_schema_errors,
         "error": None,
     }
+    delivery_profile_context = build_delivery_profile_context(args.delivery_profile)
 
     if bool(args.strict_view_selection) and str(args.task_id or "").strip() and (not acceptance_by_view or not any(acceptance_by_view.values())):
         summary["status"] = "fail"
@@ -284,7 +318,13 @@ def main() -> int:
         print(f"SC_LLM_SUBTASKS_COVERAGE status=fail out={out_dir}")
         return 1
 
-    prompt = _build_prompt(task_id=triplet.task_id, title=title, subtasks=subtasks, acceptance_by_view=acceptance_by_view)
+    prompt = _build_prompt(
+        task_id=triplet.task_id,
+        title=title,
+        subtasks=subtasks,
+        acceptance_by_view=acceptance_by_view,
+        delivery_profile_context=delivery_profile_context,
+    )
     prompt = truncate(prompt, max_chars=int(args.max_prompt_chars))
     prompt_path = out_dir / "prompt.md"
     write_text(prompt_path, prompt)

@@ -9,6 +9,7 @@ import argparse
 import os
 from argparse import Namespace
 
+from _delivery_profile import default_security_profile_for_delivery, profile_acceptance_defaults, resolve_delivery_profile
 from _security_profile import normalize_gate_mode, resolve_security_profile, security_gate_defaults
 
 
@@ -48,6 +49,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--strict-quality-rules", action="store_true", help="fail if deterministic quality rules report verdict=Needs Fix")
     ap.add_argument("--require-task-test-refs", action="store_true", help="fail if tasks_back/tasks_gameplay test_refs is empty for the resolved task id")
     ap.add_argument("--require-executed-refs", action="store_true", help="fail if acceptance anchors cannot be proven executed in this run (TRX/JUnit evidence)")
+    ap.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=["playable-ea", "fast-ship", "standard"],
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship). Controls gate strictness defaults.",
+    )
     ap.add_argument(
         "--security-profile",
         default=None,
@@ -122,16 +129,61 @@ def normalize_subtasks_mode(value: str | None) -> str:
     return mode if mode in ("skip", "warn", "require") else "skip"
 
 
+def apply_delivery_profile_defaults(args: Namespace) -> Namespace:
+    delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
+    defaults = profile_acceptance_defaults(delivery_profile)
+    args.delivery_profile = delivery_profile
+    only_steps = parse_only_steps(getattr(args, "only", None))
+
+    def _step_enabled(step: str) -> bool:
+        return only_steps is None or step in only_steps
+
+    bool_keys = {
+        "strict_adr_status": "adr",
+        "strict_test_quality": "quality",
+        "strict_quality_rules": "rules",
+        "require_task_test_refs": "links",
+        "require_executed_refs": "tests",
+        "require_headless_e2e": "tests",
+    }
+    for key, step in bool_keys.items():
+        if bool(getattr(args, key, False)):
+            continue
+        if not _step_enabled(step):
+            continue
+        if bool(defaults.get(key, False)):
+            setattr(args, key, True)
+
+    current_subtasks = normalize_subtasks_mode(getattr(args, "subtasks_coverage", None))
+    default_subtasks = normalize_subtasks_mode(str(defaults.get("subtasks_coverage", "skip")))
+    if current_subtasks == "skip" and default_subtasks != "skip" and _step_enabled("subtasks"):
+        args.subtasks_coverage = default_subtasks
+    else:
+        args.subtasks_coverage = current_subtasks
+
+    if getattr(args, "perf_p95_ms", None) is None and _step_enabled("perf"):
+        perf_default = defaults.get("perf_p95_ms")
+        if perf_default is not None:
+            args.perf_p95_ms = int(perf_default)
+    return args
+
+
 def resolve_security_modes(args: Namespace) -> tuple[str, dict[str, str]]:
-    profile = resolve_security_profile(args.security_profile)
+    delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
+    explicit_security_profile = getattr(args, "security_profile", None)
+    profile = resolve_security_profile(explicit_security_profile or default_security_profile_for_delivery(delivery_profile))
     defaults = security_gate_defaults(profile)
+    acceptance_defaults = profile_acceptance_defaults(delivery_profile)
+    audit_evidence_default = defaults["audit_evidence"]
+    if not bool(acceptance_defaults.get("require_executed_refs", False)) and audit_evidence_default == "require":
+        audit_evidence_default = "warn"
     modes = {
         "path": normalize_gate_mode(args.security_path_gate, defaults["path"]),
         "sql": normalize_gate_mode(args.security_sql_gate, defaults["sql"]),
         "audit_schema": normalize_gate_mode(args.security_audit_schema_gate, defaults["audit_schema"]),
         "ui_event_json_guards": normalize_gate_mode(args.ui_event_json_guards, defaults["ui_event_json_guards"]),
         "ui_event_source_verify": normalize_gate_mode(args.ui_event_source_verify, defaults["ui_event_source_verify"]),
-        "audit_evidence": normalize_gate_mode(args.security_audit_evidence, defaults["audit_evidence"]),
+        "audit_evidence": normalize_gate_mode(args.security_audit_evidence, audit_evidence_default),
     }
     return profile, modes
 

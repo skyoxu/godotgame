@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ SC_DIR = REPO_ROOT / "scripts" / "sc"
 sys.path.insert(0, str(SC_DIR))
 
 from _acceptance_runtime import (  # noqa: E402
+    apply_delivery_profile_defaults,
     compute_perf_p95_ms,
     normalize_subtasks_mode,
     parse_only_steps,
@@ -23,6 +25,28 @@ from _acceptance_runtime import (  # noqa: E402
 
 
 class AcceptanceCheckRuntimeTests(unittest.TestCase):
+    def test_apply_delivery_profile_defaults_should_promote_standard_hard_gates(self) -> None:
+        args = Namespace(
+            delivery_profile="standard",
+            perf_p95_ms=None,
+            strict_adr_status=False,
+            strict_test_quality=False,
+            strict_quality_rules=False,
+            require_task_test_refs=False,
+            require_executed_refs=False,
+            require_headless_e2e=False,
+            subtasks_coverage="skip",
+        )
+        resolved = apply_delivery_profile_defaults(args)
+        self.assertTrue(resolved.strict_adr_status)
+        self.assertTrue(resolved.strict_test_quality)
+        self.assertTrue(resolved.strict_quality_rules)
+        self.assertTrue(resolved.require_task_test_refs)
+        self.assertTrue(resolved.require_executed_refs)
+        self.assertTrue(resolved.require_headless_e2e)
+        self.assertEqual("require", resolved.subtasks_coverage)
+        self.assertEqual(20, resolved.perf_p95_ms)
+
     def test_parse_only_steps_should_parse_and_dedup(self) -> None:
         self.assertIsNone(parse_only_steps(None))
         self.assertEqual({"tests", "links"}, parse_only_steps("tests, links,tests"))

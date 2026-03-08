@@ -25,6 +25,14 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from _delivery_profile import known_delivery_profiles, profile_gate_bundle_defaults, resolve_delivery_profile
+except ImportError:
+    _SC_DIR = Path(__file__).resolve().parents[1] / "sc"
+    if str(_SC_DIR) not in sys.path:
+        sys.path.insert(0, str(_SC_DIR))
+    from _delivery_profile import known_delivery_profiles, profile_gate_bundle_defaults, resolve_delivery_profile
+
+try:
     from gate_bundle_retention import prune_gate_bundle_runs
 except ImportError:
     from scripts.python.gate_bundle_retention import prune_gate_bundle_runs
@@ -42,6 +50,7 @@ TASK_FILE_DEPENDENT_GATES = {
 
 CONTRACT_INTERFACES_DIR = Path("Game.Core/Contracts/Interfaces")
 PRD_GDD_CONSISTENCY_CONFIG = Path("scripts/python/config/prd-gdd-consistency-rules.json")
+DELIVERY_PROFILE_CHOICES = tuple(sorted(known_delivery_profiles()))
 
 
 def _configure_console_streams() -> None:
@@ -112,6 +121,20 @@ def _default_run_id() -> str:
 
 def _default_out_root(run_id: str) -> Path:
     return Path("logs") / "ci" / _today() / "gate-bundle" / "runs" / run_id
+
+
+def resolve_gate_bundle_runtime(*, delivery_profile: str | None, task_links_max_warnings: int | None = None, stability_template_hard: bool = False) -> dict[str, Any]:
+    resolved_delivery_profile = resolve_delivery_profile(delivery_profile)
+    defaults = profile_gate_bundle_defaults(resolved_delivery_profile)
+    resolved_task_links_max_warnings = task_links_max_warnings
+    if resolved_task_links_max_warnings is None:
+        resolved_task_links_max_warnings = int(defaults.get("task_links_max_warnings", -1) or -1)
+    resolved_stability_template_hard = bool(stability_template_hard or defaults.get("stability_template_hard", False))
+    return {
+        "delivery_profile": resolved_delivery_profile,
+        "task_links_max_warnings": int(resolved_task_links_max_warnings),
+        "stability_template_hard": resolved_stability_template_hard,
+    }
 
 
 def _resolve_gate_command(name: str, cmd: list[str], out_dir: Path) -> list[str]:
@@ -510,12 +533,18 @@ def main() -> int:
         help="When mode=soft/all, return non-zero if any soft gate fails",
     )
     parser.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=DELIVERY_PROFILE_CHOICES,
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).",
+    )
+    parser.add_argument(
         "--task-links-max-warnings",
         type=int,
-        default=env_task_links_budget,
+        default=None,
         help=(
             "Hard fail threshold for check_tasks_all_refs warnings. "
-            "-1 disables this budget gate. Default reads TASK_LINKS_MAX_WARNINGS env."
+            "-1 disables this budget gate. Default reads TASK_LINKS_MAX_WARNINGS env, then delivery profile."
         ),
     )
     parser.add_argument(
@@ -564,6 +593,16 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    task_links_max_warnings = args.task_links_max_warnings
+    if task_links_max_warnings is None and env_task_links_budget >= 0:
+        task_links_max_warnings = env_task_links_budget
+    runtime = resolve_gate_bundle_runtime(
+        delivery_profile=args.delivery_profile,
+        task_links_max_warnings=task_links_max_warnings,
+        stability_template_hard=bool(args.stability_template_hard),
+    )
+    os.environ["DELIVERY_PROFILE"] = str(runtime["delivery_profile"])
+
     if args.retention_days < 0:
         print("GATE_BUNDLE status=fail reason=invalid-retention-days")
         return 2
@@ -582,10 +621,10 @@ def main() -> int:
 
     hard_commands = _hard_gate_commands_with_options(
         args.task_files,
-        args.stability_template_hard,
-        args.task_links_max_warnings,
+        bool(runtime["stability_template_hard"]),
+        int(runtime["task_links_max_warnings"]),
     )
-    soft_commands = _soft_gate_commands(args.task_files, args.stability_template_hard)
+    soft_commands = _soft_gate_commands(args.task_files, bool(runtime["stability_template_hard"]))
 
     rc: int
     if args.mode == "hard":
