@@ -60,7 +60,7 @@ last_generated: 2025-12-16
 
 ### 3.3 Task-scoped acceptance (recommended)
 
-- Default profile: `host-safe`
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --security-profile host-safe`
-- Strict profile (phase-based):
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --security-profile strict --require-task-test-refs --require-executed-refs`
+- Fast ship profile (template default):
+  - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship --skip-llm-review`
+- Standard profile (release tightening):
+  - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile standard --skip-llm-review`

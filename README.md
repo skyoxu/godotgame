@@ -95,11 +95,12 @@ When you copy this template to create a new project, enable task-scoped gates af
 
 2) Pick one delivery profile and let scripts derive the default security posture:
 - Playable EA posture:
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile playable-ea`
+  - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile playable-ea --skip-llm-review`
 - Fast ship posture (template default):
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship`
+  - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship --skip-llm-review`
 - Standard posture (release tightening):
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile standard`
+  - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile standard --skip-llm-review`
+- Remove `--skip-llm-review` only when you intentionally want the advisory LLM review stage as part of the unified pipeline.
 - Only pass `--security-profile` when you intentionally need to break the default mapping.
 
 3) Keep profile observability in CI:
