@@ -46,6 +46,13 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - 测试体系：xUnit + GdUnit4（示例默认关闭），一键脚本
 - 导出与冒烟：Windows-only 脚本与文档
 
+## Delivery Profiles
+- `DELIVERY_PROFILE=playable-ea`：最快的可玩性校验档位；覆盖率、语义审查、验收硬门尽量止损，安全默认派生到 `host-safe`。
+- `DELIVERY_PROFILE=fast-ship`：模板默认档位；保留基本主机安全、核心测试和发版前的必要约束，适合日常开发。
+- `DELIVERY_PROFILE=standard`：收口档位；ADR、验收、语义门禁更严格，安全默认派生到 `strict`。
+- 生效优先级：CLI `--delivery-profile` > 环境变量 `DELIVERY_PROFILE` > 仓库默认 `fast-ship`。
+- CI 工作流 `windows-quality-gate.yml` / `ci-windows.yml` 已接入 `delivery_profile` 输入，并会在 Step Summary 固化 `DeliveryProfile:` 与 `SecurityProfile:`。
+
 ## Quick Links
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
 - Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
@@ -65,6 +72,14 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `scripts/python/verify_task_mapping.py` —— 抽样检查 NG/GM → tasks.json 的元数据完整度（owner / layer / adr_refs / chapter_refs 等）。
 - `scripts/python/validate_task_master_triplet.py` —— 全面校验三份任务文件之间的结构一致性（link + layer + depends_on + 映射），适合作为本地或后续 CI 的结构总检。
 - `scripts/python/prd_coverage_report.py` —— 生成 PRD → 任务的覆盖报表（软检查，不参与门禁，用于观察覆盖程度）。
+- `scripts/python/run_obligations_jitter_batch5x3.py` —— 本地批量运行 `scripts/sc/llm_extract_task_obligations.py`，按 5x3 轮次收集 obligations 抖动原始数据；支持 `--delivery-profile`，模板仓在缺少真实 `.taskmaster/tasks/*.json` 时自动回退到 `examples/taskmaster/tasks.json`。
+- `scripts/python/build_obligations_jitter_summary.py` —— 将 5x3 原始运行结果汇总为 jitter summary / markdown report，用于判断稳定通过、稳定失败和抖动任务。
+- `scripts/python/refresh_obligations_jitter_summary_with_overrides.py` —— 将补跑结果覆盖回原 summary，生成 refreshed summary / report，适合局部重跑后的收敛分析。
+- `scripts/python/generate_obligations_freeze_whitelist_draft.py` —— 基于 jitter summary 生成 obligations freeze whitelist 草案，供人工审阅，不直接放进 CI 硬门。
+- `scripts/python/evaluate_obligations_freeze_whitelist.py` —— 评估 whitelist 草案或 current baseline 对当前 jitter summary 的适配度，输出 judgable / freeze_gate_pass 等汇总结果。
+- `scripts/python/promote_obligations_freeze_baseline.py` —— 将审阅通过的 draft 提升为带日期/标签的 immutable baseline，并更新 current pointer。
+- `scripts/python/run_obligations_freeze_pipeline.py` —— 串起 jitter batch、summary、override refresh、draft、evaluate、promote 的本地编排入口；默认作为人工分析工具链，不作为模板仓 CI 必跑项。
+
 
 <!-- BEGIN:NEW_PROJECT_SANGUO_ALIGNMENT -->
 
@@ -77,14 +92,17 @@ When you copy this template to create a new project, enable task-scoped gates af
 - `.taskmaster/tasks/tasks_back.json`
 - `.taskmaster/tasks/tasks_gameplay.json`
 
-2) Run task-scoped acceptance in `windows-quality-gate.yml`:
-- Default posture:
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --security-profile host-safe --require-task-test-refs`
-- Strict posture (phase-based):
-  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --security-profile strict --require-task-test-refs --require-executed-refs`
+2) Pick one delivery profile and let scripts derive the default security posture:
+- Playable EA posture:
+  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile playable-ea`
+- Fast ship posture (template default):
+  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship`
+- Standard posture (release tightening):
+  - `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile standard`
+- Only pass `--security-profile` when you intentionally need to break the default mapping.
 
 3) Keep profile observability in CI:
-- Step Summary should contain `SecurityProfile: <host-safe|strict>`.
+- Step Summary should contain both `DeliveryProfile: <playable-ea|fast-ship|standard>` and `SecurityProfile: <host-safe|strict>`.
 - LLM scripts are diagnostic only and do not replace hard gates.
 
 4) Initialize `overlay_task_drift` only after real Taskmaster triplet files exist:
