@@ -99,6 +99,31 @@ def _rel(root: Path, path: Path) -> str:
     return str(path.relative_to(root)).replace("\\", "/")
 
 
+_EXCLUDED_LOCK_DIR_NAMES = {
+    ".git",
+    ".godot",
+    "bin",
+    "obj",
+    "logs",
+    "node_modules",
+}
+
+
+def _discover_packages_lock_files(root: Path) -> list[Path]:
+    found: list[Path] = []
+    for path in root.rglob("packages.lock.json"):
+        if not path.is_file():
+            continue
+        try:
+            rel = path.relative_to(root)
+        except ValueError:
+            continue
+        if any(part in _EXCLUDED_LOCK_DIR_NAMES for part in rel.parts[:-1]):
+            continue
+        found.append(path)
+    return sorted(found, key=lambda p: (len(p.relative_to(root).parts), _rel(root, p).lower()))
+
+
 def _normalize_task_id(task_id: str | int | None) -> str:
     raw = str(task_id or "").strip()
     if not raw:
@@ -200,9 +225,19 @@ def step_env_evidence_preflight(out_dir: Path, *, godot_bin: str | None, task_id
     details["commands"]["dotnet_restore_command"] = {"rc": rc_restore, "target": restore_arg}
 
     # lockfile evidence
-    lock_exists = (root / "packages.lock.json").exists()
-    _write_utf8_file(evidence_dir / "packages-lock-exists.txt", f"packages.lock.json exists={lock_exists}\n")
+    lock_files = _discover_packages_lock_files(root)
+    lock_rel_paths = [_rel(root, p) for p in lock_files]
+    lock_exists = len(lock_rel_paths) > 0
+    lock_report_lines = [
+        f"packages.lock.json exists={lock_exists}",
+        f"count={len(lock_rel_paths)}",
+    ]
+    if lock_rel_paths:
+        lock_report_lines.append("paths:")
+        lock_report_lines.extend(f"- {rel}" for rel in lock_rel_paths)
+    _write_utf8_file(evidence_dir / "packages-lock-exists.txt", "\n".join(lock_report_lines) + "\n")
     details["checks"]["packages_lock_exists"] = lock_exists
+    details["packages_lock_files"] = lock_rel_paths
 
     # windows-only evidence
     system_name = platform.system()
@@ -234,6 +269,7 @@ def step_env_evidence_preflight(out_dir: Path, *, godot_bin: str | None, task_id
         "dotnet_sdk_versions": dotnet_sdk_versions,
         "os_platform": os_platform,
         "packages_lock_exists": lock_exists,
+        "packages_lock_files": lock_rel_paths,
         "evidence_paths": evidence_paths,
         "godot_bin": str(godot_bin_path),
         "godot_bin_env": {
