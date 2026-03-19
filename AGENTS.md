@@ -1,19 +1,74 @@
 # Repository Guide
 
-This file is an index, not a knowledge dump. Read the linked docs instead of expanding this file.
+This file is the repository map. It routes you to the right source document by task stage, problem type, and durable run state. Do not turn it back into a 600-line encyclopedia.
 
 ## Purpose
 - Windows-only Godot + C# game template.
-- arc42 + ADR + Taskmaster workflow.
-- Durable agent recovery uses `docs/agents/`, `execution-plans/`, `decision-logs/`, and pipeline artifacts in `logs/ci/`.
+- `AGENTS.md` is the routing layer.
+- `README.md` is the project-facing overview and startup entry.
+- `docs/agents/` holds agent workflow, recovery, and navigation docs.
+- `docs/architecture/**`, `docs/adr/**`, `docs/testing-framework.md`, and `DELIVERY_PROFILE.md` remain the deep source documents.
 
 ## Start Here
-1. Read `docs/agents/00-index.md`.
-2. Read `docs/agents/01-session-recovery.md`.
-3. Read `docs/agents/02-repo-map.md`.
-4. Read the newest files in `execution-plans/` and `decision-logs/`.
-5. Read `git log --oneline --decorate -n 10`.
-6. If a local review pipeline already ran, open `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`.
+1. [Agents Docs Index](docs/agents/00-index.md)
+2. [Session Recovery](docs/agents/01-session-recovery.md)
+3. [Repo Map](docs/agents/02-repo-map.md)
+4. [README](README.md)
+5. Newest file in `execution-plans/`
+6. Newest file in `decision-logs/`
+7. If a local review pipeline already ran, `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
+
+## Task Navigation
+- New session or resume failed work:
+  - [Session Recovery](docs/agents/01-session-recovery.md)
+  - [Persistent Harness](docs/agents/03-persistent-harness.md)
+  - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
+- Understand the project, startup path, or stack:
+  - [README](README.md)
+  - [Project Basics](docs/agents/08-project-basics.md)
+  - [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
+- Implement a feature or touch architecture:
+  - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
+  - [Architecture Guardrails](docs/agents/05-architecture-guardrails.md)
+  - `docs/architecture/base/00-README.md`
+  - [Template Customization](docs/agents/10-template-customization.md)
+- Write tests, acceptance, or quality gates:
+  - [Testing Framework](docs/testing-framework.md)
+  - [Closed-Loop Testing](docs/agents/04-closed-loop-testing.md)
+  - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+  - `scripts/sc/README.md`
+- Run or repair the local harness and reviews:
+  - [Persistent Harness](docs/agents/03-persistent-harness.md)
+  - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
+  - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+  - `scripts/sc/README.md`
+- Tighten release or CI posture:
+  - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+  - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+  - `docs/workflows/`
+- Copy this template into a new project:
+  - [Template Customization](docs/agents/10-template-customization.md)
+  - [README](README.md)
+  - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+
+## Problem Navigation
+- Need project background, use cases, startup, or stack:
+  - [README](README.md)
+  - [Project Basics](docs/agents/08-project-basics.md)
+- Need repository directories or entry files:
+  - [Repo Map](docs/agents/02-repo-map.md)
+  - [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
+- Need ADR, Base, Overlay, or contract placement rules:
+  - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
+  - [Architecture Guardrails](docs/agents/05-architecture-guardrails.md)
+  - [Template Customization](docs/agents/10-template-customization.md)
+- Need tests, logs, artifacts, Test-Refs, or DoD:
+  - [Testing Framework](docs/testing-framework.md)
+  - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+- Need delivery strictness or profile behavior:
+  - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+- Need AGENTS structure or maintenance rules:
+  - [AGENTS Construction Principles](docs/agents/11-agents-construction-principles.md)
 
 ## Core Rules
 - Communicate with the user in Chinese.
@@ -33,25 +88,20 @@ This file is an index, not a knowledge dump. Read the linked docs instead of exp
 - `Game.Core.Tests/`: xUnit tests for core logic.
 - `Game.Godot/`: Godot runtime project.
 - `Tests.Godot/`: Godot-side tests and reports.
-- `docs/adr/`: architecture decisions.
-- `docs/architecture/base/`: arc42 base chapters.
-- `docs/architecture/overlays/`: PRD-scoped overlays.
-- `docs/agents/`: agent recovery, harness, and review docs.
-- `execution-plans/`: durable progress checkpoints.
-- `decision-logs/`: durable decisions.
+- `docs/`: project, architecture, workflow, testing, and agents docs.
 - `scripts/sc/`: review pipeline and task-facing automation.
-- `scripts/python/`: guardrails, validation, sync, and reports.
-- `.github/workflows/`: CI workflows.
+- `scripts/python/`: validation, gates, sync, reporting, and guardrails.
+- `.github/workflows/`: CI entry points.
 - `.taskmaster/`: task triplet data.
-- `examples/taskmaster/`: template fallback task data.
-- `logs/`: runtime, CI, and evidence artifacts.
+- `execution-plans/` and `decision-logs/`: durable intent and decisions.
+- `logs/`: runtime, CI, and review artifacts.
 
 ## Main Commands
-- Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"` (auto-writes `agent-review.*` unless `--dry-run` or `--skip-agent-review`)
+- Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"` (auto-writes `agent-review.*` unless `--dry-run`, `--skip-agent-review`, or the active profile sets `agent_review.mode=skip`)
 - Targeted test step: `py -3 scripts/sc/test.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted acceptance step: `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted llm review: `py -3 scripts/sc/llm_review.py --task-id <id>`
-- Agent-to-agent review: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
+- Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/summary.json`
@@ -63,18 +113,21 @@ This file is an index, not a knowledge dump. Read the linked docs instead of exp
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
 ## Docs Index
-- `docs/agents/00-index.md`
-- `docs/agents/03-persistent-harness.md`
-- `docs/agents/04-closed-loop-testing.md`
-- `docs/agents/05-architecture-guardrails.md`
-- `docs/agents/06-harness-marathon.md`
-- `docs/agents/07-agent-to-agent-review.md`
-- `docs/testing-framework.md`
-- `docs/PROJECT_DOCUMENTATION_INDEX.md`
-- `DELIVERY_PROFILE.md`
+- [README](README.md)
+- [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
+- [Testing Framework](docs/testing-framework.md)
+- [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+- [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
+- [Agents Docs Index](docs/agents/00-index.md)
+- [Project Basics](docs/agents/08-project-basics.md)
+- [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+- [Template Customization](docs/agents/10-template-customization.md)
+- [AGENTS Construction Principles](docs/agents/11-agents-construction-principles.md)
 
 ## Change Policy
 - Keep `summary.json` schema stable.
 - Add new recovery data as sidecar files.
+- Keep `AGENTS.md` as a routing map, not a duplicate rules catalog.
+- Put detailed guidance into `docs/agents/`, `README.md`, or the relevant source doc.
 - Put durable intent in git-tracked markdown under `execution-plans/` and `decision-logs/`.
 - Put high-frequency evidence in `logs/`.
