@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -28,48 +29,94 @@ def _extract_out_dir(output: str) -> Path:
     return Path(match.group(1).strip())
 
 
+def _stable_subprocess_env() -> dict[str, str]:
+    env = dict(os.environ)
+    for key in ('DELIVERY_PROFILE', 'SECURITY_PROFILE', 'SC_PIPELINE_RUN_ID', 'SC_TEST_RUN_ID', 'SC_ACCEPTANCE_RUN_ID'):
+        env.pop(key, None)
+    return env
+
+
 class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
-    def test_agent_review_needs_fix_should_not_change_producer_summary_status(self) -> None:
+    def _agent_review_payload(self, *, out_dir: Path, run_id: str, verdict: str) -> dict:
+        return {
+            'schema_version': '1.0.0',
+            'cmd': 'sc-agent-review',
+            'date': '2026-03-19',
+            'reviewer': 'artifact-reviewer',
+            'task_id': '1',
+            'run_id': run_id,
+            'pipeline_out_dir': str(out_dir),
+            'pipeline_status': 'ok',
+            'failed_step': '',
+            'review_verdict': verdict,
+            'findings': [
+                {
+                    'finding_id': f'agent-review-{verdict}',
+                    'severity': 'medium',
+                    'category': 'llm-review',
+                    'owner_step': 'sc-llm-review',
+                    'evidence_path': 'logs/ci/fake/review.md',
+                    'message': f'agent review reported {verdict}',
+                    'suggested_fix': 'rerun llm review after addressing findings',
+                    'commands': [],
+                }
+            ] if verdict != 'pass' else [],
+        }
+
+    def test_playable_ea_should_skip_agent_review_post_hook_by_profile(self) -> None:
         run_id = uuid.uuid4().hex
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_root = Path(tmpdir)
             out_dir = tmp_root / f'sc-review-pipeline-task-1-{run_id}'
             latest_path = tmp_root / 'sc-review-pipeline-task-1' / 'latest.json'
-            payload = {
-                'schema_version': '1.0.0',
-                'cmd': 'sc-agent-review',
-                'date': '2026-03-19',
-                'reviewer': 'artifact-reviewer',
-                'task_id': '1',
-                'run_id': run_id,
-                'pipeline_out_dir': str(out_dir),
-                'pipeline_status': 'ok',
-                'failed_step': '',
-                'review_verdict': 'needs-fix',
-                'findings': [
-                    {
-                        'finding_id': 'llm-code-reviewer-needs-fix',
-                        'severity': 'medium',
-                        'category': 'llm-review',
-                        'owner_step': 'sc-llm-review',
-                        'evidence_path': 'logs/ci/fake/review.md',
-                        'message': 'code-reviewer reported needs fix',
-                        'suggested_fix': 'rerun llm review after addressing findings',
-                        'commands': [],
-                    }
-                ],
-            }
             argv = [
                 str(SCRIPT),
                 '--task-id',
                 '1',
                 '--run-id',
                 run_id,
+                '--delivery-profile',
+                'playable-ea',
                 '--skip-test',
                 '--skip-acceptance',
                 '--skip-llm-review',
             ]
-            with mock.patch.object(sys, 'argv', argv), \
+            with mock.patch.dict(os.environ, {}, clear=False), \
+                mock.patch.object(sys, 'argv', argv), \
+                mock.patch.object(run_review_pipeline_module, '_pipeline_run_dir', return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, '_pipeline_latest_index_path', return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, 'write_agent_review') as write_agent_review_mock:
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(0, rc)
+            summary = json.loads((out_dir / 'summary.json').read_text(encoding='utf-8'))
+            latest = json.loads(latest_path.read_text(encoding='utf-8'))
+            self.assertEqual('ok', summary['status'])
+            write_agent_review_mock.assert_not_called()
+            self.assertNotIn('agent_review_json_path', latest)
+            self.assertNotIn('agent_review_md_path', latest)
+
+    def test_agent_review_needs_fix_should_not_change_producer_summary_status(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f'sc-review-pipeline-task-1-{run_id}'
+            latest_path = tmp_root / 'sc-review-pipeline-task-1' / 'latest.json'
+            payload = self._agent_review_payload(out_dir=out_dir, run_id=run_id, verdict='needs-fix')
+            argv = [
+                str(SCRIPT),
+                '--task-id',
+                '1',
+                '--run-id',
+                run_id,
+                '--delivery-profile',
+                'fast-ship',
+                '--skip-test',
+                '--skip-acceptance',
+                '--skip-llm-review',
+            ]
+            with mock.patch.dict(os.environ, {}, clear=False), \
+                mock.patch.object(sys, 'argv', argv), \
                 mock.patch.object(run_review_pipeline_module, '_pipeline_run_dir', return_value=out_dir), \
                 mock.patch.object(run_review_pipeline_module, '_pipeline_latest_index_path', return_value=latest_path), \
                 mock.patch.object(run_review_pipeline_module, 'write_agent_review', return_value=(payload, [], [])):
@@ -85,10 +132,43 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
             self.assertNotIn('agent_review_md_path', latest)
             self.assertIn('SC_AGENT_REVIEW status=needs-fix', hook_log)
 
+    def test_standard_should_fail_when_agent_review_needs_fix(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f'sc-review-pipeline-task-1-{run_id}'
+            latest_path = tmp_root / 'sc-review-pipeline-task-1' / 'latest.json'
+            payload = self._agent_review_payload(out_dir=out_dir, run_id=run_id, verdict='needs-fix')
+            argv = [
+                str(SCRIPT),
+                '--task-id',
+                '1',
+                '--run-id',
+                run_id,
+                '--delivery-profile',
+                'standard',
+                '--skip-test',
+                '--skip-acceptance',
+                '--skip-llm-review',
+            ]
+            with mock.patch.dict(os.environ, {}, clear=False), \
+                mock.patch.object(sys, 'argv', argv), \
+                mock.patch.object(run_review_pipeline_module, '_pipeline_run_dir', return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, '_pipeline_latest_index_path', return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, 'write_agent_review', return_value=(payload, [], [])):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(1, rc)
+            summary = json.loads((out_dir / 'summary.json').read_text(encoding='utf-8'))
+            hook_log = (out_dir / 'sc-agent-review.log').read_text(encoding='utf-8')
+            self.assertEqual('ok', summary['status'])
+            self.assertIn('SC_AGENT_REVIEW status=needs-fix', hook_log)
+
     def test_skip_all_steps_should_generate_agent_review_sidecar(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review'],
             cwd=str(REPO_ROOT),
+            env=_stable_subprocess_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -110,6 +190,7 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review', '--skip-agent-review'],
             cwd=str(REPO_ROOT),
+            env=_stable_subprocess_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -129,6 +210,7 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), '--task-id', '1', '--delivery-profile', 'playable-ea', '--dry-run', '--skip-test'],
             cwd=str(REPO_ROOT),
+            env=_stable_subprocess_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -159,6 +241,7 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), '--task-id', '1', '--delivery-profile', 'standard', '--dry-run', '--skip-test'],
             cwd=str(REPO_ROOT),
+            env=_stable_subprocess_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

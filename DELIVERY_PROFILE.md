@@ -13,6 +13,7 @@
 - `run_gate_bundle.py` 的预算与硬门/软门倾向
 - LLM 相关脚本的门槛、提示词强度和容错策略
 - 默认安全姿态，也就是派生出来的 `SECURITY_PROFILE`
+- `agent-review` 后置 sidecar 的执行/退出策略
 
 一句话说清楚：
 
@@ -79,6 +80,7 @@
 - 验收门禁大部分放宽
 - LLM 语义类门禁大部分降级或跳过
 - `task_links` 预警预算最高
+- `agent_review.mode = skip`，默认不自动执行 reviewer sidecar
 
 你可以把它理解为：
 
@@ -105,6 +107,7 @@
 - 验收门禁保留基础要求，但不过度苛刻
 - LLM 审查以告警为主，不是高压强硬门
 - `task_links` 预算处于中间值
+- `agent_review.mode = warn`，会生成 reviewer sidecar，但 `needs-fix` 不会让主入口失败
 
 你可以把它理解为：
 
@@ -129,6 +132,7 @@
 - 验收门禁最严格
 - LLM 语义类门禁最严格
 - `task_links` 预算最紧
+- `agent_review.mode = require`，`needs-fix`/`block` 会让主入口返回非 0
 
 你可以把它理解为：
 
@@ -181,6 +185,7 @@
 - LLM review 的严格度与预算
 - obligations 提取脚本的运行强度
 - semantic gate 的阈值
+- `agent-review` 后置 sidecar 的执行与退出码策略
 - CI summary 中的可观测性信息
 
 所以这不是“文档概念”，而是“运行中的控制面”。
@@ -282,6 +287,7 @@ CI summary 应当固定输出：
 - `llm_obligations.consensus_runs`
 - `llm_semantic_gate_all.max_needs_fix`
 - `llm_semantic_gate_all.max_unknown`
+- `agent_review.mode`
 
 正确做法是：
 

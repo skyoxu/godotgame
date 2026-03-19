@@ -3,7 +3,7 @@
 The first-phase harness contract is local-file based. The second-phase reviewer consumes those files without changing the producer schema.
 
 ## Pipeline Outputs
-`py -3 scripts/sc/run_review_pipeline.py --task-id <id>` writes and, unless `--dry-run` or `--skip-agent-review` is set, also refreshes the reviewer sidecar:
+`py -3 scripts/sc/run_review_pipeline.py --task-id <id>` writes and, unless `--dry-run`, `--skip-agent-review`, or the active delivery profile sets `agent_review.mode=skip`, also refreshes the reviewer sidecar:
 - `summary.json`: pipeline status and step list.
 - `execution-context.json`: git state, recovery pointers, delivery profile, and security profile.
 - `repair-guide.json`: deterministic repair actions for the first failed step.

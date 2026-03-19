@@ -20,6 +20,7 @@ from agent_to_agent_review import write_agent_review
 from _delivery_profile import (
     default_security_profile_for_delivery,
     profile_acceptance_defaults,
+    profile_agent_review_defaults,
     profile_llm_review_defaults,
     resolve_delivery_profile,
 )
@@ -28,6 +29,7 @@ from _summary_schema import SummarySchemaError, validate_pipeline_summary
 from _util import repo_root, run_cmd, today_str, write_json, write_text
 
 OUT_RE = re.compile(r"\bout=([^\r\n]+)")
+AGENT_REVIEW_MODES = {"skip", "warn", "require"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -134,7 +136,13 @@ def _run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> 
     }
 
 
-def _run_agent_review_post_hook(*, out_dir: Path) -> int:
+def _resolve_agent_review_mode(delivery_profile: str) -> str:
+    defaults = profile_agent_review_defaults(delivery_profile)
+    mode = str(defaults.get("mode") or "warn").strip().lower()
+    return mode if mode in AGENT_REVIEW_MODES else "warn"
+
+
+def _run_agent_review_post_hook(*, out_dir: Path, mode: str) -> int:
     payload, resolve_errors, validation_errors = write_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
     lines: list[str] = []
     for item in resolve_errors:
@@ -147,6 +155,9 @@ def _run_agent_review_post_hook(*, out_dir: Path) -> int:
     print(log_text.rstrip())
     if resolve_errors or validation_errors:
         return 2
+    verdict = str(payload.get("review_verdict") or "").strip().lower()
+    if mode == "require" and verdict in {"needs-fix", "block"}:
+        return 1
     return 0
 
 
@@ -165,6 +176,7 @@ def main() -> int:
     security_profile = str(args.security_profile or default_security_profile_for_delivery(delivery_profile)).strip().lower()
     acceptance_defaults = profile_acceptance_defaults(delivery_profile)
     llm_defaults = profile_llm_review_defaults(delivery_profile)
+    agent_review_mode = _resolve_agent_review_mode(delivery_profile)
     llm_agents = str(args.llm_agents or llm_defaults.get("agents") or "all")
     llm_timeout_sec = int(args.llm_timeout_sec or llm_defaults.get("timeout_sec") or 900)
     llm_agent_timeout_sec = int(args.llm_agent_timeout_sec or llm_defaults.get("agent_timeout_sec") or 300)
@@ -357,8 +369,8 @@ def main() -> int:
     if not persist():
         return 2
 
-    if not args.dry_run and not args.skip_agent_review:
-        post_hook_rc = _run_agent_review_post_hook(out_dir=out_dir)
+    if not args.dry_run and not args.skip_agent_review and agent_review_mode != "skip":
+        post_hook_rc = _run_agent_review_post_hook(out_dir=out_dir, mode=agent_review_mode)
         if post_hook_rc != 0:
             return post_hook_rc
 
