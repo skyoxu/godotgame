@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from agent_to_agent_review import write_agent_review
 from _delivery_profile import (
     default_security_profile_for_delivery,
     profile_acceptance_defaults,
@@ -39,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-test", action="store_true", help="Skip sc-test step.")
     parser.add_argument("--skip-acceptance", action="store_true", help="Skip sc-acceptance-check step.")
     parser.add_argument("--skip-llm-review", action="store_true", help="Skip sc-llm-review step.")
+    parser.add_argument("--skip-agent-review", action="store_true", help="Skip the post-pipeline agent review sidecar.")
     parser.add_argument("--llm-agents", default=None, help="llm_review --agents value. Default follows delivery profile.")
     parser.add_argument("--llm-timeout-sec", type=int, default=None, help="llm_review total timeout. Default follows delivery profile.")
     parser.add_argument("--llm-agent-timeout-sec", type=int, default=None, help="llm_review per-agent timeout. Default follows delivery profile.")
@@ -130,6 +132,22 @@ def _run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> 
         "reported_out_dir": reported_out_dir,
         "summary_file": summary_file,
     }
+
+
+def _run_agent_review_post_hook(*, out_dir: Path) -> int:
+    payload, resolve_errors, validation_errors = write_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
+    lines: list[str] = []
+    for item in resolve_errors:
+        lines.append(f"[sc-agent-review] ERROR: {item}")
+    for item in validation_errors:
+        lines.append(f"[sc-agent-review] ERROR: {item}")
+    lines.append(f"SC_AGENT_REVIEW status={payload['review_verdict']} out={out_dir}")
+    log_text = "\n".join(lines) + "\n"
+    write_text(out_dir / "sc-agent-review.log", log_text)
+    print(log_text.rstrip())
+    if resolve_errors or validation_errors:
+        return 2
+    return 0
 
 
 def main() -> int:
@@ -338,6 +356,12 @@ def main() -> int:
 
     if not persist():
         return 2
+
+    if not args.dry_run and not args.skip_agent_review:
+        post_hook_rc = _run_agent_review_post_hook(out_dir=out_dir)
+        if post_hook_rc != 0:
+            return post_hook_rc
+
     print(f"SC_REVIEW_PIPELINE status={summary['status']} out={out_dir}")
     return 0 if summary["status"] == "ok" else 1
 
