@@ -56,6 +56,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 ## Quick Links
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
+- AGENTS 构建原则：`docs/agents/11-agents-construction-principles.md`
 - Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
 - Windows-only 快速指引：`docs/migration/Phase-17-Windows-Only-Quickstart.md`
 - FeatureFlags 快速指引：`docs/migration/Phase-18-Staged-Release-and-Canary-Strategy.md`
