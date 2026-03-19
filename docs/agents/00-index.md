@@ -14,4 +14,4 @@ Read order after a context reset:
 Repository state files:
 - `execution-plans/` stores current execution intent and checkpoints.
 - `decision-logs/` stores decisions that changed architecture, workflow, or guardrails.
-- `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json` points to the latest local pipeline artifacts.
+- `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json` points to the latest local pipeline artifacts, including `summary.json`, `execution-context.json`, `repair-guide.*`, and `agent-review.*` when generated.

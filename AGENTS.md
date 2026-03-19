@@ -51,12 +51,15 @@ This file is an index, not a knowledge dump. Read the linked docs instead of exp
 - Targeted test step: `py -3 scripts/sc/test.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted acceptance step: `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted llm review: `py -3 scripts/sc/llm_review.py --task-id <id>`
+- Agent-to-agent review: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/summary.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/execution-context.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/repair-guide.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/repair-guide.md`
+- `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/agent-review.json`
+- `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/agent-review.md`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
 ## Docs Index
