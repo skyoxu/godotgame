@@ -22,6 +22,7 @@ from _delivery_profile import (
     profile_llm_review_defaults,
     resolve_delivery_profile,
 )
+from _repair_guidance import build_execution_context, build_repair_guide, render_repair_guide_markdown
 from _summary_schema import SummarySchemaError, validate_pipeline_summary
 from _util import repo_root, run_cmd, today_str, write_json, write_text
 
@@ -93,6 +94,9 @@ def _write_latest_index(*, task_id: str, run_id: str, out_dir: Path, status: str
         "date": today_str(),
         "latest_out_dir": str(out_dir),
         "summary_path": str(out_dir / "summary.json"),
+        "execution_context_path": str(out_dir / "execution-context.json"),
+        "repair_guide_json_path": str(out_dir / "repair-guide.json"),
+        "repair_guide_md_path": str(out_dir / "repair-guide.md"),
     }
     write_json(_pipeline_latest_index_path(task_id), index_payload)
 
@@ -210,6 +214,19 @@ def main() -> int:
         if invalid_summary_path.exists():
             invalid_summary_path.unlink(missing_ok=True)
         write_json(out_dir / "summary.json", summary)
+        execution_context = build_execution_context(
+            task_id=task_id,
+            requested_run_id=requested_run_id,
+            run_id=run_id,
+            out_dir=out_dir,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+            summary=summary,
+        )
+        write_json(out_dir / "execution-context.json", execution_context)
+        repair_guide = build_repair_guide(summary, task_id=task_id, out_dir=out_dir)
+        write_json(out_dir / "repair-guide.json", repair_guide)
+        write_text(out_dir / "repair-guide.md", render_repair_guide_markdown(repair_guide))
         _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status=str(summary.get("status", "fail")))
         return True
 
