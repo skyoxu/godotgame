@@ -47,7 +47,7 @@ This file is an index, not a knowledge dump. Read the linked docs instead of exp
 - `logs/`: runtime, CI, and evidence artifacts.
 
 ## Main Commands
-- Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
+- Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"` (auto-writes `agent-review.*` unless `--dry-run` or `--skip-agent-review`)
 - Targeted test step: `py -3 scripts/sc/test.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted acceptance step: `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted llm review: `py -3 scripts/sc/llm_review.py --task-id <id>`

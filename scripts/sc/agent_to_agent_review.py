@@ -235,6 +235,18 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
     return payload, errors
 
 
+def write_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any], list[str], list[str]]:
+    payload, resolve_errors = build_agent_review(out_dir=out_dir, reviewer=reviewer)
+    validation_errors = validate_review_payload(payload)
+    report_path = out_dir / "agent-review.json"
+    report_md_path = out_dir / "agent-review.md"
+
+    write_json(report_path, payload)
+    write_text(report_md_path, render_review_markdown(payload))
+    _update_latest_index(payload, out_dir=out_dir)
+    return payload, resolve_errors, validation_errors
+
+
 def _update_latest_index(payload: dict[str, Any], *, out_dir: Path) -> None:
     task_id = str(payload.get("task_id") or "").strip()
     if not task_id:
@@ -255,14 +267,10 @@ def _update_latest_index(payload: dict[str, Any], *, out_dir: Path) -> None:
 def main() -> int:
     args = build_parser().parse_args()
     out_dir = resolve_pipeline_out_dir(args)
-    payload, resolve_errors = build_agent_review(out_dir=out_dir, reviewer=str(args.reviewer or "artifact-reviewer").strip())
-    validation_errors = validate_review_payload(payload)
-    report_path = out_dir / "agent-review.json"
-    report_md_path = out_dir / "agent-review.md"
-
-    write_json(report_path, payload)
-    write_text(report_md_path, render_review_markdown(payload))
-    _update_latest_index(payload, out_dir=out_dir)
+    payload, resolve_errors, validation_errors = write_agent_review(
+        out_dir=out_dir,
+        reviewer=str(args.reviewer or "artifact-reviewer").strip(),
+    )
 
     if resolve_errors:
         for item in resolve_errors:
