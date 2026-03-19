@@ -47,7 +47,7 @@ Each finding carries:
 
 ## Operator Flow
 1. Run `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`.
-2. If the run was not `--dry-run` and did not use `--skip-agent-review`, open `agent-review.md` directly.
+2. If the run was not `--dry-run`, did not use `--skip-agent-review`, and the active delivery profile did not set `agent_review.mode=skip`, open `agent-review.md` directly.
 3. If you need to rebuild reviewer artifacts only, run `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`.
 4. If verdict is `block`, follow `repair-guide.md` before any broader diagnosis.
 5. If verdict is `needs-fix`, address the listed reviewer findings and rerun the relevant step.

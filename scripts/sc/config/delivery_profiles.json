@@ -26,6 +26,9 @@
         "stability_template_hard": false,
         "task_links_max_warnings": 300
       },
+      "agent_review": {
+        "mode": "skip"
+      },
       "llm_review": {
         "semantic_gate": "skip",
         "prompt_budget_gate": "skip",
@@ -76,6 +79,9 @@
         "stability_template_hard": false,
         "task_links_max_warnings": 200
       },
+      "agent_review": {
+        "mode": "warn"
+      },
       "llm_review": {
         "semantic_gate": "warn",
         "prompt_budget_gate": "warn",
@@ -125,6 +131,9 @@
       "gate_bundle": {
         "stability_template_hard": true,
         "task_links_max_warnings": 100
+      },
+      "agent_review": {
+        "mode": "require"
       },
       "llm_review": {
         "semantic_gate": "require",

@@ -53,6 +53,10 @@ def profile_gate_bundle_defaults(profile: str) -> dict[str, Any]:
     return dict((_profile(profile).get('gate_bundle') or {}))
 
 
+def profile_agent_review_defaults(profile: str) -> dict[str, Any]:
+    return dict((_profile(profile).get('agent_review') or {}))
+
+
 def profile_llm_review_defaults(profile: str) -> dict[str, Any]:
     return dict((_profile(profile).get('llm_review') or {}))
 
@@ -79,6 +83,7 @@ def delivery_profile_payload(profile: str) -> dict[str, Any]:
         'test': profile_test_defaults(resolved),
         'acceptance': profile_acceptance_defaults(resolved),
         'gate_bundle': profile_gate_bundle_defaults(resolved),
+        'agent_review': profile_agent_review_defaults(resolved),
         'llm_review': profile_llm_review_defaults(resolved),
         'llm_obligations': profile_llm_obligations_defaults(resolved),
         'llm_semantic_gate_all': profile_llm_semantic_gate_all_defaults(resolved),

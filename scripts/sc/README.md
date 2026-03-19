@@ -1,4 +1,4 @@
-﻿# sc 兼容脚本（SuperClaude 命令等价实现）
+# sc 兼容脚本（SuperClaude 命令等价实现）
 
 这组脚本用于在 **Codex CLI** 环境下，提供类似 SuperClaude `/sc:*` 的“可执行入口”（但不是 Codex 的自定义 slash command）。
 
@@ -55,9 +55,9 @@
   - 启用方式：`--perf-p95-ms <ms>` 或设置环境变量 `PERF_P95_THRESHOLD_MS=<ms>`
   - 快捷方式：`--require-perf`（legacy）：等价于启用性能硬门禁，阈值取 `PERF_P95_THRESHOLD_MS`，否则默认 20ms（口径见 ADR-0015）
 - 交付档位（建议显式）：
-  - `--delivery-profile playable-ea`：最轻门禁，优先验证可玩性；默认派生 `security-profile=host-safe`
-  - `--delivery-profile fast-ship`：快速交付档位；默认派生 `security-profile=host-safe`
-  - `--delivery-profile standard`：标准收口档位；默认派生 `security-profile=strict`
+  - `--delivery-profile playable-ea`：最轻门禁，优先验证可玩性；默认派生 `security-profile=host-safe`；`agent_review.mode=skip`
+  - `--delivery-profile fast-ship`：快速交付档位；默认派生 `security-profile=host-safe`；`agent_review.mode=warn`
+  - `--delivery-profile standard`：标准收口档位；默认派生 `security-profile=strict`；`agent_review.mode=require`
   - 解析顺序：CLI `--delivery-profile` > `DELIVERY_PROFILE` > `scripts/sc/config/delivery_profiles.json` 中的 `default_profile`（当前为 `fast-ship`）
   - `--security-profile` 仅用于显式覆写派生结果；解析顺序：CLI > `SECURITY_PROFILE` > 由 `delivery-profile` 派生
 
@@ -94,7 +94,7 @@ py -3 scripts/sc/build.py GodotGame.csproj --type dev --clean
 # TDD 门禁编排
 py -3 scripts/sc/build.py tdd --stage red --generate-red-test
 py -3 scripts/sc/build.py tdd --stage green
-# Unified task-level entry (test + acceptance + llm review)
+# Unified task-level entry (test + acceptance + llm review + profile-aware agent-review sidecar)
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship
 
 # Standard profile for release hardening
