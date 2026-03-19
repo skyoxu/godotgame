@@ -10,26 +10,30 @@ This file is the repository map. It routes you to the right source document by t
 - `docs/architecture/**`, `docs/adr/**`, `docs/testing-framework.md`, and `DELIVERY_PROFILE.md` remain the deep source documents.
 
 ## Start Here
+
 1. [Agents Docs Index](docs/agents/00-index.md)
 2. [Session Recovery](docs/agents/01-session-recovery.md)
-3. [Repo Map](docs/agents/02-repo-map.md)
-4. [README](README.md)
-5. Newest file in `execution-plans/`
-6. Newest file in `decision-logs/`
-7. If a local review pipeline already ran, `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
+3. [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
+4. [Repo Map](docs/agents/02-repo-map.md)
+5. [README](README.md)
+6. Newest file in `execution-plans/`
+7. Newest file in `decision-logs/`
+8. If a local review pipeline already ran, `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
 ## Task Navigation
 - New session or resume failed work:
+  - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
   - [Session Recovery](docs/agents/01-session-recovery.md)
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
   - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
 - Understand the project, startup path, or stack:
+  - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
   - [README](README.md)
-  - [Project Basics](docs/agents/08-project-basics.md)
   - [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
 - Implement a feature or touch architecture:
   - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
   - [Architecture Guardrails](docs/agents/05-architecture-guardrails.md)
+  - [Execution Rules](docs/agents/12-execution-rules.md)
   - `docs/architecture/base/00-README.md`
   - [Template Customization](docs/agents/10-template-customization.md)
 - Write tests, acceptance, or quality gates:
@@ -43,6 +47,7 @@ This file is the repository map. It routes you to the right source document by t
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
   - `scripts/sc/README.md`
 - Tighten release or CI posture:
+  - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
   - `docs/workflows/`
@@ -53,8 +58,8 @@ This file is the repository map. It routes you to the right source document by t
 
 ## Problem Navigation
 - Need project background, use cases, startup, or stack:
+  - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
   - [README](README.md)
-  - [Project Basics](docs/agents/08-project-basics.md)
 - Need repository directories or entry files:
   - [Repo Map](docs/agents/02-repo-map.md)
   - [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
@@ -62,11 +67,17 @@ This file is the repository map. It routes you to the right source document by t
   - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
   - [Architecture Guardrails](docs/agents/05-architecture-guardrails.md)
   - [Template Customization](docs/agents/10-template-customization.md)
+- Need security posture, release health, logs, or runtime ops rules:
+  - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - Need tests, logs, artifacts, Test-Refs, or DoD:
   - [Testing Framework](docs/testing-framework.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+- Need RAG source discipline, overlay source selection, or session source SSoT:
+  - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
 - Need delivery strictness or profile behavior:
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
+- Need planning discipline, implementation stop-loss, or script size rules:
+  - [Execution Rules](docs/agents/12-execution-rules.md)
 - Need AGENTS structure or maintenance rules:
   - [AGENTS Construction Principles](docs/agents/11-agents-construction-principles.md)
 
@@ -81,7 +92,30 @@ This file is the repository map. It routes you to the right source document by t
 - Write logs and evidence under `logs/`.
 - Do not revert user changes unless explicitly requested.
 - Prefer small, deterministic, testable changes.
-- Use accepted ADRs when code or tests change architecture or guardrails.
+- Code or test changes should cite at least one accepted ADR; if thresholds, contracts, security posture, or release policy change, update or supersede the ADR set.
+
+- Route architecture work in arc42 order: irreversible decisions -> cross-cutting rules -> runtime backbone -> feature slices.
+- For overlay work, prefer generated shard or index sources when present; otherwise use the current repo indexes and do not blind-scan `docs/`.
+- Ask before high-risk actions and never disable tests to get green.
+
+## Template Reality Checks
+- Legacy references such as `architecture_base.index`, `prd_chunks.index`, `shards/flattened-*.xml`, and `tasks/tasks.json` may not exist in this template.
+- Current equivalents are routed by `docs/agents/13-rag-sources-and-session-ssot.md`.
+- In the bare template, use `docs/PROJECT_DOCUMENTATION_INDEX.md`, `docs/architecture/base/00-README.md`, `docs/architecture/ADR_INDEX_GODOT.md`, and `docs/prd/**/*.md` first.
+- Use `.taskmaster/tasks/*.json` only after the copied project has generated real triplet files.
+
+## Hard Architecture Invariants
+- Base chapter 08 stays a template only; concrete feature slices belong in `docs/architecture/overlays/<PRD-ID>/08/`.
+- Overlay text should reference base chapters and ADRs instead of copying thresholds or policy text.
+- Contracts stay in `Game.Core/Contracts/**`; do not duplicate contract definitions across docs and code.
+- Route architectural change in arc42 order: irreversible decisions -> cross-cutting rules -> runtime backbone -> feature slices.
+
+## Delivery And Security Quick Map
+- `DELIVERY_PROFILE=playable-ea` -> default `SECURITY_PROFILE=host-safe`
+- `DELIVERY_PROFILE=fast-ship` -> default `SECURITY_PROFILE=host-safe`
+- `DELIVERY_PROFILE=standard` -> default `SECURITY_PROFILE=strict`
+- CI should emit both `DeliveryProfile: <...>` and `SecurityProfile: <...>` in Step Summary.
+- Host boundary rules stay hard in all profiles: `res://` and `user://` only, HTTPS only, `ALLOWED_EXTERNAL_HOSTS`, `GD_OFFLINE_MODE`, no dynamic external code loading.
 
 ## Repo Map
 - `Game.Core/`: pure C# domain and contracts.
@@ -113,16 +147,17 @@ This file is the repository map. It routes you to the right source document by t
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
 ## Docs Index
+
 - [README](README.md)
 - [Project Documentation Index](docs/PROJECT_DOCUMENTATION_INDEX.md)
 - [Testing Framework](docs/testing-framework.md)
 - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
 - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
 - [Agents Docs Index](docs/agents/00-index.md)
-- [Project Basics](docs/agents/08-project-basics.md)
-- [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
-- [Template Customization](docs/agents/10-template-customization.md)
-- [AGENTS Construction Principles](docs/agents/11-agents-construction-principles.md)
+- [Execution Rules](docs/agents/12-execution-rules.md)
+- [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
+- [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
+- [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 
 ## Change Policy
 - Keep `summary.json` schema stable.
