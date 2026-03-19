@@ -38,3 +38,26 @@ Use this document when you need the old AGENTS content for Base/Overlay rules, A
 - `默认 ADR 映射` -> `docs/architecture/ADR_INDEX_GODOT.md`
 - `PR 模板要求 / 违例处理` -> `.github/PULL_REQUEST_TEMPLATE.md` + validation scripts and workflow docs
 - `Customizing This Template` -> `README.md` + this document
+
+
+## ADR And PR Minimums
+- Code or test changes should cite at least one accepted ADR.
+- If thresholds, contracts, security posture, or release policy change, add a new ADR or supersede the old one.
+- PRs should update contracts, tests, and Test-Refs when the change touches those surfaces.
+- Base chapters must stay free of concrete PRD-specific feature slices.
+- Overlay 08 files must reference base and ADR rules instead of copying thresholds into the slice text.
+
+## Minimal ADR Template
+- Title: `ADR-xxxx: <title>`
+- Status: accepted, proposed, or superseded
+- Context: why the decision exists
+- Decision: what was chosen
+- Consequences: trade-offs and migration impact
+- Supersedes: optional replacement chain
+- References: linked evidence and related docs
+
+## Violation Handling Summary
+- Refuse writes that put concrete feature slices into base chapter 08.
+- Refuse writes that copy policy thresholds into overlay text instead of referencing base or ADR sources.
+- Refuse writes that change architectural guardrails without updating ADR coverage.
+- Refuse writes that land test or contract changes without the matching references and evidence updates.
