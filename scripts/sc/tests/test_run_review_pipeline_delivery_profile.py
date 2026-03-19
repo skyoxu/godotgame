@@ -35,10 +35,15 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         self.assertEqual(0, proc.returncode, proc.stdout)
         out_dir = _extract_out_dir(proc.stdout or '')
         summary = json.loads((out_dir / 'summary.json').read_text(encoding='utf-8'))
+        execution_context = json.loads((out_dir / 'execution-context.json').read_text(encoding='utf-8'))
+        repair_guide = json.loads((out_dir / 'repair-guide.json').read_text(encoding='utf-8'))
         steps = {str(item.get('name')): item for item in (summary.get('steps') or [])}
         acceptance_cmd = steps['sc-acceptance-check']['cmd']
         llm_cmd = steps['sc-llm-review']['cmd']
 
+        self.assertEqual('playable-ea', execution_context['delivery_profile'])
+        self.assertEqual('host-safe', execution_context['security_profile'])
+        self.assertEqual('not-needed', repair_guide['status'])
         self.assertIn('--security-profile', acceptance_cmd)
         self.assertIn('host-safe', acceptance_cmd)
         self.assertNotIn('--require-executed-refs', acceptance_cmd)
@@ -60,10 +65,15 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         self.assertEqual(0, proc.returncode, proc.stdout)
         out_dir = _extract_out_dir(proc.stdout or '')
         summary = json.loads((out_dir / 'summary.json').read_text(encoding='utf-8'))
+        execution_context = json.loads((out_dir / 'execution-context.json').read_text(encoding='utf-8'))
+        repair_guide = json.loads((out_dir / 'repair-guide.json').read_text(encoding='utf-8'))
         steps = {str(item.get('name')): item for item in (summary.get('steps') or [])}
         acceptance_cmd = steps['sc-acceptance-check']['cmd']
         llm_cmd = steps['sc-llm-review']['cmd']
 
+        self.assertEqual('standard', execution_context['delivery_profile'])
+        self.assertEqual('strict', execution_context['security_profile'])
+        self.assertEqual('not-needed', repair_guide['status'])
         self.assertIn('--require-executed-refs', acceptance_cmd)
         self.assertIn('--require-headless-e2e', acceptance_cmd)
         self.assertIn('--security-profile', acceptance_cmd)
@@ -74,4 +84,3 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
