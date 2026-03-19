@@ -84,6 +84,22 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 
 <!-- BEGIN:NEW_PROJECT_SANGUO_ALIGNMENT -->
 
+## Script Portability Tags (Template Use)
+
+- `template-core` (directly reusable)
+  - `scripts/python/sync_task_overlay_refs.py` - Sync overlay refs across task triplet; supports `.taskmaster/tasks` and `examples/taskmaster` fallback.
+  - `scripts/python/validate_overlay_execution.py` - Validate overlay execution docs (structure, front matter, and referenced paths).
+  - `scripts/python/validate_docs_utf8_no_bom.py` - Enforce UTF-8 without BOM on `docs/.github/.taskmaster/AGENTS.md` scope.
+
+- `optional-llm` (advanced, requires obligations/SC toolchain)
+  - `scripts/python/_obligations_freeze_pipeline_common.py` - Shared helpers for obligations freeze orchestration.
+  - `scripts/python/_obligations_freeze_pipeline_runner.py` - End-to-end obligations freeze runner; depends on jitter/summary/draft/evaluate/promote scripts.
+  - `scripts/python/rerun_obligations_hardgate_round3.py` - Multi-round rerun wrapper for `scripts/sc/llm_extract_task_obligations.py`.
+
+- `domain-specific` (requires project-level evaluation)
+  - `scripts/python/config_contract_sync_check.py` - Domain contract consistency checker; template mode defaults to `SKIPPED` when domain files are absent, `--strict-presence` makes it hard fail.
+  - `scripts/python/guard_archived_overlays.py` - Archived overlay drift guard; recommended only when `_archived` overlay workflow is used.
+
 ## New project task-gate alignment
 
 When you copy this template to create a new project, enable task-scoped gates after real Taskmaster files are ready:
