@@ -45,6 +45,30 @@ class EnvEvidencePreflightTests(unittest.TestCase):
 
         self.assertEqual([keep], actual)
 
+    def test_build_utf8_checked_files_should_include_checklist_once(self) -> None:
+        errors: list[str] = []
+        files = env_preflight._build_utf8_checked_files(
+            task_json_rel="logs/ci/2026-03-20/task-0001.json",
+            checklist_rel="docs/acceptance-check-list.md",
+            date="2026-03-20",
+            errors=errors,
+        )
+
+        self.assertEqual(1, files.count("docs/acceptance-check-list.md"))
+        self.assertEqual([], errors)
+
+    def test_build_utf8_checked_files_should_append_missing_checklist_error_once(self) -> None:
+        errors: list[str] = []
+        files = env_preflight._build_utf8_checked_files(
+            task_json_rel="logs/ci/2026-03-20/task-0001.json",
+            checklist_rel="",
+            date="2026-03-20",
+            errors=errors,
+        )
+
+        self.assertEqual(0, files.count(""))
+        self.assertEqual(["missing_acceptance_checklist"], errors)
+
 
 if __name__ == "__main__":
     unittest.main()
