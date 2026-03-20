@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 from typing import Any
 
+from _agent_review_policy import build_agent_review_recommendations
 from _util import repo_root, today_str
 
 
@@ -43,6 +45,7 @@ def build_execution_context(
     delivery_profile: str,
     security_profile: str,
     summary: dict[str, Any],
+    marathon_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
     head = _run_git(["rev-parse", "HEAD"])
@@ -65,6 +68,7 @@ def build_execution_context(
             "repo_root": str(repo_root()),
             "out_dir": str(out_dir),
             "summary_json": str(out_dir / "summary.json"),
+            "marathon_state_json": str(out_dir / "marathon-state.json"),
             "repair_guide_json": str(out_dir / "repair-guide.json"),
             "repair_guide_md": str(out_dir / "repair-guide.md"),
             "execution_plans_dir": str(repo_root() / "execution-plans"),
@@ -80,6 +84,34 @@ def build_execution_context(
             "recent_log": recent_log,
             "status_short": status_short,
             "dirty": bool(status_short),
+        },
+        "recovery": {
+            "resume_command": f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --resume",
+            "abort_command": f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --abort",
+            "fork_command": f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --fork",
+        },
+        "marathon": {
+            "status": str((marathon_state or {}).get("status") or ""),
+            "next_step_name": str((marathon_state or {}).get("next_step_name") or ""),
+            "stop_reason": str((marathon_state or {}).get("stop_reason") or ""),
+            "resume_count": int((marathon_state or {}).get("resume_count") or 0),
+            "max_step_retries": int((marathon_state or {}).get("max_step_retries") or 0),
+            "max_wall_time_sec": int((marathon_state or {}).get("max_wall_time_sec") or 0),
+            "context_refresh_needed": bool((marathon_state or {}).get("context_refresh_needed") or False),
+            "context_refresh_reasons": list((marathon_state or {}).get("context_refresh_reasons") or []),
+            "forked_from_run_id": str((marathon_state or {}).get("forked_from_run_id") or ""),
+            "diff_baseline_total_lines": int((((marathon_state or {}).get("diff_stats") or {}).get("baseline") or {}).get("total_lines") or 0),
+            "diff_current_total_lines": int((((marathon_state or {}).get("diff_stats") or {}).get("current") or {}).get("total_lines") or 0),
+            "diff_growth_total_lines": int((((marathon_state or {}).get("diff_stats") or {}).get("growth") or {}).get("total_lines") or 0),
+            "diff_current_categories": list((((marathon_state or {}).get("diff_stats") or {}).get("current") or {}).get("categories") or []),
+            "diff_current_axes": list((((marathon_state or {}).get("diff_stats") or {}).get("current") or {}).get("axes") or []),
+            "diff_growth_new_categories": list((((marathon_state or {}).get("diff_stats") or {}).get("growth") or {}).get("new_categories") or []),
+            "diff_growth_new_axes": list((((marathon_state or {}).get("diff_stats") or {}).get("growth") or {}).get("new_axes") or []),
+        },
+        "agent_review": {
+            "review_verdict": str((((marathon_state or {}).get("agent_review") or {}).get("review_verdict") or "")),
+            "recommended_action": str((((marathon_state or {}).get("agent_review") or {}).get("recommended_action") or "")),
+            "recommended_refresh_reasons": list((((marathon_state or {}).get("agent_review") or {}).get("recommended_refresh_reasons") or [])),
         },
     }
 
@@ -102,9 +134,68 @@ def _base_recommendation(
     }
 
 
+def _resume_recommendation(task_id: str, step: dict[str, Any]) -> dict[str, Any]:
+    files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
+    return _base_recommendation(
+        rec_id="pipeline-resume",
+        title="Resume the pipeline after fixing the first blocking issue",
+        why="Use the stored run artifacts instead of starting a fresh diagnostic branch when the failing step is already isolated.",
+        commands=[f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --resume"],
+        files=files,
+    )
+
+
+def _fork_recommendation(task_id: str, step: dict[str, Any]) -> dict[str, Any]:
+    files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
+    return _base_recommendation(
+        rec_id="pipeline-fork",
+        title="Fork a new run when you want a clean recovery branch",
+        why="Use a new run id when the current artifact set should remain immutable for diagnosis or comparison.",
+        commands=[f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --fork"],
+        files=files,
+    )
+
+
+def _context_refresh_recommendation(task_id: str, step: dict[str, Any], reasons: list[str]) -> dict[str, Any]:
+    files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
+    files.extend(
+        [
+            str(repo_root() / "AGENTS.md"),
+            str(repo_root() / "docs" / "agents" / "00-index.md"),
+            str(repo_root() / "docs" / "agents" / "01-session-recovery.md"),
+        ]
+    )
+    joined_reasons = ", ".join(reasons) if reasons else "marathon heuristic requested refresh"
+    return _base_recommendation(
+        rec_id="pipeline-context-refresh",
+        title="Refresh context before the next attempt",
+        why=f"The pipeline crossed the refresh threshold: {joined_reasons}. Reload the recovery map before resuming.",
+        commands=[
+            f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --fork",
+            f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --resume",
+        ],
+        files=files,
+    )
+
+
+def _wall_time_recommendation(task_id: str, step: dict[str, Any]) -> dict[str, Any]:
+    files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
+    return _base_recommendation(
+        rec_id="pipeline-wall-time",
+        title="Resume or fork after wall-time stop-loss",
+        why="The current run exhausted its wall-time budget. Continue from the stored checkpoint instead of restarting from scratch.",
+        commands=[
+            f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --resume",
+            f"py -3 scripts/sc/run_review_pipeline.py --task-id {task_id} --fork",
+        ],
+        files=files,
+    )
+
+
 def _test_recommendations(task_id: str, step: dict[str, Any], log_text: str) -> list[dict[str, Any]]:
     files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
     recommendations = [
+        _resume_recommendation(task_id, step),
         _base_recommendation(
             rec_id="sc-test-rerun",
             title="Rerun isolated sc-test first",
@@ -149,6 +240,7 @@ def _test_recommendations(task_id: str, step: dict[str, Any], log_text: str) -> 
 def _acceptance_recommendations(task_id: str, step: dict[str, Any], log_text: str) -> list[dict[str, Any]]:
     files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
     recommendations = [
+        _resume_recommendation(task_id, step),
         _base_recommendation(
             rec_id="acceptance-rerun",
             title="Rerun acceptance only after fixing the first hard failure",
@@ -204,6 +296,7 @@ def _acceptance_recommendations(task_id: str, step: dict[str, Any], log_text: st
 def _llm_review_recommendations(task_id: str, step: dict[str, Any], log_text: str) -> list[dict[str, Any]]:
     files = [str(x) for x in [step.get("log"), step.get("summary_file")] if str(x or "").strip()]
     recommendations = [
+        _resume_recommendation(task_id, step),
         _base_recommendation(
             rec_id="llm-review-rerun",
             title="Fix findings before rerunning llm_review",
@@ -236,16 +329,39 @@ def _llm_review_recommendations(task_id: str, step: dict[str, Any], log_text: st
     return recommendations
 
 
-def build_repair_guide(summary: dict[str, Any], *, task_id: str, out_dir: Path) -> dict[str, Any]:
+def _load_marathon_state(out_dir: Path) -> dict[str, Any] | None:
+    state_path = out_dir / "marathon-state.json"
+    if not state_path.exists():
+        return None
+    try:
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def build_repair_guide(summary: dict[str, Any], *, task_id: str, out_dir: Path, marathon_state: dict[str, Any] | None = None) -> dict[str, Any]:
+    runtime_state = marathon_state if isinstance(marathon_state, dict) else _load_marathon_state(out_dir)
+    agent_review = ((runtime_state or {}).get("agent_review") or {}) if isinstance(runtime_state, dict) else {}
     failed_step = next((step for step in summary.get("steps", []) if step.get("status") == "fail"), None)
     if not isinstance(failed_step, dict):
+        recommendations = build_agent_review_recommendations(task_id=task_id, agent_review=agent_review, out_dir=out_dir)
+        synthetic_step = {"log": "", "summary_file": ""}
+        if isinstance(runtime_state, dict):
+            reasons = [str(x) for x in (runtime_state.get("context_refresh_reasons") or []) if str(x).strip()]
+            if bool(runtime_state.get("context_refresh_needed")):
+                recommendations.append(_context_refresh_recommendation(task_id, synthetic_step, reasons))
+            if str(runtime_state.get("stop_reason") or "").strip().lower() == "wall_time_exceeded":
+                recommendations.append(_wall_time_recommendation(task_id, synthetic_step))
+            if recommendations:
+                recommendations.append(_fork_recommendation(task_id, synthetic_step))
         return {
             "schema_version": "1.0.0",
-            "status": "not-needed",
+            "status": "needs-fix" if recommendations else "not-needed",
             "task_id": task_id,
             "summary_status": str(summary.get("status") or "ok"),
             "failed_step": "",
-            "recommendations": [],
+            "recommendations": recommendations,
             "generated_from": {
                 "summary_json": str(out_dir / "summary.json"),
             },
@@ -265,6 +381,13 @@ def build_repair_guide(summary: dict[str, Any], *, task_id: str, out_dir: Path) 
         recommendations = _acceptance_recommendations(task_id, failed_step, log_text)
     else:
         recommendations = _llm_review_recommendations(task_id, failed_step, log_text)
+    if isinstance(runtime_state, dict):
+        reasons = [str(x) for x in (runtime_state.get("context_refresh_reasons") or []) if str(x).strip()]
+        if bool(runtime_state.get("context_refresh_needed")):
+            recommendations.append(_context_refresh_recommendation(task_id, failed_step, reasons))
+        if str(runtime_state.get("stop_reason") or "").strip().lower() == "wall_time_exceeded":
+            recommendations.append(_wall_time_recommendation(task_id, failed_step))
+        recommendations.append(_fork_recommendation(task_id, failed_step))
 
     return {
         "schema_version": "1.0.0",

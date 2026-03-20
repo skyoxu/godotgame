@@ -23,6 +23,8 @@ class AgentToAgentReviewTests(unittest.TestCase):
             payload, errors = build_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
             self.assertTrue(errors)
             self.assertEqual("block", payload["review_verdict"])
+            self.assertEqual("fork", payload["explain"]["recommended_action"])
+            self.assertIn("artifact-integrity", payload["explain"]["summary"])
 
     def test_build_agent_review_should_block_on_sc_test_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -65,6 +67,8 @@ class AgentToAgentReviewTests(unittest.TestCase):
             payload, errors = build_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
             self.assertEqual([], errors)
             self.assertEqual("block", payload["review_verdict"])
+            self.assertEqual("resume", payload["explain"]["recommended_action"])
+            self.assertIn("isolated", payload["explain"]["summary"])
 
     def test_build_agent_review_should_mark_needs_fix_from_llm_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -107,6 +111,8 @@ class AgentToAgentReviewTests(unittest.TestCase):
             self.assertEqual("needs-fix", payload["review_verdict"])
             ids = {item["finding_id"] for item in payload["findings"]}
             self.assertIn("llm-code-reviewer-needs-fix", ids)
+            self.assertEqual("resume", payload["explain"]["recommended_action"])
+            self.assertIn("sc-llm-review", payload["explain"]["summary"])
 
     def test_build_agent_review_should_ignore_missing_llm_summary_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

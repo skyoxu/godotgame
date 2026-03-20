@@ -61,8 +61,11 @@
   - 解析顺序：CLI `--delivery-profile` > `DELIVERY_PROFILE` > `scripts/sc/config/delivery_profiles.json` 中的 `default_profile`（当前为 `fast-ship`）
   - `--security-profile` 仅用于显式覆写派生结果；解析顺序：CLI > `SECURITY_PROFILE` > 由 `delivery-profile` 派生
 
+  - `run_review_pipeline.py` normalizes agent-review verdicts into marathon guidance: isolated `needs-fix` -> `resume`, cross-step `needs-fix` -> `refresh`, and cross-step `block` or high-severity integrity issues -> `fork`; these hints only update sidecars and do not rewrite `summary.json`.
+  - Noise guard: a single `medium` structural finding does not escalate by itself; escalation to `refresh` requires cross-step or cross-axis spread, or the structural category reaching `high`; `artifact-integrity`, `summary-integrity`, and `schema-integrity` prefer `fork`.
 可选：如果你仍希望保留“LLM 口头审查”的等价体验（但不建议作为硬门禁），使用：
 `scripts/sc/llm_review.py` writes outputs to `logs/ci/<YYYY-MM-DD>/sc-llm-review/`; prefer calling it via the unified pipeline.
+- `agent-review.json` now includes top-level `explain` fields so a later agent can read the recommended action and rationale without re-deriving the category rules.
 - 默认会尝试加载：
   - 仓库内：`.claude/agents/*.md`
   - 用户目录：`%USERPROFILE%\\.claude\\agents\\lst97\\*.md`（可用 `--claude-agents-root` 或 `CLAUDE_AGENTS_ROOT` 覆盖）
@@ -106,7 +109,28 @@ py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN
 # Optional: skip llm review (deterministic gates only)
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --skip-llm-review
 
-# Git（智能提交，脚本会读取 .superclaude/commit-template.txt）
+# Retry a failing step once inside the same invocation
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --max-step-retries 1
+
+# Bound one run with a wall-time stop-loss
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --max-wall-time-sec 1800
+
+# Tighten or relax the context-refresh heuristic thresholds
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --context-refresh-after-failures 2 --context-refresh-after-resumes 2 --context-refresh-after-diff-lines 200 --context-refresh-after-diff-categories 2
+
+# Resume the latest task-scoped run after fixing the first blocking issue
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --resume
+
+# Fork the latest task-scoped run into a new run id while keeping the old artifacts immutable
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --fork
+
+# Fork from a specific source run id when you do not want the latest pointer
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --fork --fork-from-run-id <old_run_id> --run-id <new_run_id>
+
+# Abort the latest task-scoped run without executing more steps
+py -3 scripts/sc/run_review_pipeline.py --task-id 10 --abort
+
+# Git smart commit (reads .superclaude/commit-template.txt)
 py -3 scripts/sc/git.py commit --smart-commit --task-ref "#10.1"
 ```
 
