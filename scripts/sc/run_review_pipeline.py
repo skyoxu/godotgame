@@ -42,16 +42,16 @@ from _marathon_state import (
     step_is_already_complete,
 )
 from _pipeline_approval import sync_soft_approval_sidecars
-from _pipeline_cli import build_parser as _build_parser_impl
-from _pipeline_cli import prepare_env as _prepare_env_impl
-from _pipeline_cli import task_root_id as _task_root_id_impl
 from _pipeline_events import append_run_event
 from _pipeline_helpers import allocate_out_dir as _allocate_out_dir_impl
 from _pipeline_helpers import append_step_event as _append_step_event_impl
+from _pipeline_helpers import build_parser as _build_parser_impl
 from _pipeline_helpers import load_source_run as _load_source_run_impl
 from _pipeline_helpers import pipeline_latest_index_path as _pipeline_latest_index_path_impl
 from _pipeline_helpers import pipeline_run_dir as _pipeline_run_dir_impl
+from _pipeline_helpers import prepare_env as _prepare_env_impl
 from _pipeline_helpers import run_agent_review_post_hook as _run_agent_review_post_hook_impl
+from _pipeline_helpers import task_root_id as _task_root_id_impl
 from _pipeline_helpers import write_latest_index as _write_latest_index_impl
 from _pipeline_plan import build_pipeline_steps
 from _pipeline_session import PipelineSession
