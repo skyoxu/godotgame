@@ -23,6 +23,7 @@
 - `sc-git`：`logs/ci/<YYYY-MM-DD>/sc-git/`
 - `sc-acceptance-check`：`logs/ci/<YYYY-MM-DD>/sc-acceptance-check/`
 - `sc-llm-review`：`logs/ci/<YYYY-MM-DD>/sc-llm-review/`（可选，本地 LLM 口头审查）
+- `sc-review-pipeline` also writes `run-events.jsonl`, `harness-capabilities.json`, and supports on-demand `approval-request.json` / `approval-response.json` protocol files.
 
 单元测试与覆盖率固定落盘到：`logs/unit/<YYYY-MM-DD>/`（由 `scripts/python/run_dotnet.py` 生成）。
 
@@ -153,6 +154,6 @@ py -3 scripts/sc/git.py commit --smart-commit --task-ref "#10.1"
 
 ## Lightweight Convention (Single Developer)
 
-- If any summary field/structure changes under `scripts/sc`, update the matching schema in `scripts/sc/schemas/*.schema.json` in the same change set.
+- If any summary field/structure or sidecar protocol changes under `scripts/sc`, update the matching schema in `scripts/sc/schemas/*.schema.json` in the same change set.
 - After this type of change, run at least once: `py -3 scripts/sc/run_review_pipeline.py --task-id 1 --dry-run --skip-llm-review`.
-- Do not commit summary-contract changes if this minimal self-check fails.
+- Do not commit summary-contract or sidecar-contract changes if this minimal self-check fails.

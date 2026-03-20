@@ -11,6 +11,7 @@ Required producer files in `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_i
 Optional producer inputs:
 - `sc-llm-review` step `summary_file`
 - step log files referenced by `summary.json`
+- `repair-guide.json.approval` or `execution-context.json.approval` soft approval state
 
 The reviewer does not rescan the full repository when these artifacts exist.
 
@@ -18,6 +19,10 @@ The reviewer does not rescan the full repository when these artifacts exist.
 The reviewer writes sidecar files next to the producer artifacts:
 - `agent-review.json`
 - `agent-review.md`
+
+`agent-review.json` now includes:
+- top-level `approval` state copied from the latest repair/execution context when available
+- extended `explain` fields: `approval_status`, `approval_required_action`, `approval_reason`, `approval_blocks_recommended_action`
 
 It also updates `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json` with:
 - `agent_review_json_path`
@@ -50,8 +55,9 @@ Each finding carries:
 2. If the run was not `--dry-run`, did not use `--skip-agent-review`, and the active delivery profile did not set `agent_review.mode=skip`, open `agent-review.md` directly.
 3. If you need to rebuild reviewer artifacts only, run `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`.
 4. If verdict is `block`, follow `repair-guide.md` before any broader diagnosis.
-5. If verdict is `needs-fix`, address the listed reviewer findings and rerun the relevant step.
-6. If verdict is `pass`, keep `latest.json` as the recovery pointer for the next session.
+5. If `agent-review.json` shows `approval_blocks_recommended_action=true`, stop and resolve the operator approval state first instead of blindly executing the reviewer action.
+6. If verdict is `needs-fix`, address the listed reviewer findings and rerun the relevant step.
+7. If verdict is `pass`, keep `latest.json` as the recovery pointer for the next session.
 
 ## Stop-Loss
 - Do not mutate the producer `summary.json` schema just to satisfy reviewer needs.

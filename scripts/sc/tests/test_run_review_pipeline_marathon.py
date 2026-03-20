@@ -113,7 +113,220 @@ class RunReviewPipelineMarathonTests(unittest.TestCase):
             self.assertEqual("fork", execution_context["agent_review"]["recommended_action"])
             ids = {item["id"] for item in repair_guide["recommendations"]}
             self.assertIn("pipeline-context-refresh", ids)
-            self.assertIn("pipeline-fork", ids)
+            self.assertIn("approval-fork-pending", ids)
+            self.assertNotIn("pipeline-fork", ids)
+
+    def test_warn_mode_fork_recommendation_should_write_soft_approval_request(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f"sc-review-pipeline-task-1-{run_id}"
+            latest_path = tmp_root / "sc-review-pipeline-task-1" / "latest.json"
+            payload = {
+                "schema_version": "1.0.0",
+                "cmd": "sc-agent-review",
+                "date": "2026-03-20",
+                "reviewer": "artifact-reviewer",
+                "task_id": "1",
+                "run_id": run_id,
+                "pipeline_out_dir": str(out_dir),
+                "pipeline_status": "ok",
+                "failed_step": "",
+                "review_verdict": "block",
+                "findings": [
+                    {
+                        "finding_id": "summary-integrity",
+                        "severity": "medium",
+                        "category": "summary-integrity",
+                        "owner_step": "producer-pipeline",
+                        "evidence_path": str(out_dir / "summary.json"),
+                        "message": "Summary contract drift",
+                        "suggested_fix": "Fork a clean recovery run",
+                        "commands": [],
+                    }
+                ],
+            }
+
+            def fake_run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> dict:
+                return {
+                    "name": name,
+                    "cmd": cmd,
+                    "rc": 0,
+                    "status": "ok",
+                    "log": str(out_dir / f"{name}.log"),
+                    "reported_out_dir": "",
+                    "summary_file": "",
+                }
+
+            argv = [
+                str(REPO_ROOT / "scripts" / "sc" / "run_review_pipeline.py"),
+                "--task-id",
+                "1",
+                "--run-id",
+                run_id,
+                "--delivery-profile",
+                "fast-ship",
+            ]
+            with mock.patch.dict(os.environ, _stable_env(), clear=False), \
+                mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, "_run_step", side_effect=fake_run_step), \
+                mock.patch.object(run_review_pipeline_module, "write_agent_review", return_value=(payload, [], [])):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(0, rc)
+            request = json.loads((out_dir / "approval-request.json").read_text(encoding="utf-8"))
+            latest = json.loads(latest_path.read_text(encoding="utf-8"))
+            execution_context = json.loads((out_dir / "execution-context.json").read_text(encoding="utf-8"))
+
+            self.assertEqual("fork", request["action"])
+            self.assertEqual("pending", request["status"])
+            self.assertIn("run_review_pipeline.py --task-id 1 --fork", " ".join(request["requested_commands"]))
+            self.assertEqual(str(out_dir / "approval-request.json"), latest["approval_request_path"])
+            self.assertEqual("pending", execution_context["approval"]["status"])
+            self.assertEqual("fork", execution_context["approval"]["required_action"])
+
+    def test_existing_approval_response_should_be_indexed_as_soft_signal(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f"sc-review-pipeline-task-1-{run_id}"
+            latest_path = tmp_root / "sc-review-pipeline-task-1" / "latest.json"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            (out_dir / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "cmd": "sc-review-pipeline",
+                        "task_id": "1",
+                        "requested_run_id": run_id,
+                        "run_id": run_id,
+                        "allow_overwrite": False,
+                        "force_new_run_id": False,
+                        "status": "ok",
+                        "steps": [],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (out_dir / "marathon-state.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "1.0.0",
+                        "task_id": "1",
+                        "run_id": run_id,
+                        "requested_run_id": run_id,
+                        "status": "running",
+                        "resume_count": 1,
+                        "max_step_retries": 0,
+                        "max_wall_time_sec": 0,
+                        "created_at": "2000-01-01T00:00:00",
+                        "updated_at": "2000-01-01T00:00:00",
+                        "last_completed_step": "",
+                        "last_failed_step": "",
+                        "next_step_name": "sc-test",
+                        "steps": {},
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (out_dir / "approval-response.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "1.0.0",
+                        "request_id": f"{run_id}:fork",
+                        "decision": "approved",
+                        "reviewer": "human",
+                        "reason": "Fork is acceptable",
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            latest_path.parent.mkdir(parents=True, exist_ok=True)
+            latest_path.write_text(
+                json.dumps(
+                    {
+                        "task_id": "1",
+                        "run_id": run_id,
+                        "status": "running",
+                        "latest_out_dir": str(out_dir),
+                        "summary_path": str(out_dir / "summary.json"),
+                        "marathon_state_path": str(out_dir / "marathon-state.json"),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            payload = {
+                "schema_version": "1.0.0",
+                "cmd": "sc-agent-review",
+                "date": "2026-03-20",
+                "reviewer": "artifact-reviewer",
+                "task_id": "1",
+                "run_id": run_id,
+                "pipeline_out_dir": str(out_dir),
+                "pipeline_status": "ok",
+                "failed_step": "",
+                "review_verdict": "block",
+                "findings": [
+                    {
+                        "finding_id": "summary-integrity",
+                        "severity": "medium",
+                        "category": "summary-integrity",
+                        "owner_step": "producer-pipeline",
+                        "evidence_path": str(out_dir / "summary.json"),
+                        "message": "Summary contract drift",
+                        "suggested_fix": "Fork a clean recovery run",
+                        "commands": [],
+                    }
+                ],
+            }
+
+            def fake_run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> dict:
+                return {
+                    "name": name,
+                    "cmd": cmd,
+                    "rc": 0,
+                    "status": "ok",
+                    "log": str(out_dir / f"{name}.log"),
+                    "reported_out_dir": "",
+                    "summary_file": "",
+                }
+
+            argv = [
+                str(REPO_ROOT / "scripts" / "sc" / "run_review_pipeline.py"),
+                "--task-id",
+                "1",
+                "--resume",
+                "--delivery-profile",
+                "fast-ship",
+            ]
+            with mock.patch.dict(os.environ, _stable_env(), clear=False), \
+                mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, "_run_step", side_effect=fake_run_step), \
+                mock.patch.object(run_review_pipeline_module, "write_agent_review", return_value=(payload, [], [])):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(0, rc)
+            latest = json.loads(latest_path.read_text(encoding="utf-8"))
+            execution_context = json.loads((out_dir / "execution-context.json").read_text(encoding="utf-8"))
+
+            self.assertEqual(str(out_dir / "approval-response.json"), latest["approval_response_path"])
+            self.assertEqual("approved", execution_context["approval"]["status"])
+            self.assertEqual("approved", execution_context["approval"]["decision"])
 
     def test_dry_run_should_mark_context_refresh_when_diff_growth_exceeds_threshold(self) -> None:
         run_id = uuid.uuid4().hex
