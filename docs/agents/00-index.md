@@ -25,6 +25,7 @@ Purpose: keep [AGENTS.md](../../AGENTS.md) short and move durable guidance here.
   - [01-session-recovery.md](01-session-recovery.md)
   - [03-persistent-harness.md](03-persistent-harness.md)
   - [../workflows/run-protocol.md](../workflows/run-protocol.md)
+  - [../workflows/harness-boundary-matrix.md](../workflows/harness-boundary-matrix.md)
   - [07-agent-to-agent-review.md](07-agent-to-agent-review.md)
 - Closed-loop testing, quality gates, and Definition of Done:
   - [15-security-release-health-and-runtime-ops.md](15-security-release-health-and-runtime-ops.md)

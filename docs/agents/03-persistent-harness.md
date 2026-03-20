@@ -4,6 +4,7 @@ The harness contract is local-file based. The producer pipeline owns the durable
 
 ## Executable Contract
 - Human-readable protocol: `docs/workflows/run-protocol.md`
+- Boundary cutline: `docs/workflows/harness-boundary-matrix.md`
 - Executable run-event schema: `scripts/sc/schemas/sc-run-event.schema.json`
 - Executable harness-capabilities schema: `scripts/sc/schemas/sc-harness-capabilities.schema.json`
 

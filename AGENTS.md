@@ -26,6 +26,7 @@ This file is the repository map. It routes you to the right source document by t
   - [Session Recovery](docs/agents/01-session-recovery.md)
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
   - [Harness Run Protocol](docs/workflows/run-protocol.md)
+  - [Harness Boundary Matrix](docs/workflows/harness-boundary-matrix.md)
   - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
 - Understand the project, startup path, or stack:
   - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
