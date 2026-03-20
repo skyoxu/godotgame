@@ -15,6 +15,7 @@
 - Exit criteria: `agent-review.json/md` are generated from producer sidecars, `latest.json` points to reviewer artifacts, and the regression tests for the reviewer contract are green
 - Related ADRs: pending future ADR for agent recovery and reviewer contracts
 - Related decision logs: `decision-logs/2026-03-19-agents-index-and-persistent-harness.md`, `decision-logs/2026-03-19-agent-review-sidecar-contract.md`
+- Related task id(s): `1`
 - Related run id: `15bcd36f5d344225a3fe0dd470752c88`
 - Related latest.json: `logs/ci/2026-03-19/sc-review-pipeline-task-1/latest.json` (mutable pointer)
 - Related pipeline artifacts: `logs/ci/2026-03-19/sc-review-pipeline-task-1-15bcd36f5d344225a3fe0dd470752c88/`

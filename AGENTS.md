@@ -25,6 +25,7 @@ This file is the repository map. It routes you to the right source document by t
   - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
   - [Session Recovery](docs/agents/01-session-recovery.md)
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
+  - [Harness Run Protocol](docs/workflows/run-protocol.md)
   - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
 - Understand the project, startup path, or stack:
   - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
@@ -43,6 +44,7 @@ This file is the repository map. It routes you to the right source document by t
   - `scripts/sc/README.md`
 - Run or repair the local harness and reviews:
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
+  - [Harness Run Protocol](docs/workflows/run-protocol.md)
   - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
   - `scripts/sc/README.md`
@@ -53,6 +55,7 @@ This file is the repository map. It routes you to the right source document by t
   - `docs/workflows/`
 - Copy this template into a new project:
   - [Template Customization](docs/agents/10-template-customization.md)
+  - [Template Bootstrap Checklist](docs/workflows/template-bootstrap-checklist.md)
   - [README](README.md)
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
 
@@ -144,6 +147,8 @@ This file is the repository map. It routes you to the right source document by t
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/repair-guide.md`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/agent-review.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/agent-review.md`
+- `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/run-events.jsonl`
+- `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/harness-capabilities.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
 ## Docs Index

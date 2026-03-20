@@ -11,8 +11,12 @@ Use this document when you need the old AGENTS content for Base/Overlay rules, A
 - `.github/PULL_REQUEST_TEMPLATE.md`: PR checklist and release/Sentry expectations.
 - `docs/workflows/overlays-authoring-guide.md`: overlay authoring guidance.
 - `docs/workflows/contracts-template-v1.md`: contract template entry point.
+- `docs/workflows/template-bootstrap-checklist.md`: minimum post-copy alignment checklist.
 
 ## After Cloning This Template
+Start with `docs/workflows/template-bootstrap-checklist.md` and finish that list before feature work.
+
+Then keep these project-level invariants true:
 1. Update project identity in `project.godot`, `README.md`, and user-facing docs.
 2. Choose the default `DELIVERY_PROFILE` in `scripts/sc/config/delivery_profiles.json`.
 3. Review workflow names, secrets, and release behavior in `.github/workflows/`.

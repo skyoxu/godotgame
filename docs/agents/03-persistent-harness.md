@@ -2,6 +2,11 @@
 
 The harness contract is local-file based. The producer pipeline owns the durable artifacts; later agents and sidecars consume them without mutating `summary.json`.
 
+## Executable Contract
+- Human-readable protocol: `docs/workflows/run-protocol.md`
+- Executable run-event schema: `scripts/sc/schemas/sc-run-event.schema.json`
+- Executable harness-capabilities schema: `scripts/sc/schemas/sc-harness-capabilities.schema.json`
+
 ## Pipeline Outputs
 `py -3 scripts/sc/run_review_pipeline.py --task-id <id>` writes and, unless `--dry-run`, `--skip-agent-review`, or the active delivery profile sets `agent_review.mode=skip`, also refreshes the reviewer sidecar:
 - `summary.json`: pipeline status and step list.
