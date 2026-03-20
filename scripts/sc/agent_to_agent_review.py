@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from _agent_review_contract import make_review_payload, render_review_markdown, validate_review_payload
+from _agent_review_policy import build_agent_review_explain, summarize_agent_review
 from _util import repo_root, write_json, write_text
 
 
@@ -160,6 +161,23 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
     if not repair_guide_path.exists():
         errors.append(f"missing required file: {repair_guide_path}")
     if errors:
+        signal = summarize_agent_review(
+            {
+                "review_verdict": "block",
+                "findings": [
+                    _build_finding(
+                        finding_id="missing-producer-artifacts",
+                        severity="high",
+                        category="artifact-integrity",
+                        owner_step="producer-pipeline",
+                        evidence_path=str(out_dir),
+                        message="The reviewer could not find the required producer artifacts.",
+                        suggested_fix="Re-run scripts/sc/run_review_pipeline.py so summary, execution-context, and repair-guide are regenerated.",
+                        commands=[],
+                    )
+                ],
+            }
+        )
         payload = make_review_payload(
             task_id="unknown",
             run_id="unknown",
@@ -168,6 +186,7 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
             failed_step="",
             review_verdict="block",
             reviewer=reviewer,
+            explain=build_agent_review_explain(signal),
             findings=[
                 _build_finding(
                     finding_id="missing-producer-artifacts",
@@ -222,6 +241,12 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
     elif findings:
         review_verdict = "needs-fix"
 
+    signal = summarize_agent_review(
+        {
+            "review_verdict": review_verdict,
+            "findings": findings,
+        }
+    )
     payload = make_review_payload(
         task_id=str(summary.get("task_id") or execution_context.get("task_id") or ""),
         run_id=str(summary.get("run_id") or execution_context.get("run_id") or ""),
@@ -229,6 +254,7 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
         pipeline_status=pipeline_status,
         failed_step=failed_step_name,
         review_verdict=review_verdict,
+        explain=build_agent_review_explain(signal),
         findings=findings,
         reviewer=reviewer,
     )

@@ -9,33 +9,56 @@ Run a deterministic local review pipeline with one shared run_id:
 from __future__ import annotations
 
 import argparse
+import json
 import os
-import re
 import shutil
 import uuid
 from pathlib import Path
 from typing import Any
 
 from agent_to_agent_review import write_agent_review
+from _agent_review_policy import apply_agent_review_policy, apply_agent_review_signal
 from _delivery_profile import (
     default_security_profile_for_delivery,
     profile_acceptance_defaults,
-    profile_agent_review_defaults,
     profile_llm_review_defaults,
     resolve_delivery_profile,
 )
+from _marathon_policy import (
+    apply_context_refresh_policy,
+    cap_step_timeout,
+    mark_wall_time_exceeded,
+    refresh_diff_stats,
+    wall_time_exceeded,
+)
+from _marathon_state import (
+    build_forked_state,
+    build_initial_state,
+    can_retry_failed_step,
+    load_marathon_state,
+    mark_aborted,
+    record_step_result,
+    resolve_existing_out_dir,
+    resume_state,
+    save_marathon_state,
+    step_is_already_complete,
+)
+from _pipeline_plan import build_pipeline_steps
+from _pipeline_support import (
+    load_existing_summary as _load_existing_summary,
+    resolve_agent_review_mode as _resolve_agent_review_mode,
+    run_step as _run_step,
+    upsert_step as _upsert_step,
+)
 from _repair_guidance import build_execution_context, build_repair_guide, render_repair_guide_markdown
 from _summary_schema import SummarySchemaError, validate_pipeline_summary
-from _util import repo_root, run_cmd, today_str, write_json, write_text
-
-OUT_RE = re.compile(r"\bout=([^\r\n]+)")
-AGENT_REVIEW_MODES = {"skip", "warn", "require"}
-
+from _util import repo_root, today_str, write_json, write_text
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run task review pipeline with strict run_id binding.")
     parser.add_argument("--task-id", required=True, help="Task id (e.g. 1 or 1.3).")
-    parser.add_argument("--run-id", default=None, help="Optional fixed run id. Auto-generated if omitted.")
+    parser.add_argument("--run-id", default=None, help="New run id for normal/fork mode, or selector for resume/abort.")
+    parser.add_argument("--fork-from-run-id", default=None, help="Optional source run id selector when using --fork.")
     parser.add_argument("--godot-bin", default=None, help="Godot binary path (or env GODOT_BIN).")
     parser.add_argument("--delivery-profile", default=None, choices=["playable-ea", "fast-ship", "standard"], help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).")
     parser.add_argument("--security-profile", default=None, choices=["strict", "host-safe"])
@@ -51,24 +74,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--llm-diff-mode", default="full", choices=["full", "summary", "none"], help="llm_review --diff-mode value.")
     parser.add_argument("--llm-no-uncommitted", action="store_true", help="Do not pass --uncommitted to llm_review.")
     parser.add_argument("--llm-strict", action="store_true", help="Pass --strict to llm_review.")
-    parser.add_argument(
-        "--review-template",
-        default="scripts/sc/templates/llm_review/bmad-godot-review-template.txt",
-        help="llm_review template path.",
-    )
+    parser.add_argument("--review-template", default="scripts/sc/templates/llm_review/bmad-godot-review-template.txt", help="llm_review template path.")
+    parser.add_argument("--resume", action="store_true", help="Resume the latest matching run for this task.")
+    parser.add_argument("--abort", action="store_true", help="Abort the latest matching run for this task without running steps.")
+    parser.add_argument("--fork", action="store_true", help="Fork the latest matching run into a new run id and continue there.")
+    parser.add_argument("--max-step-retries", type=int, default=0, help="Automatic retry count for a failing step inside this invocation.")
+    parser.add_argument("--max-wall-time-sec", type=int, default=0, help="Per-run wall-time budget. 0 disables the budget.")
+    parser.add_argument("--context-refresh-after-failures", type=int, default=3, help="Flag context refresh when one step fails this many times. 0 disables.")
+    parser.add_argument("--context-refresh-after-resumes", type=int, default=2, help="Flag context refresh when resume count reaches this value. 0 disables.")
+    parser.add_argument("--context-refresh-after-diff-lines", type=int, default=300, help="Flag context refresh when working-tree diff grows by this many lines from the run baseline. 0 disables.")
+    parser.add_argument("--context-refresh-after-diff-categories", type=int, default=2, help="Flag context refresh when new diff categories added from the run baseline reach this count. 0 disables.")
     parser.add_argument("--dry-run", action="store_true", help="Print planned commands without executing.")
-    parser.add_argument(
-        "--allow-overwrite",
-        action="store_true",
-        help="Allow reusing an existing task+run_id output directory by deleting it first.",
-    )
-    parser.add_argument(
-        "--force-new-run-id",
-        action="store_true",
-        help="When task+run_id directory exists, auto-generate a new run_id instead of failing.",
-    )
+    parser.add_argument("--allow-overwrite", action="store_true", help="Allow reusing an existing task+run_id output directory by deleting it first.")
+    parser.add_argument("--force-new-run-id", action="store_true", help="When task+run_id directory exists, auto-generate a new run_id instead of failing.")
     return parser
-
 
 def _task_root_id(task_id: str) -> str:
     return str(task_id).strip().split(".", 1)[0].strip()
@@ -81,7 +100,6 @@ def _prepare_env(run_id: str, delivery_profile: str, security_profile: str) -> N
     os.environ["DELIVERY_PROFILE"] = delivery_profile
     os.environ["SECURITY_PROFILE"] = security_profile
 
-
 def _pipeline_run_dir(task_id: str, run_id: str) -> Path:
     return repo_root() / "logs" / "ci" / today_str() / f"sc-review-pipeline-task-{task_id}-{run_id}"
 
@@ -89,9 +107,9 @@ def _pipeline_run_dir(task_id: str, run_id: str) -> Path:
 def _pipeline_latest_index_path(task_id: str) -> Path:
     return repo_root() / "logs" / "ci" / today_str() / f"sc-review-pipeline-task-{task_id}" / "latest.json"
 
-
 def _write_latest_index(*, task_id: str, run_id: str, out_dir: Path, status: str) -> None:
-    index_payload: dict[str, Any] = {
+    path = _pipeline_latest_index_path(task_id)
+    payload = {
         "task_id": task_id,
         "run_id": run_id,
         "status": status,
@@ -101,64 +119,86 @@ def _write_latest_index(*, task_id: str, run_id: str, out_dir: Path, status: str
         "execution_context_path": str(out_dir / "execution-context.json"),
         "repair_guide_json_path": str(out_dir / "repair-guide.json"),
         "repair_guide_md_path": str(out_dir / "repair-guide.md"),
+        "marathon_state_path": str(out_dir / "marathon-state.json"),
     }
-    write_json(_pipeline_latest_index_path(task_id), index_payload)
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            existing = {}
+        same_run = (
+            isinstance(existing, dict)
+            and str(existing.get("run_id") or "").strip() == run_id
+            and str(existing.get("latest_out_dir") or "").strip() == str(out_dir)
+        )
+        if same_run:
+            for key in ("agent_review_json_path", "agent_review_md_path"):
+                value = str(existing.get(key) or "").strip()
+                if value:
+                    payload[key] = value
+    write_json(path, payload)
 
 
-def _run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> dict[str, Any]:
-    rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=timeout_sec)
-    log_path = out_dir / f"{name}.log"
-    write_text(log_path, out)
-    reported_out_dir = ""
-    summary_file = ""
-    for line in reversed(out.splitlines()):
-        matched = OUT_RE.search(line)
-        if not matched:
-            continue
-        candidate = matched.group(1).strip().strip("\"'").strip()
-        if not candidate:
-            continue
-        candidate_path = Path(candidate)
-        if candidate_path.exists():
-            reported_out_dir = str(candidate_path)
-            summary_candidate = candidate_path / "summary.json"
-            if summary_candidate.exists():
-                summary_file = str(summary_candidate)
-            break
-    return {
-        "name": name,
-        "cmd": cmd,
-        "rc": rc,
-        "status": "ok" if rc == 0 else "fail",
-        "log": str(log_path),
-        "reported_out_dir": reported_out_dir,
-        "summary_file": summary_file,
-    }
+def _allocate_out_dir(task_id: str, requested_run_id: str, *, force_new_run_id: bool, allow_overwrite: bool) -> tuple[str, Path]:
+    run_id = requested_run_id
+    out_dir = _pipeline_run_dir(task_id, run_id)
+    if not out_dir.exists():
+        return run_id, out_dir
+    if force_new_run_id:
+        original_run_id = run_id
+        attempts = 0
+        while out_dir.exists():
+            run_id = uuid.uuid4().hex
+            out_dir = _pipeline_run_dir(task_id, run_id)
+            attempts += 1
+            if attempts > 16:
+                raise RuntimeError("failed to allocate a unique run_id after 16 attempts")
+        print(f"[sc-review-pipeline] INFO: run_id collision detected, remapped {original_run_id} -> {run_id}")
+        return run_id, out_dir
+    if not allow_overwrite:
+        raise FileExistsError("output directory already exists for this task/run_id")
+    shutil.rmtree(out_dir, ignore_errors=False)
+    return run_id, out_dir
 
+_refresh_diff_stats = refresh_diff_stats
 
-def _resolve_agent_review_mode(delivery_profile: str) -> str:
-    defaults = profile_agent_review_defaults(delivery_profile)
-    mode = str(defaults.get("mode") or "warn").strip().lower()
-    return mode if mode in AGENT_REVIEW_MODES else "warn"
+def _apply_runtime_policy(state: dict[str, Any], *, failure_threshold: int, resume_threshold: int, diff_lines_threshold: int, diff_categories_threshold: int) -> dict[str, Any]:
+    return apply_context_refresh_policy(
+        _refresh_diff_stats(state),
+        failure_threshold=failure_threshold,
+        resume_threshold=resume_threshold,
+        diff_lines_threshold=diff_lines_threshold,
+        diff_categories_threshold=diff_categories_threshold,
+    )
 
-
-def _run_agent_review_post_hook(*, out_dir: Path, mode: str) -> int:
+def _run_agent_review_post_hook(*, out_dir: Path, mode: str, marathon_state: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     payload, resolve_errors, validation_errors = write_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
+    updated_state = apply_agent_review_policy(marathon_state, payload)
+    action = str(((updated_state.get("agent_review") or {}).get("recommended_action")) or "").strip() or "none"
     lines: list[str] = []
     for item in resolve_errors:
         lines.append(f"[sc-agent-review] ERROR: {item}")
     for item in validation_errors:
         lines.append(f"[sc-agent-review] ERROR: {item}")
-    lines.append(f"SC_AGENT_REVIEW status={payload['review_verdict']} out={out_dir}")
-    log_text = "\n".join(lines) + "\n"
-    write_text(out_dir / "sc-agent-review.log", log_text)
-    print(log_text.rstrip())
+    lines.append(f"SC_AGENT_REVIEW status={payload['review_verdict']} action={action} out={out_dir}")
+    write_text(out_dir / "sc-agent-review.log", "\n".join(lines) + "\n")
+    print("\n".join(lines))
     if resolve_errors or validation_errors:
-        return 2
+        return 2, updated_state
     verdict = str(payload.get("review_verdict") or "").strip().lower()
     if mode == "require" and verdict in {"needs-fix", "block"}:
-        return 1
-    return 0
+        return 1, updated_state
+    return 0, updated_state
+
+
+def _load_source_run(task_id: str, selector_run_id: str | None) -> tuple[Path, dict[str, Any], dict[str, Any] | None]:
+    out_dir = resolve_existing_out_dir(task_id=task_id, run_id=selector_run_id, preferred_latest_index=_pipeline_latest_index_path(task_id))
+    if out_dir is None:
+        raise FileNotFoundError("no existing pipeline run found")
+    summary = _load_existing_summary(out_dir) or {}
+    if not summary:
+        raise RuntimeError(f"existing summary.json is missing or invalid: {out_dir}")
+    return out_dir, summary, load_marathon_state(out_dir)
 
 
 def main() -> int:
@@ -167,9 +207,11 @@ def main() -> int:
     if not task_id:
         print("[sc-review-pipeline] ERROR: invalid --task-id")
         return 2
-
     if bool(args.allow_overwrite) and bool(args.force_new_run_id):
         print("[sc-review-pipeline] ERROR: --allow-overwrite and --force-new-run-id are mutually exclusive.")
+        return 2
+    if sum(bool(x) for x in (args.resume, args.abort, args.fork)) > 1:
+        print("[sc-review-pipeline] ERROR: --resume, --abort, and --fork are mutually exclusive.")
         return 2
 
     delivery_profile = resolve_delivery_profile(args.delivery_profile)
@@ -185,56 +227,96 @@ def main() -> int:
 
     requested_run_id = str(args.run_id or "").strip() or uuid.uuid4().hex
     run_id = requested_run_id
+    summary: dict[str, Any]
 
-    out_dir = _pipeline_run_dir(task_id, run_id)
-    if out_dir.exists():
-        if bool(args.force_new_run_id):
-            original_run_id = run_id
-            attempts = 0
-            while out_dir.exists():
-                run_id = uuid.uuid4().hex
-                out_dir = _pipeline_run_dir(task_id, run_id)
-                attempts += 1
-                if attempts > 16:
-                    print("[sc-review-pipeline] ERROR: failed to allocate a unique run_id after 16 attempts.")
-                    return 2
-            print(f"[sc-review-pipeline] INFO: run_id collision detected, remapped {original_run_id} -> {run_id}")
-        elif not bool(args.allow_overwrite):
-            print(
-                "[sc-review-pipeline] ERROR: output directory already exists for this task/run_id. "
-                "Use a new --run-id, --force-new-run-id, or pass --allow-overwrite."
+    try:
+        if args.resume or args.abort:
+            out_dir, summary, marathon_state = _load_source_run(task_id, (args.run_id or "").strip() or None)
+            run_id = str(summary.get("run_id") or "").strip() or run_id
+            requested_run_id = str(summary.get("requested_run_id") or run_id).strip() or run_id
+        elif args.fork:
+            source_out_dir, source_summary, source_state = _load_source_run(task_id, (args.fork_from_run_id or "").strip() or None)
+            run_id, out_dir = _allocate_out_dir(task_id, requested_run_id, force_new_run_id=bool(args.force_new_run_id), allow_overwrite=bool(args.allow_overwrite))
+            summary, marathon_state = build_forked_state(
+                source_out_dir=source_out_dir,
+                source_summary=source_summary,
+                source_state=source_state,
+                new_run_id=run_id,
+                requested_run_id=requested_run_id,
+                max_step_retries=args.max_step_retries,
+                max_wall_time_sec=args.max_wall_time_sec,
             )
-            return 2
         else:
-            try:
-                shutil.rmtree(out_dir, ignore_errors=False)
-            except Exception as exc:  # noqa: BLE001
-                print(f"[sc-review-pipeline] ERROR: failed to clear existing output directory: {exc}")
-                return 2
+            run_id, out_dir = _allocate_out_dir(task_id, requested_run_id, force_new_run_id=bool(args.force_new_run_id), allow_overwrite=bool(args.allow_overwrite))
+            summary = {
+                "cmd": "sc-review-pipeline",
+                "task_id": task_id,
+                "requested_run_id": requested_run_id,
+                "run_id": run_id,
+                "allow_overwrite": bool(args.allow_overwrite),
+                "force_new_run_id": bool(args.force_new_run_id),
+                "status": "ok",
+                "steps": [],
+            }
+            marathon_state = None
+    except FileExistsError:
+        print("[sc-review-pipeline] ERROR: output directory already exists for this task/run_id. Use a new --run-id, --force-new-run-id, or pass --allow-overwrite.")
+        return 2
+    except RuntimeError as exc:
+        print(f"[sc-review-pipeline] ERROR: {exc}")
+        return 2
+    except FileNotFoundError:
+        print("[sc-review-pipeline] ERROR: no existing pipeline run found for resume/abort/fork.")
+        return 2
 
     _prepare_env(run_id, delivery_profile, security_profile)
     write_text(out_dir / "run_id.txt", run_id + "\n")
 
-    summary: dict[str, Any] = {
-        "cmd": "sc-review-pipeline",
-        "task_id": task_id,
-        "requested_run_id": requested_run_id,
-        "run_id": run_id,
-        "allow_overwrite": bool(args.allow_overwrite),
-        "force_new_run_id": bool(args.force_new_run_id),
-        "status": "ok",
-        "steps": [],
-    }
+    marathon_state = marathon_state or load_marathon_state(out_dir) or build_initial_state(
+        task_id=task_id,
+        run_id=run_id,
+        requested_run_id=requested_run_id,
+        max_step_retries=args.max_step_retries,
+        max_wall_time_sec=args.max_wall_time_sec,
+        summary=summary,
+    )
+    if args.abort:
+        save_marathon_state(out_dir, mark_aborted(marathon_state, reason="operator_requested"))
+        _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status="aborted")
+        print(f"SC_REVIEW_PIPELINE status=aborted out={out_dir}")
+        return 0
+    if args.resume:
+        if str(marathon_state.get("status") or "").strip().lower() == "aborted":
+            print("[sc-review-pipeline] ERROR: the selected run is aborted and cannot be resumed.")
+            return 2
+        marathon_state = resume_state(marathon_state, max_step_retries=args.max_step_retries, max_wall_time_sec=args.max_wall_time_sec)
+    marathon_state = _apply_runtime_policy(
+        marathon_state,
+        failure_threshold=args.context_refresh_after_failures,
+        resume_threshold=args.context_refresh_after_resumes,
+        diff_lines_threshold=args.context_refresh_after_diff_lines,
+        diff_categories_threshold=args.context_refresh_after_diff_categories,
+    )
 
     schema_error_log = out_dir / "summary-schema-validation-error.log"
 
     def persist() -> bool:
+        nonlocal marathon_state
+        marathon_state = _apply_runtime_policy(
+            marathon_state,
+            failure_threshold=args.context_refresh_after_failures,
+            resume_threshold=args.context_refresh_after_resumes,
+            diff_lines_threshold=args.context_refresh_after_diff_lines,
+            diff_categories_threshold=args.context_refresh_after_diff_categories,
+        )
+        if isinstance(marathon_state.get("agent_review"), dict):
+            marathon_state = apply_agent_review_signal(marathon_state, marathon_state["agent_review"])
         try:
             validate_pipeline_summary(summary)
         except SummarySchemaError as exc:
-            error_message = f"{exc}\n"
-            write_text(schema_error_log, error_message)
+            write_text(schema_error_log, f"{exc}\n")
             write_json(out_dir / "summary.invalid.json", summary)
+            save_marathon_state(out_dir, marathon_state)
             _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status="fail")
             print(f"[sc-review-pipeline] ERROR: summary schema validation failed. details={schema_error_log}")
             return False
@@ -244,26 +326,30 @@ def main() -> int:
         if invalid_summary_path.exists():
             invalid_summary_path.unlink(missing_ok=True)
         write_json(out_dir / "summary.json", summary)
-        execution_context = build_execution_context(
-            task_id=task_id,
-            requested_run_id=requested_run_id,
-            run_id=run_id,
-            out_dir=out_dir,
-            delivery_profile=delivery_profile,
-            security_profile=security_profile,
-            summary=summary,
+        save_marathon_state(out_dir, marathon_state)
+        write_json(
+            out_dir / "execution-context.json",
+            build_execution_context(
+                task_id=task_id,
+                requested_run_id=requested_run_id,
+                run_id=run_id,
+                out_dir=out_dir,
+                delivery_profile=delivery_profile,
+                security_profile=security_profile,
+                summary=summary,
+                marathon_state=marathon_state,
+            ),
         )
-        write_json(out_dir / "execution-context.json", execution_context)
-        repair_guide = build_repair_guide(summary, task_id=task_id, out_dir=out_dir)
+        repair_guide = build_repair_guide(summary, task_id=task_id, out_dir=out_dir, marathon_state=marathon_state)
         write_json(out_dir / "repair-guide.json", repair_guide)
         write_text(out_dir / "repair-guide.md", render_repair_guide_markdown(repair_guide))
         _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status=str(summary.get("status", "fail")))
         return True
 
     def add_step(step: dict[str, Any]) -> bool:
-        summary["steps"].append(step)
-        if step.get("status") == "fail":
-            summary["status"] = "fail"
+        nonlocal marathon_state
+        _upsert_step(summary, step)
+        marathon_state = record_step_result(marathon_state, step)
         if not persist():
             return False
         return step.get("status") != "fail"
@@ -271,109 +357,63 @@ def main() -> int:
     if not persist():
         return 2
 
-    steps: list[tuple[str, list[str], int, bool]] = []
+    steps = build_pipeline_steps(
+        args=args,
+        task_id=task_id,
+        run_id=run_id,
+        delivery_profile=delivery_profile,
+        security_profile=security_profile,
+        acceptance_defaults=acceptance_defaults,
+        llm_agents=llm_agents,
+        llm_timeout_sec=llm_timeout_sec,
+        llm_agent_timeout_sec=llm_agent_timeout_sec,
+        llm_semantic_gate=llm_semantic_gate,
+        llm_strict=llm_strict,
+    )
 
-    test_cmd = ["py", "-3", "scripts/sc/test.py", "--task-id", task_id, "--run-id", run_id, "--delivery-profile", delivery_profile]
-    if args.godot_bin:
-        test_cmd += ["--godot-bin", str(args.godot_bin)]
-    steps.append(("sc-test", test_cmd, 1800, args.skip_test))
-
-    acceptance_cmd = [
-        "py",
-        "-3",
-        "scripts/sc/acceptance_check.py",
-        "--task-id",
-        task_id,
-        "--run-id",
-        run_id,
-        "--out-per-task",
-        "--delivery-profile",
-        delivery_profile,
-        "--security-profile",
-        security_profile,
-    ]
-    if bool(acceptance_defaults.get("strict_adr_status", False)):
-        acceptance_cmd.append("--strict-adr-status")
-    if bool(acceptance_defaults.get("strict_test_quality", False)):
-        acceptance_cmd.append("--strict-test-quality")
-    if bool(acceptance_defaults.get("strict_quality_rules", False)):
-        acceptance_cmd.append("--strict-quality-rules")
-    if bool(acceptance_defaults.get("require_task_test_refs", False)):
-        acceptance_cmd.append("--require-task-test-refs")
-    if bool(acceptance_defaults.get("require_executed_refs", False)):
-        acceptance_cmd.append("--require-executed-refs")
-    if bool(acceptance_defaults.get("require_headless_e2e", False)):
-        acceptance_cmd.append("--require-headless-e2e")
-    subtasks_mode = str(acceptance_defaults.get("subtasks_coverage") or "skip")
-    if subtasks_mode in {"skip", "warn", "require"} and subtasks_mode != "skip":
-        acceptance_cmd += ["--subtasks-coverage", subtasks_mode]
-    perf_p95_ms = int(acceptance_defaults.get("perf_p95_ms") or 0)
-    if perf_p95_ms > 0:
-        acceptance_cmd += ["--perf-p95-ms", str(perf_p95_ms)]
-    if args.godot_bin:
-        acceptance_cmd += ["--godot-bin", str(args.godot_bin)]
-    steps.append(("sc-acceptance-check", acceptance_cmd, 1800, args.skip_acceptance))
-
-    llm_cmd = [
-        "py",
-        "-3",
-        "scripts/sc/llm_review.py",
-        "--task-id",
-        task_id,
-        "--security-profile",
-        security_profile,
-        "--review-profile",
-        "bmad-godot",
-        "--review-template",
-        args.review_template,
-        "--semantic-gate",
-        llm_semantic_gate,
-        "--agents",
-        llm_agents,
-        "--base",
-        args.llm_base,
-        "--diff-mode",
-        args.llm_diff_mode,
-        "--timeout-sec",
-        str(llm_timeout_sec),
-        "--agent-timeout-sec",
-        str(llm_agent_timeout_sec),
-    ]
-    if not args.llm_no_uncommitted:
-        llm_cmd.append("--uncommitted")
-    if llm_strict:
-        llm_cmd.append("--strict")
-    steps.append(("sc-llm-review", llm_cmd, max(300, int(llm_timeout_sec) + 120), args.skip_llm_review))
-
+    halt_pipeline = False
     for step_name, cmd, timeout_sec, skipped in steps:
+        if (args.resume or args.fork) and step_is_already_complete(marathon_state, step_name):
+            continue
         if skipped:
             if not add_step({"name": step_name, "status": "skipped", "rc": 0, "cmd": cmd}):
-                if schema_error_log.exists():
-                    return 2
-                break
+                return 2 if schema_error_log.exists() else 1
             continue
         if args.dry_run:
             print(f"[dry-run] {step_name}: {' '.join(cmd)}")
             if not add_step({"name": step_name, "status": "planned", "rc": 0, "cmd": cmd}):
-                if schema_error_log.exists():
-                    return 2
-                break
+                return 2 if schema_error_log.exists() else 1
             continue
-
-        ok = add_step(_run_step(out_dir=out_dir, name=step_name, cmd=cmd, timeout_sec=timeout_sec))
-        if not ok:
+        while True:
+            if wall_time_exceeded(marathon_state):
+                summary["status"] = "fail"
+                marathon_state = mark_wall_time_exceeded(marathon_state)
+                halt_pipeline = True
+                break
+            step_timeout = cap_step_timeout(timeout_sec, marathon_state)
+            ok = add_step(_run_step(out_dir=out_dir, name=step_name, cmd=cmd, timeout_sec=step_timeout))
+            if ok:
+                break
             if schema_error_log.exists():
                 return 2
+            if not can_retry_failed_step(marathon_state, step_name):
+                break
+        if halt_pipeline:
+            break
+        current_step = (marathon_state.get("steps") or {}).get(step_name, {})
+        if str(current_step.get("status") or "") == "fail":
             break
 
+    if halt_pipeline and not persist():
+        return 2
     if not persist():
         return 2
-
     if not args.dry_run and not args.skip_agent_review and agent_review_mode != "skip":
-        post_hook_rc = _run_agent_review_post_hook(out_dir=out_dir, mode=agent_review_mode)
+        post_hook_rc, marathon_state = _run_agent_review_post_hook(out_dir=out_dir, mode=agent_review_mode, marathon_state=marathon_state)
+        if not persist():
+            return 2
         if post_hook_rc != 0:
             return post_hook_rc
-
     print(f"SC_REVIEW_PIPELINE status={summary['status']} out={out_dir}")
     return 0 if summary["status"] == "ok" else 1
 

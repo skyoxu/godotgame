@@ -7,6 +7,7 @@ from _util import today_str
 
 REVIEW_VERDICTS = {"pass", "needs-fix", "block"}
 FINDING_SEVERITIES = {"low", "medium", "high"}
+RECOMMENDED_ACTIONS = {"none", "resume", "refresh", "fork"}
 
 
 def make_review_payload(
@@ -18,6 +19,7 @@ def make_review_payload(
     failed_step: str,
     review_verdict: str,
     findings: list[dict[str, Any]],
+    explain: dict[str, Any],
     reviewer: str = "artifact-reviewer",
 ) -> dict[str, Any]:
     return {
@@ -31,6 +33,7 @@ def make_review_payload(
         "pipeline_status": str(pipeline_status or "").strip(),
         "failed_step": str(failed_step or "").strip(),
         "review_verdict": str(review_verdict or "").strip(),
+        "explain": explain,
         "findings": findings,
     }
 
@@ -51,6 +54,7 @@ def validate_review_payload(payload: dict[str, Any]) -> list[str]:
         "pipeline_status",
         "failed_step",
         "review_verdict",
+        "explain",
         "findings",
     }
     for key in required:
@@ -75,6 +79,22 @@ def validate_review_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("$.pipeline_status: must be non-empty string")
     if str(payload.get("review_verdict") or "").strip() not in REVIEW_VERDICTS:
         errors.append(f"$.review_verdict: must be one of {sorted(REVIEW_VERDICTS)}")
+    explain = payload.get("explain")
+    if not isinstance(explain, dict):
+        errors.append("$.explain: must be an object")
+    else:
+        required_explain = {"recommended_action", "summary", "reasons", "owner_steps", "categories", "semantic_axes"}
+        for key in required_explain:
+            if key not in explain:
+                errors.append(f"$.explain.{key}: missing required property")
+        if str(explain.get("recommended_action") or "").strip() not in RECOMMENDED_ACTIONS:
+            errors.append(f"$.explain.recommended_action: must be one of {sorted(RECOMMENDED_ACTIONS)}")
+        if not str(explain.get("summary") or "").strip():
+            errors.append("$.explain.summary: must be non-empty string")
+        for key in ("reasons", "owner_steps", "categories", "semantic_axes"):
+            value = explain.get(key)
+            if not isinstance(value, list) or any(not str(item or "").strip() for item in value):
+                errors.append(f"$.explain.{key}: must be an array of non-empty strings")
 
     findings = payload.get("findings")
     if not isinstance(findings, list):
@@ -125,6 +145,10 @@ def render_review_markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- pipeline_status: {payload.get('pipeline_status', '')}")
     lines.append(f"- failed_step: {payload.get('failed_step', '')}")
     lines.append(f"- review_verdict: {payload.get('review_verdict', '')}")
+    explain = payload.get("explain") or {}
+    lines.append(f"- recommended_action: {explain.get('recommended_action', '')}")
+    if str(explain.get("summary") or "").strip():
+        lines.append(f"- explain: {explain.get('summary', '')}")
     lines.append("")
     findings = payload.get("findings") or []
     if not findings:
