@@ -141,6 +141,55 @@ class AgentToAgentReviewTests(unittest.TestCase):
             ids = {item["finding_id"] for item in payload["findings"]}
             self.assertNotIn("llm-summary-invalid", ids)
 
+    def test_build_agent_review_should_surface_denied_fork_approval_in_payload_and_explain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir)
+            summary = {
+                "task_id": "1",
+                "run_id": "abc123",
+                "status": "ok",
+                "steps": [
+                    {"name": "sc-test", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/test.py"], "log": str(out_dir / "sc-test.log")},
+                    {"name": "sc-acceptance-check", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/acceptance_check.py"], "log": str(out_dir / "acc.log")},
+                    {"name": "sc-llm-review", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/llm_review.py"], "log": str(out_dir / "llm.log")},
+                ],
+            }
+            execution_context = {"task_id": "1", "run_id": "abc123", "status": "ok", "failed_step": ""}
+            repair_guide = {
+                "status": "needs-fix",
+                "approval": {
+                    "soft_gate": True,
+                    "required_action": "fork",
+                    "status": "denied",
+                    "decision": "denied",
+                    "reason": "Do not fork this run",
+                    "request_path": str(out_dir / "approval-request.json"),
+                    "response_path": str(out_dir / "approval-response.json"),
+                },
+                "recommendations": [
+                    {
+                        "id": "approval-fork-denied",
+                        "title": "Fork recovery was denied",
+                        "commands": ["py -3 scripts/sc/run_review_pipeline.py --task-id 1 --resume"],
+                    }
+                ],
+            }
+            (out_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (out_dir / "execution-context.json").write_text(json.dumps(execution_context, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (out_dir / "repair-guide.json").write_text(json.dumps(repair_guide, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (out_dir / "sc-test.log").write_text("ok\n", encoding="utf-8")
+            (out_dir / "acc.log").write_text("ok\n", encoding="utf-8")
+            (out_dir / "llm.log").write_text("ok\n", encoding="utf-8")
+
+            payload, errors = build_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
+
+            self.assertEqual([], errors)
+            self.assertEqual("denied", payload["approval"]["status"])
+            self.assertEqual("fork", payload["approval"]["required_action"])
+            self.assertFalse(payload["explain"]["approval_blocks_recommended_action"])
+            self.assertEqual("denied", payload["explain"]["approval_status"])
+            self.assertIn("Approval status is denied", payload["explain"]["summary"])
+
 
 if __name__ == "__main__":
     unittest.main()

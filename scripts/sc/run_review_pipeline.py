@@ -24,6 +24,8 @@ from _delivery_profile import (
     profile_llm_review_defaults,
     resolve_delivery_profile,
 )
+from _approval_contract import approval_request_path, approval_response_path
+from _harness_capabilities import harness_capabilities_path, write_harness_capabilities
 from _marathon_policy import (
     apply_context_refresh_policy,
     cap_step_timeout,
@@ -43,6 +45,8 @@ from _marathon_state import (
     save_marathon_state,
     step_is_already_complete,
 )
+from _pipeline_approval import sync_soft_approval_sidecars
+from _pipeline_events import append_run_event, run_events_path
 from _pipeline_plan import build_pipeline_steps
 from _pipeline_support import (
     load_existing_summary as _load_existing_summary,
@@ -120,7 +124,13 @@ def _write_latest_index(*, task_id: str, run_id: str, out_dir: Path, status: str
         "repair_guide_json_path": str(out_dir / "repair-guide.json"),
         "repair_guide_md_path": str(out_dir / "repair-guide.md"),
         "marathon_state_path": str(out_dir / "marathon-state.json"),
+        "run_events_path": str(run_events_path(out_dir)),
+        "harness_capabilities_path": str(harness_capabilities_path(out_dir)),
     }
+    if approval_request_path(out_dir).exists():
+        payload["approval_request_path"] = str(approval_request_path(out_dir))
+    if approval_request_path(out_dir).exists() and approval_response_path(out_dir).exists():
+        payload["approval_response_path"] = str(approval_response_path(out_dir))
     if path.exists():
         try:
             existing = json.loads(path.read_text(encoding="utf-8"))
@@ -170,6 +180,41 @@ def _apply_runtime_policy(state: dict[str, Any], *, failure_threshold: int, resu
         diff_lines_threshold=diff_lines_threshold,
         diff_categories_threshold=diff_categories_threshold,
     )
+
+
+def _append_step_event(
+    *,
+    out_dir: Path,
+    task_id: str,
+    run_id: str,
+    delivery_profile: str,
+    security_profile: str,
+    step: dict[str, Any],
+) -> None:
+    status = str(step.get("status") or "").strip().lower()
+    event_name = {
+        "planned": "step_planned",
+        "skipped": "step_skipped",
+        "ok": "step_completed",
+        "fail": "step_failed",
+    }.get(status, "step_updated")
+    details: dict[str, Any] = {}
+    for key in ("rc", "log", "summary_file", "reported_out_dir"):
+        value = step.get(key)
+        if value not in (None, ""):
+            details[key] = value
+    append_run_event(
+        out_dir=out_dir,
+        event=event_name,
+        task_id=task_id,
+        run_id=run_id,
+        delivery_profile=delivery_profile,
+        security_profile=security_profile,
+        step_name=str(step.get("name") or "").strip() or None,
+        status=status or None,
+        details=details,
+    )
+
 
 def _run_agent_review_post_hook(*, out_dir: Path, mode: str, marathon_state: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     payload, resolve_errors, validation_errors = write_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
@@ -280,7 +325,25 @@ def main() -> int:
         max_wall_time_sec=args.max_wall_time_sec,
         summary=summary,
     )
+    write_harness_capabilities(
+        out_dir=out_dir,
+        cmd="sc-review-pipeline",
+        task_id=task_id,
+        run_id=run_id,
+        delivery_profile=delivery_profile,
+        security_profile=security_profile,
+    )
     if args.abort:
+        append_run_event(
+            out_dir=out_dir,
+            event="run_aborted",
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+            status="aborted",
+            details={"reason": "operator_requested"},
+        )
         save_marathon_state(out_dir, mark_aborted(marathon_state, reason="operator_requested"))
         _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status="aborted")
         print(f"SC_REVIEW_PIPELINE status=aborted out={out_dir}")
@@ -290,6 +353,19 @@ def main() -> int:
             print("[sc-review-pipeline] ERROR: the selected run is aborted and cannot be resumed.")
             return 2
         marathon_state = resume_state(marathon_state, max_step_retries=args.max_step_retries, max_wall_time_sec=args.max_wall_time_sec)
+    append_run_event(
+        out_dir=out_dir,
+        event="run_resumed" if args.resume else "run_forked" if args.fork else "run_started",
+        task_id=task_id,
+        run_id=run_id,
+        delivery_profile=delivery_profile,
+        security_profile=security_profile,
+        status=str(summary.get("status") or "ok"),
+        details={
+            "requested_run_id": requested_run_id,
+            "mode": "resume" if args.resume else "fork" if args.fork else "start",
+        },
+    )
     marathon_state = _apply_runtime_policy(
         marathon_state,
         failure_threshold=args.context_refresh_after_failures,
@@ -325,8 +401,35 @@ def main() -> int:
             schema_error_log.unlink(missing_ok=True)
         if invalid_summary_path.exists():
             invalid_summary_path.unlink(missing_ok=True)
+        write_harness_capabilities(
+            out_dir=out_dir,
+            cmd="sc-review-pipeline",
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+        )
         write_json(out_dir / "summary.json", summary)
         save_marathon_state(out_dir, marathon_state)
+        provisional_repair_guide = build_repair_guide(summary, task_id=task_id, out_dir=out_dir, marathon_state=marathon_state)
+        approval_state = sync_soft_approval_sidecars(
+            out_dir=out_dir,
+            task_id=task_id,
+            run_id=run_id,
+            summary=summary,
+            repair_guide=provisional_repair_guide,
+            marathon_state=marathon_state,
+            explicit_fork=bool(args.fork),
+        )
+        repair_guide = build_repair_guide(
+            summary,
+            task_id=task_id,
+            out_dir=out_dir,
+            marathon_state=marathon_state,
+            approval_state=approval_state,
+        )
+        write_json(out_dir / "repair-guide.json", repair_guide)
+        write_text(out_dir / "repair-guide.md", render_repair_guide_markdown(repair_guide))
         write_json(
             out_dir / "execution-context.json",
             build_execution_context(
@@ -338,11 +441,22 @@ def main() -> int:
                 security_profile=security_profile,
                 summary=summary,
                 marathon_state=marathon_state,
+                approval_state=approval_state,
             ),
         )
-        repair_guide = build_repair_guide(summary, task_id=task_id, out_dir=out_dir, marathon_state=marathon_state)
-        write_json(out_dir / "repair-guide.json", repair_guide)
-        write_text(out_dir / "repair-guide.md", render_repair_guide_markdown(repair_guide))
+        for event_payload in approval_state.get("events") or []:
+            if not isinstance(event_payload, dict):
+                continue
+            append_run_event(
+                out_dir=out_dir,
+                event=str(event_payload.get("event") or "approval_updated"),
+                task_id=task_id,
+                run_id=run_id,
+                delivery_profile=delivery_profile,
+                security_profile=security_profile,
+                status=str(event_payload.get("status") or "") or None,
+                details=dict(event_payload.get("details") or {}),
+            )
         _write_latest_index(task_id=task_id, run_id=run_id, out_dir=out_dir, status=str(summary.get("status", "fail")))
         return True
 
@@ -350,6 +464,14 @@ def main() -> int:
         nonlocal marathon_state
         _upsert_step(summary, step)
         marathon_state = record_step_result(marathon_state, step)
+        _append_step_event(
+            out_dir=out_dir,
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+            step=step,
+        )
         if not persist():
             return False
         return step.get("status") != "fail"
@@ -388,6 +510,16 @@ def main() -> int:
             if wall_time_exceeded(marathon_state):
                 summary["status"] = "fail"
                 marathon_state = mark_wall_time_exceeded(marathon_state)
+                append_run_event(
+                    out_dir=out_dir,
+                    event="wall_time_exceeded",
+                    task_id=task_id,
+                    run_id=run_id,
+                    delivery_profile=delivery_profile,
+                    security_profile=security_profile,
+                    status="fail",
+                    details={"step_name": step_name},
+                )
                 halt_pipeline = True
                 break
             step_timeout = cap_step_timeout(timeout_sec, marathon_state)
@@ -412,8 +544,29 @@ def main() -> int:
         post_hook_rc, marathon_state = _run_agent_review_post_hook(out_dir=out_dir, mode=agent_review_mode, marathon_state=marathon_state)
         if not persist():
             return 2
+        append_run_event(
+            out_dir=out_dir,
+            event="run_completed",
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+            status=str(summary.get("status") or "fail"),
+            details={"agent_review_rc": post_hook_rc},
+        )
         if post_hook_rc != 0:
             return post_hook_rc
+    else:
+        append_run_event(
+            out_dir=out_dir,
+            event="run_completed",
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+            security_profile=security_profile,
+            status=str(summary.get("status") or "fail"),
+            details={"agent_review_rc": 0, "agent_review_mode": agent_review_mode},
+        )
     print(f"SC_REVIEW_PIPELINE status={summary['status']} out={out_dir}")
     return 0 if summary["status"] == "ok" else 1
 

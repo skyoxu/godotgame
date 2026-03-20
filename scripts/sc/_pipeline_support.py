@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from agent_to_agent_review import write_agent_review
+from _approval_contract import approval_request_path, approval_response_path
 from _delivery_profile import profile_agent_review_defaults
+from _harness_capabilities import harness_capabilities_path
+from _pipeline_events import run_events_path
 from _util import repo_root, run_cmd, today_str, write_json, write_text
 
 
@@ -19,21 +22,25 @@ def pipeline_latest_index_path(task_id: str) -> Path:
 
 
 def write_latest_index(*, task_id: str, run_id: str, out_dir: Path, status: str) -> None:
-    write_json(
-        pipeline_latest_index_path(task_id),
-        {
-            "task_id": task_id,
-            "run_id": run_id,
-            "status": status,
-            "date": today_str(),
-            "latest_out_dir": str(out_dir),
-            "summary_path": str(out_dir / "summary.json"),
-            "execution_context_path": str(out_dir / "execution-context.json"),
-            "repair_guide_json_path": str(out_dir / "repair-guide.json"),
-            "repair_guide_md_path": str(out_dir / "repair-guide.md"),
-            "marathon_state_path": str(out_dir / "marathon-state.json"),
-        },
-    )
+    payload = {
+        "task_id": task_id,
+        "run_id": run_id,
+        "status": status,
+        "date": today_str(),
+        "latest_out_dir": str(out_dir),
+        "summary_path": str(out_dir / "summary.json"),
+        "execution_context_path": str(out_dir / "execution-context.json"),
+        "repair_guide_json_path": str(out_dir / "repair-guide.json"),
+        "repair_guide_md_path": str(out_dir / "repair-guide.md"),
+        "marathon_state_path": str(out_dir / "marathon-state.json"),
+        "run_events_path": str(run_events_path(out_dir)),
+        "harness_capabilities_path": str(harness_capabilities_path(out_dir)),
+    }
+    if approval_request_path(out_dir).exists():
+        payload["approval_request_path"] = str(approval_request_path(out_dir))
+    if approval_request_path(out_dir).exists() and approval_response_path(out_dir).exists():
+        payload["approval_response_path"] = str(approval_response_path(out_dir))
+    write_json(pipeline_latest_index_path(task_id), payload)
 
 
 def run_step(*, out_dir: Path, name: str, cmd: list[str], timeout_sec: int) -> dict[str, Any]:

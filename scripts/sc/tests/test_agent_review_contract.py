@@ -68,6 +68,29 @@ class AgentReviewContractTests(unittest.TestCase):
         self.assertIn("review_verdict: block", rendered)
         self.assertIn("sc-test-failed", rendered)
 
+    def test_render_review_markdown_should_include_approval_section(self) -> None:
+        payload = make_review_payload(
+            task_id="1",
+            run_id="abc123",
+            pipeline_out_dir="logs/ci/2026-03-19/sc-review-pipeline-task-1-abc123",
+            pipeline_status="ok",
+            failed_step="",
+            review_verdict="needs-fix",
+            reviewer="artifact-reviewer",
+            findings=[],
+            approval={
+                "required_action": "fork",
+                "status": "pending",
+                "decision": "",
+                "reason": "Await operator approval",
+                "request_path": "logs/ci/x/approval-request.json",
+                "response_path": "",
+            },
+        )
+        rendered = render_review_markdown(payload)
+        self.assertIn("## Approval", rendered)
+        self.assertIn("status: pending", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

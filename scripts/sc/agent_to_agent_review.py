@@ -149,6 +149,52 @@ def _build_llm_findings(llm_summary: dict[str, Any]) -> list[dict[str, Any]]:
     return findings
 
 
+def _normalize_approval(repair_guide: dict[str, Any], execution_context: dict[str, Any]) -> dict[str, Any]:
+    payload = repair_guide.get("approval")
+    if not isinstance(payload, dict):
+        payload = execution_context.get("approval")
+    source = payload if isinstance(payload, dict) else {}
+    return {
+        "required_action": str(source.get("required_action") or "").strip(),
+        "status": str(source.get("status") or "not-needed").strip(),
+        "decision": str(source.get("decision") or "").strip(),
+        "reason": str(source.get("reason") or "").strip(),
+        "request_path": str(source.get("request_path") or "").strip(),
+        "response_path": str(source.get("response_path") or "").strip(),
+    }
+
+
+def _merge_approval_into_explain(explain: dict[str, Any], approval: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(explain)
+    approval_status = str(approval.get("status") or "not-needed").strip() or "not-needed"
+    approval_required_action = str(approval.get("required_action") or "").strip()
+    approval_reason = str(approval.get("reason") or "").strip()
+    recommended_action = str(merged.get("recommended_action") or "").strip()
+    blocks = bool(
+        approval_required_action
+        and approval_required_action == recommended_action
+        and approval_status in {"pending", "denied", "invalid", "mismatched"}
+    )
+    merged["approval_status"] = approval_status
+    merged["approval_required_action"] = approval_required_action
+    merged["approval_reason"] = approval_reason
+    merged["approval_blocks_recommended_action"] = blocks
+
+    if approval_required_action:
+        suffix = f" Approval status is {approval_status} for `{approval_required_action}`."
+        if approval_reason:
+            suffix += f" Reason: {approval_reason}"
+        summary = str(merged.get("summary") or "").strip()
+        if suffix.strip() not in summary:
+            merged["summary"] = (summary + suffix).strip()
+        reasons = [str(item) for item in (merged.get("reasons") or []) if str(item).strip()]
+        reasons.append(f"approval:{approval_required_action}:{approval_status}")
+        if approval_reason:
+            reasons.append(f"approval_reason:{approval_reason}")
+        merged["reasons"] = list(dict.fromkeys(reasons))
+    return merged
+
+
 def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any], list[str]]:
     errors: list[str] = []
     summary_path = out_dir / "summary.json"
@@ -205,6 +251,7 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
     summary = _load_json(summary_path)
     execution_context = _load_json(execution_context_path)
     repair_guide = _load_json(repair_guide_path)
+    approval = _normalize_approval(repair_guide, execution_context)
     failed_step = next((step for step in summary.get("steps", []) if step.get("status") == "fail"), None)
 
     findings: list[dict[str, Any]] = []
@@ -254,7 +301,8 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
         pipeline_status=pipeline_status,
         failed_step=failed_step_name,
         review_verdict=review_verdict,
-        explain=build_agent_review_explain(signal),
+        explain=_merge_approval_into_explain(build_agent_review_explain(signal), approval),
+        approval=approval,
         findings=findings,
         reviewer=reviewer,
     )

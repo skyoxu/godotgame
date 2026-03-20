@@ -8,6 +8,33 @@ from _util import today_str
 REVIEW_VERDICTS = {"pass", "needs-fix", "block"}
 FINDING_SEVERITIES = {"low", "medium", "high"}
 RECOMMENDED_ACTIONS = {"none", "resume", "refresh", "fork"}
+APPROVAL_STATUSES = {"not-needed", "pending", "approved", "denied", "invalid", "mismatched"}
+
+
+def _default_explain() -> dict[str, Any]:
+    return {
+        "recommended_action": "none",
+        "summary": "No follow-up action is required because the reviewer did not detect a blocking or repairable issue.",
+        "reasons": [],
+        "owner_steps": [],
+        "categories": [],
+        "semantic_axes": [],
+        "approval_status": "not-needed",
+        "approval_required_action": "",
+        "approval_reason": "",
+        "approval_blocks_recommended_action": False,
+    }
+
+
+def _default_approval() -> dict[str, Any]:
+    return {
+        "required_action": "",
+        "status": "not-needed",
+        "decision": "",
+        "reason": "",
+        "request_path": "",
+        "response_path": "",
+    }
 
 
 def make_review_payload(
@@ -19,9 +46,16 @@ def make_review_payload(
     failed_step: str,
     review_verdict: str,
     findings: list[dict[str, Any]],
-    explain: dict[str, Any],
+    explain: dict[str, Any] | None = None,
+    approval: dict[str, Any] | None = None,
     reviewer: str = "artifact-reviewer",
 ) -> dict[str, Any]:
+    merged_explain = _default_explain()
+    if isinstance(explain, dict):
+        merged_explain.update(explain)
+    merged_approval = _default_approval()
+    if isinstance(approval, dict):
+        merged_approval.update(approval)
     return {
         "schema_version": "1.0.0",
         "cmd": "sc-agent-review",
@@ -33,7 +67,8 @@ def make_review_payload(
         "pipeline_status": str(pipeline_status or "").strip(),
         "failed_step": str(failed_step or "").strip(),
         "review_verdict": str(review_verdict or "").strip(),
-        "explain": explain,
+        "explain": merged_explain,
+        "approval": merged_approval,
         "findings": findings,
     }
 
@@ -55,6 +90,7 @@ def validate_review_payload(payload: dict[str, Any]) -> list[str]:
         "failed_step",
         "review_verdict",
         "explain",
+        "approval",
         "findings",
     }
     for key in required:
@@ -83,7 +119,18 @@ def validate_review_payload(payload: dict[str, Any]) -> list[str]:
     if not isinstance(explain, dict):
         errors.append("$.explain: must be an object")
     else:
-        required_explain = {"recommended_action", "summary", "reasons", "owner_steps", "categories", "semantic_axes"}
+        required_explain = {
+            "recommended_action",
+            "summary",
+            "reasons",
+            "owner_steps",
+            "categories",
+            "semantic_axes",
+            "approval_status",
+            "approval_required_action",
+            "approval_reason",
+            "approval_blocks_recommended_action",
+        }
         for key in required_explain:
             if key not in explain:
                 errors.append(f"$.explain.{key}: missing required property")
@@ -95,6 +142,28 @@ def validate_review_payload(payload: dict[str, Any]) -> list[str]:
             value = explain.get(key)
             if not isinstance(value, list) or any(not str(item or "").strip() for item in value):
                 errors.append(f"$.explain.{key}: must be an array of non-empty strings")
+        if str(explain.get("approval_status") or "").strip() not in APPROVAL_STATUSES:
+            errors.append(f"$.explain.approval_status: must be one of {sorted(APPROVAL_STATUSES)}")
+        if not isinstance(explain.get("approval_blocks_recommended_action"), bool):
+            errors.append("$.explain.approval_blocks_recommended_action: must be boolean")
+        for key in ("approval_required_action", "approval_reason"):
+            value = explain.get(key)
+            if not isinstance(value, str):
+                errors.append(f"$.explain.{key}: must be a string")
+
+    approval = payload.get("approval")
+    if not isinstance(approval, dict):
+        errors.append("$.approval: must be an object")
+    else:
+        required_approval = {"required_action", "status", "decision", "reason", "request_path", "response_path"}
+        for key in required_approval:
+            if key not in approval:
+                errors.append(f"$.approval.{key}: missing required property")
+        if str(approval.get("status") or "").strip() not in APPROVAL_STATUSES:
+            errors.append(f"$.approval.status: must be one of {sorted(APPROVAL_STATUSES)}")
+        for key in ("required_action", "decision", "reason", "request_path", "response_path"):
+            if not isinstance(approval.get(key), str):
+                errors.append(f"$.approval.{key}: must be a string")
 
     findings = payload.get("findings")
     if not isinstance(findings, list):
@@ -149,7 +218,23 @@ def render_review_markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- recommended_action: {explain.get('recommended_action', '')}")
     if str(explain.get("summary") or "").strip():
         lines.append(f"- explain: {explain.get('summary', '')}")
+    lines.append(f"- approval_status: {explain.get('approval_status', '')}")
+    if bool(explain.get("approval_blocks_recommended_action")):
+        lines.append("- approval_blocks_recommended_action: true")
     lines.append("")
+    approval = payload.get("approval") or {}
+    if str(approval.get("status") or "").strip() != "not-needed":
+        lines.append("## Approval")
+        lines.append(f"- required_action: {approval.get('required_action', '')}")
+        lines.append(f"- status: {approval.get('status', '')}")
+        lines.append(f"- decision: {approval.get('decision', '')}")
+        if str(approval.get("reason") or "").strip():
+            lines.append(f"- reason: {approval.get('reason', '')}")
+        if str(approval.get("request_path") or "").strip():
+            lines.append(f"- request: `{approval.get('request_path', '')}`")
+        if str(approval.get("response_path") or "").strip():
+            lines.append(f"- response: `{approval.get('response_path', '')}`")
+        lines.append("")
     findings = payload.get("findings") or []
     if not findings:
         lines.append("No findings.")

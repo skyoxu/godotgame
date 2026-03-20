@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SC_DIR = REPO_ROOT / "scripts" / "sc"
 sys.path.insert(0, str(SC_DIR))
 
-from _repair_guidance import build_execution_context, build_repair_guide  # noqa: E402
+from _repair_guidance import build_execution_context, build_repair_guide, render_repair_guide_markdown  # noqa: E402
 
 
 class RepairGuidanceTests(unittest.TestCase):
@@ -168,6 +168,94 @@ class RepairGuidanceTests(unittest.TestCase):
             self.assertEqual("needs-fix", payload["status"])
             ids = {item["id"] for item in payload["recommendations"]}
             self.assertIn("agent-review-resume", ids)
+
+    def test_build_repair_guide_should_surface_approved_fork_instead_of_generic_pipeline_fork(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir)
+            summary = {
+                "status": "ok",
+                "steps": [
+                    {"name": "sc-test", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/test.py"]},
+                    {"name": "sc-acceptance-check", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/acceptance_check.py"]},
+                    {"name": "sc-llm-review", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/llm_review.py"]},
+                ],
+            }
+            payload = build_repair_guide(
+                summary,
+                task_id="1",
+                out_dir=out_dir,
+                marathon_state={
+                    "status": "ok",
+                    "agent_review": {
+                        "review_verdict": "block",
+                        "recommended_action": "fork",
+                        "recommended_refresh_reasons": ["agent_review_integrity_reset(summary-integrity)"],
+                        "owner_steps": ["producer-pipeline"],
+                        "categories": ["summary-integrity"],
+                    },
+                },
+                approval_state={
+                    "soft_gate": True,
+                    "required_action": "fork",
+                    "status": "approved",
+                    "decision": "approved",
+                    "reason": "Fork approved by operator",
+                    "request_id": "run-1:fork",
+                    "request_path": str(out_dir / "approval-request.json"),
+                    "response_path": str(out_dir / "approval-response.json"),
+                },
+            )
+            ids = [item["id"] for item in payload["recommendations"]]
+            self.assertIn("approval-fork-approved", ids)
+            self.assertNotIn("pipeline-fork", ids)
+            self.assertEqual("approved", payload["approval"]["status"])
+            markdown = render_repair_guide_markdown(payload)
+            self.assertIn("approval-fork-approved", markdown)
+            self.assertIn("status: approved", markdown)
+
+    def test_build_repair_guide_should_surface_denied_fork_and_remove_fork_command(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir)
+            summary = {
+                "status": "ok",
+                "steps": [
+                    {"name": "sc-test", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/test.py"]},
+                    {"name": "sc-acceptance-check", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/acceptance_check.py"]},
+                    {"name": "sc-llm-review", "status": "ok", "rc": 0, "cmd": ["py", "-3", "scripts/sc/llm_review.py"]},
+                ],
+            }
+            payload = build_repair_guide(
+                summary,
+                task_id="1",
+                out_dir=out_dir,
+                marathon_state={
+                    "status": "ok",
+                    "agent_review": {
+                        "review_verdict": "block",
+                        "recommended_action": "fork",
+                        "recommended_refresh_reasons": ["agent_review_integrity_reset(summary-integrity)"],
+                        "owner_steps": ["producer-pipeline"],
+                        "categories": ["summary-integrity"],
+                    },
+                },
+                approval_state={
+                    "soft_gate": True,
+                    "required_action": "fork",
+                    "status": "denied",
+                    "decision": "denied",
+                    "reason": "Do not fork this run",
+                    "request_id": "run-1:fork",
+                    "request_path": str(out_dir / "approval-request.json"),
+                    "response_path": str(out_dir / "approval-response.json"),
+                },
+            )
+            ids = [item["id"] for item in payload["recommendations"]]
+            self.assertIn("approval-fork-denied", ids)
+            self.assertNotIn("pipeline-fork", ids)
+            denied = next(item for item in payload["recommendations"] if item["id"] == "approval-fork-denied")
+            joined = " ".join(denied["commands"])
+            self.assertNotIn("--fork", joined)
+            self.assertIn("--resume", joined)
 
 
 if __name__ == "__main__":
