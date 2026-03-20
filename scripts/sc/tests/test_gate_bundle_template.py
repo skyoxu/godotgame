@@ -58,6 +58,10 @@ class GateBundleTemplateTests(unittest.TestCase):
             self.assertEqual("missing_contract_interfaces_dir", gates["contract_interface_docs"].get("skip_reason"))
             self.assertTrue(gates["contract_interface_docs"].get("skipped"))
 
+            self.assertIn("validate_recovery_docs", gates)
+            self.assertFalse(gates["validate_recovery_docs"].get("skipped"))
+            self.assertEqual(0, int(gates["validate_recovery_docs"].get("rc", -1)), gates["validate_recovery_docs"])
+
             self.assertEqual("missing_task_files", gates["obligations_reuse_regression"].get("skip_reason"))
             self.assertTrue(gates["obligations_reuse_regression"].get("skipped"))
 

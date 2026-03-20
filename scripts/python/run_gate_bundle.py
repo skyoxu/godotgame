@@ -215,6 +215,10 @@ def _hard_gate_commands(task_files: list[str], task_links_max_warnings: int = -1
             "cmd": ["py", "-3", "scripts/python/validate_contracts.py"],
         },
         {
+            "name": "validate_recovery_docs",
+            "cmd": ["py", "-3", "scripts/python/validate_recovery_docs.py"],
+        },
+        {
             "name": "check_domain_contracts",
             "cmd": ["py", "-3", "scripts/python/check_domain_contracts.py"],
         },

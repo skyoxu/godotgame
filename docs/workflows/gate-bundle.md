@@ -70,6 +70,7 @@ py -3 scripts/python/remind_overlay_task_drift.py --write --overlay-index docs/a
 - `check_no_hardcoded_core_events.py`
 - `forbid_mirror_path_refs.py`
 - `validate_contracts.py`
+- `validate_recovery_docs.py`
 - `check_domain_contracts.py`
 - `check_contract_interface_docs.py`
 - `check_test_naming.py`
