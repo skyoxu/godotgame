@@ -11,132 +11,61 @@ from __future__ import annotations
 
 import os
 import platform
-import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
+import _env_evidence_helpers as _helpers
 from _repo_targets import resolve_acceptance_checklist, resolve_solution_file
 from _step_result import StepResult
 from _util import repo_root, today_str, write_json, write_text
 
 
-def _run_command(
-    cmd: list[str],
-    *,
-    cwd: Path | None = None,
-    env: dict[str, str] | None = None,
-    timeout_sec: int = 120,
-) -> tuple[int, str]:
-    try:
-        proc = subprocess.run(
-            cmd,
-            cwd=str(cwd) if cwd else None,
-            env=env,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="ignore",
-            timeout=timeout_sec,
-        )
-        out = (proc.stdout or "") + (("\n" + proc.stderr) if proc.stderr else "")
-        return proc.returncode, out
-    except Exception as exc:  # noqa: BLE001
-        return 1, f"failed to run {' '.join(cmd)}: {exc}"
+def _run_command(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None, timeout_sec: int = 120) -> tuple[int, str]:
+    return _helpers.run_command(cmd, cwd=cwd, env=env, timeout_sec=timeout_sec)
 
 
 def _first_non_empty_line(text: str) -> str:
-    for line in (text or "").splitlines():
-        s = line.strip()
-        if s:
-            return s
-    return ""
+    return _helpers.first_non_empty_line(text)
 
 
 def _contains_token(text: str, token: str) -> bool:
-    return token.lower() in (text or "").lower()
+    return _helpers.contains_token(text, token)
 
 
 def _parse_dotnet_sdk_versions(text: str) -> list[str]:
-    versions: list[str] = []
-    for raw_line in (text or "").splitlines():
-        line = raw_line.strip()
-        if not line:
-            continue
-        first = line.split(" ", 1)[0].strip()
-        if first and first[0].isdigit():
-            versions.append(first)
-    return versions
+    return _helpers.parse_dotnet_sdk_versions(text)
 
 
 def _parse_major_from_version_text(text: str) -> int | None:
-    first_line = _first_non_empty_line(text)
-    if not first_line:
-        return None
-    match = re.search(r"(\d+)\.\d+\.\d+", first_line)
-    if not match:
-        return None
-    try:
-        return int(match.group(1))
-    except Exception:  # noqa: BLE001
-        return None
+    return _helpers.parse_major_from_version_text(text)
 
 
 def _write_utf8_file(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    _helpers.write_utf8_file(path, content)
 
 
 def _strict_utf8_read(path: Path) -> tuple[bool, str]:
-    try:
-        path.read_bytes().decode("utf-8", errors="strict")
-        return True, ""
-    except Exception as exc:  # noqa: BLE001
-        return False, str(exc)
+    return _helpers.strict_utf8_read(path)
 
 
 def _rel(root: Path, path: Path) -> str:
-    return str(path.relative_to(root)).replace("\\", "/")
-
-
-_EXCLUDED_LOCK_DIR_NAMES = {
-    ".git",
-    ".godot",
-    "bin",
-    "obj",
-    "logs",
-    "node_modules",
-}
+    return _helpers.rel(root, path)
 
 
 def _discover_packages_lock_files(root: Path) -> list[Path]:
-    found: list[Path] = []
-    for path in root.rglob("packages.lock.json"):
-        if not path.is_file():
-            continue
-        try:
-            rel = path.relative_to(root)
-        except ValueError:
-            continue
-        if any(part in _EXCLUDED_LOCK_DIR_NAMES for part in rel.parts[:-1]):
-            continue
-        found.append(path)
-    return sorted(found, key=lambda p: (len(p.relative_to(root).parts), _rel(root, p).lower()))
+    return _helpers.discover_packages_lock_files(root)
 
 
 def _normalize_task_id(task_id: str | int | None) -> str:
-    raw = str(task_id or "").strip()
-    if not raw:
-        return "1"
-    if raw.isdigit():
-        return str(int(raw))
-    return re.sub(r"[^0-9A-Za-z_-]+", "-", raw)
+    return _helpers.normalize_task_id(task_id)
 
 
 def _task_json_filename(task_id: str) -> str:
-    if task_id.isdigit():
-        return f"task-{int(task_id):04d}.json"
-    return f"task-{task_id}.json"
+    return _helpers.task_json_filename(task_id)
+
+
+def _build_utf8_checked_files(*, task_json_rel: str, checklist_rel: str, date: str, errors: list[str]) -> list[str]:
+    return _helpers.build_utf8_checked_files(task_json_rel=task_json_rel, checklist_rel=checklist_rel, date=date, errors=errors)
 
 
 def step_env_evidence_preflight(out_dir: Path, *, godot_bin: str | None, task_id: str | int | None = None) -> StepResult:
@@ -333,25 +262,12 @@ def step_env_evidence_preflight(out_dir: Path, *, godot_bin: str | None, task_id
 
     write_json(task_json_path, task_payload)
 
-    utf8_checked_files: list[str] = [
-        _rel(root, task_json_path),
-        f"logs/ci/{date}/env-evidence/godot-bin-env.txt",
-        f"logs/ci/{date}/env-evidence/godot-version.txt",
-        f"logs/ci/{date}/env-evidence/godot-bin-version.txt",
-        f"logs/ci/{date}/env-evidence/dotnet-version.txt",
-        f"logs/ci/{date}/env-evidence/dotnet-sdks.txt",
-        f"logs/ci/{date}/env-evidence/dotnet-restore.txt",
-        f"logs/ci/{date}/env-evidence/packages-lock-exists.txt",
-        f"logs/ci/{date}/env-evidence/windows-only-check.txt",
-    ]
-    if checklist_rel:
-        utf8_checked_files.insert(1, checklist_rel)
-    else:
-        details["errors"].append("missing_acceptance_checklist")
-    if checklist_rel:
-        utf8_checked_files.insert(1, checklist_rel)
-    else:
-        details["errors"].append("missing_acceptance_checklist")
+    utf8_checked_files = _build_utf8_checked_files(
+        task_json_rel=_rel(root, task_json_path),
+        checklist_rel=checklist_rel,
+        date=date,
+        errors=details["errors"],
+    )
     utf8_results: list[dict[str, Any]] = []
     for rel_path in utf8_checked_files:
         abs_path = root / rel_path.replace("/", "\\")

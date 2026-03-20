@@ -12,14 +12,11 @@ STEP_SEQUENCE = ("sc-test", "sc-acceptance-check", "sc-llm-review")
 RUN_STATUSES = {"running", "ok", "fail", "aborted"}
 STEP_STATUSES = {"pending", "planned", "skipped", "ok", "fail"}
 
-
 def _now_iso() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
-
 def marathon_state_path(out_dir: Path) -> Path:
     return out_dir / "marathon-state.json"
-
 
 def _load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
@@ -29,7 +26,6 @@ def _load_json(path: Path) -> dict[str, Any] | None:
     except (OSError, json.JSONDecodeError):
         return None
     return data if isinstance(data, dict) else None
-
 
 def _step_template() -> dict[str, Any]:
     return {
@@ -43,7 +39,6 @@ def _step_template() -> dict[str, Any]:
         "updated_at": "",
     }
 
-
 def _normalize_int(value: Any, *, default: int = 0, minimum: int | None = None) -> int:
     try:
         parsed = int(value)
@@ -52,7 +47,6 @@ def _normalize_int(value: Any, *, default: int = 0, minimum: int | None = None) 
     if minimum is not None:
         parsed = max(minimum, parsed)
     return parsed
-
 
 def _normalize_bool(value: Any) -> bool:
     if isinstance(value, bool):
