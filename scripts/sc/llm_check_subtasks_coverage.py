@@ -11,9 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +23,7 @@ def _bootstrap_imports() -> None:
 _bootstrap_imports()
 
 from _delivery_profile import build_delivery_profile_context, profile_llm_semantic_gate_all_defaults, resolve_delivery_profile  # noqa: E402
+from _subtasks_coverage_llm import build_prompt, extract_json_object, format_acceptance, normalize_model_status, run_codex_exec  # noqa: E402
 from _taskmaster import resolve_triplet  # noqa: E402
 from _util import ci_dir, repo_root, write_json, write_text  # noqa: E402
 from _obligations_extract_helpers import (  # noqa: E402
@@ -59,143 +57,6 @@ def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namesp
     if not str(args.garbled_gate or "").strip():
         args.garbled_gate = str(defaults.get("garbled_gate") or "on")
     return args
-
-
-def _run_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int) -> tuple[int, str, list[str]]:
-    exe = shutil.which("codex")
-    if not exe:
-        return 127, "codex executable not found in PATH\n", ["codex"]
-    cmd = [
-        exe,
-        "exec",
-        "-s",
-        "read-only",
-        "-C",
-        str(repo_root()),
-        "--output-last-message",
-        str(out_last_message),
-        "-",
-    ]
-    try:
-        proc = subprocess.run(
-            cmd,
-            input=prompt,
-            text=True,
-            encoding="utf-8",
-            errors="ignore",
-            cwd=str(repo_root()),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=timeout_sec,
-        )
-    except subprocess.TimeoutExpired:
-        return 124, "codex exec timeout\n", cmd
-    except Exception as exc:  # noqa: BLE001
-        return 1, f"codex exec failed to start: {exc}\n", cmd
-    return proc.returncode or 0, proc.stdout or "", cmd
-
-
-def _extract_json_object(text: str) -> dict[str, Any]:
-    text = str(text or "").strip()
-    try:
-        obj = json.loads(text)
-        if isinstance(obj, dict):
-            return obj
-    except Exception:
-        pass
-    m = re.search(r"\{.*\}", text, flags=re.DOTALL)
-    if not m:
-        raise ValueError("No JSON object found in model output.")
-    obj = json.loads(m.group(0))
-    if not isinstance(obj, dict):
-        raise ValueError("Model output JSON is not an object.")
-    return obj
-
-
-def _normalize_model_status(value: Any) -> str:
-    status = str(value or "").strip().lower()
-    return "ok" if status == "ok" else "fail"
-
-
-def _format_acceptance(view_name: str, acceptance: list[Any]) -> str:
-    out = [f"[{view_name}] acceptance items ({len(acceptance)}):"]
-    for idx, raw in enumerate(acceptance, start=1):
-        text = truncate(str(raw or "").strip(), max_chars=500)
-        out.append(f"- {view_name}:{idx}: {text}")
-    return "\n".join(out)
-
-
-def _build_prompt(
-    *,
-    task_id: str,
-    title: str,
-    subtasks: list[dict[str, Any]],
-    acceptance_by_view: dict[str, list[Any]],
-    delivery_profile_context: str = "",
-) -> str:
-    sub_lines = []
-    for s in subtasks:
-        sid = str(s.get("id") or "").strip()
-        st = str(s.get("title") or "").strip()
-        sd = str(s.get("details") or "").strip()
-        if sid and st:
-            if sd:
-                sd = re.sub(r"\s+", " ", sd).strip()
-                sub_lines.append(f"- {sid}: {st} :: {sd}")
-            else:
-                sub_lines.append(f"- {sid}: {st}")
-    acceptance_blocks = []
-    for view_name, acc in acceptance_by_view.items():
-        acceptance_blocks.append(_format_acceptance(view_name, acc))
-
-    schema = """
-Return JSON only (no Markdown).
-Schema:
-{
-  "task_id": "<id>",
-  "status": "ok" | "fail",
-  "subtasks": [
-    {
-      "id": "<subtask id from tasks.json>",
-      "title": "<subtask title>",
-      "covered": true | false,
-      "matches": [
-        {"view": "back|gameplay", "acceptance_index": <1-based>, "acceptance_excerpt": "<short>"}
-      ],
-      "reason": "<one short sentence>"
-    }
-  ],
-  "uncovered_subtask_ids": ["<id>", ...],
-  "notes": ["<short>", ...]
-}
-
-Rules:
-- Be conservative: mark a subtask covered ONLY if at least one acceptance item clearly implies it.
-- Coverage is semantic (do not require exact wording), but do not guess.
-- If ANY subtask is not covered => status must be "fail".
-- Use BOTH subtask title and subtask details when judging coverage.
-"""
-
-    return "\n".join(
-        [
-            "You are a strict reviewer for a Godot + C# repo.",
-            "Task subtasks are an implementation breakdown; acceptance criteria are the repository SSoT for gating.",
-            "Decide whether each subtask is covered by >=1 acceptance item across the available views (back/gameplay).",
-            "",
-            f"Task: T{task_id} {title}",
-            "",
-            "Delivery profile context:",
-            delivery_profile_context.strip() or "- profile: standard",
-            "",
-            "Subtasks (from tasks.json):",
-            *(sub_lines or ["- (none)"]),
-            "",
-            "Acceptance criteria (from tasks_back/tasks_gameplay):",
-            *acceptance_blocks,
-            "",
-            schema.strip(),
-        ]
-    )
 
 
 def main() -> int:
@@ -318,12 +179,17 @@ def main() -> int:
         print(f"SC_LLM_SUBTASKS_COVERAGE status=fail out={out_dir}")
         return 1
 
-    prompt = _build_prompt(
+    prompt = build_prompt(
         task_id=triplet.task_id,
         title=title,
         subtasks=subtasks,
         acceptance_by_view=acceptance_by_view,
         delivery_profile_context=delivery_profile_context,
+        format_acceptance_fn=lambda view_name, acceptance: format_acceptance(
+            view_name,
+            acceptance,
+            truncate_fn=lambda text, max_chars: truncate(text, max_chars=max_chars),
+        ),
     )
     prompt = truncate(prompt, max_chars=int(args.max_prompt_chars))
     prompt_path = out_dir / "prompt.md"
@@ -336,7 +202,12 @@ def main() -> int:
     for i in range(1, runs + 1):
         run_last = out_dir / f"output-last-message-run-{i:02d}.txt"
         run_trace = out_dir / f"trace-run-{i:02d}.log"
-        rc, trace, cmd = _run_codex_exec(prompt=prompt, out_last_message=run_last, timeout_sec=int(args.timeout_sec))
+        rc, trace, cmd = run_codex_exec(
+            prompt=prompt,
+            out_last_message=run_last,
+            timeout_sec=int(args.timeout_sec),
+            repo_root_path=repo_root(),
+        )
         write_text(run_trace, trace)
         if cmd_ref is None:
             cmd_ref = cmd
@@ -346,7 +217,7 @@ def main() -> int:
         if rc == 0:
             try:
                 model_out = run_last.read_text(encoding="utf-8", errors="ignore")
-                parsed_obj = _extract_json_object(model_out)
+                parsed_obj = extract_json_object(model_out)
                 schema_ok, schema_errors, parsed_obj = validate_subtasks_coverage_schema(parsed_obj)
                 if not schema_ok:
                     schema_errors_for_run = limit_schema_errors(schema_errors, max_count=max_schema_errors)
@@ -356,7 +227,7 @@ def main() -> int:
                 err = f"invalid_model_output: {exc}"
         else:
             err = "codex_exec_failed"
-        run_status = _normalize_model_status((parsed_obj or {}).get("status")) if parsed_obj else "fail"
+        run_status = normalize_model_status((parsed_obj or {}).get("status")) if parsed_obj else "fail"
         run_results.append(
             {
                 "run": i,
@@ -402,7 +273,7 @@ def main() -> int:
         return 1
 
     uncovered, obj = collect_uncovered_subtasks(obj, subtasks=subtasks)
-    verdict_status = _normalize_model_status(obj.get("status"))
+    verdict_status = normalize_model_status(obj.get("status"))
 
     summary["status"] = verdict_status
     summary["uncovered_subtask_ids"] = uncovered
