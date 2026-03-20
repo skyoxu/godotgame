@@ -79,6 +79,8 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `scripts/python/validate_task_master_triplet.py` —— 全面校验三份任务文件之间的结构一致性（link + layer + depends_on + 映射），适合作为本地或后续 CI 的结构总检。
 - `scripts/python/prd_coverage_report.py` —— 生成 PRD → 任务的覆盖报表（软检查，不参与门禁，用于观察覆盖程度）。
 - `scripts/python/validate_recovery_docs.py` —— 校验 `execution-plans/` 与 `decision-logs/` 的恢复必填字段、`n/a` 原因说明以及关键路径引用。
+- `scripts/python/new_execution_plan.py` —— 生成合规的 `execution-plans/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
+- `scripts/python/new_decision_log.py` —— 生成合规的 `decision-logs/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
 - `scripts/python/run_obligations_jitter_batch5x3.py` —— 本地批量运行 `scripts/sc/llm_extract_task_obligations.py`，按 5x3 轮次收集 obligations 抖动原始数据；支持 `--delivery-profile`，模板仓在缺少真实 `.taskmaster/tasks/*.json` 时自动回退到 `examples/taskmaster/tasks.json`。
 - `scripts/python/build_obligations_jitter_summary.py` —— 将 5x3 原始运行结果汇总为 jitter summary / markdown report，用于判断稳定通过、稳定失败和抖动任务。
 - `scripts/python/refresh_obligations_jitter_summary_with_overrides.py` —— 将补跑结果覆盖回原 summary，生成 refreshed summary / report，适合局部重跑后的收敛分析。

@@ -12,4 +12,5 @@ Rules:
 - if a historical item has no preserved task id or run id, write `n/a` and the reason explicitly
 - keep high-frequency runtime noise in `logs/`, not here
 - validate changes with `py -3 scripts/python/validate_recovery_docs.py --dir execution-plans`
+- create a new scaffold with `py -3 scripts/python/new_execution_plan.py --title "<title>" [--task-id <id>]`
 
