@@ -171,24 +171,54 @@
 
 这点非常重要。否则你会把一套总开关，又重新拆成两套长期漂移的开关。
 
-## 7. 它当前会影响什么
+## 7. 当前仓库的已验证接线矩阵
 
-在当前仓库里，`DELIVERY_PROFILE` 已经会影响或应当影响以下方面：
+下面只列 2026-03-21 已核实的接线，不再使用“已影响或应当影响”这种混合口径。
 
-- 构建是否 `warn_as_error`
-- 单测覆盖率门槛
-- smoke 严格度
-- acceptance 默认硬门/软门策略
-- `task_test_refs` 与 `executed_refs` 是否要求非空
-- 性能门禁默认阈值
-- `task_links` 允许的 warning 预算
-- LLM review 的严格度与预算
-- obligations 提取脚本的运行强度
-- semantic gate 的阈值
-- `agent-review` 后置 sidecar 的执行与退出码策略
-- CI summary 中的可观测性信息
+如果某项只是计划接线，就不应该写进这一节。
 
-所以这不是“文档概念”，而是“运行中的控制面”。
+| 范围 | 已验证 profile block | 已验证消费者 |
+| --- | --- | --- |
+| build | `build.warn_as_error` | `scripts/sc/build.py` |
+| test / tdd | `test.coverage_gate`、`test.coverage_lines_min`、`test.coverage_branches_min`、`test.smoke_strict` | `scripts/sc/test.py`、`scripts/sc/build/tdd.py` |
+| acceptance | `acceptance.strict_adr_status`、`acceptance.strict_test_quality`、`acceptance.strict_quality_rules`、`acceptance.require_task_test_refs`、`acceptance.require_executed_refs`、`acceptance.require_headless_e2e`、`acceptance.subtasks_coverage`、`acceptance.perf_p95_ms` | `scripts/sc/_acceptance_runtime.py`、`scripts/sc/acceptance_check.py`、`scripts/sc/_acceptance_orchestration.py`、`scripts/sc/_pipeline_plan.py` |
+| run review pipeline | `acceptance.*` 默认值、`llm_review.semantic_gate`、`agent_review.mode`、默认安全映射 | `scripts/sc/run_review_pipeline.py`、`scripts/sc/_pipeline_session.py`、`scripts/sc/_pipeline_support.py` |
+| llm review | `llm_review.agents`、`llm_review.timeout_sec`、`llm_review.agent_timeout_sec`、`llm_review.strict`、`llm_review.semantic_gate`、`llm_review.prompt_budget_gate`、`llm_review.model_reasoning_effort` | `scripts/sc/_llm_review_cli.py`、`scripts/sc/_llm_review_engine.py` |
+| llm obligations | `llm_obligations.consensus_runs`、`llm_obligations.timeout_sec`、`llm_obligations.garbled_gate`、`llm_obligations.max_prompt_chars` | `scripts/sc/llm_extract_task_obligations.py` |
+| llm semantic family | `llm_semantic_gate_all.consensus_runs`、`llm_semantic_gate_all.timeout_sec`、`llm_semantic_gate_all.model_reasoning_effort`、`llm_semantic_gate_all.max_prompt_chars`、`llm_semantic_gate_all.max_needs_fix`、`llm_semantic_gate_all.max_unknown`、`llm_semantic_gate_all.garbled_gate` | `scripts/sc/llm_semantic_gate_all.py`、`scripts/sc/llm_check_subtasks_coverage.py`、`scripts/sc/llm_align_acceptance_semantics.py` |
+| gate bundle | `gate_bundle.task_links_max_warnings`、`gate_bundle.stability_template_hard` | `scripts/python/run_gate_bundle.py` |
+| CI / workflow | `delivery_profile` 输入、默认安全映射、Step Summary 输出 | `.github/workflows/ci-windows.yml`、`.github/workflows/windows-quality-gate.yml` |
+
+当前仓库里，`DELIVERY_PROFILE` 确实已经是运行时控制面，不只是文档概念。
+
+但要明确边界：它当前主要统一的是 `scripts/sc/**`、部分 `scripts/python/**` 和 CI workflow 的运行时行为。
+
+### 7.1 当前不应宣称为“已统一 profile 化”的范围
+
+以下内容目前不应被描述成已经由 `DELIVERY_PROFILE` 统一控制：
+
+- ADR / base 文档本身的写作严格度
+- `execution-plans/` 与 `decision-logs/` 模板字段策略
+- 没有显式接入 `--delivery-profile` 或环境变量解析的一次性脚本
+- 非 `sc` 主链路的历史脚本
+
+如果未来要把这些也纳入 profile 控制，正确顺序是：
+
+1. 先补运行逻辑
+2. 再补测试
+3. 最后再改文档
+
+不要反过来先把文档写成“已经统一”。
+
+### 7.2 这节的核验依据
+
+本节是按以下实现与测试核过的：
+
+- `scripts/sc/config/delivery_profiles.json`
+- `scripts/sc/_delivery_profile.py`
+- `scripts/sc/tests/test_delivery_profile.py`
+- `scripts/sc/tests/test_entrypoint_delivery_profile.py`
+- `scripts/sc/tests/test_run_review_pipeline_delivery_profile.py`
 
 ## 8. 如何使用
 

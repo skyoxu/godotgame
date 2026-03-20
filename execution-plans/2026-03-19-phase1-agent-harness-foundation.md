@@ -15,6 +15,7 @@
 - Exit criteria: persistent sidecar outputs, slim `AGENTS.md` index behavior, and durable `execution-plans/` + `decision-logs/` directories were committed
 - Related ADRs: pending future ADR for persistent harness and agent recovery model
 - Related decision logs: `decision-logs/2026-03-19-agents-index-and-persistent-harness.md`
+- Related task id(s): n/a (phase-wide harness foundation work; not tied to one Taskmaster task)
 - Related run id: n/a (historical local dry-run path only; preserved run id not recorded in this phase note)
-- Related latest.json: n/a
+- Related latest.json: n/a (phase archived before a stable task-scoped latest.json pointer was recorded)
 - Related pipeline artifacts: `logs/ci/2026-03-19/`

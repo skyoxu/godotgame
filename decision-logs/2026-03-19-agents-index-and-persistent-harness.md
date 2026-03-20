@@ -15,6 +15,7 @@
 - Validation: validated by the first-phase local dry-run artifacts under `logs/ci/2026-03-19/` and by the committed introduction of persistent harness sidecars; stable run id was not preserved for this historical note.
 - Related ADRs: pending future ADR for agent recovery and harness persistence
 - Related execution plans: `execution-plans/2026-03-19-phase1-agent-harness-foundation.md`
+- Related task id(s): n/a (repository-wide harness recovery decision; not tied to one Taskmaster task)
 - Related run id: n/a (historical local dry-run path only; preserved run id not recorded in this decision note)
-- Related latest.json: n/a
+- Related latest.json: n/a (decision recorded before a stable task-scoped latest.json pointer was preserved)
 - Related pipeline artifacts: `logs/ci/2026-03-19/`
