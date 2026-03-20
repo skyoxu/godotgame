@@ -36,6 +36,7 @@ from _obligations_extract_helpers import (  # noqa: E402
 from _obligations_input_fingerprint import build_obligations_input_fingerprint  # noqa: E402
 from _obligations_artifacts import build_garbled_fail_report, write_checked_and_sync_artifacts, write_checked_summary_only_and_sync  # noqa: E402
 from _obligations_code_fingerprint import build_runtime_code_fingerprint  # noqa: E402
+from _obligations_main_flow import fail_with_checked_artifacts, finalize_consensus_run, try_reuse_last_ok  # noqa: E402
 from _obligations_prompt_acceptance import compute_acceptance_dedup_stats  # noqa: E402
 from _obligations_reuse_index import (  # noqa: E402
     apply_reuse_stats,
@@ -189,17 +190,15 @@ def main() -> int:
         summary["status"] = "fail"
         summary["error"] = "no_views_present"
         fail_verdict = {"task_id": str(triplet.task_id), "status": "fail", "obligations": []}
-        if not write_checked_and_sync_artifacts(
+        return fail_with_checked_artifacts(
             out_dir=out_dir,
-            summary_obj=summary,
-            verdict_obj=fail_verdict,
-            validate_verdict_schema=validate_verdict_schema,
+            summary=summary,
+            verdict=fail_verdict,
+            reason="no_views_present",
+            validate_verdict_schema_fn=validate_verdict_schema,
+            write_checked_and_sync_artifacts_fn=write_checked_and_sync_artifacts,
             report_text="# sc-llm-extract-task-obligations report\n\n- status: fail\n- reason: no_views_present\n",
-        ):
-            print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-            return 1
-        print(f"SC_LLM_OBLIGATIONS status=fail reason=no_views_present out={out_dir}")
-        return 1
+        )
 
     try:
         source_blocks = build_source_text_blocks(
@@ -213,17 +212,15 @@ def main() -> int:
         summary["error"] = "source_blocks_missing_title"
         summary["deterministic_issues"] = [f"DET_SOURCE_BLOCKS:{exc}"]
         fail_verdict = {"task_id": str(triplet.task_id), "status": "fail", "obligations": []}
-        if not write_checked_and_sync_artifacts(
+        return fail_with_checked_artifacts(
             out_dir=out_dir,
-            summary_obj=summary,
-            verdict_obj=fail_verdict,
-            validate_verdict_schema=validate_verdict_schema,
+            summary=summary,
+            verdict=fail_verdict,
+            reason="source_blocks_missing_title",
+            validate_verdict_schema_fn=validate_verdict_schema,
+            write_checked_and_sync_artifacts_fn=write_checked_and_sync_artifacts,
             report_text="# sc-llm-extract-task-obligations report\n\n- status: fail\n- reason: source_blocks_missing_title\n",
-        ):
-            print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-            return 1
-        print(f"SC_LLM_OBLIGATIONS status=fail reason=source_blocks_missing_title out={out_dir}")
-        return 1
+        )
 
     if bool(args.dry_run_fingerprint):
         write_json(out_dir / "fingerprint.json", {"task_id": str(triplet.task_id), "prompt_version": PROMPT_VERSION, "security_profile": security_profile, "runtime_code_fingerprint": runtime_code_fingerprint, "input_hash": input_hash, "reuse_lookup_key": reuse_lookup_key})
@@ -231,75 +228,33 @@ def main() -> int:
         return 0
 
     if bool(args.reuse_last_ok):
-        reused, reuse_lookup_stats = find_reusable_ok_result_with_stats(
+        handled, exit_code = try_reuse_last_ok(
             task_id=str(triplet.task_id),
             input_hash=input_hash,
             prompt_version=PROMPT_VERSION,
             security_profile=security_profile,
+            runtime_code_fingerprint=runtime_code_fingerprint,
             logs_root=logs_root,
             current_out_dir=out_dir,
+            summary=summary,
+            subtasks=subtasks,
+            min_obligations=int(args.min_obligations),
+            source_blocks=source_blocks,
+            find_reusable_ok_result_with_stats_fn=find_reusable_ok_result_with_stats,
+            apply_reuse_stats_fn=apply_reuse_stats,
+            explain_reuse_miss_fn=explain_reuse_miss,
+            write_json_fn=write_json,
+            apply_deterministic_guards_fn=apply_deterministic_guards,
+            normalize_model_status_fn=normalize_model_status,
+            write_checked_and_sync_artifacts_fn=write_checked_and_sync_artifacts,
+            validate_verdict_schema_fn=validate_verdict_schema,
+            render_obligations_report_fn=render_obligations_report,
+            remember_reusable_ok_result_with_stats_fn=remember_reusable_ok_result_with_stats,
+            write_checked_summary_only_and_sync_fn=write_checked_summary_only_and_sync,
+            explain_reuse_miss=bool(args.explain_reuse_miss),
         )
-        apply_reuse_stats(summary, reuse_lookup_stats)
-        if reused is None and bool(args.explain_reuse_miss):
-            explain = explain_reuse_miss(logs_root=logs_root, task_id=str(triplet.task_id), input_hash=input_hash, prompt_version=PROMPT_VERSION, security_profile=security_profile, runtime_code_fingerprint=runtime_code_fingerprint)
-            summary["reuse_miss_explain"] = explain
-            write_json(out_dir / "reuse-miss-explain.json", explain)
-        if reused is not None:
-            verdict_path, reused_summary, reused_obj = reused
-            reused_obj["task_id"] = str(triplet.task_id)
-            reused_obj["status"] = "ok"
-            reused_obj, det_issues, hard_uncovered, advisory_uncovered = apply_deterministic_guards(
-                obj=reused_obj,
-                subtasks=subtasks,
-                min_obligations=int(args.min_obligations),
-                source_text_blocks=source_blocks,
-                security_profile=security_profile,
-            )
-            reused_status = normalize_model_status(reused_obj.get("status"))
-            if reused_status == "ok":
-                det_stats = {
-                    "excerpt_prefix_stripped_matches": int(
-                        reused_obj.get("source_excerpt_prefix_stripped_matches") or 0
-                    ),
-                }
-                summary["status"] = "ok"
-                summary["rc"] = 0
-                summary["reuse_hit"] = True
-                summary["reused_from"] = str(verdict_path).replace("\\", "/")
-                summary["reused_summary_source"] = str(reused_summary.get("out_dir") or "").strip()
-                summary["deterministic_issues"] = det_issues
-                summary["deterministic_stats"] = det_stats
-                summary["excerpt_prefix_stripped_matches"] = int(
-                    det_stats.get("excerpt_prefix_stripped_matches") or 0
-                )
-                summary["hard_uncovered_count"] = len(hard_uncovered)
-                summary["advisory_uncovered_count"] = len(advisory_uncovered)
-                trace_text = (
-                    "reuse_last_ok=true\n"
-                    f"reused_from={str(verdict_path).replace('\\', '/')}\n"
-                    f"input_hash={input_hash}\n"
-                    f"prompt_version={PROMPT_VERSION}\n"
-                )
-                if not write_checked_and_sync_artifacts(
-                    out_dir=out_dir,
-                    summary_obj=summary,
-                    verdict_obj=reused_obj,
-                    validate_verdict_schema=validate_verdict_schema,
-                    report_text=render_obligations_report(reused_obj),
-                    trace_text=trace_text,
-                    output_last_message=reused_obj,
-                ):
-                    print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-                    return 1
-                reuse_write_stats = remember_reusable_ok_result_with_stats(
-                    task_id=str(triplet.task_id), input_hash=input_hash, prompt_version=PROMPT_VERSION, security_profile=security_profile, logs_root=logs_root, summary_path=out_dir / "summary.json", verdict_path=out_dir / "verdict.json"
-                )
-                apply_reuse_stats(summary, reuse_write_stats)
-                if not write_checked_summary_only_and_sync(out_dir=out_dir, summary_obj=summary):
-                    print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-                    return 1
-                print(f"SC_LLM_OBLIGATIONS status=ok reason=reuse_last_ok out={out_dir}")
-                return 0
+        if handled:
+            return int(exit_code or 0)
 
     prompt = build_obligation_prompt(
         task_id=str(triplet.task_id),
@@ -337,112 +292,38 @@ def main() -> int:
         normalize_status=normalize_model_status,
     )
 
-    ok_votes = sum(1 for item in run_results if item["status"] == "ok")
-    fail_votes = len(run_results) - ok_votes
-    all_run_schema_errors: list[str] = []
-    for item in run_results:
-        all_run_schema_errors.extend([str(x or "").strip() for x in (item.get("schema_errors") or []) if str(x or "").strip()])
-    summary["schema_error_buckets"] = bucket_schema_errors(all_run_schema_errors)
-    summary["schema_error_codes"] = extract_schema_error_codes(all_run_schema_errors)
-    summary["schema_error_count"] = len(all_run_schema_errors)
-    status = "ok" if ok_votes > fail_votes else "fail"
-    selected = pick_consensus_verdict(run_verdicts, target_status=status)
-    obj: dict[str, Any] = dict((selected or {}).get("obj") or {"task_id": str(triplet.task_id), "status": "fail", "obligations": []})
-    obj["task_id"] = str(triplet.task_id)
-    obj["status"] = status
-
-    final_schema_ok, final_schema_errors, obj = validate_verdict_schema(obj)
-    if not final_schema_ok:
-        final_schema_errors = limit_schema_errors(final_schema_errors, max_count=max_schema_errors)
-        final_combined_errors = all_run_schema_errors + final_schema_errors
-        summary["status"] = "fail"
-        summary["error"] = "final_schema_invalid"
-        summary["schema_errors"] = final_schema_errors
-        summary["schema_error_buckets"] = bucket_schema_errors(final_combined_errors)
-        summary["schema_error_codes"] = extract_schema_error_codes(final_combined_errors)
-        summary["schema_error_count"] = len(final_combined_errors)
-        if not write_checked_and_sync_artifacts(
-            out_dir=out_dir,
-            summary_obj=summary,
-            verdict_obj=obj,
-            validate_verdict_schema=validate_verdict_schema,
-            report_text="# sc-llm-extract-task-obligations report\n\n- status: fail\n- reason: final_schema_invalid\n",
-        ):
-            print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-            return 1
-        print(f"SC_LLM_OBLIGATIONS status=fail reason=final_schema_invalid out={out_dir}")
-        return 1
-
-    obj, det_issues, hard_uncovered, advisory_uncovered = apply_deterministic_guards(
-        obj=obj,
+    return finalize_consensus_run(
+        task_id=str(triplet.task_id),
+        security_profile=security_profile,
+        prompt_version=PROMPT_VERSION,
+        out_dir=out_dir,
+        logs_root=logs_root,
+        summary=summary,
         subtasks=subtasks,
         min_obligations=int(args.min_obligations),
-        source_text_blocks=source_blocks,
-        security_profile=security_profile,
+        source_blocks=source_blocks,
+        input_hash=input_hash,
+        run_results=run_results,
+        run_verdicts=run_verdicts,
+        cmd_ref=cmd_ref,
+        auto_escalate_enabled=auto_escalate_enabled,
+        auto_escalate_triggered=auto_escalate_triggered,
+        auto_escalate_reasons=auto_escalate_reasons,
+        configured_runs=configured_runs,
+        max_runs=max_runs,
+        force_for_task=force_for_task,
+        validate_verdict_schema_fn=validate_verdict_schema,
+        limit_schema_errors_fn=limit_schema_errors,
+        bucket_schema_errors_fn=bucket_schema_errors,
+        extract_schema_error_codes_fn=extract_schema_error_codes,
+        pick_consensus_verdict_fn=pick_consensus_verdict,
+        apply_deterministic_guards_fn=apply_deterministic_guards,
+        normalize_model_status_fn=normalize_model_status,
+        write_checked_and_sync_artifacts_fn=write_checked_and_sync_artifacts,
+        render_obligations_report_fn=render_obligations_report,
+        remember_reusable_ok_result_with_stats_fn=remember_reusable_ok_result_with_stats,
+        apply_reuse_stats_fn=apply_reuse_stats,
+        write_checked_summary_only_and_sync_fn=write_checked_summary_only_and_sync,
     )
-    det_stats = {
-        "excerpt_prefix_stripped_matches": int(
-            obj.get("source_excerpt_prefix_stripped_matches") or 0
-        ),
-    }
-    status = normalize_model_status(obj.get("status"))
-
-    summary["rc"] = 0 if run_verdicts else 1
-    summary["cmdline"] = cmd_ref or []
-    summary["consensus_runs"] = len(run_results)
-    summary["consensus_runs_configured"] = configured_runs
-    summary["consensus_votes"] = {"ok": ok_votes, "fail": fail_votes}
-    summary["run_results"] = run_results
-    summary["auto_escalate"] = {
-        "enabled": auto_escalate_enabled,
-        "triggered": auto_escalate_triggered,
-        "max_runs": max_runs,
-        "force_for_task": force_for_task,
-        "reasons": auto_escalate_reasons,
-    }
-    summary["selected_run"] = int((selected or {}).get("run") or 0)
-    summary["deterministic_issues"] = det_issues
-    summary["deterministic_stats"] = det_stats
-    summary["excerpt_prefix_stripped_matches"] = int(
-        det_stats.get("excerpt_prefix_stripped_matches") or 0
-    )
-    summary["hard_uncovered_count"] = len(hard_uncovered)
-    summary["advisory_uncovered_count"] = len(advisory_uncovered)
-    summary["status"] = status
-    if not run_verdicts:
-        summary["error"] = "all_runs_failed_or_invalid"
-    trace_text = (
-        f"consensus_runs={len(run_results)}\n"
-        f"consensus_runs_configured={configured_runs}\n"
-        f"ok_votes={ok_votes}\n"
-        f"fail_votes={fail_votes}\n"
-        f"selected_run={summary['selected_run']}\n"
-        f"security_profile={security_profile}\n"
-        f"auto_escalate_enabled={auto_escalate_enabled}\n"
-        f"auto_escalate_triggered={auto_escalate_triggered}\n"
-        f"auto_escalate_reasons={','.join(auto_escalate_reasons)}\n"
-    )
-    if not write_checked_and_sync_artifacts(
-        out_dir=out_dir,
-        summary_obj=summary,
-        verdict_obj=obj,
-        validate_verdict_schema=validate_verdict_schema,
-        report_text=render_obligations_report(obj),
-        trace_text=trace_text,
-        output_last_message=obj,
-    ):
-        print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-        return 1
-    if status == "ok":
-        reuse_write_stats = remember_reusable_ok_result_with_stats(
-            task_id=str(triplet.task_id), input_hash=input_hash, prompt_version=PROMPT_VERSION, security_profile=security_profile, logs_root=logs_root, summary_path=out_dir / "summary.json", verdict_path=out_dir / "verdict.json"
-        )
-        apply_reuse_stats(summary, reuse_write_stats)
-        if not write_checked_summary_only_and_sync(out_dir=out_dir, summary_obj=summary):
-            print(f"SC_LLM_OBLIGATIONS status=fail reason=output_schema_invalid out={out_dir}")
-            return 1
-    ok = status == "ok"
-    print(f"SC_LLM_OBLIGATIONS status={'ok' if ok else 'fail'} out={out_dir}")
-    return 0 if ok else 1
 if __name__ == "__main__":
     raise SystemExit(main())
