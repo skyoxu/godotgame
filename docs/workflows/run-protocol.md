@@ -23,6 +23,10 @@ The goal is deterministic local recovery, not platform-grade remote orchestratio
 - Repo-scoped producer entry: `scripts/python/local_hard_checks_harness.py`
 - Stable CLI entry for repo-scoped runs: `py -3 scripts/python/dev_cli.py run-local-hard-checks`
 - Reviewer rebuild entry: `scripts/sc/agent_to_agent_review.py`
+- Local inspect entry: `scripts/python/inspect_run.py`
+- Task-scoped sidecar schemas: `sc-review-execution-context.schema.json`, `sc-review-repair-guide.schema.json`, `sc-review-latest-index.schema.json`
+- Repo-scoped sidecar schemas: `sc-local-hard-checks-execution-context.schema.json`, `sc-local-hard-checks-repair-guide.schema.json`, `sc-local-hard-checks-latest-index.schema.json`
+- Shared failure taxonomy: `scripts/sc/_failure_taxonomy.py`
 - Run-event schema: `scripts/sc/schemas/sc-run-event.schema.json`
 - Harness-capabilities schema: `scripts/sc/schemas/sc-harness-capabilities.schema.json`
 - Repo-scoped local-hard-checks summary schema: `scripts/sc/schemas/sc-local-hard-checks-summary.schema.json`
@@ -97,6 +101,14 @@ Repo-scoped pointer:
 | `latest.json` | producer pipeline and reviewer sidecar | task-scoped pointer to newest run artifacts |
 | `local-hard-checks-latest.json` | repo-scoped producer pipeline | repo-scoped pointer to newest local hard-check run artifacts |
 
+## Consumer-Driven Sidecar Contract
+
+- `scripts/sc/agent_to_agent_review.py` consumes and validates task-scoped `latest.json`, `execution-context.json`, and `repair-guide.json` before trusting reviewer-side recovery decisions.
+- `scripts/python/_recovery_doc_scaffold.py` consumes and validates task-scoped `latest.json` before backfilling `execution-plans/` and `decision-logs/`.
+- `scripts/python/inspect_run.py` consumes `latest.json`, `summary.json`, `execution-context.json`, and `repair-guide.json` for both task-scoped review runs and repo-scoped local hard checks.
+- `summary.json` remains producer-owned. Consumer contracts should only require fields they actually read.
+- New shared sidecar fields are not allowed unless a real consumer needs them and the executable schema plus regression coverage are updated in the same change.
+
 ## Event Stream Contract
 
 `run-events.jsonl` is append-only. Each line must satisfy `scripts/sc/schemas/sc-run-event.schema.json`.
@@ -167,6 +179,29 @@ When recovering after context loss, read in this order:
 
 Do not scrape console logs first if these files already exist.
 
+## Local Inspect Entry
+
+Use `scripts/python/inspect_run.py` as the stable local replay/inspect entrypoint:
+
+- Task-scoped latest pointer: `py -3 scripts/python/inspect_run.py --task-id 7`
+- Explicit task-scoped bundle: `py -3 scripts/python/inspect_run.py --latest logs/ci/<date>/sc-review-pipeline-task-7/latest.json`
+- Explicit repo-scoped bundle: `py -3 scripts/python/inspect_run.py --kind local-hard-checks --latest logs/ci/<date>/local-hard-checks-latest.json`
+- Persist one stable inspection payload: `py -3 scripts/python/inspect_run.py --task-id 7 --out-json logs/ci/<date>/inspect-task-7.json`
+
+The command returns `0` only when the inspected run is fully usable for recovery. Any broken pointer, schema drift, or failed step returns non-zero and emits one stable JSON payload.
+
+## Failure Taxonomy
+
+`inspect_run.py` normalizes run state into one of these codes:
+
+- `ok`: the latest pointer and required sidecars are valid, and no blocking repair is required
+- `step-failed`: the producer run failed at a concrete step
+- `review-needs-fix`: the producer run completed but follow-up review work is still required
+- `artifact-missing`: one or more required sidecars are missing
+- `schema-invalid`: a consumed sidecar drifted from the executable contract
+- `stale-latest`: `latest.json` points to a moved or missing artifact directory
+- `aborted`: the run was intentionally stopped
+
 ## Design Rules
 
 - `summary.json` stays producer-owned and must not be rewritten by reviewer sidecars.
@@ -174,10 +209,17 @@ Do not scrape console logs first if these files already exist.
 - `latest.json` is the task-scoped entry point; consumers should not guess the newest run by directory scanning first.
 - Schemas under `scripts/sc/schemas/` are executable SSoT; docs explain them but do not duplicate them.
 
+## Protocol Budget
+
+- `additionalProperties: false` on shared sidecar schemas is intentional and must stay on.
+- Do not add a new shared sidecar file or field unless the same change also adds a named consumer, a schema update under `scripts/sc/schemas/`, a fallback-validator update, and regression coverage under `scripts/sc/tests/`.
+- If a producer-only field has no real consumer yet, keep it out of the shared sidecar contract.
+
 ## Minimal Validation
 
 - Validate event lines against `scripts/sc/schemas/sc-run-event.schema.json`
 - Validate capabilities against `scripts/sc/schemas/sc-harness-capabilities.schema.json`
+- Validate consumed sidecars through `scripts/sc/_artifact_schema.py` in consumer paths such as `agent_to_agent_review.py`, `_recovery_doc_scaffold.py`, and `inspect_run.py`
 - Keep `docs/workflows/examples/sc-run-events.example.jsonl` aligned with the executable schema
 - Keep `scripts/sc/tests/test_pipeline_sidecar_protocol.py` green after protocol changes
-
+- Keep `scripts/sc/tests/test_run_artifact_schema_and_inspect.py` green after sidecar contract changes

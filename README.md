@@ -83,6 +83,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `scripts/python/validate_recovery_docs.py` —— 校验 `execution-plans/` 与 `decision-logs/` 的恢复必填字段、`n/a` 原因说明以及关键路径引用。
 - `scripts/python/new_execution_plan.py` —— 生成合规的 `execution-plans/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
 - `scripts/python/new_decision_log.py` —— 生成合规的 `decision-logs/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
+- `scripts/python/inspect_run.py` -- inspect task-scoped `latest.json` or repo-scoped `local-hard-checks-latest.json`, validate the shared sidecar contract for `summary.json` / `execution-context.json` / `repair-guide.json`, and emit one stable run-inspection JSON payload with the shared failure taxonomy for local recovery and debugging.
 - `scripts/python/run_obligations_jitter_batch5x3.py` —— 本地批量运行 `scripts/sc/llm_extract_task_obligations.py`，按 5x3 轮次收集 obligations 抖动原始数据；支持 `--delivery-profile`，模板仓在缺少真实 `.taskmaster/tasks/*.json` 时自动回退到 `examples/taskmaster/tasks.json`。
 - `scripts/python/build_obligations_jitter_summary.py` —— 将 5x3 原始运行结果汇总为 jitter summary / markdown report，用于判断稳定通过、稳定失败和抖动任务。
 - `scripts/python/refresh_obligations_jitter_summary_with_overrides.py` —— 将补跑结果覆盖回原 summary，生成 refreshed summary / report，适合局部重跑后的收敛分析。
