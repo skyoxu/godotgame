@@ -1,88 +1,139 @@
 # Local Hard Checks Workflow
 
-本文档定义 `py -3 scripts/python/dev_cli.py run-local-hard-checks` 的使用口径。
+This document defines the contract for py -3 scripts/python/dev_cli.py run-local-hard-checks.
 
-## 目标
+## Goal
 
-- 给本地开发提供一条稳定的完整硬验证入口。
-- 避免手工拼接多条命令时漏掉步骤或顺序漂移。
-- 避免重复执行 `run_gate_bundle.py --mode hard`，减少日志噪声和耗时。
+- Provide one stable local entrypoint for full hard validation.
+- Avoid step drift caused by manually stitching commands together.
+- Avoid re-running 
+un_gate_bundle.py --mode hard and creating duplicate noise.
+- Treat local hard validation as a first-class run object for recovery after context resets.
 
-## 适用场景
+## When To Use It
 
-- 在提交前做一次完整本地硬验证。
-- 在 PR 前确认语义 / 契约 / 单测 / 引擎侧小集都已通过。
-- 在排查 CI 失败时，先本地复现仓库当前推荐顺序。
+- Run it before commit when you want the full local hard path.
+- Run it before a PR when semantics, contracts, unit tests, and the small engine set all need confirmation.
+- Run it to reproduce the repository-recommended local order before debugging a CI failure.
+- Read its sidecars after a context reset to see where the local hard path stopped.
 
-## 默认顺序
+## Default Order
 
-`run-local-hard-checks` 会按以下顺序执行，并在首个失败步骤处立即停止：
 
-1. `scripts/python/run_gate_bundle.py --mode hard`
-2. `scripts/python/run_dotnet.py`
-3. `scripts/python/run_gdunit.py`（Adapters/Config + Security hard set，仅当提供 `--godot-bin` 时执行）
-4. `scripts/python/smoke_headless.py --strict`（仅当提供 `--godot-bin` 时执行）
+un-local-hard-checks executes these steps in order and stops at the first failing step:
 
-这条入口的核心约束是：
+1. scripts/python/run_gate_bundle.py --mode hard
+2. scripts/python/run_dotnet.py
+3. scripts/python/run_gdunit.py (Adapters/Config + Security hard set, only when --godot-bin is provided)
+4. scripts/python/smoke_headless.py --strict (only when --godot-bin is provided)
 
-- `run_gate_bundle.py` 只执行一次。
-- `quality_gates.py all` 不参与这条完整链路，避免再次触发 hard bundle。
-- 未提供 `--godot-bin` 时，入口只执行 gate bundle + dotnet，用于无引擎环境或快速本地验证。
+Core rules:
 
-## 推荐命令
+- 
+un_gate_bundle.py runs exactly once.
+- quality_gates.py all is intentionally excluded from this chain to avoid re-triggering the hard bundle.
+- Without --godot-bin, the run only executes gate bundle + dotnet.
+- Every step writes events and a step log so recovery can start from artifacts instead of memory.
 
-```powershell
-# 完整本地硬验证
-py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin $env:GODOT_BIN
+## Recommended Commands
 
-# 无 Godot 环境时，只跑语义 / 契约 / 单测
+`powershell
+# Full local hard validation
+py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin C:\Godot\Godot_v4.5.1-stable_mono_win64_console.exe
+
+# No Godot runtime available: semantics, contracts, and dotnet only
 py -3 scripts/python/dev_cli.py run-local-hard-checks
-```
+`
 
-## 主要参数
+## Main Parameters
 
-- `--godot-bin <path>`：提供后才会追加 GdUnit4 hard set 和 strict smoke。
-- `--solution <path>`：传给 `run_dotnet.py`，默认 `Game.sln`。
-- `--configuration <Debug|Release>`：传给 `run_dotnet.py`，默认 `Debug`。
-- `--delivery-profile <profile>`：传给 hard gate bundle，用于控制 profile 化门禁默认值。
-- `--task-file <path>`：可重复，覆盖默认 task views。
-- `--out-dir <path>`：传给 hard gate bundle，覆盖默认输出目录。
-- `--run-id <id>`：传给 hard gate bundle，用于稳定关联本次运行产物。
-- `--timeout-sec <n>`：传给 strict smoke，默认 `5`。
+- --godot-bin <path>: enables the GdUnit4 hard set and strict smoke.
+- --solution <path>: forwarded to 
+un_dotnet.py; default Game.sln.
+- --configuration <Debug|Release>: forwarded to 
+un_dotnet.py; default Debug.
+- --delivery-profile <profile>: resolves the run-level delivery profile and default security profile.
+- --task-file <path>: repeatable; overrides the default task views and is forwarded to the hard gate bundle.
+- --out-dir <path>: overrides the harness run root; default is logs/ci/<YYYY-MM-DD>/local-hard-checks-<run-id>/.
+- --run-id <id>: stable identity for the whole harness run and its nested hard bundle artifacts.
+- --timeout-sec <n>: forwarded to strict smoke; default 5.
 
-## 与其他入口的区别
+## Difference From Other Entrypoints
 
-### `run-ci-basic`
+### 
+un-ci-basic
 
-- 目标：最小硬门入口。
-- 默认只跑 `run_gate_bundle.py --mode hard`。
-- 只有显式传 `--legacy-preflight` 时才追加旧的 `ci_pipeline.py`。
+- Goal: minimal hard gate entrypoint.
+- Default behavior: only runs 
+un_gate_bundle.py --mode hard.
+- It only appends legacy ci_pipeline.py when --legacy-preflight is explicitly enabled.
 
-### `run-quality-gates`
+### 
+un-quality-gates
 
-- 目标：包装 `quality_gates.py all`。
-- 默认先跑 hard gate bundle，再按需追加 `--gdunit-hard` / `--smoke`。
-- 适合单独验证引擎小集，但不适合作为“完整本地硬验证”主入口，因为会和 `run_gate_bundle.py` 形成重复调用风险。
+- Goal: wrap quality_gates.py all.
+- Default behavior: run the hard gate bundle first and optionally append --gdunit-hard / --smoke.
+- Useful for focused engine-side checks, but not the right primary entrypoint for full local hard validation because it can duplicate the hard bundle path.
 
-### 手工拆开执行
+### Manual Step Execution
 
-适合排查某个步骤失败时使用，但不应作为日常默认方式。
+Useful when isolating one failing step, but not the recommended day-to-day default.
 
-## 产物与日志
+## Artifacts And Logs
 
-- hard gate bundle：`logs/ci/<YYYY-MM-DD>/gate-bundle/runs/<run-id>/hard/`
-- dotnet：`logs/unit/<YYYY-MM-DD>/`
-- GdUnit4 hard set：`logs/e2e/dev-cli/local-hard-checks-gdunit-hard/`
-- strict smoke：`logs/ci/<YYYY-MM-DD>/smoke/<timestamp>/`
+### Harness Root
 
-## 止损边界
+Default root: logs/ci/<YYYY-MM-DD>/local-hard-checks-<run-id>/
 
-- 如果你只想验证语义 / 契约门禁，不要用这条入口，直接跑 `run-ci-basic`。
-- 如果你只想追加 GdUnit4 hard 或 smoke，不要用这条入口，直接跑 `run-quality-gates` 或专门子命令。
-- 如果后续要继续扩展这条入口，不要再把命令构造写回 `dev_cli.py`，应优先扩展 `scripts/python/dev_cli_builders.py`。
+This directory is now a first-class run object and writes at least:
 
-## 相关文档
+- summary.json: canonical run status and step list
+- execution-context.json: profile state, failed step, and sidecar pointers
+- 
+epair-guide.json: machine-readable repair guidance
+- 
+epair-guide.md: human-readable repair guidance
+- 
+un-events.jsonl: append-only lifecycle and step timeline
+- harness-capabilities.json: supported sidecars and recovery actions for this run type
+- 
+un_id.txt: stable run id
+- <step>.log: one JSON log per step, for example gate-bundle-hard.log
 
-- `docs/testing-framework.md`
-- `docs/workflows/gate-bundle.md`
-- `DELIVERY_PROFILE.md`
+The same date directory also gets a repo-scoped pointer:
+
+- logs/ci/<YYYY-MM-DD>/local-hard-checks-latest.json
+
+### Nested Step Artifacts
+
+- Hard gate bundle: nested summary at <run-out-dir>/hard/summary.json
+- Dotnet: logs/unit/<YYYY-MM-DD>/
+- GdUnit4 hard set: logs/e2e/dev-cli/local-hard-checks-gdunit-hard/
+- Strict smoke: logs/ci/<YYYY-MM-DD>/smoke/<timestamp>/
+
+### Protocol Boundary
+
+This run currently supports only the minimal recovery actions:
+
+- 
+erun
+- inspect-failed-step
+
+It does not produce pproval-request.json, pproval-response.json, marathon-state.json, or gent-review.json. Those sidecars remain part of the task-scoped 
+un_review_pipeline.py protocol.
+
+## Stop-Loss Rules
+
+- If you only want semantics and contract gates, use 
+un-ci-basic instead.
+- If you only want GdUnit4 hard or smoke, use 
+un-quality-gates or the dedicated subcommands instead.
+- If this entrypoint needs more steps later, do not push command composition back into dev_cli.py; extend scripts/python/local_hard_checks_harness.py and scripts/python/dev_cli_builders.py instead.
+- If future work needs approvals, marathon checkpoints, or reviewer sidecars, decide first whether the feature still belongs to a repo-scoped run or should move into the task-scoped review pipeline.
+
+## Related Docs
+
+- docs/testing-framework.md
+- docs/workflows/gate-bundle.md
+- docs/workflows/run-protocol.md
+- DELIVERY_PROFILE.md
