@@ -27,6 +27,7 @@ from dev_cli_builders import (
     build_run_gdunit_hard_cmd,
     build_smoke_strict_cmd,
 )
+from local_hard_checks_harness import run_local_hard_checks
 
 
 def run(cmd: list[str]) -> int:
@@ -103,27 +104,20 @@ def cmd_run_preflight(args: argparse.Namespace) -> int:
 
 
 def cmd_run_local_hard_checks(args: argparse.Namespace) -> int:
-    """Run local hard checks without repeating the gate bundle."""
+    """Run local hard checks via the protocolized harness wrapper."""
 
     task_files = list(args.task_file or DEFAULT_GATE_BUNDLE_TASK_FILES)
-    steps = [
-        build_gate_bundle_hard_cmd(
-            delivery_profile=args.delivery_profile,
-            task_files=task_files,
-            out_dir=args.out_dir,
-            run_id=args.run_id,
-        ),
-        build_run_dotnet_cmd(solution=args.solution, configuration=args.configuration),
-    ]
-    if args.godot_bin:
-        steps.append(build_run_gdunit_hard_cmd(godot_bin=args.godot_bin, report_dir="logs/e2e/dev-cli/local-hard-checks-gdunit-hard"))
-        steps.append(build_smoke_strict_cmd(godot_bin=args.godot_bin, timeout_sec=args.timeout_sec))
-
-    for cmd in steps:
-        rc = run(cmd)
-        if rc != 0:
-            return rc
-    return 0
+    return run_local_hard_checks(
+        solution=args.solution,
+        configuration=args.configuration,
+        godot_bin=args.godot_bin,
+        delivery_profile=args.delivery_profile,
+        task_files=task_files,
+        out_dir=args.out_dir,
+        run_id=args.run_id,
+        timeout_sec=args.timeout_sec,
+        run_fn=run,
+    )
 
 
 def cmd_run_smoke_strict(args: argparse.Namespace) -> int:

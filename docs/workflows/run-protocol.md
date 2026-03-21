@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the local file-protocol harness used by `scripts/sc/run_review_pipeline.py`.
+This document defines the local file-protocol harness used by `scripts/sc/run_review_pipeline.py` and the repo-scoped `py -3 scripts/python/dev_cli.py run-local-hard-checks` wrapper.
 
 It is the human-readable contract for durable local runs. The executable schemas remain under `scripts/sc/schemas/` and must not be duplicated into `docs/`.
 
@@ -20,9 +20,12 @@ The goal is deterministic local recovery, not platform-grade remote orchestratio
 ## SSoT
 
 - Producer entry: `scripts/sc/run_review_pipeline.py`
+- Repo-scoped producer entry: `scripts/python/local_hard_checks_harness.py`
+- Stable CLI entry for repo-scoped runs: `py -3 scripts/python/dev_cli.py run-local-hard-checks`
 - Reviewer rebuild entry: `scripts/sc/agent_to_agent_review.py`
 - Run-event schema: `scripts/sc/schemas/sc-run-event.schema.json`
 - Harness-capabilities schema: `scripts/sc/schemas/sc-harness-capabilities.schema.json`
+- Repo-scoped local-hard-checks summary schema: `scripts/sc/schemas/sc-local-hard-checks-summary.schema.json`
 - Example event stream: `docs/workflows/examples/sc-run-events.example.jsonl`
 
 ## Core Model
@@ -30,6 +33,7 @@ The goal is deterministic local recovery, not platform-grade remote orchestratio
 Conceptually, the harness uses these local concepts:
 
 - `task scope`: `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
+- `repo scope`: `logs/ci/<date>/local-hard-checks-latest.json`
 - `run`: one artifact directory identified by `run_id`
 - `turn`: one lifecycle transition such as `run_started`, `run_resumed`, `run_forked`, `run_completed`, or `run_aborted`
 - `item`: one step transition, sidecar file, approval artifact, or reviewer artifact
@@ -38,7 +42,7 @@ This is protocolized local orchestration, not RPC.
 
 ## Artifact Layout
 
-For one run, the producer writes:
+For one task-scoped review run, the producer writes:
 
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/summary.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/execution-context.json`
@@ -49,7 +53,18 @@ For one run, the producer writes:
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/harness-capabilities.json`
 - `logs/ci/<date>/sc-review-pipeline-task-<task>-<run_id>/run_id.txt`
 
-Optional sidecars:
+For one repo-scoped local hard-check run, the producer writes:
+
+- `logs/ci/<date>/local-hard-checks-<run_id>/summary.json`
+- `logs/ci/<date>/local-hard-checks-<run_id>/execution-context.json`
+- `logs/ci/<date>/local-hard-checks-<run_id>/repair-guide.json`
+- `logs/ci/<date>/local-hard-checks-<run_id>/repair-guide.md`
+- `logs/ci/<date>/local-hard-checks-<run_id>/run-events.jsonl`
+- `logs/ci/<date>/local-hard-checks-<run_id>/harness-capabilities.json`
+- `logs/ci/<date>/local-hard-checks-<run_id>/run_id.txt`
+- `logs/ci/<date>/local-hard-checks-<run_id>/<step>.log`
+
+Optional sidecars for task-scoped review runs:
 
 - `approval-request.json`
 - `approval-response.json`
@@ -60,6 +75,10 @@ Task-scoped pointer:
 
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
+Repo-scoped pointer:
+
+- `logs/ci/<date>/local-hard-checks-latest.json`
+
 ## Sidecar Roles
 
 | Artifact | Owner | Role |
@@ -68,14 +87,15 @@ Task-scoped pointer:
 | `execution-context.json` | producer pipeline | git state, profile state, recovery pointers, latest reviewer recommendation snapshot |
 | `repair-guide.json` | producer pipeline | machine-readable next repair action |
 | `repair-guide.md` | producer pipeline | human-readable repair instructions |
-| `marathon-state.json` | producer pipeline | checkpoint, retry, wall-time, refresh, fork metadata |
+| `marathon-state.json` | producer pipeline | checkpoint, retry, wall-time, refresh, fork metadata; task-scoped review runs only |
 | `run-events.jsonl` | producer pipeline | append-only lifecycle and step timeline |
 | `harness-capabilities.json` | producer pipeline | machine-readable protocol capabilities |
-| `approval-request.json` | producer pipeline | soft approval request for risky fork/recovery flows |
-| `approval-response.json` | operator or follow-up tool | soft approval response envelope |
-| `agent-review.json` | reviewer sidecar | normalized reviewer verdict and recommended action |
-| `agent-review.md` | reviewer sidecar | human-readable reviewer summary |
+| `approval-request.json` | producer pipeline | soft approval request for risky fork/recovery flows; task-scoped review runs only |
+| `approval-response.json` | operator or follow-up tool | soft approval response envelope; task-scoped review runs only |
+| `agent-review.json` | reviewer sidecar | normalized reviewer verdict and recommended action; task-scoped review runs only |
+| `agent-review.md` | reviewer sidecar | human-readable reviewer summary; task-scoped review runs only |
 | `latest.json` | producer pipeline and reviewer sidecar | task-scoped pointer to newest run artifacts |
+| `local-hard-checks-latest.json` | repo-scoped producer pipeline | repo-scoped pointer to newest local hard-check run artifacts |
 
 ## Event Stream Contract
 

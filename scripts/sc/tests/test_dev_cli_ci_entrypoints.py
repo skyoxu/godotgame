@@ -158,8 +158,9 @@ class DevCliCiEntrypointsTests(unittest.TestCase):
         self.assertIn("--godot-bin", cmd)
         self.assertIn("C:/Godot/Godot.exe", cmd)
 
-    def test_run_local_hard_checks_should_run_bundle_then_dotnet_then_engine_steps(self) -> None:
-        with mock.patch.object(dev_cli, "run", side_effect=[0, 0, 0, 0]) as run_mock:
+    def test_run_local_hard_checks_should_delegate_to_protocol_harness(self) -> None:
+        with mock.patch.object(dev_cli, "run_local_hard_checks", create=True, return_value=0) as harness_mock, \
+            mock.patch.object(dev_cli, "run") as run_mock:
             rc = dev_cli.main(
                 [
                     "run-local-hard-checks",
@@ -179,55 +180,35 @@ class DevCliCiEntrypointsTests(unittest.TestCase):
             )
 
         self.assertEqual(0, rc)
-        self.assertEqual(4, run_mock.call_count)
+        run_mock.assert_not_called()
+        harness_mock.assert_called_once_with(
+            solution="Game.sln",
+            configuration="Debug",
+            godot_bin="C:/Godot/Godot.exe",
+            delivery_profile="standard",
+            task_files=["custom/tasks_back.json", "custom/tasks_gameplay.json"],
+            out_dir="logs/ci/demo/local-hard-checks",
+            run_id="local-demo",
+            timeout_sec=5,
+            run_fn=run_mock,
+        )
 
-        bundle_cmd = run_mock.call_args_list[0][0][0]
-        dotnet_cmd = run_mock.call_args_list[1][0][0]
-        gdunit_cmd = run_mock.call_args_list[2][0][0]
-        smoke_cmd = run_mock.call_args_list[3][0][0]
-
-        self.assertEqual(["py", "-3", "scripts/python/run_gate_bundle.py"], bundle_cmd[:3])
-        self.assertIn("--mode", bundle_cmd)
-        self.assertIn("hard", bundle_cmd)
-        self.assertIn("--delivery-profile", bundle_cmd)
-        self.assertIn("standard", bundle_cmd)
-        self.assertIn("--run-id", bundle_cmd)
-        self.assertIn("local-demo", bundle_cmd)
-        self.assertIn("--out-dir", bundle_cmd)
-        self.assertIn("logs/ci/demo/local-hard-checks", bundle_cmd)
-
-        self.assertEqual(["py", "-3", "scripts/python/run_dotnet.py"], dotnet_cmd[:3])
-        self.assertIn("--solution", dotnet_cmd)
-        self.assertIn("Game.sln", dotnet_cmd)
-        self.assertIn("--configuration", dotnet_cmd)
-        self.assertIn("Debug", dotnet_cmd)
-
-        self.assertEqual(["py", "-3", "scripts/python/run_gdunit.py"], gdunit_cmd[:3])
-        self.assertIn("--godot-bin", gdunit_cmd)
-        self.assertIn("C:/Godot/Godot.exe", gdunit_cmd)
-
-        self.assertEqual(["py", "-3", "scripts/python/smoke_headless.py"], smoke_cmd[:3])
-        self.assertIn("--project-path", smoke_cmd)
-        self.assertIn(".", smoke_cmd)
-        self.assertIn("--strict", smoke_cmd)
-
-    def test_run_local_hard_checks_should_stop_on_first_failure(self) -> None:
-        with mock.patch.object(dev_cli, "run", return_value=1) as run_mock:
+    def test_run_local_hard_checks_should_return_harness_failure_code(self) -> None:
+        with mock.patch.object(dev_cli, "run_local_hard_checks", create=True, return_value=7) as harness_mock:
             rc = dev_cli.main(["run-local-hard-checks"])
 
-        self.assertEqual(1, rc)
-        self.assertEqual(1, run_mock.call_count)
-        bundle_cmd = run_mock.call_args_list[0][0][0]
-        self.assertEqual(["py", "-3", "scripts/python/run_gate_bundle.py"], bundle_cmd[:3])
-
-    def test_run_local_hard_checks_should_skip_engine_steps_without_godot_bin(self) -> None:
-        with mock.patch.object(dev_cli, "run", side_effect=[0, 0]) as run_mock:
-            rc = dev_cli.main(["run-local-hard-checks"])
-
-        self.assertEqual(0, rc)
-        self.assertEqual(2, run_mock.call_count)
-        self.assertEqual(["py", "-3", "scripts/python/run_gate_bundle.py"], run_mock.call_args_list[0][0][0][:3])
-        self.assertEqual(["py", "-3", "scripts/python/run_dotnet.py"], run_mock.call_args_list[1][0][0][:3])
+        self.assertEqual(7, rc)
+        harness_mock.assert_called_once_with(
+            solution="Game.sln",
+            configuration="Debug",
+            godot_bin="",
+            delivery_profile="",
+            task_files=dev_cli.DEFAULT_GATE_BUNDLE_TASK_FILES,
+            out_dir="",
+            run_id="",
+            timeout_sec=5,
+            run_fn=dev_cli.run,
+        )
 
     def test_run_smoke_strict_should_use_current_smoke_headless_args(self) -> None:
         with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
