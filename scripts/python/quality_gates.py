@@ -1,143 +1,116 @@
 #!/usr/bin/env python3
+"""Quality gates entry for Windows (Godot+C# template).
+
+Default behavior:
+- run hard gate bundle first
+- optionally append GdUnit hard set
+- optionally append strict headless smoke
+
+The legacy ``ci_pipeline.py`` remains available as a separate tool, but this
+entrypoint now follows the same gate bundle mainline used by current CI.
 """
-Quality gates entry for Windows (Godot+C# variant).
 
-Current minimal implementation:
-- Delegates to ci_pipeline.py `all` command, which runs:
-  * dotnet tests + coverage (soft gate on coverage)
-  * Godot self-check (hard gate)
-  * encoding scan (soft gate)
-
-Usage (Windows):
-  py -3 scripts/python/quality_gates.py all \
-    --solution Game.sln --configuration Debug \
-    --godot-bin "C:\\Godot\\Godot_v4.5.1-stable_mono_win64_console.exe" \
-    --build-solutions
-
-Exit codes:
-  0  all hard gates passed
-  1  hard gate failed (dotnet tests or self-check)
-
-This script is designed to be extended in Phase 13 to include
-additional gates (GdUnit4 sets, smoke, perf, etc.).
-"""
+from __future__ import annotations
 
 import argparse
 import subprocess
 import sys
 
+from quality_gates_builders import (
+    DEFAULT_GATE_BUNDLE_TASK_FILES,
+    build_gate_bundle_hard_cmd,
+    build_gdunit_hard_cmd,
+    build_smoke_headless_cmd,
+)
 
-def run_ci_pipeline(solution: str, configuration: str, godot_bin: str, build_solutions: bool) -> int:
-    args = [
-        "py",
-        "-3",
-        "scripts/python/ci_pipeline.py",
-        "all",
-        "--solution",
-        solution,
-        "--configuration",
-        configuration,
-        "--godot-bin",
-        godot_bin,
-    ]
-    if build_solutions:
-        args.append("--build-solutions")
 
-    proc = subprocess.run(args, text=True)
+def _run(cmd: list[str]) -> int:
+    proc = subprocess.run(cmd, text=True)
     return proc.returncode
+
+
+def run_gate_bundle_hard(
+    *,
+    delivery_profile: str,
+    task_files: list[str],
+    out_dir: str,
+    run_id: str,
+) -> int:
+    return _run(
+        build_gate_bundle_hard_cmd(
+            delivery_profile=delivery_profile,
+            task_files=task_files,
+            out_dir=out_dir,
+            run_id=run_id,
+        )
+    )
 
 
 def run_gdunit_hard(godot_bin: str) -> int:
-    """Run 硬门禁 GdUnit4 小集（Adapters/Config + Security）。
+    """Run the hard GdUnit subset for adapters/config and security."""
 
-    设计目标：
-    - 与 ci-windows.yml 中的硬门禁集合保持一致；
-    - 报告输出到 logs/e2e/quality-gates/gdunit-hard。
-    """
-
-    args = [
-        "py",
-        "-3",
-        "scripts/python/run_gdunit.py",
-        "--prewarm",
-        "--godot-bin",
-        godot_bin,
-        "--project",
-        "Tests.Godot",
-        "--add",
-        "tests/Adapters/Config",
-        "--add",
-        "tests/Security/Hard",
-        "--timeout-sec",
-        "300",
-        "--rd",
-        "logs/e2e/quality-gates/gdunit-hard",
-    ]
-    proc = subprocess.run(args, text=True)
-    return proc.returncode
+    return _run(build_gdunit_hard_cmd(godot_bin=godot_bin))
 
 
 def run_smoke_headless(godot_bin: str) -> int:
-    """调用 Python 版 headless smoke，严格模式判定。
+    """Run strict headless smoke against the main scene."""
 
-    - 使用 Main 场景作为入口；
-    - mode=strict：至少需要 marker 或 [DB] opened 才视为通过。
-    """
-
-    args = [
-        "py",
-        "-3",
-        "scripts/python/smoke_headless.py",
-        "--godot-bin",
-        godot_bin,
-        "--project",
-        ".",
-        "--scene",
-        "res://Game.Godot/Scenes/Main.tscn",
-        "--timeout-sec",
-        "5",
-        "--mode",
-        "strict",
-    ]
-    proc = subprocess.run(args, text=True)
-    return proc.returncode
+    return _run(build_smoke_headless_cmd(godot_bin=godot_bin))
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_all = sub.add_parser("all", help="run quality gates (ci_pipeline + optional GdUnit/Smoke)")
+    p_all = sub.add_parser(
+        "all",
+        help="run hard gate bundle with optional GdUnit hard and smoke follow-up steps",
+    )
     p_all.add_argument("--solution", default="Game.sln")
     p_all.add_argument("--configuration", default="Debug")
-    p_all.add_argument("--godot-bin", required=True)
     p_all.add_argument("--build-solutions", action="store_true")
+    p_all.add_argument("--godot-bin", default="")
+    p_all.add_argument("--delivery-profile", default="")
+    p_all.add_argument("--task-file", action="append", default=[])
+    p_all.add_argument("--out-dir", default="")
+    p_all.add_argument("--run-id", default="")
     p_all.add_argument("--gdunit-hard", action="store_true", help="run hard GdUnit set (Adapters/Config + Security)")
-    p_all.add_argument("--smoke", action="store_true", help="run headless smoke (strict marker/DB check)")
+    p_all.add_argument("--smoke", action="store_true", help="run strict headless smoke after the hard gate bundle")
+    return parser
 
-    args = parser.parse_args()
 
-    if args.cmd == "all":
-        # 1) 基础门禁：dotnet + self-check + 编码扫描
-        rc = run_ci_pipeline(args.solution, args.configuration, args.godot_bin, args.build_solutions)
-        hard_failed = rc != 0
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
 
-        # 2) 可选硬门禁：GdUnit4 小集
-        if args.gdunit_hard:
-            gd_rc = run_gdunit_hard(args.godot_bin)
-            if gd_rc != 0:
-                hard_failed = True
+    if args.cmd != "all":
+        print("Unsupported command", file=sys.stderr)
+        return 1
 
-        # 3) 可选硬门禁：headless smoke（严格模式）
-        if args.smoke:
-            sm_rc = run_smoke_headless(args.godot_bin)
-            if sm_rc != 0:
-                hard_failed = True
+    if (args.gdunit_hard or args.smoke) and not args.godot_bin:
+        print("[quality_gates] error: --godot-bin is required when --gdunit-hard or --smoke is enabled", file=sys.stderr)
+        return 2
 
-        return 0 if not hard_failed else 1
+    task_files = list(args.task_file or DEFAULT_GATE_BUNDLE_TASK_FILES)
+    rc = run_gate_bundle_hard(
+        delivery_profile=args.delivery_profile,
+        task_files=task_files,
+        out_dir=args.out_dir,
+        run_id=args.run_id,
+    )
+    hard_failed = rc != 0
 
-    print("Unsupported command", file=sys.stderr)
-    return 1
+    if args.gdunit_hard:
+        gd_rc = run_gdunit_hard(args.godot_bin)
+        if gd_rc != 0:
+            hard_failed = True
+
+    if args.smoke:
+        smoke_rc = run_smoke_headless(args.godot_bin)
+        if smoke_rc != 0:
+            hard_failed = True
+
+    return 0 if not hard_failed else 1
 
 
 if __name__ == "__main__":
