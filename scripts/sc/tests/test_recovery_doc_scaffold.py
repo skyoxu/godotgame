@@ -127,6 +127,30 @@ class RecoveryDocScaffoldTests(unittest.TestCase):
             self.assertIn("n/a (no pipeline run id linked yet)", text)
             self.assertIn("n/a (no task-scoped latest.json pointer resolved yet)", text)
 
+    def test_infer_recovery_links_should_ignore_invalid_latest_index_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            latest_dir = root / "logs" / "ci" / "2026-03-21" / "sc-review-pipeline-task-7"
+            latest_dir.mkdir(parents=True, exist_ok=True)
+            latest_path = latest_dir / "latest.json"
+            latest_path.write_text(
+                json.dumps(
+                    {
+                        "task_id": "7",
+                        "latest_out_dir": 123,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            links = scaffold.infer_recovery_links(root=root, task_id="7")
+
+            self.assertEqual("n/a (no pipeline run id linked yet)", links.run_id)
+            self.assertEqual("n/a (no pipeline artifact directory resolved yet)", links.pipeline_artifacts)
+
 
 if __name__ == "__main__":
     unittest.main()

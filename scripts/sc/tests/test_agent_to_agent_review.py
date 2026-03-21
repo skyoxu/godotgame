@@ -190,6 +190,34 @@ class AgentToAgentReviewTests(unittest.TestCase):
             self.assertEqual("denied", payload["explain"]["approval_status"])
             self.assertIn("Approval status is denied", payload["explain"]["summary"])
 
+    def test_build_agent_review_should_block_when_sidecars_fail_schema_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir)
+            summary = {
+                "task_id": "1",
+                "run_id": "abc123",
+                "status": "ok",
+                "steps": [],
+            }
+            execution_context = {
+                "task_id": "1",
+                "run_id": "abc123",
+                "status": "ok",
+                "failed_step": "",
+                "approval": "invalid",
+            }
+            repair_guide = {"status": "not-needed", "recommendations": []}
+            (out_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (out_dir / "execution-context.json").write_text(json.dumps(execution_context, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (out_dir / "repair-guide.json").write_text(json.dumps(repair_guide, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            payload, errors = build_agent_review(out_dir=out_dir, reviewer="artifact-reviewer")
+
+            self.assertTrue(errors)
+            self.assertEqual("block", payload["review_verdict"])
+            self.assertIn("schema validation failed", "\n".join(errors))
+            self.assertEqual("fork", payload["explain"]["recommended_action"])
+
 
 if __name__ == "__main__":
     unittest.main()

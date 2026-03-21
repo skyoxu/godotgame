@@ -10,10 +10,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+from _artifact_schema import (
+    ArtifactSchemaError,
+    validate_pipeline_execution_context_payload,
+    validate_pipeline_latest_index_payload,
+    validate_pipeline_repair_guide_payload,
+)
 from _agent_review_contract import make_review_payload, render_review_markdown, validate_review_payload
 from _agent_review_policy import build_agent_review_explain, summarize_agent_review
 from _util import repo_root, write_json, write_text
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Build an agent-to-agent review contract from local review artifacts.")
@@ -23,7 +28,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--reviewer", default="artifact-reviewer", help="Reviewer identity written into the contract.")
     parser.add_argument("--strict", action="store_true", help="Return non-zero on `needs-fix` as well as `block`.")
     return parser
-
 
 def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -49,6 +53,48 @@ def _latest_index_candidates(task_id: str) -> list[Path]:
     return candidates
 
 
+def _build_block_payload(*, out_dir: Path, reviewer: str, errors: list[str], message: str, suggested_fix: str) -> dict[str, Any]:
+    signal = summarize_agent_review(
+        {
+            "review_verdict": "block",
+            "findings": [
+                _build_finding(
+                    finding_id="artifact-integrity",
+                    severity="high",
+                    category="artifact-integrity",
+                    owner_step="producer-pipeline",
+                    evidence_path=str(out_dir),
+                    message=message,
+                    suggested_fix=suggested_fix,
+                    commands=[],
+                )
+            ],
+        }
+    )
+    return make_review_payload(
+        task_id="unknown",
+        run_id="unknown",
+        pipeline_out_dir=str(out_dir),
+        pipeline_status="artifact-integrity",
+        failed_step="",
+        review_verdict="block",
+        reviewer=reviewer,
+        explain=build_agent_review_explain(signal),
+        findings=[
+            _build_finding(
+                finding_id="artifact-integrity",
+                severity="high",
+                category="artifact-integrity",
+                owner_step="producer-pipeline",
+                evidence_path=str(out_dir),
+                message=message,
+                suggested_fix=suggested_fix,
+                commands=[],
+            )
+        ],
+    )
+
+
 def _pipeline_dir_candidates(task_id: str, run_id: str) -> list[Path]:
     root = repo_root() / "logs" / "ci"
     pattern = f"*/sc-review-pipeline-task-{task_id}-{run_id}"
@@ -71,8 +117,12 @@ def resolve_pipeline_out_dir(args: argparse.Namespace) -> Path:
             return candidates[0]
     if task_id:
         indexes = _latest_index_candidates(task_id)
-        if indexes:
-            latest = _load_json(indexes[0])
+        for candidate in indexes:
+            try:
+                latest = _load_json(candidate)
+                validate_pipeline_latest_index_payload(latest)
+            except (OSError, ValueError, json.JSONDecodeError, ArtifactSchemaError):
+                continue
             out_dir = Path(str(latest.get("latest_out_dir") or "").strip())
             if out_dir.is_absolute():
                 return out_dir
@@ -207,50 +257,31 @@ def build_agent_review(*, out_dir: Path, reviewer: str) -> tuple[dict[str, Any],
     if not repair_guide_path.exists():
         errors.append(f"missing required file: {repair_guide_path}")
     if errors:
-        signal = summarize_agent_review(
-            {
-                "review_verdict": "block",
-                "findings": [
-                    _build_finding(
-                        finding_id="missing-producer-artifacts",
-                        severity="high",
-                        category="artifact-integrity",
-                        owner_step="producer-pipeline",
-                        evidence_path=str(out_dir),
-                        message="The reviewer could not find the required producer artifacts.",
-                        suggested_fix="Re-run scripts/sc/run_review_pipeline.py so summary, execution-context, and repair-guide are regenerated.",
-                        commands=[],
-                    )
-                ],
-            }
-        )
-        payload = make_review_payload(
-            task_id="unknown",
-            run_id="unknown",
-            pipeline_out_dir=str(out_dir),
-            pipeline_status="missing-artifacts",
-            failed_step="",
-            review_verdict="block",
+        payload = _build_block_payload(
+            out_dir=out_dir,
             reviewer=reviewer,
-            explain=build_agent_review_explain(signal),
-            findings=[
-                _build_finding(
-                    finding_id="missing-producer-artifacts",
-                    severity="high",
-                    category="artifact-integrity",
-                    owner_step="producer-pipeline",
-                    evidence_path=str(out_dir),
-                    message="The reviewer could not find the required producer artifacts.",
-                    suggested_fix="Re-run scripts/sc/run_review_pipeline.py so summary, execution-context, and repair-guide are regenerated.",
-                    commands=[],
-                )
-            ],
+            errors=errors,
+            message="The reviewer could not find the required producer artifacts.",
+            suggested_fix="Re-run scripts/sc/run_review_pipeline.py so summary, execution-context, and repair-guide are regenerated.",
         )
         return payload, errors
 
     summary = _load_json(summary_path)
-    execution_context = _load_json(execution_context_path)
-    repair_guide = _load_json(repair_guide_path)
+    try:
+        execution_context = _load_json(execution_context_path)
+        validate_pipeline_execution_context_payload(execution_context)
+        repair_guide = _load_json(repair_guide_path)
+        validate_pipeline_repair_guide_payload(repair_guide)
+    except (OSError, ValueError, json.JSONDecodeError, ArtifactSchemaError) as exc:
+        errors.append(f"sidecar schema validation failed: {exc}")
+        payload = _build_block_payload(
+            out_dir=out_dir,
+            reviewer=reviewer,
+            errors=errors,
+            message="The reviewer rejected producer sidecars because execution-context.json or repair-guide.json drifted from the consumed contract.",
+            suggested_fix="Regenerate the pipeline artifacts so execution-context.json and repair-guide.json match the current consumer contract.",
+        )
+        return payload, errors
     approval = _normalize_approval(repair_guide, execution_context)
     failed_step = next((step for step in summary.get("steps", []) if step.get("status") == "fail"), None)
 
@@ -331,6 +362,7 @@ def _update_latest_index(payload: dict[str, Any], *, out_dir: Path) -> None:
     latest_path = latest_candidates[0]
     try:
         latest = _load_json(latest_path)
+        validate_pipeline_latest_index_payload(latest)
     except Exception:
         return
     latest["agent_review_json_path"] = str(out_dir / "agent-review.json")

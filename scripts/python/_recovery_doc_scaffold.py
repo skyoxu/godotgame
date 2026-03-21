@@ -5,6 +5,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -12,6 +13,12 @@ from typing import Sequence
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+SC_DIR = REPO_ROOT / "scripts" / "sc"
+if str(SC_DIR) not in sys.path:
+    sys.path.insert(0, str(SC_DIR))
+
+from _artifact_schema import ArtifactSchemaError, validate_pipeline_latest_index_payload
+
 HEX_FALLBACK = "n/a (git head unavailable from current repository state)"
 BRANCH_FALLBACK = "n/a (git branch unavailable from current repository state)"
 
@@ -95,7 +102,13 @@ def _load_latest_json(path: Path) -> dict:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
-    return payload if isinstance(payload, dict) else {}
+    if not isinstance(payload, dict):
+        return {}
+    try:
+        validate_pipeline_latest_index_payload(payload)
+    except ArtifactSchemaError:
+        return {}
+    return payload
 
 
 def newest_latest_json(root: Path, task_id: str) -> Path | None:
@@ -301,4 +314,3 @@ def add_common_recovery_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--run-id", default="", help="Optional pipeline run id.")
     parser.add_argument("--latest-json", default="", help="Optional path to an existing latest.json pointer.")
     parser.add_argument("--output", default="", help="Optional output markdown path.")
-
