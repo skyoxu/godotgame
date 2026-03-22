@@ -183,10 +183,10 @@ Do not scrape console logs first if these files already exist.
 
 Use `scripts/python/inspect_run.py` as the stable local replay/inspect entrypoint:
 
-- Task-scoped latest pointer: `py -3 scripts/python/inspect_run.py --task-id 7`
-- Explicit task-scoped bundle: `py -3 scripts/python/inspect_run.py --latest logs/ci/<date>/sc-review-pipeline-task-7/latest.json`
+- Task-scoped latest pointer: `py -3 scripts/python/inspect_run.py --task-id <task-id>`
+- Explicit task-scoped bundle: `py -3 scripts/python/inspect_run.py --latest logs/ci/<date>/sc-review-pipeline-task-<task-id>/latest.json`
 - Explicit repo-scoped bundle: `py -3 scripts/python/inspect_run.py --kind local-hard-checks --latest logs/ci/<date>/local-hard-checks-latest.json`
-- Persist one stable inspection payload: `py -3 scripts/python/inspect_run.py --task-id 7 --out-json logs/ci/<date>/inspect-task-7.json`
+- Persist one stable inspection payload: `py -3 scripts/python/inspect_run.py --task-id <task-id> --out-json logs/ci/<date>/inspect-task-<task-id>.json`
 
 The command returns `0` only when the inspected run is fully usable for recovery. Any broken pointer, schema drift, or failed step returns non-zero and emits one stable JSON payload.
 

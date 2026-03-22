@@ -127,7 +127,7 @@ Run a small baseline pass before starting features:
 ```powershell
 py -3 scripts/python/validate_recovery_docs.py
 py -3 scripts/python/validate_contracts.py
-py -3 scripts/sc/run_review_pipeline.py --task-id 1 --dry-run --skip-llm-review --skip-agent-review
+py -3 scripts/sc/run_review_pipeline.py --task-id <task-id> --dry-run --skip-llm-review --skip-agent-review
 ```
 
 Notes:
