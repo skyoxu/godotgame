@@ -74,6 +74,7 @@ def run_verify(
     any_gd: bool,
     godot_bin: str | None,
     out_dir: Path,
+    strict_red: bool,
     run_cmd_fn: Callable[..., tuple[int, str]],
     repo_root_fn: Callable[[], Path],
     write_text_fn: Callable[[Path, str], None],
@@ -86,9 +87,23 @@ def run_verify(
         if not resolved_godot_bin:
             write_text_fn(out_dir / f"verify-{task_id}.log", "ERROR: verify=all requires --godot-bin or env GODOT_BIN\n")
             return mode, {"status": "fail", "rc": 2, "error": "missing_godot_bin"}
-        cmd = ["py", "-3", "scripts/sc/test.py", "--type", "all", "--godot-bin", str(resolved_godot_bin)]
+        cmd = [
+            "py",
+            "-3",
+            "scripts/sc/test.py",
+            "--type",
+            "all",
+            "--task-id",
+            task_id,
+            "--godot-bin",
+            str(resolved_godot_bin),
+        ]
+        if strict_red:
+            cmd.append("--skip-smoke")
     else:
-        cmd = ["py", "-3", "scripts/sc/test.py", "--type", "unit"]
+        cmd = ["py", "-3", "scripts/sc/test.py", "--type", "unit", "--task-id", task_id]
+        if strict_red:
+            cmd += ["--no-coverage-gate", "--no-coverage-report"]
     rc, out = run_cmd_fn(cmd, cwd=repo_root_fn(), timeout_sec=1_800)
     write_text_fn(out_dir / f"verify-{task_id}.log", out)
     return mode, {"status": "ok" if rc == 0 else "fail", "rc": rc, "cmd": cmd}
