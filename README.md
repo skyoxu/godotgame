@@ -60,6 +60,9 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - Harness Run Protocol: `docs/workflows/run-protocol.md`
 - Harness Boundary Matrix: `docs/workflows/harness-boundary-matrix.md`
 - Local Hard Checks: `docs/workflows/local-hard-checks.md`
+- Overlay Authoring Guide: `docs/workflows/overlays-authoring-guide.md`
+- Overlay Generation Quickstart: `docs/workflows/overlay-generation-quickstart.md`
+- Overlay Generation SOP: `docs/workflows/overlay-generation-sop.md`
 - Harness Marathon: `docs/agents/06-harness-marathon.md`
 - Template Bootstrap Checklist: `docs/workflows/template-bootstrap-checklist.md`
 - AGENTS 构建原则：`docs/agents/11-agents-construction-principles.md`

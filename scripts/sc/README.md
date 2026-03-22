@@ -71,6 +71,20 @@
   - 仓库内：`.claude/agents/*.md`
   - 用户目录：`%USERPROFILE%\\.claude\\agents\\lst97\\*.md`（可用 `--claude-agents-root` 或 `CLAUDE_AGENTS_ROOT` 覆盖）
 
+## Overlay Generation (PRD -> Overlay 08)
+
+Use the overlay generator to turn one PRD wave into candidate pages under `docs/architecture/overlays/<PRD-ID>/08/`, with prompts, outputs, and diffs written to `logs/ci/<YYYY-MM-DD>/`.
+
+Entry points:
+- `py -3 scripts/sc/llm_generate_overlays_batch.py --prd <path> --prd-id <PRD-ID> --prd-docs <csv> --page-family core --page-mode scaffold --dry-run --batch-suffix <wave>-core-dryrun`
+- `py -3 scripts/sc/llm_generate_overlays_from_prd.py --prd <path> --prd-id <PRD-ID> --prd-docs <csv> --page-filter <page>.md --page-mode scaffold --run-suffix <wave>-fix1`
+
+Rules:
+- Every path listed in `--prd-docs` is treated as required input; missing files hard-fail the run.
+- Use `batch` for family-level review and `single-page` for repair/debug.
+- Default flow is `dry-run -> simulate -> single-page repair -> batch apply`.
+- Detailed guidance lives in `docs/workflows/overlay-generation-quickstart.md` and `docs/workflows/overlay-generation-sop.md`.
+
 ## Artifact Assertion Guardrails（防误判）
 
 - 当使用 `--only tests` 等“部分执行”模式时，`acceptance-summary` 可能不完整。
