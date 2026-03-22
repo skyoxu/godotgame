@@ -123,6 +123,13 @@ def extract_repo_paths(value: str) -> list[str]:
     return [text]
 
 
+def is_runtime_artifact_reference(key: str, rel: str) -> bool:
+    normalized = rel.replace("\\", "/").lstrip("./")
+    if key not in {"Related latest.json", "Related pipeline artifacts"}:
+        return False
+    return normalized.startswith("logs/")
+
+
 def check_repo_paths(path: Path, fields: dict[str, str], keys: list[str]) -> list[str]:
     errors: list[str] = []
     for key in keys:
@@ -135,6 +142,8 @@ def check_repo_paths(path: Path, fields: dict[str, str], keys: list[str]) -> lis
                 continue
             candidate = REPO_ROOT / rel_path
             if "*" in rel or "?" in rel:
+                continue
+            if is_runtime_artifact_reference(key, rel):
                 continue
             if not candidate.exists():
                 errors.append(f"{path}: field '{key}' points to missing path '{rel}'")
