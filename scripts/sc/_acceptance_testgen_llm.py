@@ -59,6 +59,8 @@ def build_prompt_for_ref(
             "Target file type: GDScript (GdUnit4 test suite).",
             "- Must be valid .gd, English only.",
             "- Must extend a GdUnit4 suite (res://addons/gdUnit4/src/GdUnitTestSuite.gd).",
+            "- File name must use test_<behavior>.gd naming.",
+            "- Test functions must use test_<behavior> naming.",
             "- Do not rely on external assets; keep it minimal.",
             "- For each required ACC anchor, place it within 5 lines ABOVE a `func test_...` definition (as a comment).",
         ]
@@ -67,7 +69,10 @@ def build_prompt_for_ref(
             "Target file type: C# xUnit test file.",
             "- Must be valid C# code, English only (no Chinese in code/comments/strings).",
             "- Use xUnit + FluentAssertions only.",
-            "- Use Should_ naming style.",
+            "- File name must be PascalCase and end with Tests.cs.",
+            "- Class name must be PascalCase and match the file name stem.",
+            "- Test method names must use exact ShouldX_WhenY style.",
+            "- Local variable names must use camelCase.",
             "- For each required ACC anchor, place it within 5 lines ABOVE a [Fact]/[Theory] attribute (as a comment).",
         ]
 

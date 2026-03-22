@@ -19,6 +19,8 @@ _bootstrap_imports()
 
 import _acceptance_testgen_flow as _flow_helpers  # noqa: E402
 import _acceptance_testgen_llm as _llm_helpers  # noqa: E402
+import _acceptance_testgen_quality as _quality_helpers  # noqa: E402
+import _acceptance_testgen_red as _red_helpers  # noqa: E402
 import _acceptance_testgen_refs as _refs_helpers  # noqa: E402
 from _taskmaster import resolve_triplet  # noqa: E402
 from _util import ci_dir, repo_root, run_cmd, write_json, write_text  # noqa: E402
@@ -89,6 +91,20 @@ def _artifact_token_for_ref(ref: str) -> str:
 
 def _validate_anchor_binding(*, ref: str, content: str, required_anchors: list[str]):
     return _refs_helpers.validate_anchor_binding(ref=ref, content=content, required_anchors=required_anchors)
+
+
+def _validate_generated_test_content(*, ref: str, content: str):
+    return _quality_helpers.validate_generated_test_content(ref=ref, content=content)
+
+
+def _evaluate_red_verification(*, out_dir: Path, verify_mode: str, test_step, verify_log_text: str):
+    return _red_helpers.evaluate_red_verification(
+        repo_root=repo_root(),
+        out_dir=out_dir,
+        verify_mode=verify_mode,
+        test_step=test_step,
+        verify_log_text=verify_log_text,
+    )
 
 
 def _load_optional_prd_excerpt(*, include_prd_context: bool, prd_context_path: str) -> str:
@@ -179,7 +195,7 @@ def _generate_missing_files(*, refs: list[str], by_ref, task_id: str, title: str
         if disk.exists():
             results.append(GenResult(ref=ref_norm, status="skipped", rc=0))
             continue
-        intent = "red" if str(args.tdd_stage) == "red-first" and primary_ref and ref_norm == primary_ref else "scaffold"
+        intent = "red" if str(args.tdd_stage) == "red-first" else "scaffold"
         required_anchors = sorted({item.get("anchor", "") for item in by_ref.get(ref, []) if str(item.get("anchor", "")).strip()})
         prompt = _prompt_for_ref(
             task_id=task_id,
@@ -219,6 +235,9 @@ def _generate_missing_files(*, refs: list[str], by_ref, task_id: str, title: str
                 raise ValueError(f"unexpected file_path: {file_path}")
             if not content.strip():
                 raise ValueError("empty content")
+            valid_content, quality_errors = _validate_generated_test_content(ref=ref_norm, content=content)
+            if not valid_content:
+                raise ValueError("; ".join(quality_errors))
             ok, anchor_error = _validate_anchor_binding(ref=ref_norm, content=content, required_anchors=required_anchors)
             if not ok:
                 raise ValueError(anchor_error or "anchor binding validation failed")
@@ -348,12 +367,17 @@ def main() -> int:
     sync_cmd = ["py", "-3", "scripts/python/update_task_test_refs_from_acceptance_refs.py", "--task-id", task_id, "--mode", "replace", "--write"]
     sync_rc, sync_out = run_cmd(sync_cmd, cwd=repo_root(), timeout_sec=60)
     write_text(out_dir / f"sync-test-refs-{task_id}.log", sync_out)
+    require_strict_red = str(args.tdd_stage) == "red-first" and created > 0
+    effective_verify = str(args.verify)
+    if require_strict_red:
+        effective_verify = "all" if any_gd else "unit"
     verify_mode, test_step = _flow_helpers.run_verify(
-        verify=str(args.verify),
+        verify=effective_verify,
         task_id=task_id,
         any_gd=any_gd,
         godot_bin=args.godot_bin,
         out_dir=out_dir,
+        strict_red=require_strict_red,
         run_cmd_fn=run_cmd,
         repo_root_fn=repo_root,
         write_text_fn=write_text,
@@ -373,14 +397,23 @@ def main() -> int:
         "results": [result.__dict__ for result in results],
         "out_dir": str(out_dir),
     }
-    write_json(out_dir / f"summary-{task_id}.json", summary)
 
-    if str(args.tdd_stage) == "red-first" and verify_mode != "none" and test_step:
-        gen_fail = any(result.status == "fail" for result in results) or sync_rc != 0
+    if require_strict_red:
         verify_log = out_dir / f"verify-{task_id}.log"
         verify_out = _read_text(verify_log) if verify_log.is_file() else ""
-        compilation_error = ("error CS" in verify_out) or ("Build FAILED" in verify_out)
-        hard_fail = gen_fail or compilation_error
+        red_verify = _evaluate_red_verification(
+            out_dir=out_dir,
+            verify_mode=verify_mode,
+            test_step=test_step,
+            verify_log_text=verify_out,
+        )
+        summary["red_verify"] = red_verify
+    write_json(out_dir / f"summary-{task_id}.json", summary)
+
+    if require_strict_red:
+        gen_fail = any(result.status == "fail" for result in results) or sync_rc != 0
+        red_verify = summary.get("red_verify") if isinstance(summary.get("red_verify"), dict) else {}
+        hard_fail = gen_fail or str(red_verify.get("status")) != "ok"
         print(f"SC_LLM_ACCEPTANCE_TESTS status={'fail' if hard_fail else 'ok'} created={created} out={out_dir}")
         return 1 if hard_fail else 0
 
