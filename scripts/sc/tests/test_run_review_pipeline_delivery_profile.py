@@ -20,6 +20,7 @@ SC_DIR = REPO_ROOT / 'scripts' / 'sc'
 sys.path.insert(0, str(SC_DIR))
 
 import run_review_pipeline as run_review_pipeline_module  # noqa: E402
+from _taskmaster import TaskmasterTriplet  # noqa: E402
 
 
 def _extract_out_dir(output: str) -> Path:
@@ -37,6 +38,23 @@ def _stable_subprocess_env() -> dict[str, str]:
 
 
 class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
+    def _triplet(self, *, back: dict | None = None, priority: str = "P2", title: str = "Implement feature") -> TaskmasterTriplet:
+        return TaskmasterTriplet(
+            task_id="1",
+            master={
+                "id": "1",
+                "title": title,
+                "priority": priority,
+                "details": "Task details.",
+            },
+            back=back,
+            gameplay=None,
+            tasks_json_path="examples/taskmaster/tasks.json",
+            tasks_back_path="examples/taskmaster/tasks_back.json",
+            tasks_gameplay_path="examples/taskmaster/tasks_gameplay.json",
+            taskdoc_path=None,
+        )
+
     def _agent_review_payload(self, *, out_dir: Path, run_id: str, verdict: str) -> dict:
         return {
             'schema_version': '1.0.0',
@@ -266,6 +284,83 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         self.assertIn('strict', acceptance_cmd)
         gate_idx = llm_cmd.index('--semantic-gate') + 1
         self.assertEqual('require', llm_cmd[gate_idx])
+
+    def test_dry_run_fast_ship_should_apply_task_level_minimal_review_tier(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f"sc-review-pipeline-task-1-{run_id}"
+            latest_path = tmp_root / "sc-review-pipeline-task-1" / "latest.json"
+            argv = [
+                str(SCRIPT),
+                "--task-id",
+                "1",
+                "--run-id",
+                run_id,
+                "--delivery-profile",
+                "fast-ship",
+                "--dry-run",
+                "--skip-test",
+                "--skip-agent-review",
+            ]
+            with mock.patch.dict(os.environ, {}, clear=False), \
+                mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, "resolve_triplet", return_value=self._triplet(back={"semantic_review_tier": "minimal"})):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(0, rc)
+            execution_context = json.loads((out_dir / "execution-context.json").read_text(encoding="utf-8"))
+            steps = {str(item.get("name")): item for item in json.loads((out_dir / "summary.json").read_text(encoding="utf-8")).get("steps", [])}
+            llm_cmd = steps["sc-llm-review"]["cmd"]
+
+            self.assertEqual("minimal", execution_context["llm_review"]["effective_tier"])
+            self.assertEqual("skip", execution_context["llm_review"]["semantic_gate"])
+            self.assertIn("--semantic-gate", llm_cmd)
+            self.assertEqual("skip", llm_cmd[llm_cmd.index("--semantic-gate") + 1])
+            self.assertEqual("architect-reviewer,code-reviewer", llm_cmd[llm_cmd.index("--agents") + 1])
+            self.assertNotIn("--strict", llm_cmd)
+
+    def test_dry_run_fast_ship_should_escalate_minimal_tier_for_contract_task(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f"sc-review-pipeline-task-1-{run_id}"
+            latest_path = tmp_root / "sc-review-pipeline-task-1" / "latest.json"
+            argv = [
+                str(SCRIPT),
+                "--task-id",
+                "1",
+                "--run-id",
+                run_id,
+                "--delivery-profile",
+                "fast-ship",
+                "--dry-run",
+                "--skip-test",
+                "--skip-agent-review",
+            ]
+            triplet = self._triplet(
+                priority="P2",
+                title="Update contracts and workflow",
+                back={"semantic_review_tier": "minimal", "contractRefs": ["Game.Core/Contracts/Guild/GuildEvent.cs"]},
+            )
+            with mock.patch.dict(os.environ, {}, clear=False), \
+                mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir), \
+                mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path), \
+                mock.patch.object(run_review_pipeline_module, "resolve_triplet", return_value=triplet):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(0, rc)
+            execution_context = json.loads((out_dir / "execution-context.json").read_text(encoding="utf-8"))
+            steps = {str(item.get("name")): item for item in json.loads((out_dir / "summary.json").read_text(encoding="utf-8")).get("steps", [])}
+            llm_cmd = steps["sc-llm-review"]["cmd"]
+
+            self.assertEqual("full", execution_context["llm_review"]["effective_tier"])
+            self.assertIn("contract_refs_present", execution_context["llm_review"]["escalation_reasons"])
+            self.assertEqual("warn", llm_cmd[llm_cmd.index("--semantic-gate") + 1])
+            self.assertEqual("all", llm_cmd[llm_cmd.index("--agents") + 1])
 
 
 if __name__ == '__main__':

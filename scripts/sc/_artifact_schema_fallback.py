@@ -78,6 +78,7 @@ def validate_pipeline_execution_context_without_jsonschema(payload: dict[str, An
         "recovery",
         "marathon",
         "agent_review",
+        "llm_review",
         "approval",
     }
     for key in required:
@@ -104,7 +105,7 @@ def validate_pipeline_execution_context_without_jsonschema(payload: dict[str, An
         errors.append("$.security_profile: must be one of ['strict', 'host-safe'] when present")
     if not isinstance(payload.get("failed_step"), str):
         errors.append("$.failed_step: must be string")
-    for key in ("paths", "git", "recovery", "marathon", "agent_review"):
+    for key in ("paths", "git", "recovery", "marathon", "agent_review", "llm_review"):
         if key in payload and not isinstance(payload.get(key), dict):
             errors.append(f"$.{key}: must be object when present")
     if "delivery_profile" in payload and not _is_non_empty_string(payload.get("delivery_profile")):

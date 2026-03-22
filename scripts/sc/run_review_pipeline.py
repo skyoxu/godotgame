@@ -62,6 +62,9 @@ from _pipeline_support import (
     upsert_step as _upsert_step,
 )
 from _repair_guidance import build_execution_context, build_repair_guide, render_repair_guide_markdown
+from _taskmaster import resolve_triplet
+from _technical_debt import write_low_priority_debt_artifacts
+from _llm_review_tier import resolve_llm_review_tier_plan
 from _summary_schema import SummarySchemaError, validate_pipeline_summary
 from _util import write_json, write_text
 
@@ -185,11 +188,29 @@ def main() -> int:
     acceptance_defaults = profile_acceptance_defaults(delivery_profile)
     llm_defaults = profile_llm_review_defaults(delivery_profile)
     agent_review_mode = _resolve_agent_review_mode(delivery_profile)
-    llm_agents = str(args.llm_agents or llm_defaults.get("agents") or "all")
-    llm_timeout_sec = int(args.llm_timeout_sec or llm_defaults.get("timeout_sec") or 900)
-    llm_agent_timeout_sec = int(args.llm_agent_timeout_sec or llm_defaults.get("agent_timeout_sec") or 300)
-    llm_semantic_gate = str(args.llm_semantic_gate or llm_defaults.get("semantic_gate") or "require")
-    llm_strict = bool(args.llm_strict) or bool(llm_defaults.get("strict", False))
+    try:
+        triplet = resolve_triplet(task_id=task_id)
+    except Exception:
+        triplet = None
+    llm_review_plan = resolve_llm_review_tier_plan(
+        delivery_profile=delivery_profile,
+        triplet=triplet,
+        profile_defaults=llm_defaults,
+    )
+    llm_agents = str(args.llm_agents or llm_review_plan.get("agents") or llm_defaults.get("agents") or "all")
+    llm_timeout_sec = int(args.llm_timeout_sec or llm_review_plan.get("timeout_sec") or llm_defaults.get("timeout_sec") or 900)
+    llm_agent_timeout_sec = int(args.llm_agent_timeout_sec or llm_review_plan.get("agent_timeout_sec") or llm_defaults.get("agent_timeout_sec") or 300)
+    llm_semantic_gate = str(args.llm_semantic_gate or llm_review_plan.get("semantic_gate") or llm_defaults.get("semantic_gate") or "require")
+    llm_strict = bool(args.llm_strict) or bool(llm_review_plan.get("strict", False))
+    llm_execution_context = {
+        **llm_review_plan,
+        "agents": llm_agents,
+        "timeout_sec": llm_timeout_sec,
+        "agent_timeout_sec": llm_agent_timeout_sec,
+        "semantic_gate": llm_semantic_gate,
+        "strict": llm_strict,
+        "task_id": task_id,
+    }
     requested_run_id = str(args.run_id or "").strip() or uuid.uuid4().hex
     run_id = requested_run_id
 
@@ -308,6 +329,7 @@ def main() -> int:
         requested_run_id=requested_run_id,
         delivery_profile=delivery_profile,
         security_profile=security_profile,
+        llm_review_context=llm_execution_context,
         summary=summary,
         marathon_state=marathon_state,
         agent_review_mode=agent_review_mode,
@@ -363,6 +385,17 @@ def main() -> int:
     if step_rc is not None:
         return step_rc
     final_rc = session.finish()
+    try:
+        write_low_priority_debt_artifacts(
+            out_dir=out_dir,
+            summary=session.summary,
+            task_id=task_id,
+            run_id=run_id,
+            delivery_profile=delivery_profile,
+        )
+    except Exception as exc:
+        write_text(out_dir / "technical-debt-sync.log", f"technical debt sync skipped: {exc}\n")
+        print(f"[sc-review-pipeline] WARN: technical debt sync skipped: {exc}")
     print(f"SC_REVIEW_PIPELINE status={session.summary['status']} out={out_dir}")
     return final_rc
 

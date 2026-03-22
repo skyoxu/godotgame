@@ -70,6 +70,9 @@
     "agent_review": {
       "type": "object"
     },
+    "llm_review": {
+      "type": "object"
+    },
     "approval": {
       "$ref": "#/$defs/approval"
     }

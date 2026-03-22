@@ -14,6 +14,7 @@ class PipelineSession:
     requested_run_id: str
     delivery_profile: str
     security_profile: str
+    llm_review_context: dict[str, Any]
     summary: dict[str, Any]
     marathon_state: dict[str, Any]
     agent_review_mode: str
@@ -105,6 +106,7 @@ class PipelineSession:
                 out_dir=self.out_dir,
                 delivery_profile=self.delivery_profile,
                 security_profile=self.security_profile,
+                llm_review_context=self.llm_review_context,
                 summary=self.summary,
                 marathon_state=self.marathon_state,
                 approval_state=approval_state,

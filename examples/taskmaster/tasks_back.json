@@ -4,6 +4,7 @@
     "taskmaster_id": 11,
     "title": "Example: task semantics gates demo (back view)",
     "layer": "docs",
+    "semantic_review_tier": "targeted",
     "details": "Backlog/governance view: require overlay anchors, acceptance Refs, and non-empty test_refs at refactor stage.",
     "adr_refs": [
       "ADR-0005"
