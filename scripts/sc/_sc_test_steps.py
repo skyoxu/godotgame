@@ -72,6 +72,22 @@ def run_coverage_report(out_dir: Path, unit_artifacts_dir: Path) -> dict[str, An
     }
 
 
+def run_csharp_test_conventions(out_dir: Path, *, task_id: str | None = None) -> dict[str, Any]:
+    cmd = ["py", "-3", "scripts/python/check_csharp_test_conventions.py"]
+    if str(task_id or "").strip():
+        cmd += ["--task-id", str(task_id).strip()]
+    rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=300)
+    log_path = out_dir / "csharp-test-conventions.log"
+    write_text(log_path, out)
+    return {
+        "name": "csharp-test-conventions",
+        "cmd": cmd,
+        "rc": rc,
+        "log": str(log_path),
+        "status": "ok" if rc == 0 else "fail",
+    }
+
+
 def run_gdunit_hard(
     out_dir: Path,
     godot_bin: str,

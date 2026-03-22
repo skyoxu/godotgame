@@ -28,6 +28,7 @@ from _sc_test_refs import (
     task_scoped_gdunit_refs as _task_scoped_gdunit_refs_impl,
 )
 from _sc_test_steps import (
+    run_csharp_test_conventions as _run_csharp_test_conventions_impl,
     run_coverage_report as _run_coverage_report_impl,
     run_gdunit_hard as _run_gdunit_hard_impl,
     run_smoke as _run_smoke_impl,
@@ -97,6 +98,10 @@ def run_unit(out_dir: Path, solution: str, configuration: str, *, run_id: str, t
 
 def run_coverage_report(out_dir: Path, unit_artifacts_dir: Path) -> dict[str, Any]:
     return _run_coverage_report_impl(out_dir, unit_artifacts_dir)
+
+
+def run_csharp_test_conventions(out_dir: Path, *, task_id: str | None = None) -> dict[str, Any]:
+    return _run_csharp_test_conventions_impl(out_dir, task_id=task_id)
 
 
 def run_gdunit_hard(out_dir: Path, godot_bin: str, timeout_sec: int, *, run_id: str, task_id: str | None = None) -> dict[str, Any]:
@@ -171,7 +176,14 @@ def main() -> int:
             return 2
         if step["rc"] != 0:
             hard_fail = True
-        elif not args.no_coverage_report:
+        else:
+            conventions = run_csharp_test_conventions(out_dir, task_id=args.task_id)
+            summary["steps"].append(conventions)
+            if not _persist_summary():
+                return 2
+            if conventions["rc"] != 0:
+                hard_fail = True
+        if not hard_fail and not args.no_coverage_report:
             cov = run_coverage_report(out_dir, Path(step["artifacts_dir"]))
             summary["steps"].append(cov)
             if not _persist_summary():

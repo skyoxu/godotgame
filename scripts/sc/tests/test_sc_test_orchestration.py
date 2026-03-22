@@ -54,19 +54,28 @@ class ScTestOrchestrationTests(unittest.TestCase):
                 "report_dir": str(out_dir / "coverage-report"),
                 "status": "ok",
             }
+            conventions_step = {
+                "name": "csharp-test-conventions",
+                "cmd": ["py", "-3", "scripts/python/check_csharp_test_conventions.py"],
+                "rc": 0,
+                "log": str(out_dir / "csharp-test-conventions.log"),
+                "status": "ok",
+            }
             with mock.patch.object(sys, "argv", argv), \
                 mock.patch.object(sc_test, "ci_dir", return_value=out_dir), \
                 mock.patch.object(sc_test, "run_unit", return_value=unit_step) as run_unit_mock, \
+                mock.patch.object(sc_test, "run_csharp_test_conventions", return_value=conventions_step) as conventions_mock, \
                 mock.patch.object(sc_test, "run_coverage_report", return_value=coverage_step) as coverage_mock:
                 rc = sc_test.main()
 
             self.assertEqual(0, rc)
             run_unit_mock.assert_called_once()
+            conventions_mock.assert_called_once()
             coverage_mock.assert_called_once()
             summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("ok", summary["status"])
             self.assertEqual(run_id, summary["run_id"])
-            self.assertEqual(["unit", "coverage-report"], [item["name"] for item in summary["steps"]])
+            self.assertEqual(["unit", "csharp-test-conventions", "coverage-report"], [item["name"] for item in summary["steps"]])
 
     def test_main_should_skip_coverage_when_unit_step_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -83,14 +92,49 @@ class ScTestOrchestrationTests(unittest.TestCase):
             with mock.patch.object(sys, "argv", argv), \
                 mock.patch.object(sc_test, "ci_dir", return_value=out_dir), \
                 mock.patch.object(sc_test, "run_unit", return_value=unit_step), \
+                mock.patch.object(sc_test, "run_csharp_test_conventions") as conventions_mock, \
                 mock.patch.object(sc_test, "run_coverage_report") as coverage_mock:
                 rc = sc_test.main()
 
             self.assertEqual(1, rc)
+            conventions_mock.assert_not_called()
             coverage_mock.assert_not_called()
             summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("fail", summary["status"])
             self.assertEqual(["unit"], [item["name"] for item in summary["steps"]])
+
+    def test_main_should_fail_when_csharp_test_conventions_gate_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "sc-test"
+            argv = ["test.py", "--type", "unit", "--run-id", "5" * 32, "--task-id", "11"]
+            unit_step = {
+                "name": "unit",
+                "cmd": ["py", "-3", "scripts/python/run_dotnet.py"],
+                "rc": 0,
+                "log": str(out_dir / "unit.log"),
+                "artifacts_dir": str(out_dir / "unit-artifacts"),
+                "status": "ok",
+            }
+            conventions_step = {
+                "name": "csharp-test-conventions",
+                "cmd": ["py", "-3", "scripts/python/check_csharp_test_conventions.py", "--task-id", "11"],
+                "rc": 1,
+                "log": str(out_dir / "csharp-test-conventions.log"),
+                "status": "fail",
+            }
+            with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(sc_test, "ci_dir", return_value=out_dir), \
+                mock.patch.object(sc_test, "run_unit", return_value=unit_step), \
+                mock.patch.object(sc_test, "run_csharp_test_conventions", return_value=conventions_step) as conventions_mock, \
+                mock.patch.object(sc_test, "run_coverage_report") as coverage_mock:
+                rc = sc_test.main()
+
+            self.assertEqual(1, rc)
+            conventions_mock.assert_called_once()
+            coverage_mock.assert_not_called()
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("fail", summary["status"])
+            self.assertEqual(["unit", "csharp-test-conventions"], [item["name"] for item in summary["steps"]])
 
     def test_main_should_require_godot_bin_for_e2e_before_running_steps(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
