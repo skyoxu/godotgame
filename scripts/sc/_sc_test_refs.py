@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from _taskmaster_paths import resolve_default_task_triplet_paths
 from _util import repo_root
 
 
@@ -20,10 +21,8 @@ def task_scoped_gdunit_refs(*, task_id: str | None, tests_project: Path) -> list
 
     refs: list[str] = []
     seen: set[str] = set()
-    view_files = [
-        repo_root() / ".taskmaster" / "tasks" / "tasks_back.json",
-        repo_root() / ".taskmaster" / "tasks" / "tasks_gameplay.json",
-    ]
+    _tasks_json, tasks_back_path, tasks_gameplay_path = resolve_default_task_triplet_paths(repo_root())
+    view_files = [tasks_back_path, tasks_gameplay_path]
     for view_path in view_files:
         if not view_path.is_file():
             continue
@@ -66,10 +65,8 @@ def task_scoped_cs_refs(*, task_id: str | None) -> list[str]:
 
     refs: list[str] = []
     seen: set[str] = set()
-    view_files = [
-        repo_root() / ".taskmaster" / "tasks" / "tasks_back.json",
-        repo_root() / ".taskmaster" / "tasks" / "tasks_gameplay.json",
-    ]
+    _tasks_json, tasks_back_path, tasks_gameplay_path = resolve_default_task_triplet_paths(repo_root())
+    view_files = [tasks_back_path, tasks_gameplay_path]
     for view_path in view_files:
         if not view_path.is_file():
             continue
