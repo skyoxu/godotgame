@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Compare range: `origin/main` (`125d7f1`) -> current branch `feature/sc-script-refactor-batch1` (`defb3d6`)
+- Compare range: `origin/main` (`125d7f1`) -> current branch `feature/sc-script-refactor-batch1` (`883f69e`)
 - Generated on: `2026-03-22`
 - Goal: let sibling business repositories upgrade to the current template branch and gain the same environment, scripts, sidecar protocol, recovery assets, docs, and workflow-facing behavior.
 
