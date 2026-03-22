@@ -136,9 +136,9 @@ This file is the repository map. It routes you to the right source document by t
 
 ## Main Commands
 - Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"` (auto-writes `agent-review.*` unless `--dry-run`, `--skip-agent-review`, or the active profile sets `agent_review.mode=skip`)
-- Targeted test step: `py -3 scripts/sc/test.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
-- Targeted acceptance step: `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
-- Targeted llm review: `py -3 scripts/sc/llm_review.py --task-id <id>`
+- Task-scoped execution entry: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
+- Targeted test / acceptance / review checks are internal pipeline stages behind `run_review_pipeline.py`; do not document them as standalone task-level commands.
+- For recovery or debugging, inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory before reaching for internal helper scripts.
 - Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files

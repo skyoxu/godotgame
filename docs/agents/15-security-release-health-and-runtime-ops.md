@@ -44,9 +44,9 @@ Use this document when you need the old AGENTS content for security posture, rel
 - Headless smoke: `py -3 scripts/python/smoke_headless.py --godot-bin "$env:GODOT_BIN" --project . --scene res://Game.Godot/Scenes/Main.tscn`
 - Unified gates: `py -3 scripts/python/quality_gates.py`
 - Local review pipeline: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
-- Task-scoped test step: `py -3 scripts/sc/test.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
-- Task-scoped acceptance step: `py -3 scripts/sc/acceptance_check.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
-- Task-scoped llm review: `py -3 scripts/sc/llm_review.py --task-id <id>`
+- Task-scoped execution entry: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
+- Test, acceptance, and review stages are orchestrated behind `run_review_pipeline.py`; keep docs on the unified entry, not the legacy manual triplet.
+- When a run fails, inspect the task run sidecars (`summary.json`, `execution-context.json`, `repair-guide.json`, `agent-review.json`) before invoking internal helpers directly.
 
 ## CI And Branch Protection Expectations
 - Required checks should cover unit tests, smoke or e2e validation, task link validation, and the project-specific release posture.
