@@ -215,6 +215,21 @@ overlays 只做引用：
    - 把每个 Task 的 `overlay_refs` 指到 `_index.md`、`ACCEPTANCE_CHECKLIST.md`、以及该任务对应页。
 6) 跑确定性校验（见下一节），确保回链不漂移。
 
+### 6.1 Overlay Generator Bootstrap
+
+When a new PRD wave first lands, do not hand-write the whole `08/` tree. Generate candidate pages first, then review and apply in small batches.
+
+- Quickstart: `docs/workflows/overlay-generation-quickstart.md`
+- SOP: `docs/workflows/overlay-generation-sop.md`
+- Batch entry: `py -3 scripts/sc/llm_generate_overlays_batch.py`
+- Single-page repair: `py -3 scripts/sc/llm_generate_overlays_from_prd.py`
+
+Stop-loss rules:
+
+- Every path listed in `--prd-docs` is treated as required input; a missing file hard-fails the run.
+- If `docs/architecture/overlays/<PRD-ID>/08/` already exists, the generator reuses the current page profile instead of forcing a rewrite.
+- First pass should be `dry-run -> simulate`; do not start with full `--apply`.
+
 ## 7. 推荐的确定性校验（Windows）
 
 执行顺序建议：

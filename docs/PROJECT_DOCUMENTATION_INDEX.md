@@ -14,6 +14,7 @@
 - 测试框架与门禁说明：`docs/testing-framework.md`
 - 文档导航（Base 骨干）：`docs/architecture/base/00-README.md`
 - Release/CI 工作流说明（含 Sentry 软门禁）：`docs/workflows/GM-NG-T2-playable-guide.md`
+- Overlay Generation Docs: `docs/workflows/overlay-generation-quickstart.md`, `docs/workflows/overlay-generation-sop.md`, `docs/workflows/overlays-authoring-guide.md`
 
 ---
 
@@ -70,6 +71,9 @@
 - `docs/workflows/serena-mcp-command-reference.md`：Serena / Codex CLI 常用命令
 - `docs/workflows/superclaude-command-reference.md`：SuperClaude 工作流说明
 - `docs/workflows/task-master-superclaude-integration.md`：Taskmaster + SuperClaude 集成（如仅做 Godot 桌面模板，可先跳过 Web/旧桌面壳 相关段落）
+- `docs/workflows/overlay-generation-quickstart.md`?Minimal safe command set for overlay generation
+- `docs/workflows/overlay-generation-sop.md`?Standard flow for generate, repair, and small-batch apply
+- `docs/workflows/overlays-authoring-guide.md`?Directory, front matter, task backlinks, and contract reference rules
 
 ---
 
