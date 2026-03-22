@@ -234,172 +234,48 @@ py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile standard
 ```
 
-### 8.2 当前终端会话切换
+#
 
-适合一个开发时段都想保持同一种口径。
+## 8.2 Task-Level `semantic_review_tier`
 
-```powershell
-$env:DELIVERY_PROFILE='fast-ship'
-py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --skip-llm-review
-```
+`run_review_pipeline.py` now reads an optional task-level review hint from `tasks_back.json` / `tasks_gameplay.json`.
 
-### 8.3 CI 中切换
+- field name: `semantic_review_tier`
+- allowed values: `auto | minimal | targeted | full`
+- scope: only affects `sc-llm-review`
+- non-scope: does not relax deterministic gates such as `sc-test`, `acceptance_check`, contracts, task links, executed refs, or test refs
 
-当前工作流已经接入了 `delivery_profile`：
+Default mapping:
 
-- `.github/workflows/ci-windows.yml`
-- `.github/workflows/windows-quality-gate.yml`
+- `playable-ea` -> `minimal`
+- `fast-ship` -> `targeted`
+- `standard` -> `full`
 
-CI summary 应当固定输出：
+Automatic stop-loss escalation:
 
-- `DeliveryProfile: <playable-ea|fast-ship|standard>`
-- `SecurityProfile: <host-safe|strict>`
+- `priority = P1` escalates at least to `targeted`
+- `priority = P0` escalates to `full`
+- `contractRefs` / `contract_refs` escalates to `full`
+- high-risk semantics also escalate to `full`, including: `security`, `contract`, `workflow`, `pipeline`, `ci`, `release`, `ADR`, `architecture`, `gate`, `sentry`, `performance`
 
-原因很现实：
+Additional rules:
 
-- 同一份门禁结果，如果没有 profile 上下文，其实是不可解释的。
+- explicit CLI `--llm-*` arguments still win over task-tier defaults
+- the final effective tier and escalation reasons are written to `execution-context.json`
 
-## 9. 日常建议怎么切
+## 8.3 `Needs Fix` and the Unified Technical Debt Register
 
-建议直接采用这条团队规则：
+`run_review_pipeline.py` now writes low-priority review findings into one shared technical debt document instead of creating one task-specific document per run.
 
-- 本地日常开发默认用 `fast-ship`
-- 玩法探索、快速试错、EA 验证用 `playable-ea`
-- 发版前、里程碑前、准备合并稳定主线时用 `standard`
+Fixed policy:
 
-这条规则的好处是：
+- `P0/P1`: must-fix, never parked in the debt register
+- `P2/P3/P4`: written to `docs/technical-debt.md`
 
-- 日志更有意义
-- 团队沟通成本更低
-- 不容易出现“我以为你用的是严格档，其实不是”的误判
+Behavior:
 
-## 10. 新项目复制后应该怎么调整
+- the register is grouped by task id
+- when the same task completes `sc-llm-review` again, the task section is replaced instead of duplicated
+- `dry-run`, `skip-llm-review`, failed `llm-review`, or runs without low-priority findings do not overwrite the existing register entry
+- per-run sidecar: `logs/ci/<date>/sc-review-pipeline-task-<id>-<run_id>/llm-review-low-priority-findings.json`
 
-新项目从模板复制出来后，建议按这个顺序处理。
-
-### Step 1：先定默认档位
-
-编辑：
-
-- `scripts/sc/config/delivery_profiles.json`
-
-先改：
-
-- `default_profile`
-
-建议：
-
-- 强玩法试错型新项目：`playable-ea` 或 `fast-ship`
-- 普通快速商业化项目：`fast-ship`
-- 已经成熟、强治理型项目：`standard`
-
-不要一上来就为了“看起来正式”把默认值改成 `standard`。那通常会把团队重新拖回低效率状态。
-
-### Step 2：改 profile 包，而不是散改脚本
-
-仍然在 `scripts/sc/config/delivery_profiles.json` 中，优先调整 profile block 本身。
-
-重点字段：
-
-- `build.warn_as_error`
-- `test.coverage_gate`
-- `test.coverage_lines_min`
-- `test.coverage_branches_min`
-- `acceptance.strict_adr_status`
-- `acceptance.require_task_test_refs`
-- `acceptance.require_executed_refs`
-- `acceptance.require_headless_e2e`
-- `acceptance.subtasks_coverage`
-- `acceptance.perf_p95_ms`
-- `gate_bundle.task_links_max_warnings`
-- `llm_review.semantic_gate`
-- `llm_review.strict`
-- `llm_obligations.consensus_runs`
-- `llm_semantic_gate_all.max_needs_fix`
-- `llm_semantic_gate_all.max_unknown`
-- `agent_review.mode`
-
-正确做法是：
-
-- 先改 profile catalog
-- 再让脚本继续从 catalog 派生
-
-错误做法是：
-
-- 新项目一有需求，就直接在单个脚本里硬编码特殊值
-
-如果这么做，几轮之后这套总开关就名存实亡了。
-
-### Step 3：保留有意识的安全映射
-
-当前模板的默认映射是：
-
-- `playable-ea` -> `host-safe`
-- `fast-ship` -> `host-safe`
-- `standard` -> `strict`
-
-对于本地单机项目，即便你在“反篡改”和“本地数据不可改”方面采取降级策略，也不代表主机边界安全应该一起消失。
-
-建议：
-
-- 轻档位可以降级治理，不要顺手把主机边界也一起取消。
-
-### Step 4：同步 CI 默认值
-
-如果新项目修改了默认 profile，也要一起检查：
-
-- `.github/workflows/ci-windows.yml`
-- `.github/workflows/windows-quality-gate.yml`
-
-否则会出现一种很糟糕的漂移：
-
-- 配置文件说默认是 A
-- CI 实际仍按 B 在跑
-
-这种漂移比“没有 profile”还危险，因为它会制造假一致性。
-
-### Step 5：同步项目说明文档
-
-如果新项目把默认姿态改了，也应该同步修改：
-
-- `README.md`
-- `scripts/sc/README.md`
-- `DELIVERY_PROFILE.md`
-
-入口文档如果不改，后续开发者和 LLM 很容易继续按旧口径做事。
-
-## 11. 不要这样用
-
-以下做法不推荐：
-
-- 不要因为 `standard` 看起来更专业，就把它当长期默认值
-- 不要把 profile 之外的阈值散落硬编码到各个脚本里
-- 不要长期到处显式传 `--security-profile` 去打破默认映射
-- 不要过早引入太多项目特化 profile 名称
-- 不要让 CI 输出缺少 `DeliveryProfile` / `SecurityProfile` 上下文
-
-这些做法都会让这套机制失去价值。
-
-## 12. 维护规则
-
-以后每当你发现某个脚本开始需要“分阶段不同严格度”时，先问自己一个问题：
-
-- 这个差异是不是应该并入 `DELIVERY_PROFILE`，而不是再增加一个零散 CLI 开关？
-
-如果答案是“是”，那优先：
-
-- 改 profile catalog
-- 改统一 resolver
-- 不要优先加孤立参数
-
-只有这样，这套机制才会在模板仓和复制出来的新项目里保持长期可维护。
-
-## 13. 一条最短操作建议
-
-如果你不想每次都重新思考，直接记住这条：
-
-- 日常开发：`fast-ship`
-- 玩法试错：`playable-ea`
-- 发版收口：`standard`
-
-这就是当前模板仓对 `DELIVERY_PROFILE` 的预期使用方式。
