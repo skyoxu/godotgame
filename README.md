@@ -55,6 +55,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 
 ## Quick Links
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
+- Unified Technical Debt Register: `docs/technical-debt.md`
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
 - Persistent Harness: `docs/agents/03-persistent-harness.md`
 - Harness Run Protocol: `docs/workflows/run-protocol.md`
@@ -132,6 +133,9 @@ When you copy this template to create a new project, enable task-scoped gates af
   - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile standard --skip-llm-review`
 - Remove `--skip-llm-review` only when you intentionally want the advisory LLM review stage as part of the unified pipeline.
 - Only pass `--security-profile` when you intentionally need to break the default mapping.
+- Optional per-task review hint: add `semantic_review_tier` to `tasks_back.json` / `tasks_gameplay.json` with `auto | minimal | targeted | full`; this only changes `sc-llm-review`, not deterministic gates.
+- Stop-loss escalation still applies: `P1` tasks escalate to at least `targeted`; `P0`, contract/security/workflow/CI/release/ADR/architecture/performance-heavy tasks escalate to `full`.
+- `P0/P1` review findings stay in the must-fix path; `P2/P3/P4` are synced into `docs/technical-debt.md` after a successful `sc-llm-review`.
 
 3) Keep profile observability in CI:
 - Step Summary should contain both `DeliveryProfile: <playable-ea|fast-ship|standard>` and `SecurityProfile: <host-safe|strict>`.
