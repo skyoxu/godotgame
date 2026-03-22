@@ -4,6 +4,7 @@
     "taskmaster_id": 11,
     "title": "Example: task semantics gates demo (gameplay view)",
     "layer": "gameplay",
+    "semantic_review_tier": "targeted",
     "details": "Gameplay view: acceptance items must have Refs and map to test_refs at refactor stage.",
     "overlay_refs": [
       "docs/architecture/overlays/PRD-Example/08/_index.md",

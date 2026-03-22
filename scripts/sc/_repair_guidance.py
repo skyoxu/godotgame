@@ -49,6 +49,7 @@ def build_execution_context(
     out_dir: Path,
     delivery_profile: str,
     security_profile: str,
+    llm_review_context: dict[str, Any] | None,
     summary: dict[str, Any],
     marathon_state: dict[str, Any] | None = None,
     approval_state: dict[str, Any] | None = None,
@@ -84,6 +85,8 @@ def build_execution_context(
             "latest_decision_log": _latest_markdown_file(repo_root() / "decision-logs"),
             "agents_index": str(repo_root() / "docs" / "agents" / "00-index.md"),
             "agents_recovery": str(repo_root() / "docs" / "agents" / "01-session-recovery.md"),
+            "technical_debt_register": str(repo_root() / "docs" / "technical-debt.md"),
+            "llm_review_low_priority_findings_json": str(out_dir / "llm-review-low-priority-findings.json"),
         },
         "git": {
             "branch": branch,
@@ -120,6 +123,7 @@ def build_execution_context(
             "recommended_action": str((((marathon_state or {}).get("agent_review") or {}).get("recommended_action") or "")),
             "recommended_refresh_reasons": list((((marathon_state or {}).get("agent_review") or {}).get("recommended_refresh_reasons") or [])),
         },
+        "llm_review": dict(llm_review_context or {}),
         "approval": {
             "soft_gate": bool((approval_state or {}).get("soft_gate") or False),
             "required_action": str((approval_state or {}).get("required_action") or ""),

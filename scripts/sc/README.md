@@ -39,6 +39,37 @@
 - `tdd` 会快照 `Game.Core/Contracts/**/*.cs`；若检测到新增/修改契约文件会直接失败
 - 若确实需要新增契约：应先补齐 ADR/Overlay/Test-Refs，再继续 TDD
 
+## Generate Tests From Acceptance Refs
+
+`scripts/sc/llm_generate_tests_from_acceptance_refs.py` generates missing test files from task acceptance `Refs:` entries and only allows repo-relative `.cs` / `.gd` test paths.
+
+- Every generated file must include the matching `ACC:T<id>.<n>` anchors.
+- C# anchors must appear within 5 lines above `[Fact]` / `[Theory]`; GDScript anchors must appear within 5 lines above `func test_...`.
+- `--tdd-stage red-first` is a strict red mode.
+  - If the run creates any new `.cs` tests, it forces task-scoped unit verification.
+  - If the run creates any new `.gd` tests, it forces task-scoped `all --skip-smoke` verification.
+  - Unexpected green runs or compile errors fail the whole generation step.
+- Generated C# content is checked deterministically before write:
+  - file name must be `PascalCase + Tests.cs`
+  - class name must be PascalCase and match the file stem
+  - test methods must use `ShouldX_WhenY`
+  - local variables must use camelCase
+- Internal helper ownership:
+  - `_acceptance_testgen_llm.py`: prompt building and primary-ref selection
+  - `_acceptance_testgen_flow.py`: task context / refs collection and verify orchestration
+  - `_acceptance_testgen_quality.py`: deterministic naming and content validation
+  - `_acceptance_testgen_red.py`: strict-red outcome classification (`unexpected_green`, `compile_error`, real red)
+
+Examples:
+
+```powershell
+# Normal scaffold generation
+py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id 11 --verify unit
+
+# Strict red-first generation for new tests
+py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id 11 --tdd-stage red-first --verify auto --godot-bin "$env:GODOT_BIN"
+```
+
 ## Acceptance Check（等价于 Claude Code 的 /acceptance-check）
 
 `scripts/sc/acceptance_check.py` 提供一个“可重复、可审计”的验收门禁脚本，用确定性检查替代 Claude Code 的多 Subagent 口头审查。
