@@ -151,6 +151,81 @@ class RecoveryDocScaffoldTests(unittest.TestCase):
             self.assertEqual("n/a (no pipeline run id linked yet)", links.run_id)
             self.assertEqual("n/a (no pipeline artifact directory resolved yet)", links.pipeline_artifacts)
 
+    def test_validate_doc_should_allow_non_committed_logs_paths_for_runtime_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            plan_dir = root / "execution-plans"
+            decision_dir = root / "decision-logs"
+            plan_dir.mkdir(parents=True, exist_ok=True)
+            decision_dir.mkdir(parents=True, exist_ok=True)
+            decision_log = decision_dir / "2026-03-19-sidecar-contract.md"
+            decision_log.write_text(
+                "\n".join(
+                    [
+                        "# Decision",
+                        "",
+                        "- Title: Demo",
+                        "- Date: 2026-03-19",
+                        "- Status: accepted",
+                        "- Supersedes: none",
+                        "- Superseded by: none",
+                        "- Branch: feature/demo",
+                        "- Git Head: fedcba9876543210fedcba9876543210fedcba98",
+                        "- Why now: keep recovery docs stable",
+                        "- Context: runtime artifacts are not committed",
+                        "- Decision: preserve logs references",
+                        "- Consequences: CI must not require historical runtime logs",
+                        "- Recovery impact: later agents can still read the intended path pattern",
+                        "- Validation: validate_recovery_docs.py",
+                        "- Related ADRs: n/a (no ADR linked yet)",
+                        "- Related execution plans: n/a (no execution plan linked yet)",
+                        "- Related task id(s): `1`",
+                        "- Related run id: `15bcd36f5d344225a3fe0dd470752c88`",
+                        "- Related latest.json: `logs/ci/2026-03-19/sc-review-pipeline-task-1/latest.json`",
+                        "- Related pipeline artifacts: `logs/ci/2026-03-19/sc-review-pipeline-task-1-15bcd36f5d344225a3fe0dd470752c88/`",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            plan_path = plan_dir / "2026-03-19-phase2-agent-review-sidecar.md"
+            plan_path.write_text(
+                "\n".join(
+                    [
+                        "# Execution Plan",
+                        "",
+                        "- Title: Demo Plan",
+                        "- Status: active",
+                        "- Branch: feature/demo",
+                        "- Git Head: 0123456789abcdef0123456789abcdef01234567",
+                        "- Goal: Validate recovery docs",
+                        "- Scope: validator behavior",
+                        "- Current step: guard runtime paths",
+                        "- Last completed step: reproduce CI failure",
+                        "- Stop-loss: do not require historical logs to exist in checkout",
+                        "- Next action: relax runtime artifact existence checks",
+                        "- Recovery command: py -3 scripts/python/validate_recovery_docs.py --dir all",
+                        "- Open questions: none",
+                        "- Exit criteria: validator accepts historical logs/ references",
+                        "- Related ADRs: n/a (no ADR linked yet)",
+                        "- Related decision logs: `decision-logs/2026-03-19-sidecar-contract.md`",
+                        "- Related task id(s): `1`",
+                        "- Related run id: `15bcd36f5d344225a3fe0dd470752c88`",
+                        "- Related latest.json: `logs/ci/2026-03-19/sc-review-pipeline-task-1/latest.json`",
+                        "- Related pipeline artifacts: `logs/ci/2026-03-19/sc-review-pipeline-task-1-15bcd36f5d344225a3fe0dd470752c88/`",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            original_root = validator.REPO_ROOT
+            try:
+                validator.REPO_ROOT = root
+                errors = validator.validate_doc(plan_path, validator.EXECUTION_PLAN_FIELDS)
+            finally:
+                validator.REPO_ROOT = original_root
+            self.assertEqual([], errors)
+
 
 if __name__ == "__main__":
     unittest.main()
