@@ -55,6 +55,8 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `prototype lane` 是探索通道，不是新的 `DELIVERY_PROFILE`；它只决定工作是否进入正式任务流，不替代正式交付门禁。
 
 ## Quick Links
+- Daily Workflow: `workflow.md`
+- Bootstrap Workflow Example: `workflow.example.md`
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
 - Unified Technical Debt Register: `docs/technical-debt.md`
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
