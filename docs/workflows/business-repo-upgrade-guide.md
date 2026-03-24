@@ -171,6 +171,15 @@ Reason:
   - Copy the matching tests so future drift is visible.
   - If the business repo uses non-path `contractRefs` semantics only, review the path-detection rule before enabling the same behavior unchanged.
 
+- New in the current template wave (Tests.Godot single-source runtime hardening):
+  - `scripts/python/audit_tests_godot_mirror_git_tracking.py` is now part of the mirror-runtime stop-loss set.
+  - The durable rule is: `Tests.Godot/Game.Godot` must stay a Junction to the real `Game.Godot`, not a copied mirror directory.
+- Migration impact:
+  - If the business repo already has `forbid_mirror_path_refs.py`, do not stop there; also copy and wire `audit_tests_godot_mirror_git_tracking.py`.
+  - If the business repo already has `run_gdunit.py` Junction enforcement, that only protects runtime resolution; the new audit gate protects git index hygiene in fresh clones.
+  - If the business repo uses `run_gate_bundle.py`, add the audit script to hard gates and update `docs/workflows/gate-bundle.md` in the same batch.
+  - If the business repo does not use gate bundle yet, wire the audit script directly into the deterministic CI stage until gate bundle becomes the canonical path.
+
 Copy this bundle together:
 
 1. `scripts/sc/test.py`
@@ -195,6 +204,15 @@ Copy this bundle together:
 20. `scripts/sc/tests/test_acceptance_testgen_red.py`
 21. `docs/testing-framework.md`
 22. `docs/migration/Phase-10-Unit-Tests.md`
+
+Also copy this mirror-runtime hardening bundle when the business repo uses `Tests.Godot` + `Game.Godot`:
+
+1. `scripts/python/audit_tests_godot_mirror_git_tracking.py`
+2. `scripts/python/forbid_mirror_path_refs.py`
+3. `scripts/python/run_gdunit.py`
+4. `scripts/python/ensure_tests_godot_junction.py` (or the older `ensure_tests_project_junction.py` in earlier repo generations)
+5. `scripts/ci/prepare_gd_tests.ps1`
+6. `docs/workflows/gate-bundle.md`
 
 Reason:
 

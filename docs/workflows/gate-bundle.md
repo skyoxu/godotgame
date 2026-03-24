@@ -69,6 +69,7 @@ py -3 scripts/python/remind_overlay_task_drift.py --write --overlay-index docs/a
 - `check_task_contract_refs.py`
 - `check_no_hardcoded_core_events.py`
 - `forbid_mirror_path_refs.py`
+- `audit_tests_godot_mirror_git_tracking.py`
 - `validate_contracts.py`
 - `validate_recovery_docs.py`
 - `check_domain_contracts.py`
