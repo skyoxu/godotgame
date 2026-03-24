@@ -139,6 +139,10 @@ def resolve_gate_bundle_runtime(*, delivery_profile: str | None, task_links_max_
 
 def _resolve_gate_command(name: str, cmd: list[str], out_dir: Path) -> list[str]:
     resolved = [str(x) for x in cmd]
+    if name in {"backfill_semantic_review_tier", "validate_semantic_review_tier"}:
+        summary_name = "backfill-semantic-review-tier-summary.json" if name == "backfill_semantic_review_tier" else "validate-semantic-review-tier-summary.json"
+        if "--summary-path" not in resolved:
+            resolved.extend(["--summary-path", str((out_dir / summary_name)).replace("\\", "/")])
     if name == "task_contract_test_matrix":
         out_json = str((out_dir / "task-contract-test-matrix.json")).replace("\\", "/")
         out_md = str((out_dir / "task-contract-test-matrix.md")).replace("\\", "/")
@@ -234,6 +238,22 @@ def _hard_gate_commands(task_files: list[str], task_links_max_warnings: int = -1
                 "scripts/python/check_test_naming.py",
                 "--style",
                 "legacy",
+            ],
+        },
+        {
+            "name": "backfill_semantic_review_tier",
+            "cmd": [
+                "py",
+                "-3",
+                "scripts/python/backfill_semantic_review_tier.py",
+            ],
+        },
+        {
+            "name": "validate_semantic_review_tier",
+            "cmd": [
+                "py",
+                "-3",
+                "scripts/python/validate_semantic_review_tier.py",
             ],
         },
         {

@@ -74,6 +74,8 @@ py -3 scripts/python/remind_overlay_task_drift.py --write --overlay-index docs/a
 - `check_domain_contracts.py`
 - `check_contract_interface_docs.py`
 - `check_test_naming.py`
+- `backfill_semantic_review_tier.py`
+- `validate_semantic_review_tier.py`
 - `llm_extract_task_obligations.py`
 - `llm_align_acceptance_semantics.py`
 - `llm_check_subtasks_coverage.py`
