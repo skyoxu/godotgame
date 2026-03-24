@@ -21,6 +21,7 @@ from dev_cli_builders import (
     build_new_decision_log_cmd,
     build_new_execution_plan_cmd,
     build_preflight_cmd,
+    build_resume_task_cmd,
     build_quality_gates_cmd,
     build_run_dotnet_cmd,
     build_run_gdunit_full_cmd,
@@ -138,6 +139,12 @@ def cmd_new_decision_log(args: argparse.Namespace) -> int:
     return run(build_new_decision_log_cmd(args))
 
 
+def cmd_resume_task(args: argparse.Namespace) -> int:
+    """Build a task-scoped recovery summary from the latest artifacts."""
+
+    return run(build_resume_task_cmd(args))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Dev CLI for Godot+C# template (AI-friendly entrypoint)",
@@ -247,6 +254,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_dl.add_argument("--latest-json", default="")
     p_dl.add_argument("--output", default="")
     p_dl.set_defaults(func=cmd_new_decision_log)
+
+    # resume-task
+    p_rt = sub.add_parser("resume-task", help="build a task-scoped recovery summary from the latest pipeline artifacts")
+    p_rt.add_argument("--repo-root", default=".")
+    p_rt.add_argument("--task-id", default="")
+    p_rt.add_argument("--run-id", default="")
+    p_rt.add_argument("--latest", default="")
+    p_rt.add_argument("--out-json", default="")
+    p_rt.add_argument("--out-md", default="")
+    p_rt.set_defaults(func=cmd_resume_task)
 
     return parser
 

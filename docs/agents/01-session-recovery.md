@@ -8,13 +8,16 @@ Use this file after a context reset.
 3. Read [02-repo-map.md](02-repo-map.md).
 4. Read the newest files in `execution-plans/` and `decision-logs/`.
 5. Read `git log --oneline --decorate -n 10`.
-6. If a local review pipeline was running, open `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`.
-7. From that latest index, open `summary.json`, `execution-context.json`, and `repair-guide.md`.
-8. If `agent_review_json_path` or `agent_review_md_path` exists in `latest.json`, read that next before rerunning anything.
+6. If a task-scoped local review pipeline already exists, run `py -3 scripts/python/dev_cli.py resume-task --task-id <id>`.
+7. Use the generated recovery summary to identify the latest run, recommended action, candidate commands, and matched recovery docs.
+8. Only if the summary is insufficient, open `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json` directly.
+9. From that latest index, open `summary.json`, `execution-context.json`, and `repair-guide.md`.
+10. If `agent_review_json_path` or `agent_review_md_path` exists in `latest.json`, read that next before rerunning anything.
 
 ## What To Trust First
 - `decision-logs/`: architecture and workflow decisions already made.
 - `execution-plans/`: the current plan, stop-loss, and next step.
+- `py -3 scripts/python/dev_cli.py resume-task --task-id <id>`: the preferred task-scoped recovery summary because it aggregates the latest run, matching recovery docs, and candidate commands.
 - `summary.json`: the exact pipeline result.
 - `execution-context.json`: git branch, head, recent log, and recovery pointers.
 - `repair-guide.json` and `repair-guide.md`: deterministic next actions after a failed pipeline step.

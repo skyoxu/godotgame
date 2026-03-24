@@ -261,3 +261,24 @@ def build_new_decision_log_cmd(args) -> list[str]:
     if args.output:
         cmd += ["--output", args.output]
     return cmd
+
+
+def build_resume_task_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/resume_task.py",
+    ]
+    if args.repo_root:
+        cmd += ["--repo-root", args.repo_root]
+    if args.task_id:
+        cmd += ["--task-id", args.task_id]
+    if args.run_id:
+        cmd += ["--run-id", args.run_id]
+    if args.latest:
+        cmd += ["--latest", args.latest]
+    if args.out_json:
+        cmd += ["--out-json", args.out_json]
+    if args.out_md:
+        cmd += ["--out-md", args.out_md]
+    return cmd
