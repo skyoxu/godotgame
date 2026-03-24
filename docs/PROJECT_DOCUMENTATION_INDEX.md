@@ -15,6 +15,10 @@
 - 文档导航（Base 骨干）：`docs/architecture/base/00-README.md`
 - Release/CI 工作流说明（含 Sentry 软门禁）：`docs/workflows/GM-NG-T2-playable-guide.md`
 - Overlay Generation Docs: `docs/workflows/overlay-generation-quickstart.md`, `docs/workflows/overlay-generation-sop.md`, `docs/workflows/overlays-authoring-guide.md`
+- 恢复与 active-task：`docs/agents/01-session-recovery.md`, `docs/agents/03-persistent-harness.md`
+- 目录职责：`docs/agents/16-directory-responsibilities.md`
+- 模板升级协议：`docs/workflows/template-upgrade-protocol.md`
+- Prototype Lane：`docs/workflows/prototype-lane.md`
 
 ---
 
@@ -74,6 +78,9 @@
 - `docs/workflows/overlay-generation-quickstart.md`?Minimal safe command set for overlay generation
 - `docs/workflows/overlay-generation-sop.md`?Standard flow for generate, repair, and small-batch apply
 - `docs/workflows/overlays-authoring-guide.md`?Directory, front matter, task backlinks, and contract reference rules
+- `docs/workflows/template-upgrade-protocol.md`?Stable migration protocol for template -> business repo upgrades
+- `docs/workflows/business-repo-upgrade-guide.md`?Compare-range-specific migration report for one template upgrade wave
+- `docs/workflows/prototype-lane.md`?Exploration lane policy separated from formal delivery profiles
 
 ---
 
