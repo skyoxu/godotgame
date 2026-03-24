@@ -21,17 +21,25 @@
 ## What A Business Repo Gets After Full Migration
 
 1. Persistent local harness runs with sidecars, latest pointers, replay/inspect support, and marathon recovery state.
-2. A repo-scoped hard-check entrypoint: `py -3 scripts/python/dev_cli.py run-local-hard-checks`.
-3. A task-scoped unified review entrypoint with profile-aware review behavior: `py -3 scripts/sc/run_review_pipeline.py`.
-4. Consumer-driven sidecar schemas for execution context, repair guide, latest pointer, harness capabilities, approval requests, and run events.
-5. Delivery-profile-driven runtime behavior across `sc-test`, `tdd`, acceptance, run-review-pipeline, and LLM semantic gates.
-6. Task-level `semantic_review_tier` hints in task views, with stop-loss escalation rules.
-7. Unified low-priority technical debt sync into `docs/technical-debt.md`.
-8. Strict acceptance test generation with red-first verification and deterministic C# conventions gate.
-9. Split `sc-test` / `tdd` orchestration helpers and stronger task-ref resolution, including template fallback from `.taskmaster/tasks` to `examples/taskmaster`.
-10. Overlay generation tooling for PRD -> Overlay 08 scaffold and repair flows.
-11. Recovery-doc scaffolding and validation for `execution-plans/` and `decision-logs/`.
-12. A decomposed `AGENTS.md` plus `docs/agents/**` knowledge map instead of one oversized root instruction file.
+2. Task-level TDD now has a lightweight `task_preflight` stage before the heavier analyze/context gates. It checks only the current task's overlay and `contractRefs` resolution so a business repo can fail fast on broken task-local metadata without running repo-wide hard gates.
+3. Task-scoped review pipeline runs now write stable `active-task` sidecars under `logs/ci/active-tasks/`, and `resume_task.py` consumes them before falling back to deeper artifact inspection. This gives business repos a shorter recovery path after context reset without changing the canonical `resume-task` entrypoint.
+4. Docs and routing now distinguish between:
+   - compare-range migration reports (`business-repo-upgrade-guide.md`),
+   - stable migration protocol (`template-upgrade-protocol.md`),
+   - directory responsibility routing (`docs/agents/16-directory-responsibilities.md`),
+   - and exploration-vs-delivery separation (`docs/workflows/prototype-lane.md`, `docs/prototypes/`).
+5. Prototype work now has an explicit pre-task lane. This is intentionally separate from `DELIVERY_PROFILE`; business repos should not use prototype artifacts as completed formal task output.
+6. A repo-scoped hard-check entrypoint: `py -3 scripts/python/dev_cli.py run-local-hard-checks`.
+7. A task-scoped unified review entrypoint with profile-aware review behavior: `py -3 scripts/sc/run_review_pipeline.py`.
+8. Consumer-driven sidecar schemas for execution context, repair guide, latest pointer, harness capabilities, approval requests, and run events.
+9. Delivery-profile-driven runtime behavior across `sc-test`, `tdd`, acceptance, run-review-pipeline, and LLM semantic gates.
+10. Task-level `semantic_review_tier` hints in task views, with stop-loss escalation rules.
+11. Unified low-priority technical debt sync into `docs/technical-debt.md`.
+12. Strict acceptance test generation with red-first verification and deterministic C# conventions gate.
+13. Split `sc-test` / `tdd` orchestration helpers and stronger task-ref resolution, including template fallback from `.taskmaster/tasks` to `examples/taskmaster`.
+14. Overlay generation tooling for PRD -> Overlay 08 scaffold and repair flows.
+15. Recovery-doc scaffolding and validation for `execution-plans/` and `decision-logs/`.
+16. A decomposed `AGENTS.md` plus `docs/agents/**` knowledge map instead of one oversized root instruction file.
 
 ## Migration Strategy
 
@@ -103,6 +111,16 @@ Reason:
 
 ### Phase 3: Task-Scoped Review Pipeline, Repair Guidance, And Marathon Recovery
 
+- New in the current template wave:
+  - `scripts/sc/_active_task_sidecar.py`
+  - `logs/ci/active-tasks/task-<id>.active.json`
+  - `logs/ci/active-tasks/task-<id>.active.md`
+- Migration impact:
+  - Copy the producer (`run_review_pipeline.py`, `_pipeline_session.py`, `_active_task_sidecar.py`) and the consumer (`scripts/python/resume_task.py`) in the same batch.
+  - Do not copy only the docs or only the consumer; the value depends on producer and consumer both existing.
+  - The task recovery default command remains `py -3 scripts/python/dev_cli.py resume-task --task-id <id>`.
+  - `active-task` is a shorter summary sidecar, not a replacement for the canonical recovery entrypoint.
+
 Copy this bundle together:
 
 1. `scripts/sc/run_review_pipeline.py`
@@ -144,6 +162,14 @@ Reason:
 - The pipeline also writes `P2/P3/P4` findings into `docs/technical-debt.md` and reads `semantic_review_tier` from task views.
 
 ### Phase 4: `sc-test`, TDD, Acceptance-Test Generation, And C# Conventions Hard Gate
+
+- New in the current template wave:
+  - `scripts/sc/build/tdd.py` now calls a task-local `task_preflight` stage.
+  - `scripts/sc/build/_tdd_steps.py` now resolves and checks `master.overlay`, `overlay_refs`, and path-like `contractRefs` before the heavier context gates.
+- Migration impact:
+  - Copy both the orchestrator and helper in the same batch.
+  - Copy the matching tests so future drift is visible.
+  - If the business repo uses non-path `contractRefs` semantics only, review the path-detection rule before enabling the same behavior unchanged.
 
 Copy this bundle together:
 
@@ -204,6 +230,17 @@ Reason:
 - Business repos with active PRD waves can now dry-run, simulate, repair, diff, and apply overlay pages in a controlled sequence.
 
 ### Phase 6: Delivery Profile And Documentation Surface
+
+- New in the current template wave:
+  - `docs/agents/16-directory-responsibilities.md`
+  - `docs/workflows/template-upgrade-protocol.md`
+  - `docs/workflows/prototype-lane.md`
+  - `docs/prototypes/README.md`
+  - `docs/prototypes/TEMPLATE.md`
+- Migration impact:
+  - Sync the new docs and update `AGENTS.md`, `README.md`, and the documentation indexes in the same batch.
+  - `business-repo-upgrade-guide.md` should continue to record compare-specific changes; `template-upgrade-protocol.md` is the long-lived protocol SSoT.
+  - Prototype lane docs are recommended even for business repos that currently do not use the lane, because they prevent future confusion between exploration work and formal delivery profiles.
 
 Copy these files together:
 

@@ -29,6 +29,10 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
   - Domain contracts, real gameplay overlays, real task triplet data, release identifiers, environment secrets, and store/platform metadata.
 - `generated-or-ephemeral`
   - `logs/**`, temporary reports, replay outputs, generated baselines unless the protocol explicitly says to promote them.
+- `recovery-sidecar-producers-and-consumers`
+  - Treat task-scoped `latest.json`, `active-task`, `execution-context`, `repair-guide`, and their consumer scripts as one migration unit. Do not copy only the docs or only the reader script.
+- `prototype-lane-docs`
+  - `docs/workflows/prototype-lane.md`, `docs/prototypes/README.md`, and `docs/prototypes/TEMPLATE.md` are template-generic and can usually be copied as-is, but the business repo should still decide whether to activate the lane operationally.
 
 ## Migration Order
 1. Baseline and identity
@@ -67,6 +71,10 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
    - `py -3 scripts/python/validate_contracts.py`
 4. Delivery-profile-sensitive checks when enabled
    - `py -3 scripts/python/run_gate_bundle.py --mode hard`
+5. Task-local TDD preflight when the repo uses `scripts/sc/build/tdd.py`
+   - `py -3 -m unittest scripts.sc.tests.test_build_tdd_orchestration scripts.sc.tests.test_build_tdd_task_preflight`
+6. Recovery sidecar regression when the repo uses task-scoped review pipeline
+   - `py -3 -m unittest scripts.sc.tests.test_pipeline_sidecar_protocol scripts.sc.tests.test_resume_task`
 
 ## Stop-Loss Rules
 - Do not copy compare-specific conclusions into stable docs without extracting the durable rule first.
@@ -74,6 +82,9 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
 - Do not copy project names, PRD IDs, or solution paths blindly.
 - Do not wire new workflows until all referenced local scripts exist.
 - If a copied script introduces a new dependency, copy or adapt that dependency in the same migration step.
+- Do not treat `active-task` as a replacement for `resume-task`; it is a short recovery pointer layered above the canonical recovery entrypoint.
+- Do not move prototype work into formal task triplet completion without an explicit promotion step.
+- Do not enable task-local TDD preflight blindly if the business repo's `contractRefs` semantics intentionally differ from the template's path-aware rule.
 
 ## Relationship To Compare Reports
 - `template-upgrade-protocol.md`
