@@ -62,6 +62,14 @@ class GateBundleTemplateTests(unittest.TestCase):
             self.assertFalse(gates["validate_recovery_docs"].get("skipped"))
             self.assertEqual(0, int(gates["validate_recovery_docs"].get("rc", -1)), gates["validate_recovery_docs"])
 
+            self.assertIn("backfill_semantic_review_tier", gates)
+            self.assertFalse(gates["backfill_semantic_review_tier"].get("skipped"))
+            self.assertEqual(0, int(gates["backfill_semantic_review_tier"].get("rc", -1)), gates["backfill_semantic_review_tier"])
+
+            self.assertIn("validate_semantic_review_tier", gates)
+            self.assertFalse(gates["validate_semantic_review_tier"].get("skipped"))
+            self.assertEqual(0, int(gates["validate_semantic_review_tier"].get("rc", -1)), gates["validate_semantic_review_tier"])
+
             self.assertEqual("missing_task_files", gates["obligations_reuse_regression"].get("skip_reason"))
             self.assertTrue(gates["obligations_reuse_regression"].get("skipped"))
 
