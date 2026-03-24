@@ -24,6 +24,7 @@ This file is the repository map. It routes you to the right source document by t
 - New session or resume failed work:
   - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
   - [Session Recovery](docs/agents/01-session-recovery.md)
+  - `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` when a task-scoped local run already exists
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
   - [Harness Run Protocol](docs/workflows/run-protocol.md)
   - [Harness Boundary Matrix](docs/workflows/harness-boundary-matrix.md)
@@ -138,7 +139,8 @@ This file is the repository map. It routes you to the right source document by t
 - Full local review: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"` (auto-writes `agent-review.*` unless `--dry-run`, `--skip-agent-review`, or the active profile sets `agent_review.mode=skip`)
 - Task-scoped execution entry: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted test / acceptance / review checks are internal pipeline stages behind `run_review_pipeline.py`; do not document them as standalone task-level commands.
-- For recovery or debugging, inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory before reaching for internal helper scripts.
+- First recovery entry: `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` to summarize the latest task run, matched recovery docs, and candidate `resume` / `fork` / `rerun` commands.
+- If deeper inspection is still needed, inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory before reaching for internal helper scripts.
 - Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files

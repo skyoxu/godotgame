@@ -18,11 +18,12 @@ Current operator flow:
 1. Run `py -3 scripts/sc/run_review_pipeline.py --task-id <id> ...` normally.
 2. If a step fails and you want one in-process retry budget, set `--max-step-retries <n>`.
 3. If the run should be bounded, set `--max-wall-time-sec <sec>`.
-4. Fix the first blocking issue from `repair-guide.md`.
-5. Read `run-events.jsonl` first if you need to understand where the run actually stopped.
-6. Resume the same artifact set with `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --resume`.
-7. If you want a clean recovery branch, use `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --fork`.
-8. If the run should be stopped permanently, mark it with `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --abort`.
+4. Before resuming after a context reset or long pause, run `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` to summarize the latest task run and matched recovery docs.
+5. Fix the first blocking issue from `repair-guide.md`.
+6. Read `run-events.jsonl` first if you need to understand where the run actually stopped.
+7. Resume the same artifact set with `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --resume`.
+8. If you want a clean recovery branch, use `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --fork`.
+9. If the run should be stopped permanently, mark it with `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --abort`.
 
 Current heuristics:
 - `--context-refresh-after-failures <n>`: when one step fails this many times, mark `context_refresh_needed=true`

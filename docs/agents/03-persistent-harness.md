@@ -21,6 +21,8 @@ The harness contract is local-file based. The producer pipeline owns the durable
 - `latest.json`: task-scoped pointer to the newest pipeline run for the current day, including `marathon_state_path`, `run_events_path`, and `harness_capabilities_path`.
 
 ## Reviewer Sidecar Outputs
+`py -3 scripts/python/dev_cli.py resume-task --task-id <id>` is the preferred task-scoped recovery entry after a context reset; it reads the latest producer outputs, matched recovery docs, and optional reviewer sidecars without mutating the run.
+
 `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>` can also be run standalone to rebuild reviewer artifacts from the latest producer outputs:
 - `agent-review.json`: deterministic machine-readable reviewer contract, including `explain.recommended_action`, `explain.summary`, and `explain.reasons` for direct recovery guidance.
 - `agent-review.md`: human-readable reviewer summary.
