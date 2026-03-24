@@ -42,6 +42,42 @@ def _write(path: Path, text: str) -> None:
 
 
 class ResumeTaskTests(unittest.TestCase):
+    def test_build_resume_payload_should_use_active_task_sidecar_when_latest_is_omitted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shutil.copytree(FIXTURE_ROOT, root, dirs_exist_ok=True)
+            active_path = root / "logs" / "ci" / "active-tasks" / "task-7.active.json"
+            _write(
+                active_path,
+                json.dumps(
+                    {
+                        "task_id": "7",
+                        "run_id": "11111111111111111111111111111111",
+                        "status": "fail",
+                        "recommended_action": "resume",
+                        "recommended_action_why": "Fix the failing step and resume.",
+                        "paths": {
+                            "latest_json": LATEST_REL,
+                        },
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+            )
+
+            rc, payload = resume_task.build_resume_payload(
+                repo_root=root,
+                task_id="7",
+                latest="",
+                run_id="",
+            )
+
+        self.assertEqual(0, rc)
+        self.assertEqual("7", payload["task_id"])
+        self.assertEqual(LATEST_REL, payload["active_task"]["latest_json"])
+        self.assertTrue(payload["active_task"]["path"].endswith("task-7.active.json"))
+
     def test_build_resume_payload_should_collect_matching_recovery_docs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -58,6 +58,10 @@ class PipelineSidecarProtocolTests(unittest.TestCase):
             self.assertEqual(0, rc)
             self.assertTrue((out_dir / "run-events.jsonl").exists())
             self.assertTrue((out_dir / "harness-capabilities.json").exists())
+            active_task_json = tmp_root / "logs" / "ci" / "active-tasks" / "task-1.active.json"
+            active_task_md = tmp_root / "logs" / "ci" / "active-tasks" / "task-1.active.md"
+            self.assertTrue(active_task_json.exists())
+            self.assertTrue(active_task_md.exists())
 
             events = [
                 json.loads(line)
@@ -80,6 +84,12 @@ class PipelineSidecarProtocolTests(unittest.TestCase):
             self.assertTrue(capabilities["approval_contract_supported"])
             self.assertFalse((out_dir / "approval-request.json").exists())
             self.assertFalse((out_dir / "approval-response.json").exists())
+            active_payload = json.loads(active_task_json.read_text(encoding="utf-8"))
+            self.assertEqual("1", active_payload["task_id"])
+            self.assertEqual(run_id, active_payload["run_id"])
+            self.assertEqual("continue", active_payload["recommended_action"])
+            self.assertIn("latest.json", active_payload["paths"]["latest_json"])
+            self.assertIn("Active Task Summary", active_task_md.read_text(encoding="utf-8"))
 
     def test_abort_should_append_run_aborted_event(self) -> None:
         run_id = uuid.uuid4().hex
@@ -134,6 +144,11 @@ class PipelineSidecarProtocolTests(unittest.TestCase):
                 rc = run_review_pipeline_module.main()
 
             self.assertEqual(0, rc)
+            active_task_json = tmp_root / "logs" / "ci" / "active-tasks" / "task-1.active.json"
+            self.assertTrue(active_task_json.exists())
+            active_payload = json.loads(active_task_json.read_text(encoding="utf-8"))
+            self.assertEqual("aborted", active_payload["status"])
+            self.assertEqual("rerun", active_payload["recommended_action"])
             events = [
                 json.loads(line)
                 for line in (out_dir / "run-events.jsonl").read_text(encoding="utf-8").splitlines()

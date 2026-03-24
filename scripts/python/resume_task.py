@@ -107,6 +107,24 @@ def _load_optional_agent_review(root: Path, out_dir_rel: str) -> dict[str, Any]:
     return payload
 
 
+def _active_task_json_path(root: Path, task_id: str) -> Path:
+    return root / "logs" / "ci" / "active-tasks" / f"task-{task_id}.active.json"
+
+
+def _load_active_task(root: Path, task_id: str) -> dict[str, Any]:
+    if not task_id:
+        return {}
+    path = _active_task_json_path(root, task_id)
+    if not path.exists():
+        return {}
+    try:
+        payload = _read_json(path)
+    except Exception:
+        return {}
+    payload["_path"] = _repo_rel(root, path)
+    return payload
+
+
 def _fallback_recommendation(inspection: dict[str, Any], task_id: str) -> tuple[str, str, str, list[str]]:
     failure = inspection.get("failure") or {}
     failure_code = str(failure.get("code") or "").strip().lower()
@@ -196,6 +214,11 @@ def build_resume_payload(
     latest: str,
     run_id: str,
 ) -> tuple[int, dict[str, Any]]:
+    active_task = _load_active_task(repo_root, task_id)
+    if not latest:
+        latest = str(((active_task.get("paths") or {}).get("latest_json")) or "").strip()
+    if not run_id:
+        run_id = str(active_task.get("run_id") or "").strip()
     inspection_rc, inspection = inspect_run_artifacts(
         repo_root=repo_root,
         latest=latest,
@@ -207,6 +230,7 @@ def build_resume_payload(
     resolved_run_id = str(inspection.get("run_id") or run_id or "").strip()
     latest_rel = str(((inspection.get("paths") or {}).get("latest")) or "").strip()
     out_dir_rel = str(((inspection.get("paths") or {}).get("out_dir")) or "").strip()
+    active_task = _load_active_task(repo_root, resolved_task_id)
     agent_review = _load_optional_agent_review(repo_root, out_dir_rel)
     agent_review_signal = _recommendation_from_agent_review(agent_review)
     if agent_review_signal is not None:
@@ -237,6 +261,13 @@ def build_resume_payload(
             "review_verdict": str(agent_review.get("review_verdict") or "").strip(),
             "recommended_action": str(((agent_review.get("explain") or {}).get("recommended_action") or agent_review.get("recommended_action") or "")).strip(),
             "summary": str(((agent_review.get("explain") or {}).get("summary") or "")).strip(),
+        },
+        "active_task": {
+            "path": str(active_task.get("_path") or ""),
+            "status": str(active_task.get("status") or "").strip(),
+            "recommended_action": str(active_task.get("recommended_action") or "").strip(),
+            "recommended_action_why": str(active_task.get("recommended_action_why") or "").strip(),
+            "latest_json": str(((active_task.get("paths") or {}).get("latest_json")) or "").strip(),
         },
     }
     return inspection_rc, payload
@@ -271,12 +302,21 @@ def _render_markdown(payload: dict[str, Any]) -> str:
         _line("Rerun command", f"`{commands.get('rerun')}`" if commands.get("rerun") else "n/a"),
     ]
     agent_review = payload.get("agent_review") or {}
+    active_task = payload.get("active_task") or {}
     if agent_review.get("path"):
         lines.extend(
             [
                 _line("Agent review", f"`{agent_review.get('path')}`"),
                 _line("Agent review verdict", str(agent_review.get("review_verdict") or "unknown")),
                 _line("Agent review summary", str(agent_review.get("summary") or "n/a")),
+            ]
+        )
+    if active_task.get("path"):
+        lines.extend(
+            [
+                _line("Active task summary", f"`{active_task.get('path')}`"),
+                _line("Active task status", str(active_task.get("status") or "unknown")),
+                _line("Active task recommendation", str(active_task.get("recommended_action") or "n/a")),
             ]
         )
     related_plans = payload.get("related_execution_plans") or []
