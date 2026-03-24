@@ -52,6 +52,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `DELIVERY_PROFILE=standard`：收口档位；ADR、验收、语义门禁更严格，安全默认派生到 `strict`。
 - 生效优先级：CLI `--delivery-profile` > 环境变量 `DELIVERY_PROFILE` > 仓库默认 `fast-ship`。
 - CI 工作流 `windows-quality-gate.yml` / `ci-windows.yml` 已接入 `delivery_profile` 输入，并会在 Step Summary 固化 `DeliveryProfile:` 与 `SecurityProfile:`。
+- `prototype lane` 是探索通道，不是新的 `DELIVERY_PROFILE`；它只决定工作是否进入正式任务流，不替代正式交付门禁。
 
 ## Quick Links
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
@@ -65,7 +66,12 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - Overlay Generation Quickstart: `docs/workflows/overlay-generation-quickstart.md`
 - Overlay Generation SOP: `docs/workflows/overlay-generation-sop.md`
 - Harness Marathon: `docs/agents/06-harness-marathon.md`
+- Session Recovery: `docs/agents/01-session-recovery.md`
+- Directory Responsibilities: `docs/agents/16-directory-responsibilities.md`
 - Template Bootstrap Checklist: `docs/workflows/template-bootstrap-checklist.md`
+- Template Upgrade Protocol: `docs/workflows/template-upgrade-protocol.md`
+- Business Repo Upgrade Guide: `docs/workflows/business-repo-upgrade-guide.md`
+- Prototype Lane: `docs/workflows/prototype-lane.md`
 - AGENTS 构建原则：`docs/agents/11-agents-construction-principles.md`
 - Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
 - Windows-only 快速指引：`docs/migration/Phase-17-Windows-Only-Quickstart.md`
@@ -89,7 +95,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `scripts/sc/check_tdd_execution_plan.py` —— 在执行 `llm_generate_tests_from_acceptance_refs.py` 之前，按缺失测试数、`red-first`、`verify` 范围、acceptance anchors 数量和测试根目录混合度预判是否应先补 `execution-plan`；支持 `off|warn|draft|require` 四种策略。
 - `scripts/python/new_decision_log.py` —— 生成合规的 `decision-logs/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
 - `scripts/python/inspect_run.py` -- inspect task-scoped `latest.json` or repo-scoped `local-hard-checks-latest.json`, validate the shared sidecar contract for `summary.json` / `execution-context.json` / `repair-guide.json`, and emit one stable run-inspection JSON payload with the shared failure taxonomy for local recovery and debugging.
-- `scripts/python/resume_task.py` —— 生成任务级恢复摘要，聚合 `inspect_run.py` 结果、最近的 `execution-plans/` / `decision-logs/` 命中项，以及 `resume` / `fork` / `rerun` 候选命令；推荐通过 `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` 调用。
+- `scripts/python/resume_task.py` —— 生成任务级恢复摘要，聚合 `inspect_run.py` 结果、`active-task` sidecar、最近的 `execution-plans/` / `decision-logs/` 命中项，以及 `resume` / `fork` / `rerun` 候选命令；推荐通过 `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` 调用。
 - `scripts/python/backfill_semantic_review_tier.py` —— 按 `semantic_review_tier` 当前规则为 `tasks_back.json` / `tasks_gameplay.json` 回填或规范化字段；默认 `--mode conservative`，模板仓会优先读取真实 `.taskmaster/tasks/*.json`，缺失时自动回退到 `examples/taskmaster/*`。
 - `scripts/python/validate_semantic_review_tier.py` —— 校验 `semantic_review_tier` 字段名、合法值、与当前计算建议的一致性，以及 `tasks_back` / `tasks_gameplay` 同任务是否发生 tier 漂移；同样支持模板仓 fallback。
 - `scripts/python/run_obligations_jitter_batch5x3.py` —— 本地批量运行 `scripts/sc/llm_extract_task_obligations.py`，按 5x3 轮次收集 obligations 抖动原始数据；支持 `--delivery-profile`，模板仓在缺少真实 `.taskmaster/tasks/*.json` 时自动回退到 `examples/taskmaster/tasks.json`。

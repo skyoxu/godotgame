@@ -23,7 +23,7 @@
 - `sc-git`：`logs/ci/<YYYY-MM-DD>/sc-git/`
 - `sc-acceptance-check`：`logs/ci/<YYYY-MM-DD>/sc-acceptance-check/`
 - `sc-llm-review`：`logs/ci/<YYYY-MM-DD>/sc-llm-review/`（可选，本地 LLM 口头审查）
-- `sc-review-pipeline` also writes `run-events.jsonl`, `harness-capabilities.json`, and supports on-demand `approval-request.json` / `approval-response.json` protocol files.
+- `sc-review-pipeline` also writes `run-events.jsonl`, `harness-capabilities.json`, task-scoped `latest.json`, stable `logs/ci/active-tasks/task-<id>.active.{json,md}`, and supports on-demand `approval-request.json` / `approval-response.json` protocol files.
 
 单元测试与覆盖率固定落盘到：`logs/unit/<YYYY-MM-DD>/`（由 `scripts/python/run_dotnet.py` 生成）。
 
@@ -199,6 +199,7 @@ py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --context-refresh-after-failures 2 --context-refresh-after-resumes 2 --context-refresh-after-diff-lines 200 --context-refresh-after-diff-categories 2
 
 # Inspect and summarize the latest task-scoped recovery state before deciding resume/fork
+# Or open logs/ci/active-tasks/task-<id>.active.md first for the shortest recovery summary
 py -3 scripts/python/dev_cli.py resume-task --task-id 10
 
 # Resume the latest task-scoped run after fixing the first blocking issue
