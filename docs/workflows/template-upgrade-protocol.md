@@ -48,6 +48,7 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
    - Rebind paths, solution names, secrets, and delivery/security defaults.
 5. Docs and routing
    - Update `AGENTS.md`, `README.md`, docs indexes, and workflow docs so operators can discover the new behavior.
+   - If the repo uses gate bundle docs, sync mirror-runtime gate docs together with the gate list.
 6. Business-local adaptation
    - Rename project references, update overlay roots, adapt domain contract paths, and remove template fallback assumptions.
 7. Validation and stop-loss
@@ -56,10 +57,39 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
 ## Required Localization Checklist
 - Replace template repo name with the business repo name.
 - Replace solution / csproj names and runtime paths.
+- If `Tests.Godot/Game.Godot` should point to a non-default runtime directory, localize the Junction target and workflow arguments together.
 - Replace `PRD-Example` or template overlay roots with the business PRD IDs.
 - Replace template fallback assumptions with real `.taskmaster/tasks/*.json` once the business repo has them.
 - Re-check any script that references domain contracts, test roots, or project-relative resources.
 
+## Tests.Godot Single-Source Runtime Protocol
+Problem:
+- If `Tests.Godot/Game.Godot` becomes a normal copied directory instead of a Junction to the real `Game.Godot`, tests can silently read stale scripts/resources.
+- This usually passes in long-lived local clones but fails or drifts in clean CI checkouts.
+- Text references to `Tests.Godot/Game.Godot/**` are also dangerous because they encode the alias path instead of the real source of truth.
+
+Durable solution:
+1. Mirror path must stay ignored by git.
+   - Keep `.gitignore` entries for `Tests.Godot/Game.Godot/` and `Tests.Godot/Game.Godot/**`.
+2. `Tests.Godot/Game.Godot` must be a Junction to the real runtime directory.
+   - Standard template target is `<repo>/Game.Godot`.
+   - If the business repo uses another runtime directory name, localize the target but keep the single-source rule.
+3. `scripts/python/run_gdunit.py` must hard-fail before Godot invocation when the Junction is missing or points to the wrong target.
+   - Copy the matching helper script in the same batch: `ensure_tests_godot_junction.py` or `ensure_tests_project_junction.py`, depending on the repo generation.
+4. CI should prepare the Junction before GdUnit runs.
+   - Use `scripts/ci/prepare_gd_tests.ps1` where the workflow still has an explicit prepare step.
+   - Even if the workflow prepares it, keep the `run_gdunit.py` hard check as the final stop-loss.
+5. Add both hard gates when the repo uses gate bundle style checks.
+   - `scripts/python/forbid_mirror_path_refs.py` blocks source text that points to `Tests.Godot/Game.Godot/**`.
+   - `scripts/python/audit_tests_godot_mirror_git_tracking.py` blocks git-tracked mirror files that would re-create a copied directory in clean clones.
+6. Update workflow and docs together.
+   - If the repo uses `scripts/python/run_gate_bundle.py`, wire both mirror-related gates into the hard gate list.
+   - Update `docs/workflows/gate-bundle.md` so script and doc order stay consistent.
+
+Minimum validation:
+- `py -3 scripts/python/ensure_tests_godot_junction.py --root . --tests-project Tests.Godot --link-name Game.Godot --target-rel Game.Godot`
+- `py -3 scripts/python/audit_tests_godot_mirror_git_tracking.py --root .`
+- `py -3 scripts/python/run_gdunit.py --prewarm --godot-bin $env:GODOT_BIN --project Tests.Godot`
 ## Validation Sequence
 1. Deterministic local checks
    - `py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin $env:GODOT_BIN`
@@ -71,9 +101,12 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
    - `py -3 scripts/python/validate_contracts.py`
 4. Delivery-profile-sensitive checks when enabled
    - `py -3 scripts/python/run_gate_bundle.py --mode hard`
-5. Task-local TDD preflight when the repo uses `scripts/sc/build/tdd.py`
+5. Tests.Godot single-source runtime checks when the repo uses `Tests.Godot` + `Game.Godot`
+   - `py -3 scripts/python/ensure_tests_godot_junction.py --root . --tests-project Tests.Godot --link-name Game.Godot --target-rel Game.Godot`
+   - `py -3 scripts/python/audit_tests_godot_mirror_git_tracking.py --root .`
+6. Task-local TDD preflight when the repo uses `scripts/sc/build/tdd.py`
    - `py -3 -m unittest scripts.sc.tests.test_build_tdd_orchestration scripts.sc.tests.test_build_tdd_task_preflight`
-6. Recovery sidecar regression when the repo uses task-scoped review pipeline
+7. Recovery sidecar regression when the repo uses task-scoped review pipeline
    - `py -3 -m unittest scripts.sc.tests.test_pipeline_sidecar_protocol scripts.sc.tests.test_resume_task`
 
 ## Stop-Loss Rules
@@ -85,6 +118,7 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
 - Do not treat `active-task` as a replacement for `resume-task`; it is a short recovery pointer layered above the canonical recovery entrypoint.
 - Do not move prototype work into formal task triplet completion without an explicit promotion step.
 - Do not enable task-local TDD preflight blindly if the business repo's `contractRefs` semantics intentionally differ from the template's path-aware rule.
+- Do not treat a copied `Tests.Godot/Game.Godot` directory as acceptable technical debt; if git tracks mirror files, fix the index and restore the Junction before trusting GdUnit results.
 
 ## Relationship To Compare Reports
 - `template-upgrade-protocol.md`

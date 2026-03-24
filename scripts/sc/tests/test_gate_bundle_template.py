@@ -62,6 +62,14 @@ class GateBundleTemplateTests(unittest.TestCase):
             self.assertFalse(gates["validate_recovery_docs"].get("skipped"))
             self.assertEqual(0, int(gates["validate_recovery_docs"].get("rc", -1)), gates["validate_recovery_docs"])
 
+            self.assertIn("audit_tests_godot_mirror_git_tracking", gates)
+            self.assertFalse(gates["audit_tests_godot_mirror_git_tracking"].get("skipped"))
+            self.assertEqual(
+                0,
+                int(gates["audit_tests_godot_mirror_git_tracking"].get("rc", -1)),
+                gates["audit_tests_godot_mirror_git_tracking"],
+            )
+
             self.assertIn("backfill_semantic_review_tier", gates)
             self.assertFalse(gates["backfill_semantic_review_tier"].get("skipped"))
             self.assertEqual(0, int(gates["backfill_semantic_review_tier"].get("rc", -1)), gates["backfill_semantic_review_tier"])

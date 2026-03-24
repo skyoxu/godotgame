@@ -215,6 +215,10 @@ def _hard_gate_commands(task_files: list[str], task_links_max_warnings: int = -1
             "cmd": ["py", "-3", "scripts/python/forbid_mirror_path_refs.py", "--root", "."],
         },
         {
+            "name": "audit_tests_godot_mirror_git_tracking",
+            "cmd": ["py", "-3", "scripts/python/audit_tests_godot_mirror_git_tracking.py", "--root", "."],
+        },
+        {
             "name": "validate_contracts",
             "cmd": ["py", "-3", "scripts/python/validate_contracts.py"],
         },
