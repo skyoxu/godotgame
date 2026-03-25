@@ -55,77 +55,80 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - `prototype lane` 是探索通道，不是新的 `DELIVERY_PROFILE`；它只决定工作是否进入正式任务流，不替代正式交付门禁。
 
 ## Quick Links
+
+### Daily Ops
 - Daily Workflow: `workflow.md`
 - Bootstrap Workflow Example: `workflow.example.md`
+- Stable Public Entrypoints: `docs/workflows/stable-public-entrypoints.md`
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
-- Unified Technical Debt Register: `docs/technical-debt.md`
-- 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
-- Persistent Harness: `docs/agents/03-persistent-harness.md`
-- Harness Run Protocol: `docs/workflows/run-protocol.md`
-- Harness Boundary Matrix: `docs/workflows/harness-boundary-matrix.md`
-- Local Hard Checks: `docs/workflows/local-hard-checks.md`
-- Overlay Authoring Guide: `docs/workflows/overlays-authoring-guide.md`
-- Overlay Generation Quickstart: `docs/workflows/overlay-generation-quickstart.md`
-- Overlay Generation SOP: `docs/workflows/overlay-generation-sop.md`
-- Harness Marathon: `docs/agents/06-harness-marathon.md`
 - Session Recovery: `docs/agents/01-session-recovery.md`
-- Directory Responsibilities: `docs/agents/16-directory-responsibilities.md`
+- Persistent Harness: `docs/agents/03-persistent-harness.md`
+- Local Hard Checks: `docs/workflows/local-hard-checks.md`
+- Project Health Dashboard: `docs/workflows/project-health-dashboard.md`
+- Unified Technical Debt Register: `docs/technical-debt.md`
+
+### Migration / Template Upgrade
 - Template Bootstrap Checklist: `docs/workflows/template-bootstrap-checklist.md`
 - Template Upgrade Protocol: `docs/workflows/template-upgrade-protocol.md`
 - Business Repo Upgrade Guide: `docs/workflows/business-repo-upgrade-guide.md`
 - Prototype Lane: `docs/workflows/prototype-lane.md`
-- AGENTS 构建原则：`docs/agents/11-agents-construction-principles.md`
+- Overlay Generation Quickstart: `docs/workflows/overlay-generation-quickstart.md`
+- Overlay Generation SOP: `docs/workflows/overlay-generation-sop.md`
+- Overlay Authoring Guide: `docs/workflows/overlays-authoring-guide.md`
 - Godot+C# 快速开始（godotgame 项目）：`docs/TEMPLATE_GODOT_GETTING_STARTED.md`
 - Windows-only 快速指引：`docs/migration/Phase-17-Windows-Only-Quickstart.md`
 - FeatureFlags 快速指引：`docs/migration/Phase-18-Staged-Release-and-Canary-Strategy.md`
 - 导出清单：`docs/migration/Phase-17-Export-Checklist.md`
 - Headless 冒烟：`docs/migration/Phase-12-Headless-Smoke-Tests.md`
-- Actions 快速链路验证（Dry Run）：`.github/workflows/windows-smoke-dry-run.yml`
 - 场景设计：`docs/migration/Phase-8-Scene-Design.md`
 - 测试体系：`docs/migration/Phase-10-Unit-Tests.md`
 - 安全基线：`docs/migration/Phase-14-Godot-Security-Baseline.md`
 - 手动发布指引：`docs/release/WINDOWS_MANUAL_RELEASE.md`
 - Release/Sentry 软门禁与工作流说明：`docs/workflows/GM-NG-T2-playable-guide.md`
 
+### Deep Reference
+- 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
+- Script Entrypoints Index: `docs/workflows/script-entrypoints-index.md`
+- Harness Run Protocol: `docs/workflows/run-protocol.md`
+- Harness Boundary Matrix: `docs/workflows/harness-boundary-matrix.md`
+- Harness Marathon: `docs/agents/06-harness-marathon.md`
+- Directory Responsibilities: `docs/agents/16-directory-responsibilities.md`
+- AGENTS 构建原则：`docs/agents/11-agents-construction-principles.md`
+- Actions 快速链路验证（Dry Run）：`.github/workflows/windows-smoke-dry-run.yml`
 ## Task / ADR / PRD 工具
-- `scripts/python/task_links_validate.py` —— 检查 NG/GM 任务与 ADR / 章节 / Overlay 的回链完整性（CI 已在用，作为门禁）。
-- `scripts/python/verify_task_mapping.py` —— 抽样检查 NG/GM → tasks.json 的元数据完整度（owner / layer / adr_refs / chapter_refs 等）。
-- `scripts/python/validate_task_master_triplet.py` —— 全面校验三份任务文件之间的结构一致性（link + layer + depends_on + 映射），适合作为本地或后续 CI 的结构总检。
-- `scripts/python/prd_coverage_report.py` —— 生成 PRD → 任务的覆盖报表（软检查，不参与门禁，用于观察覆盖程度）。
-- `scripts/python/validate_recovery_docs.py` —— 校验 `execution-plans/` 与 `decision-logs/` 的恢复必填字段、`n/a` 原因说明以及关键路径引用。
-- `scripts/python/new_execution_plan.py` —— 生成合规的 `execution-plans/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
-- `scripts/sc/check_tdd_execution_plan.py` —— 在执行 `llm_generate_tests_from_acceptance_refs.py` 之前，按缺失测试数、`red-first`、`verify` 范围、acceptance anchors 数量和测试根目录混合度预判是否应先补 `execution-plan`；支持 `off|warn|draft|require` 四种策略。
-- `scripts/python/new_decision_log.py` —— 生成合规的 `decision-logs/*.md` 脚手架，并在给出 `task_id` 时自动尝试回填 `latest.json` / `run_id` / pipeline artifact 路径。
-- `scripts/python/inspect_run.py` -- inspect task-scoped `latest.json` or repo-scoped `local-hard-checks-latest.json`, validate the shared sidecar contract for `summary.json` / `execution-context.json` / `repair-guide.json`, and emit one stable run-inspection JSON payload with the shared failure taxonomy for local recovery and debugging.
-- `scripts/python/resume_task.py` —— 生成任务级恢复摘要，聚合 `inspect_run.py` 结果、`active-task` sidecar、最近的 `execution-plans/` / `decision-logs/` 命中项，以及 `resume` / `fork` / `rerun` 候选命令；推荐通过 `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` 调用。
-- `scripts/python/backfill_semantic_review_tier.py` —— 按 `semantic_review_tier` 当前规则为 `tasks_back.json` / `tasks_gameplay.json` 回填或规范化字段；默认 `--mode conservative`，模板仓会优先读取真实 `.taskmaster/tasks/*.json`，缺失时自动回退到 `examples/taskmaster/*`。
-- `scripts/python/validate_semantic_review_tier.py` —— 校验 `semantic_review_tier` 字段名、合法值、与当前计算建议的一致性，以及 `tasks_back` / `tasks_gameplay` 同任务是否发生 tier 漂移；同样支持模板仓 fallback。
-- `scripts/python/run_obligations_jitter_batch5x3.py` —— 本地批量运行 `scripts/sc/llm_extract_task_obligations.py`，按 5x3 轮次收集 obligations 抖动原始数据；支持 `--delivery-profile`，模板仓在缺少真实 `.taskmaster/tasks/*.json` 时自动回退到 `examples/taskmaster/tasks.json`。
-- `scripts/python/build_obligations_jitter_summary.py` —— 将 5x3 原始运行结果汇总为 jitter summary / markdown report，用于判断稳定通过、稳定失败和抖动任务。
-- `scripts/python/refresh_obligations_jitter_summary_with_overrides.py` —— 将补跑结果覆盖回原 summary，生成 refreshed summary / report，适合局部重跑后的收敛分析。
-- `scripts/python/generate_obligations_freeze_whitelist_draft.py` —— 基于 jitter summary 生成 obligations freeze whitelist 草案，供人工审阅，不直接放进 CI 硬门。
-- `scripts/python/evaluate_obligations_freeze_whitelist.py` —— 评估 whitelist 草案或 current baseline 对当前 jitter summary 的适配度，输出 judgable / freeze_gate_pass 等汇总结果。
-- `scripts/python/promote_obligations_freeze_baseline.py` —— 将审阅通过的 draft 提升为带日期/标签的 immutable baseline，并更新 current pointer。
-- `scripts/python/run_obligations_freeze_pipeline.py` —— 串起 jitter batch、summary、override refresh、draft、evaluate、promote 的本地编排入口；默认作为人工分析工具链，不作为模板仓 CI 必跑项。
 
+README 只保留稳定公共入口摘要，不再在这里维护长脚本清单。
 
-<!-- BEGIN:NEW_PROJECT_SANGUO_ALIGNMENT -->
+- 日常推荐入口：`docs/workflows/stable-public-entrypoints.md`
+- 全量工作流入口、依赖、参数扫描：`docs/workflows/script-entrypoints-index.md`
 
-## Script Portability Tags (Template Use)
+稳定公共入口按用途分为 3 组：
 
-- `template-core` (directly reusable)
-  - `scripts/python/sync_task_overlay_refs.py` - Sync overlay refs across task triplet; supports `.taskmaster/tasks` and `examples/taskmaster` fallback.
-  - `scripts/python/validate_overlay_execution.py` - Validate overlay execution docs (structure, front matter, and referenced paths).
-  - `scripts/python/validate_docs_utf8_no_bom.py` - Enforce UTF-8 without BOM on `docs/.github/.taskmaster/AGENTS.md` scope.
+1. 仓库 bootstrap / 恢复
+- `py -3 scripts/python/dev_cli.py run-local-hard-checks`
+- `py -3 scripts/python/dev_cli.py project-health-scan`
+- `py -3 scripts/python/dev_cli.py serve-project-health`
+- `py -3 scripts/python/dev_cli.py resume-task --task-id <id>`
+- `py -3 scripts/python/inspect_run.py --kind <kind> [--task-id <id>]`
 
-- `optional-llm` (advanced, requires obligations/SC toolchain)
-  - `scripts/python/_obligations_freeze_pipeline_common.py` - Shared helpers for obligations freeze orchestration.
-  - `scripts/python/_obligations_freeze_pipeline_runner.py` - End-to-end obligations freeze runner; depends on jitter/summary/draft/evaluate/promote scripts.
-  - `scripts/python/rerun_obligations_hardgate_round3.py` - Multi-round rerun wrapper for `scripts/sc/llm_extract_task_obligations.py`.
+2. 任务交付主环
+- `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
+- `py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id <id> --tdd-stage red-first --verify <mode>`
+- `py -3 scripts/sc/check_tdd_execution_plan.py --task-id <id> --tdd-stage red-first --verify auto --execution-plan-policy <mode>`
+- `py -3 scripts/sc/build.py tdd --stage <red|green|refactor>`
 
-- `domain-specific` (requires project-level evaluation)
-  - `scripts/python/config_contract_sync_check.py` - Domain contract consistency checker; template mode defaults to `SKIPPED` when domain files are absent, `--strict-presence` makes it hard fail.
-  - `scripts/python/guard_archived_overlays.py` - Archived overlay drift guard; recommended only when `_archived` overlay workflow is used.
+3. 任务元数据 / 架构一致性
+- `py -3 scripts/python/task_links_validate.py`
+- `py -3 scripts/python/check_tasks_all_refs.py`
+- `py -3 scripts/python/validate_task_master_triplet.py`
+- `py -3 scripts/python/validate_contracts.py`
+- `py -3 scripts/python/check_domain_contracts.py`
+- `py -3 scripts/python/sync_task_overlay_refs.py --prd-id <PRD-ID> --write`
+- `py -3 scripts/sc/llm_generate_overlays_batch.py ...`
+
+止损规则：
+- 不要再把一次性迁移、兄弟仓同步、编码修复、文档清洗脚本堆到 README 首页。
+- 如果某个脚本不在上面的稳定公共入口里，先去 `stable-public-entrypoints.md` 或 `script-entrypoints-index.md` 查，不要凭印象直接运行。
 
 ## New project task-gate alignment
 

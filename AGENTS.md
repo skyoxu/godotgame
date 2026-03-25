@@ -31,6 +31,10 @@ This file is the repository map. It routes you to the right source document by t
   - [Harness Run Protocol](docs/workflows/run-protocol.md)
   - [Harness Boundary Matrix](docs/workflows/harness-boundary-matrix.md)
   - [Agent-to-Agent Review](docs/agents/07-agent-to-agent-review.md)
+- Check repo readiness or view the live local dashboard:
+  - [Project Health Dashboard](docs/workflows/project-health-dashboard.md)
+  - `py -3 scripts/python/dev_cli.py project-health-scan`
+  - `logs/ci/project-health/latest.html`
 - Understand the project, startup path, or stack:
   - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
   - [README](README.md)
