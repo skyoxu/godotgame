@@ -2,10 +2,10 @@
 
 ## Scope
 
-- Compare range: `origin/main` (`125d7f1`) -> current branch `feature/sc-script-refactor-batch1` (`883f69e`)
-- Generated on: `2026-03-22`
+- Base compare wave: `origin/main` (`125d7f1`) -> template migration wave rooted at `883f69e`
+- Addendum wave: repo-health / dashboard / local-hard-checks prelude updates accumulated through the current template working tree on `2026-03-25`
 - Goal: let sibling business repositories upgrade to the current template branch and gain the same environment, scripts, sidecar protocol, recovery assets, docs, and workflow-facing behavior.
-- Durable protocol: `docs/workflows/template-upgrade-protocol.md` defines the stable migration rules; this file remains the compare-range-specific report.
+- Durable protocol: `docs/workflows/template-upgrade-protocol.md` defines the stable migration rules; this file records the current cumulative migration surface a business repo must absorb to match the latest template behavior.
 
 ## Hard Facts First
 
@@ -16,7 +16,8 @@
    - new sidecar schemas and recovery artifacts
    - new task-view fields and template fallback rules
    - new docs, agent routing, and migration guidance
-4. If a business repo is older than `origin/main`, do **not** jump straight to this branch delta. First align that repo to current `main`, then apply this delta.
+   - repo-health bootstrap commands, dashboard output, and local-hard-checks prelude wiring
+4. If a business repo is older than `origin/main`, do **not** jump straight to this migration surface. First align that repo to current `main`, then apply this delta.
 
 ## What A Business Repo Gets After Full Migration
 
@@ -39,7 +40,9 @@
 13. Split `sc-test` / `tdd` orchestration helpers and stronger task-ref resolution, including template fallback from `.taskmaster/tasks` to `examples/taskmaster`.
 14. Overlay generation tooling for PRD -> Overlay 08 scaffold and repair flows.
 15. Recovery-doc scaffolding and validation for `execution-plans/` and `decision-logs/`.
-16. A decomposed `AGENTS.md` plus `docs/agents/**` knowledge map instead of one oversized root instruction file.
+16. Repo-scoped health commands and a lightweight local dashboard: `detect-project-stage`, `doctor-project`, `check-directory-boundaries`, `project-health-scan`, and `serve-project-health`.
+17. `run-local-hard-checks` now begins with a deterministic repo-health prelude and writes/refreshes `logs/ci/project-health/latest.json` plus `latest.html` before the hard validation chain.
+18. A decomposed `AGENTS.md` plus `docs/agents/**` knowledge map instead of one oversized root instruction file.
 
 ## Migration Strategy
 
@@ -108,6 +111,42 @@ Reason:
 
 - `dev_cli.py run-local-hard-checks` is no longer just a shell wrapper. It writes sidecars, latest pointers, repair guides, and replayable run events.
 - If you copy the producer but miss the schemas, later schema validation and replay tooling will drift.
+- This harness phase is no longer self-contained: in the latest template it depends on the repo-health prelude bundle below.
+
+### Phase 2A: Repo-Health Dashboard And Bootstrap Stop-Loss
+
+Copy this bundle in the same migration wave as Phase 2:
+
+1. `scripts/python/_project_health_common.py`
+2. `scripts/python/_project_health_checks.py`
+3. `scripts/python/_project_health_support.py`
+4. `scripts/python/_project_health_server.py`
+5. `scripts/python/detect_project_stage.py`
+6. `scripts/python/doctor_project.py`
+7. `scripts/python/check_directory_boundaries.py`
+8. `scripts/python/project_health_scan.py`
+9. `scripts/python/serve_project_health.py`
+10. `scripts/python/dev_cli.py`
+11. `scripts/python/dev_cli_builders.py`
+12. `scripts/python/local_hard_checks_support.py`
+13. `scripts/sc/_summary_schema_local_hard_checks.py`
+14. `scripts/sc/schemas/sc-local-hard-checks-summary.schema.json`
+15. `scripts/sc/tests/test_dev_cli_project_health_commands.py`
+16. `scripts/sc/tests/test_project_health_support.py`
+17. `scripts/sc/tests/test_project_health_server.py`
+18. `scripts/sc/tests/test_local_hard_checks_harness.py`
+19. `docs/workflows/project-health-dashboard.md`
+20. `docs/workflows/local-hard-checks.md`
+21. `README.md`
+22. `AGENTS.md`
+23. `docs/PROJECT_DOCUMENTATION_INDEX.md`
+
+Reason:
+
+- `project-health-scan` is now the repo bootstrap stop-loss point. A business repo that skips this bundle can still run older hard checks, but it will not match the latest template behavior.
+- `run-local-hard-checks` now refreshes project-health records before the hard gate chain. If you copy only the docs or only the Python entrypoints, operators lose discoverability or the harness silently diverges.
+- `serve-project-health` is intentionally local-only. Do not wire it into CI, but do copy the script and doc so developers get the stable `127.0.0.1` dashboard entrypoint.
+- The updated `README.md`, `AGENTS.md`, and `docs/PROJECT_DOCUMENTATION_INDEX.md` are part of the migration surface because they expose the new repo-level health commands and recovery entrypoints to humans and agents.
 
 ### Phase 3: Task-Scoped Review Pipeline, Repair Guidance, And Marathon Recovery
 
@@ -359,6 +398,10 @@ Run these on Windows after copying and adapting the files:
    - `py -3 scripts/python/check_csharp_test_conventions.py --task-id <id>`
 6. Overlay generation dry-run:
    - `py -3 scripts/sc/llm_generate_overlays_batch.py --prd <path> --prd-id <PRD-ID> --prd-docs <csv> --page-family core --page-mode scaffold --timeout-sec 1200 --dry-run --batch-suffix migration-smoke`
+7. Repo-health bootstrap parity:
+   - `py -3 scripts/python/dev_cli.py project-health-scan`
+   - `py -3 scripts/python/dev_cli.py serve-project-health`
+   - Verify `logs/ci/project-health/latest.json`, `latest.html`, and `server.json` are produced as documented.
 
 ## Commit Clusters In This Compare Range
 
@@ -380,16 +423,44 @@ Use these commit subjects as a sanity check when reviewing whether the target re
 
 ## File Inventory Summary
 
-- Root / Top-Level Docs: 3 files
-- docs/**: 33 files
+- Root / Top-Level Docs: 3 files in the original compare wave, plus updated entry docs in the repo-health addendum wave
+- docs/**: original compare-wave docs plus repo-health dashboard / routing refresh docs
 - decision-logs/**: 4 files
 - execution-plans/**: 4 files
 - examples/taskmaster/**: 2 files
-- scripts/python/**: 22 files
-- scripts/sc/**: 59 files
+- scripts/python/**: original compare-wave script bundle plus repo-health support / dashboard scripts
+- scripts/sc/**: original compare-wave bundle plus updated local-hard-checks harness schema wiring
 - scripts/sc/build/**: 2 files
-- scripts/sc/schemas/**: 11 files
-- scripts/sc/tests/**: 35 files
+- scripts/sc/schemas/**: original compare-wave schemas plus updated local-hard-checks summary schema
+- scripts/sc/tests/**: original compare-wave tests plus repo-health regression tests
+
+## Addendum: Repo-Health Wave After The Original Compare Range
+
+```text
+M AGENTS.md
+M README.md
+M docs/PROJECT_DOCUMENTATION_INDEX.md
+A docs/workflows/project-health-dashboard.md
+M docs/workflows/local-hard-checks.md
+M scripts/python/dev_cli.py
+M scripts/python/dev_cli_builders.py
+M scripts/python/local_hard_checks_support.py
+A scripts/python/_project_health_common.py
+A scripts/python/_project_health_checks.py
+A scripts/python/_project_health_support.py
+A scripts/python/_project_health_server.py
+A scripts/python/detect_project_stage.py
+A scripts/python/doctor_project.py
+A scripts/python/check_directory_boundaries.py
+A scripts/python/project_health_scan.py
+A scripts/python/serve_project_health.py
+M scripts/sc/_summary_schema_local_hard_checks.py
+M scripts/sc/schemas/sc-local-hard-checks-summary.schema.json
+M scripts/sc/tests/test_local_hard_checks_harness.py
+A scripts/sc/tests/test_dev_cli_project_health_commands.py
+A scripts/sc/tests/test_project_health_support.py
+A scripts/sc/tests/test_project_health_server.py
+```
 
 ## Appendix: Root / Top-Level Docs
 

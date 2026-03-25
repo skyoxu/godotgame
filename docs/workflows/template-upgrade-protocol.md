@@ -31,6 +31,8 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
   - `logs/**`, temporary reports, replay outputs, generated baselines unless the protocol explicitly says to promote them.
 - `recovery-sidecar-producers-and-consumers`
   - Treat task-scoped `latest.json`, `active-task`, `execution-context`, `repair-guide`, and their consumer scripts as one migration unit. Do not copy only the docs or only the reader script.
+- `repo-health-foundation-bundle`
+  - Treat `detect-project-stage`, `doctor-project`, `check-directory-boundaries`, `project-health-scan`, `serve-project-health`, their shared support modules, and the `run-local-hard-checks` prelude wiring as one migration unit. Do not copy only the dashboard doc or only the CLI entrypoints.
 - `prototype-lane-docs`
   - `docs/workflows/prototype-lane.md`, `docs/prototypes/README.md`, and `docs/prototypes/TEMPLATE.md` are template-generic and can usually be copied as-is, but the business repo should still decide whether to activate the lane operationally.
 
@@ -41,17 +43,20 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
 2. Script/runtime foundation
    - Sync reusable `scripts/python/**`, `scripts/sc/**`, schemas, and helper tests.
    - Bring over any new dependencies referenced by those scripts in the same batch.
-3. Recovery and sidecar protocol
+3. Repo-health bootstrap foundation
+   - Sync `project-health` producers, `serve-project-health`, shared support modules, and the `dev_cli.py` / `local_hard_checks_support.py` prelude wiring in one batch.
+   - Sync the companion docs and entry indexes (`docs/workflows/project-health-dashboard.md`, `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`) so operators can discover the new repo-level commands.
+4. Recovery and sidecar protocol
    - Sync `latest.json` producers/consumers, `inspect_run.py`, `resume_task.py`, `active-task` behavior, marathon state, and repair-guide sidecars.
-4. Workflow and CI surface
+5. Workflow and CI surface
    - Sync workflow changes only after local scripts are present.
    - Rebind paths, solution names, secrets, and delivery/security defaults.
-5. Docs and routing
+6. Docs and routing
    - Update `AGENTS.md`, `README.md`, docs indexes, and workflow docs so operators can discover the new behavior.
    - If the repo uses gate bundle docs, sync mirror-runtime gate docs together with the gate list.
-6. Business-local adaptation
+7. Business-local adaptation
    - Rename project references, update overlay roots, adapt domain contract paths, and remove template fallback assumptions.
-7. Validation and stop-loss
+8. Validation and stop-loss
    - Run the minimum validation bundle before opening a PR.
 
 ## Required Localization Checklist
@@ -61,6 +66,7 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
 - Replace `PRD-Example` or template overlay roots with the business PRD IDs.
 - Replace template fallback assumptions with real `.taskmaster/tasks/*.json` once the business repo has them.
 - Re-check any script that references domain contracts, test roots, or project-relative resources.
+- If the repo adopts the project-health dashboard, verify the repo-level diagnostics still reflect business-local paths, solution names, and runtime expectations after localization.
 
 ## Tests.Godot Single-Source Runtime Protocol
 Problem:
@@ -91,22 +97,26 @@ Minimum validation:
 - `py -3 scripts/python/audit_tests_godot_mirror_git_tracking.py --root .`
 - `py -3 scripts/python/run_gdunit.py --prewarm --godot-bin $env:GODOT_BIN --project Tests.Godot`
 ## Validation Sequence
-1. Deterministic local checks
+1. Repo-health bootstrap parity
+   - `py -3 scripts/python/dev_cli.py project-health-scan`
+   - `py -3 scripts/python/dev_cli.py serve-project-health`
+   - Verify `logs/ci/project-health/latest.json`, `latest.html`, and `server.json` match the documented outputs.
+2. Deterministic local checks
    - `py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin $env:GODOT_BIN`
-2. Task-scoped review pipeline on at least one real task
+3. Task-scoped review pipeline on at least one real task
    - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin $env:GODOT_BIN`
-3. Task metadata / overlay / contract integrity
+4. Task metadata / overlay / contract integrity
    - `py -3 scripts/python/validate_task_master_triplet.py`
    - `py -3 scripts/python/check_tasks_all_refs.py`
    - `py -3 scripts/python/validate_contracts.py`
-4. Delivery-profile-sensitive checks when enabled
+5. Delivery-profile-sensitive checks when enabled
    - `py -3 scripts/python/run_gate_bundle.py --mode hard`
-5. Tests.Godot single-source runtime checks when the repo uses `Tests.Godot` + `Game.Godot`
+6. Tests.Godot single-source runtime checks when the repo uses `Tests.Godot` + `Game.Godot`
    - `py -3 scripts/python/ensure_tests_godot_junction.py --root . --tests-project Tests.Godot --link-name Game.Godot --target-rel Game.Godot`
    - `py -3 scripts/python/audit_tests_godot_mirror_git_tracking.py --root .`
-6. Task-local TDD preflight when the repo uses `scripts/sc/build/tdd.py`
+7. Task-local TDD preflight when the repo uses `scripts/sc/build/tdd.py`
    - `py -3 -m unittest scripts.sc.tests.test_build_tdd_orchestration scripts.sc.tests.test_build_tdd_task_preflight`
-7. Recovery sidecar regression when the repo uses task-scoped review pipeline
+8. Recovery sidecar regression when the repo uses task-scoped review pipeline
    - `py -3 -m unittest scripts.sc.tests.test_pipeline_sidecar_protocol scripts.sc.tests.test_resume_task`
 
 ## Stop-Loss Rules
@@ -115,6 +125,8 @@ Minimum validation:
 - Do not copy project names, PRD IDs, or solution paths blindly.
 - Do not wire new workflows until all referenced local scripts exist.
 - If a copied script introduces a new dependency, copy or adapt that dependency in the same migration step.
+- Do not treat repo-health docs as sufficient migration by themselves; copy the shared support modules, tests, and `run-local-hard-checks` prelude wiring in the same batch.
+- Do not wire `serve-project-health` into CI; it is a local operator entrypoint only.
 - Do not treat `active-task` as a replacement for `resume-task`; it is a short recovery pointer layered above the canonical recovery entrypoint.
 - Do not move prototype work into formal task triplet completion without an explicit promotion step.
 - Do not enable task-local TDD preflight blindly if the business repo's `contractRefs` semantics intentionally differ from the template's path-aware rule.

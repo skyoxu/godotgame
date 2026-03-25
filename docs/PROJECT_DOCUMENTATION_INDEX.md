@@ -18,6 +18,7 @@
 - 恢复与 active-task：`docs/agents/01-session-recovery.md`, `docs/agents/03-persistent-harness.md`
 - 目录职责：`docs/agents/16-directory-responsibilities.md`
 - 模板升级协议：`docs/workflows/template-upgrade-protocol.md`
+- Project Health Dashboard: `docs/workflows/project-health-dashboard.md`
 - Prototype Lane：`docs/workflows/prototype-lane.md`
 
 ---
@@ -79,6 +80,7 @@
 - `docs/workflows/overlay-generation-sop.md`?Standard flow for generate, repair, and small-batch apply
 - `docs/workflows/overlays-authoring-guide.md`?Directory, front matter, task backlinks, and contract reference rules
 - `docs/workflows/template-upgrade-protocol.md`?Stable migration protocol for template -> business repo upgrades
+- `docs/workflows/project-health-dashboard.md`?Repo stage detection, doctor checks, directory-boundary scan, and live local dashboard
 - `docs/workflows/business-repo-upgrade-guide.md`?Compare-range-specific migration report for one template upgrade wave
 - `docs/workflows/prototype-lane.md`?Exploration lane policy separated from formal delivery profiles
 
