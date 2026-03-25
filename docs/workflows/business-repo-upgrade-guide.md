@@ -137,16 +137,18 @@ Copy this bundle in the same migration wave as Phase 2:
 18. `scripts/sc/tests/test_local_hard_checks_harness.py`
 19. `docs/workflows/project-health-dashboard.md`
 20. `docs/workflows/local-hard-checks.md`
-21. `README.md`
-22. `AGENTS.md`
-23. `docs/PROJECT_DOCUMENTATION_INDEX.md`
+21. `docs/workflows/stable-public-entrypoints.md`
+22. `docs/workflows/script-entrypoints-index.md`
+23. `README.md`
+24. `AGENTS.md`
+25. `docs/PROJECT_DOCUMENTATION_INDEX.md`
 
 Reason:
 
 - `project-health-scan` is now the repo bootstrap stop-loss point. A business repo that skips this bundle can still run older hard checks, but it will not match the latest template behavior.
 - `run-local-hard-checks` now refreshes project-health records before the hard gate chain. If you copy only the docs or only the Python entrypoints, operators lose discoverability or the harness silently diverges.
 - `serve-project-health` is intentionally local-only. Do not wire it into CI, but do copy the script and doc so developers get the stable `127.0.0.1` dashboard entrypoint.
-- The updated `README.md`, `AGENTS.md`, and `docs/PROJECT_DOCUMENTATION_INDEX.md` are part of the migration surface because they expose the new repo-level health commands and recovery entrypoints to humans and agents.
+- The updated `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`, `docs/workflows/stable-public-entrypoints.md`, and `docs/workflows/script-entrypoints-index.md` are part of the migration surface because they expose the new repo-level commands and stable script entrypoints to humans and agents.
 
 ### Phase 3: Task-Scoped Review Pipeline, Repair Guidance, And Marathon Recovery
 
@@ -295,7 +297,7 @@ Reason:
   - `docs/prototypes/README.md`
   - `docs/prototypes/TEMPLATE.md`
 - Migration impact:
-  - Sync the new docs and update `AGENTS.md`, `README.md`, and the documentation indexes in the same batch.
+  - Sync the new docs and update `AGENTS.md`, `README.md`, the documentation indexes, and the stable entrypoint docs in the same batch.
   - `business-repo-upgrade-guide.md` should continue to record compare-specific changes; `template-upgrade-protocol.md` is the long-lived protocol SSoT.
   - Prototype lane docs are recommended even for business repos that currently do not use the lane, because they prevent future confusion between exploration work and formal delivery profiles.
 
@@ -307,11 +309,13 @@ Copy these files together:
 4. `scripts/sc/README.md`
 5. `docs/PROJECT_DOCUMENTATION_INDEX.md`
 6. `docs/PROJECT_CAPABILITIES_STATUS.md`
-7. `docs/workflows/template-bootstrap-checklist.md`
-8. `docs/workflows/gate-bundle.md`
-9. `docs/architecture/base/07-dev-build-and-gates-v2.md`
-10. `docs/migration/Phase-13-Quality-Gates-Backlog.md`
-11. `docs/migration/Phase-13-Quality-Gates-Script.md`
+7. `docs/workflows/stable-public-entrypoints.md`
+8. `docs/workflows/script-entrypoints-index.md`
+9. `docs/workflows/template-bootstrap-checklist.md`
+10. `docs/workflows/gate-bundle.md`
+11. `docs/architecture/base/07-dev-build-and-gates-v2.md`
+12. `docs/migration/Phase-13-Quality-Gates-Backlog.md`
+13. `docs/migration/Phase-13-Quality-Gates-Script.md`
 
 Reason:
 
