@@ -35,6 +35,8 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
   - Treat `detect-project-stage`, `doctor-project`, `check-directory-boundaries`, `project-health-scan`, `serve-project-health`, their shared support modules, and the `run-local-hard-checks` prelude wiring as one migration unit. Do not copy only the dashboard doc or only the CLI entrypoints.
 - `prototype-lane-docs`
   - `docs/workflows/prototype-lane.md`, `docs/prototypes/README.md`, and `docs/prototypes/TEMPLATE.md` are template-generic and can usually be copied as-is, but the business repo should still decide whether to activate the lane operationally.
+- `entrypoint-routing-docs`
+  - `docs/workflows/stable-public-entrypoints.md` and `docs/workflows/script-entrypoints-index.md` should travel with `README.md`, `AGENTS.md`, and `docs/PROJECT_DOCUMENTATION_INDEX.md` whenever the template updates the repo entry surface.
 
 ## Migration Order
 1. Baseline and identity
@@ -45,14 +47,14 @@ This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-gui
    - Bring over any new dependencies referenced by those scripts in the same batch.
 3. Repo-health bootstrap foundation
    - Sync `project-health` producers, `serve-project-health`, shared support modules, and the `dev_cli.py` / `local_hard_checks_support.py` prelude wiring in one batch.
-   - Sync the companion docs and entry indexes (`docs/workflows/project-health-dashboard.md`, `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`) so operators can discover the new repo-level commands.
+   - Sync the companion docs and entry indexes (`docs/workflows/project-health-dashboard.md`, `docs/workflows/local-hard-checks.md`, `docs/workflows/stable-public-entrypoints.md`, `docs/workflows/script-entrypoints-index.md`, `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`) so operators can discover the new repo-level commands.
 4. Recovery and sidecar protocol
    - Sync `latest.json` producers/consumers, `inspect_run.py`, `resume_task.py`, `active-task` behavior, marathon state, and repair-guide sidecars.
 5. Workflow and CI surface
    - Sync workflow changes only after local scripts are present.
    - Rebind paths, solution names, secrets, and delivery/security defaults.
 6. Docs and routing
-   - Update `AGENTS.md`, `README.md`, docs indexes, and workflow docs so operators can discover the new behavior.
+   - Update `AGENTS.md`, `README.md`, docs indexes, workflow docs, and the stable entrypoint docs so operators can discover the new behavior.
    - If the repo uses gate bundle docs, sync mirror-runtime gate docs together with the gate list.
 7. Business-local adaptation
    - Rename project references, update overlay roots, adapt domain contract paths, and remove template fallback assumptions.
@@ -125,8 +127,9 @@ Minimum validation:
 - Do not copy project names, PRD IDs, or solution paths blindly.
 - Do not wire new workflows until all referenced local scripts exist.
 - If a copied script introduces a new dependency, copy or adapt that dependency in the same migration step.
-- Do not treat repo-health docs as sufficient migration by themselves; copy the shared support modules, tests, and `run-local-hard-checks` prelude wiring in the same batch.
+- Do not treat repo-health docs as sufficient migration by themselves; copy the shared support modules, tests, `run-local-hard-checks` prelude wiring, and the stable entrypoint docs in the same batch.
 - Do not wire `serve-project-health` into CI; it is a local operator entrypoint only.
+- Do not copy `README.md` Quick Links or agent routing changes without also copying `docs/workflows/stable-public-entrypoints.md` and `docs/workflows/script-entrypoints-index.md` when those links are referenced.
 - Do not treat `active-task` as a replacement for `resume-task`; it is a short recovery pointer layered above the canonical recovery entrypoint.
 - Do not move prototype work into formal task triplet completion without an explicit promotion step.
 - Do not enable task-local TDD preflight blindly if the business repo's `contractRefs` semantics intentionally differ from the template's path-aware rule.
