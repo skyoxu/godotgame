@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from datetime import datetime
@@ -170,7 +171,79 @@ def load_latest_records(root: Path) -> list[dict[str, Any]]:
     return records
 
 
-def dashboard_html(records: list[dict[str, Any]], *, generated_at: str) -> str:
+def _normalize_report_value(value: Any, *, limit: int = 240) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    return text[:limit]
+
+
+def build_report_catalog(root: Path) -> dict[str, Any]:
+    """汇总 logs/ci 下可读取的 JSON 报告索引，供 latest.html 展示。"""
+    logs_root = root / "logs" / "ci"
+    if not logs_root.exists():
+        return {"total_json": 0, "invalid_json": 0, "entries": []}
+
+    entries: list[dict[str, Any]] = []
+    invalid = 0
+    for path in sorted(logs_root.rglob("*.json")):
+        rel = repo_rel(path, root=root)
+        try:
+            stat = path.stat()
+            modified_at = datetime.fromtimestamp(stat.st_mtime).astimezone().isoformat(timespec="seconds")
+        except OSError:
+            stat = None
+            modified_at = ""
+
+        kind = path.stem
+        status = ""
+        generated_at = ""
+        summary = ""
+        parse_error = ""
+        try:
+            payload = read_json(path)
+            if isinstance(payload, dict):
+                kind = _normalize_report_value(payload.get("kind") or payload.get("cmd") or kind, limit=120) or kind
+                status = _normalize_report_value(payload.get("status") or payload.get("result"), limit=40)
+                generated_at = _normalize_report_value(
+                    payload.get("generated_at") or payload.get("timestamp") or payload.get("ts"),
+                    limit=60,
+                )
+                summary = _normalize_report_value(payload.get("summary") or payload.get("message"), limit=200)
+            else:
+                parse_error = "json-not-object"
+        except Exception:
+            invalid += 1
+            parse_error = "invalid-json"
+
+        entries.append(
+            {
+                "path": rel,
+                "kind": kind,
+                "status": status,
+                "generated_at": generated_at,
+                "summary": summary,
+                "size_bytes": int(stat.st_size) if stat else 0,
+                "modified_at": modified_at,
+                "parse_error": parse_error,
+            }
+        )
+
+    entries.sort(key=lambda item: (item.get("modified_at", ""), item.get("path", "")), reverse=True)
+    return {
+        "total_json": len(entries),
+        "invalid_json": invalid,
+        "entries": entries,
+    }
+
+
+def dashboard_html(
+    records: list[dict[str, Any]],
+    *,
+    generated_at: str,
+    report_catalog: dict[str, Any],
+    report_catalog_path: str,
+) -> str:
     overall = "ok"
     if any(item.get("status") == "fail" for item in records):
         overall = "fail"
@@ -179,14 +252,14 @@ def dashboard_html(records: list[dict[str, Any]], *, generated_at: str) -> str:
 
     cards = []
     for item in records:
-        kind = str(item.get("kind", "unknown"))
-        status = str(item.get("status", "unknown"))
-        summary = str(item.get("summary", ""))
+        kind = html.escape(str(item.get("kind", "unknown")))
+        status = html.escape(str(item.get("status", "unknown")))
+        summary = html.escape(str(item.get("summary", "")))
         extra = []
         if item.get("stage"):
-            extra.append(f"<div class=\"meta\">stage: {item['stage']}</div>")
+            extra.append(f"<div class=\"meta\">阶段: {html.escape(str(item['stage']))}</div>")
         if item.get("history_json"):
-            extra.append(f"<div class=\"meta\">history: {item['history_json']}</div>")
+            extra.append(f"<div class=\"meta\">历史: {html.escape(str(item['history_json']))}</div>")
         cards.append(
             "\n".join(
                 [
@@ -201,11 +274,34 @@ def dashboard_html(records: list[dict[str, Any]], *, generated_at: str) -> str:
             )
         )
 
+    report_rows = []
+    for item in report_catalog.get("entries", []):
+        parse_error = str(item.get("parse_error") or "")
+        status_text = str(item.get("status") or "")
+        status_cls = "invalid" if parse_error else ("ok" if status_text in {"ok", "pass", "passed"} else ("warn" if status_text == "warn" else ("fail" if status_text == "fail" else "unknown")))
+        report_rows.append(
+            "\n".join(
+                [
+                    "<tr>",
+                    f"<td>{html.escape(str(item.get('modified_at', '')))}</td>",
+                    f"<td>{html.escape(str(item.get('kind', '')))}</td>",
+                    f"<td><span class=\"chip {status_cls}\">{html.escape(status_text or parse_error or 'n/a')}</span></td>",
+                    f"<td>{html.escape(str(item.get('generated_at', '')))}</td>",
+                    f"<td>{html.escape(str(item.get('path', '')))}</td>",
+                    f"<td>{html.escape(str(item.get('summary', '')))}</td>",
+                    "</tr>",
+                ]
+            )
+        )
+
+    report_total = int(report_catalog.get("total_json", 0))
+    report_invalid = int(report_catalog.get("invalid_json", 0))
+    report_catalog_path_escaped = html.escape(report_catalog_path)
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="15">
   <title>Project Health Dashboard</title>
   <style>
     body {{ font-family: Segoe UI, Arial, sans-serif; background: #f4f6f8; color: #1f2933; margin: 0; }}
@@ -224,14 +320,32 @@ def dashboard_html(records: list[dict[str, Any]], *, generated_at: str) -> str:
     .badge {{ display: inline-block; margin-bottom: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; }}
     .meta {{ color: #52606d; font-size: 12px; margin-top: 8px; word-break: break-all; }}
     .hint {{ margin-top: 20px; color: #52606d; font-size: 13px; }}
+    .actions {{ display: flex; gap: 8px; margin-top: 8px; }}
+    .btn {{ border: 1px solid #cbd2d9; border-radius: 8px; background: #fff; padding: 6px 10px; font-size: 13px; cursor: pointer; }}
+    .btn:hover {{ background: #f8fafc; }}
+    .table-wrap {{ margin-top: 18px; overflow: auto; background: #fff; border: 1px solid #d2d6dc; border-radius: 12px; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
+    th, td {{ border-bottom: 1px solid #e5e7eb; text-align: left; padding: 8px; vertical-align: top; }}
+    th {{ background: #f8fafc; position: sticky; top: 0; z-index: 1; }}
+    .chip {{ display: inline-block; padding: 2px 6px; border-radius: 999px; font-weight: 700; }}
+    .chip.ok {{ background: #d1fae5; color: #065f46; }}
+    .chip.warn {{ background: #fef3c7; color: #92400e; }}
+    .chip.fail {{ background: #fee2e2; color: #991b1b; }}
+    .chip.invalid {{ background: #e5e7eb; color: #1f2933; }}
+    .chip.unknown {{ background: #e0e7ff; color: #3730a3; }}
   </style>
 </head>
 <body>
+  <!-- 仪表盘说明：本页面不自动刷新，避免阅读过程中跳页。 -->
+  <!-- 报告索引说明：下方表格来自 logs/ci/** 的 JSON 报告聚合。 -->
   <main>
     <div class="hero">
       <div>
-        <h1>Project Health Dashboard</h1>
-        <div>Latest stage, doctor, and directory-boundary records for this repo.</div>
+        <h1>项目健康总览</h1>
+        <div>该页面聚合项目健康检查结果 + logs/ci 下可整合的 JSON 报告索引。</div>
+        <div class="actions">
+          <button class="btn" onclick="window.location.reload()">手动刷新</button>
+        </div>
       </div>
       <div class="status {overall}">{overall}</div>
     </div>
@@ -239,7 +353,27 @@ def dashboard_html(records: list[dict[str, Any]], *, generated_at: str) -> str:
     <div class="grid">
       {''.join(cards)}
     </div>
-    <div class="hint">Refresh is automatic every 15 seconds. The page only changes when one of the project-health commands writes a new latest record.</div>
+    <div class="hint">JSON 报告总数: {report_total}；解析失败: {report_invalid}；索引文件: {report_catalog_path_escaped}</div>
+    <details>
+      <summary>展开查看全部 JSON 报告索引</summary>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>modified_at</th>
+              <th>kind</th>
+              <th>status</th>
+              <th>generated_at</th>
+              <th>path</th>
+              <th>summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            {''.join(report_rows)}
+          </tbody>
+        </table>
+      </div>
+    </details>
   </main>
 </body>
 </html>
@@ -250,6 +384,7 @@ def refresh_dashboard(root: Path | str | None = None, *, now: datetime | None = 
     resolved_root = resolve_root(root)
     stamp = now or now_local()
     records = load_latest_records(resolved_root)
+    report_catalog = build_report_catalog(resolved_root)
     overall = "ok"
     if any(item.get("status") == "fail" for item in records):
         overall = "fail"
@@ -270,10 +405,25 @@ def refresh_dashboard(root: Path | str | None = None, *, now: datetime | None = 
             }
             for item in records
         ],
+        "report_catalog_summary": {
+            "total_json": int(report_catalog.get("total_json", 0)),
+            "invalid_json": int(report_catalog.get("invalid_json", 0)),
+            "catalog_json": "logs/ci/project-health/report-catalog.latest.json",
+        },
     }
     latest_root = latest_dir(resolved_root)
+    report_catalog_path = latest_root / "report-catalog.latest.json"
+    write_json(report_catalog_path, report_catalog)
     write_json(latest_root / "latest.json", payload)
-    write_text(latest_root / "latest.html", dashboard_html(records, generated_at=payload["generated_at"]))
+    write_text(
+        latest_root / "latest.html",
+        dashboard_html(
+            records,
+            generated_at=payload["generated_at"],
+            report_catalog=report_catalog,
+            report_catalog_path=repo_rel(report_catalog_path, root=resolved_root),
+        ),
+    )
     return payload
 
 
