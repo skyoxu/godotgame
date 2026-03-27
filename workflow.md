@@ -244,6 +244,20 @@ dotnet test Game.Core.Tests/Game.Core.Tests.csproj
 
 ### 5.1 单任务轻量 lane
 
+Recommended wrapper first (full-step resilient execution + resume-friendly summary):
+
+```powershell
+py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship
+```
+
+Read-only semantics lane (skip `align --apply`):
+
+```powershell
+py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship --no-align-apply
+```
+
+Use the manual per-step commands below only when you need step-by-step debugging.
+
 抽 obligations：
 
 ```powershell

@@ -60,6 +60,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/sc/build/tdd.py`
 - `scripts/sc/check_tdd_execution_plan.py`
 - `scripts/sc/llm_generate_tests_from_acceptance_refs.py`
+- `scripts/python/run_single_task_light_lane.py`
 
 ### Taskmaster / semantics / overlay
 
@@ -194,6 +195,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/sc/git.py`
 - `scripts/sc/llm_generate_red_test.py`
 - `scripts/sc/llm_generate_tests_from_acceptance_refs.py`
+- `scripts/python/run_single_task_light_lane.py`
 - `scripts/sc/llm_review.py`
 - `scripts/sc/llm_review_needs_fix_fast.py`
 - `scripts/sc/run_review_pipeline.py`
@@ -1179,6 +1181,18 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
   - Model-backed steps require the repo's LLM runtime/CLI; deterministic-only or skip modes can reduce that requirement, but do not assume zero-model execution unless the script explicitly supports it.
+
+#### `scripts/python/run_single_task_light_lane.py`
+
+- Direct local deps: None.
+- Transitive local deps: None.
+- Subcommands: None.
+- Declared args: `--task-ids`, `--task-id-start`, `--task-id-end`, `--max-tasks`, `--timeout-sec`, `--out-dir`, `--no-resume`, `--stop-on-step-failure`, `--no-align-apply`, `--delivery-profile`, `--self-check`
+- Parameter prerequisites:
+  - Windows PowerShell + `py -3` from repo root.
+  - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/tasks.json` when real `.taskmaster/tasks/tasks.json` is absent.
+  - Model-backed steps require the repo's LLM runtime/CLI for semantics-related stages.
+  - Write/apply flow is controlled by `--no-align-apply`; default behavior includes `align --apply`.
 
 #### `scripts/sc/llm_review.py`
 
