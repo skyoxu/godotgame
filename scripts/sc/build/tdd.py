@@ -7,6 +7,7 @@ red/green/refactor loop with logs under logs/ci/<date>/.
 
 Usage (Windows):
   py -3 scripts/sc/build/tdd.py --stage green
+  py -3 scripts/sc/build/tdd.py --stage green --green-scope task
   py -3 scripts/sc/build/tdd.py --stage red --generate-red-test
 """
 
@@ -71,6 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--configuration", default="Debug")
     ap.add_argument("--delivery-profile", default=None, choices=DELIVERY_PROFILE_CHOICES, help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).")
     ap.add_argument("--security-profile", default=None, choices=["strict", "host-safe"], help="Security profile override (default derives from delivery profile).")
+    ap.add_argument("--green-scope", choices=["task", "all"], default="all", help="green stage test scope: all (default) or task-scoped")
     ap.add_argument("--generate-red-test", action="store_true", help="create a failing test skeleton if missing")
     ap.add_argument("--no-coverage-gate", action="store_true", help="do not enforce default coverage thresholds")
     ap.add_argument("--allow-contract-changes", action="store_true", help="allow creating new files under Game.Core/Contracts during this TDD stage")
@@ -103,20 +105,26 @@ def run_task_preflight(*, triplet: Any, out_dir: Path) -> dict[str, Any]:
 
 def run_green_gate(
     *,
+    task_id: str,
+    triplet: Any,
     solution: str,
     configuration: str,
     out_dir: Path,
     coverage_gate: bool,
     coverage_lines_min: int,
     coverage_branches_min: int,
+    green_scope: str,
 ) -> dict[str, Any]:
     return _run_green_gate_impl(
+        task_id=task_id,
+        triplet=triplet,
         solution=solution,
         configuration=configuration,
         out_dir=out_dir,
         coverage_gate=coverage_gate,
         coverage_lines_min=coverage_lines_min,
         coverage_branches_min=coverage_branches_min,
+        green_scope=green_scope,
     )
 
 
@@ -163,13 +171,17 @@ def _handle_green_stage(*, args: argparse.Namespace, runtime: dict[str, Any], tr
         write_summary(out_dir, summary)
         print(f"SC_BUILD_TDD status=fail out={out_dir}")
         return 1
+    summary["green_scope"] = str(args.green_scope)
     step = run_green_gate(
+        task_id=triplet.task_id,
+        triplet=triplet,
         solution=args.solution,
         configuration=args.configuration,
         out_dir=out_dir,
         coverage_gate=bool(runtime["coverage_gate"]),
         coverage_lines_min=int(runtime["coverage_lines_min"]),
         coverage_branches_min=int(runtime["coverage_branches_min"]),
+        green_scope=str(args.green_scope),
     )
     summary["steps"].append(step)
     if step["rc"] == 2:

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -169,6 +170,54 @@ def run_dotnet_test_filtered(task_id: str, *, solution: str, configuration: str,
     return {"name": "dotnet-test-filtered", "cmd": cmd, "rc": rc, "log": str(log_path), "filter": filter_expr}
 
 
+def _collect_task_test_refs(triplet: Any) -> list[str]:
+    refs: list[str] = []
+    for view in (triplet.back, triplet.gameplay):
+        if not isinstance(view, dict):
+            continue
+        test_refs = view.get("test_refs")
+        if not isinstance(test_refs, list):
+            continue
+        for raw in test_refs:
+            text = str(raw or "").strip()
+            if not text:
+                continue
+            if not text.lower().endswith(".cs"):
+                continue
+            refs.append(text.replace("\\", "/"))
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for ref in refs:
+        key = ref.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(ref)
+    return uniq
+
+
+def _class_token_from_test_ref(test_ref: str) -> str | None:
+    name = Path(test_ref).stem.strip()
+    if not name:
+        return None
+    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) is None:
+        return None
+    return name
+
+
+def _build_green_filter_expr(*, task_id: str, triplet: Any) -> tuple[str, list[str]]:
+    refs = _collect_task_test_refs(triplet)
+    tokens: list[str] = []
+    for ref in refs:
+        token = _class_token_from_test_ref(ref)
+        if token:
+            tokens.append(token)
+    if not tokens:
+        tokens = [f"Task{task_id}"]
+    terms = [f"FullyQualifiedName~{token}" for token in tokens]
+    return "|".join(terms), refs
+
+
 def run_sc_analyze_task_context(*, task_id: str, out_dir: Path) -> dict[str, Any]:
     cmd = [
         "py",
@@ -212,24 +261,48 @@ def validate_task_context_required_fields(*, task_id: str, stage: str, out_dir: 
 
 def run_green_gate(
     *,
+    task_id: str,
+    triplet: Any,
     solution: str,
     configuration: str,
     out_dir: Path,
     coverage_gate: bool,
     coverage_lines_min: int,
     coverage_branches_min: int,
+    green_scope: str,
 ) -> dict[str, Any]:
-    if coverage_gate:
+    if green_scope not in {"task", "all"}:
+        raise ValueError("green_scope must be 'task' or 'all'")
+
+    coverage_gate_enabled = (green_scope == "all") and bool(coverage_gate)
+    if coverage_gate_enabled:
         os.environ["COVERAGE_LINES_MIN"] = str(coverage_lines_min)
         os.environ["COVERAGE_BRANCHES_MIN"] = str(coverage_branches_min)
     else:
         os.environ.pop("COVERAGE_LINES_MIN", None)
         os.environ.pop("COVERAGE_BRANCHES_MIN", None)
+
     cmd = ["py", "-3", "scripts/python/run_dotnet.py", "--solution", solution, "--configuration", configuration]
+    filter_expr = ""
+    filter_refs: list[str] = []
+    if green_scope == "task":
+        filter_expr, filter_refs = _build_green_filter_expr(task_id=task_id, triplet=triplet)
+        cmd.extend(["--filter", filter_expr])
+
     rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=1_800)
     log_path = out_dir / "run_dotnet.log"
     write_text(log_path, out)
-    return {"name": "run_dotnet", "cmd": cmd, "rc": rc, "log": str(log_path), "stdout": out}
+    return {
+        "name": "run_dotnet",
+        "cmd": cmd,
+        "rc": rc,
+        "log": str(log_path),
+        "stdout": out,
+        "scope": green_scope,
+        "coverage_gate_enabled": coverage_gate_enabled,
+        "filter": filter_expr,
+        "test_refs": filter_refs,
+    }
 
 
 def run_refactor_checks(out_dir: Path, *, task_id: str) -> list[dict[str, Any]]:

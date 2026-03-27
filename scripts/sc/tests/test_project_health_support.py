@@ -112,11 +112,17 @@ class ProjectHealthSupportTests(unittest.TestCase):
                 (root / "logs" / "ci" / "project-health" / "latest.json").read_text(encoding="utf-8")
             )
             latest_html = (root / "logs" / "ci" / "project-health" / "latest.html").read_text(encoding="utf-8")
+            report_catalog = json.loads(
+                (root / "logs" / "ci" / "project-health" / "report-catalog.latest.json").read_text(encoding="utf-8")
+            )
 
             self.assertEqual(3, len(latest_index["records"]))
+            self.assertIn("report_catalog_summary", latest_index)
+            self.assertEqual(report_catalog["total_json"], latest_index["report_catalog_summary"]["total_json"])
             self.assertIn("triplet missing", latest_html)
             self.assertIn("doctor ok", latest_html)
             self.assertIn("boundary fail", latest_html)
+            self.assertNotIn('meta http-equiv="refresh"', latest_html.lower())
 
 
 if __name__ == "__main__":

@@ -148,6 +148,32 @@ class BuildTddOrchestrationTests(unittest.TestCase):
                 [item["name"] for item in summary["steps"]],
             )
 
+    def test_green_scope_task_should_be_forwarded_to_green_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "sc-build-tdd"
+            argv = ["tdd.py", "--stage", "green", "--task-id", "14", "--green-scope", "task"]
+            preflight_step = {"name": "task_preflight", "rc": 0, "status": "ok", "log": str(out_dir / "task-preflight.log")}
+            analyze_step = {"name": "sc-analyze", "rc": 0, "status": "ok", "log": str(out_dir / "sc-analyze.log")}
+            ctx_step = {"name": "validate_task_context_required_fields", "rc": 0, "status": "ok", "log": str(out_dir / "ctx.log")}
+            green_step = {"name": "run_dotnet", "rc": 0, "log": str(out_dir / "run_dotnet.log"), "stdout": "", "status": "ok"}
+            with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(tdd_script, "ci_dir", return_value=out_dir), \
+                mock.patch.object(tdd_script, "resolve_triplet", return_value=_FakeTriplet()), \
+                mock.patch.object(tdd_script, "run_task_preflight", return_value=preflight_step), \
+                mock.patch.object(tdd_script, "run_sc_analyze_task_context", return_value=analyze_step), \
+                mock.patch.object(tdd_script, "validate_task_context_required_fields", return_value=ctx_step), \
+                mock.patch.object(tdd_script, "run_green_gate", return_value=green_step) as green_gate_mock, \
+                mock.patch.object(tdd_script, "assert_no_new_contract_files", return_value=None):
+                rc = tdd_script.main()
+
+            self.assertEqual(0, rc)
+            green_gate_mock.assert_called_once()
+            kwargs = green_gate_mock.call_args.kwargs
+            self.assertEqual("task", kwargs["green_scope"])
+            self.assertEqual("14", kwargs["task_id"])
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("task", summary["green_scope"])
+
     def test_refactor_should_fail_when_any_check_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "sc-build-tdd"
