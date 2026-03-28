@@ -51,6 +51,33 @@ def _truncate(text: str, *, max_chars: int) -> str:
     return s[: max_chars - 3] + "..."
 
 
+def _truncate_keep_ends(text: str, *, max_chars: int) -> str:
+    s = str(text or "")
+    limit = max(80, int(max_chars))
+    if len(s) <= limit:
+        return s
+    marker = "\n...[TRUNCATED_FOR_BUDGET]...\n"
+    if len(marker) >= limit:
+        return s[:limit]
+    tail_keep = min(max(80, limit // 3), max(1, limit - len(marker) - 40))
+    head_keep = max(40, limit - len(marker) - tail_keep)
+    if head_keep + len(marker) + tail_keep > limit:
+        tail_keep = max(1, limit - len(marker) - head_keep)
+    return s[:head_keep] + marker + s[-tail_keep:]
+
+
+def _limit_items_keep_ends(items: list[str], *, max_items: int) -> list[str]:
+    if max_items <= 0 or len(items) <= max_items:
+        return list(items)
+    if max_items == 1:
+        return [items[-1]]
+    head_count = max(1, max_items // 2)
+    tail_count = max(1, max_items - head_count)
+    if head_count + tail_count > max_items:
+        tail_count = max(1, max_items - head_count)
+    return list(items[:head_count]) + list(items[-tail_count:])
+
+
 def _view_items_as_list(view_obj: Any) -> list[dict[str, Any]]:
     if isinstance(view_obj, list):
         return [x for x in view_obj if isinstance(x, dict)]
@@ -123,7 +150,8 @@ def _task_brief(
         if not isinstance(raw, list):
             return []
         items = [_strip_refs_clause(x) for x in raw]
-        return [s for s in items if s][:max_acceptance_items]
+        filtered = [s for s in items if s]
+        return _limit_items_keep_ends(filtered, max_items=max_acceptance_items)
 
     lines = [
         f"### Task {task_id}: {str(master.get('title') or '').strip()}",
@@ -143,13 +171,15 @@ def _task_brief(
         lines.append(f"- labels: {', '.join(labels[:20])}{' ...' if len(labels) > 20 else ''}")
     back_acc = _acc(back)
     gameplay_acc = _acc(gameplay)
-    if back_acc:
-        lines.append("- acceptance (view=back):")
-        lines.extend([f"  - {a}" for a in back_acc])
-    if gameplay_acc:
-        lines.append("- acceptance (view=gameplay):")
-        lines.extend([f"  - {a}" for a in gameplay_acc])
-    if not back_acc and not gameplay_acc:
+    if back_acc or gameplay_acc:
+        lines.append("- acceptance (interleaved by view):")
+        total = max(len(back_acc), len(gameplay_acc))
+        for idx in range(total):
+            if idx < len(back_acc):
+                lines.append(f"  - back:{idx + 1}: {back_acc[idx]}")
+            if idx < len(gameplay_acc):
+                lines.append(f"  - gameplay:{idx + 1}: {gameplay_acc[idx]}")
+    else:
         lines.append("- acceptance: (missing in both views)")
     return "\n".join(lines).strip()
 
@@ -175,7 +205,7 @@ def _build_batch_prompt(
             back=back_by_id.get(tid),
             gameplay=gameplay_by_id.get(tid),
         )
-        blocks.append(_truncate(brief, max_chars=max_task_brief_chars))
+        blocks.append(_truncate_keep_ends(brief, max_chars=max_task_brief_chars))
         blocks.append("")
     return "\n".join(blocks).strip() + "\n"
 
@@ -191,9 +221,10 @@ def build_prompt_with_budget(
     gameplay_by_id: dict[int, dict[str, Any]],
 ) -> tuple[str, bool, int]:
     budget = 3200
+    item_limit = max(1, int(max_acceptance_items))
     prompt = _build_batch_prompt(
         batch=batch,
-        max_acceptance_items=max_acceptance_items,
+        max_acceptance_items=item_limit,
         max_task_brief_chars=budget,
         delivery_profile_context=delivery_profile_context,
         master_by_id=master_by_id,
@@ -207,7 +238,7 @@ def build_prompt_with_budget(
     header_len = len(
         _build_batch_prompt(
             batch=[],
-            max_acceptance_items=max_acceptance_items,
+            max_acceptance_items=item_limit,
             max_task_brief_chars=budget,
             delivery_profile_context=delivery_profile_context,
             master_by_id=master_by_id,
@@ -219,7 +250,7 @@ def build_prompt_with_budget(
     for _ in range(6):
         prompt = _build_batch_prompt(
             batch=batch,
-            max_acceptance_items=max_acceptance_items,
+            max_acceptance_items=item_limit,
             max_task_brief_chars=budget,
             delivery_profile_context=delivery_profile_context,
             master_by_id=master_by_id,
@@ -228,11 +259,13 @@ def build_prompt_with_budget(
         )
         if len(prompt) <= max_prompt_chars:
             break
+        if item_limit > 4:
+            item_limit = max(4, int(item_limit * 0.75))
         budget = max(120, int(budget * 0.8))
     if len(prompt) > max_prompt_chars:
         prompt = _build_batch_prompt(
             batch=batch,
-            max_acceptance_items=max_acceptance_items,
+            max_acceptance_items=min(item_limit, 4),
             max_task_brief_chars=120,
             delivery_profile_context=delivery_profile_context,
             master_by_id=master_by_id,
