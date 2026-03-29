@@ -14,6 +14,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -462,6 +463,9 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
     extract_fail_bucket_counts: dict[str, int] = {}
     extract_fail_bucket_task_ids: dict[str, list[int]] = {}
     extract_fail_bucket_by_task: dict[str, str] = {}
+    extract_fail_signature_counts: dict[str, int] = {}
+    extract_fail_signature_task_ids: dict[str, list[int]] = {}
+    extract_fail_signature_by_task: dict[str, str] = {}
     prompt_trimmed_task_ids: list[int] = []
     semantic_gate_budget_hits: list[dict[str, Any]] = []
     skipped_step_counts: dict[str, int] = {}
@@ -504,6 +508,11 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
                     extract_fail_bucket_counts[bucket] = extract_fail_bucket_counts.get(bucket, 0) + 1
                     extract_fail_bucket_task_ids.setdefault(bucket, []).append(int(task_raw))
                     extract_fail_bucket_by_task[task_raw] = bucket
+                signature = _extract_fail_signature(step)
+                if signature:
+                    extract_fail_signature_counts[signature] = extract_fail_signature_counts.get(signature, 0) + 1
+                    extract_fail_signature_task_ids.setdefault(signature, []).append(int(task_raw))
+                    extract_fail_signature_by_task[task_raw] = signature
         if bool(row.get("ok")):
             passed_tasks += 1
             continue
@@ -529,6 +538,20 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
     summary["extract_fail_bucket_counts"] = extract_fail_bucket_counts
     summary["extract_fail_bucket_task_ids"] = extract_fail_bucket_task_ids
     summary["extract_fail_bucket_by_task"] = extract_fail_bucket_by_task
+    summary["extract_fail_signature_counts"] = extract_fail_signature_counts
+    summary["extract_fail_signature_task_ids"] = extract_fail_signature_task_ids
+    summary["extract_fail_signature_by_task"] = extract_fail_signature_by_task
+    summary["extract_fail_top_signatures"] = [
+        {
+            "signature": signature,
+            "count": int(count),
+            "task_ids": list(extract_fail_signature_task_ids.get(signature) or []),
+        }
+        for signature, count in sorted(
+            extract_fail_signature_counts.items(),
+            key=lambda item: (-int(item[1]), str(item[0])),
+        )[:10]
+    ]
     summary["prompt_trimmed_task_ids"] = prompt_trimmed_task_ids
     summary["prompt_trimmed_count"] = len(prompt_trimmed_task_ids)
     summary["semantic_gate_budget_hits"] = semantic_gate_budget_hits
@@ -724,6 +747,57 @@ def _classify_extract_fail_bucket(step: dict[str, Any]) -> str | None:
         if int(inner_summary.get("hard_uncovered_count") or 0) > 0:
             return "hard_uncovered"
     return "model_fail"
+
+
+def _normalize_extract_signature_text(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    text = text.replace("\\", "/")
+    text = re.sub(r"[a-z]:/[^\s'\"]+", "<path>", text)
+    text = re.sub(r"https?://\S+", "<url>", text)
+    text = re.sub(r"\b\d+\b", "<num>", text)
+    text = re.sub(r"\s+", " ", text).strip(" .,:;|/-")
+    if len(text) > 96:
+        text = text[:96].rstrip()
+    return text
+
+
+def _extract_fail_signature(step: dict[str, Any]) -> str | None:
+    rc = int(step.get("rc") or 0)
+    if rc == 0:
+        return None
+    if rc == 124:
+        return "timeout"
+    inner_summary = step.get("inner_summary")
+    if isinstance(inner_summary, dict):
+        error_text = _normalize_extract_signature_text(inner_summary.get("error"))
+        if error_text:
+            return f"error:{error_text}"
+        if int(inner_summary.get("schema_error_count") or 0) > 0:
+            return "schema_error"
+        schema_errors = inner_summary.get("schema_errors")
+        if isinstance(schema_errors, list) and schema_errors:
+            return "schema_error"
+        if int(inner_summary.get("hard_uncovered_count") or 0) > 0:
+            return "hard_uncovered"
+        auto_escalate = inner_summary.get("auto_escalate")
+        if isinstance(auto_escalate, dict) and bool(auto_escalate.get("triggered")):
+            reasons = [
+                item
+                for item in (_normalize_extract_signature_text(part) for part in list(auto_escalate.get("reasons") or []))
+                if item
+            ]
+            if reasons:
+                return f"auto_escalate:{'+'.join(sorted(set(reasons))[:2])}"
+            return "auto_escalate"
+    stderr_tail = _normalize_extract_signature_text(step.get("stderr_tail"))
+    if stderr_tail:
+        return f"stderr:{stderr_tail}"
+    stdout_tail = _normalize_extract_signature_text(step.get("stdout_tail"))
+    if stdout_tail:
+        return f"stdout:{stdout_tail}"
+    return f"rc:{rc}"
 
 
 def _build_resume_scope(

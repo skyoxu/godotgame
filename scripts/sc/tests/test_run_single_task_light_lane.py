@@ -171,7 +171,22 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                     "task_id": 18,
                     "ok": False,
                     "failed_steps": ["extract"],
-                    "steps": [{"step": "extract", "rc": 1}],
+                    "steps": [{"step": "extract", "rc": 1, "stderr_tail": "Model output invalid at line 42"}],
+                },
+                {
+                    "task_id": 19,
+                    "ok": False,
+                    "failed_steps": ["extract"],
+                    "steps": [
+                        {
+                            "step": "extract",
+                            "rc": 1,
+                            "inner_summary": {
+                                "status": "fail",
+                                "error": "model_output_invalid",
+                            },
+                        }
+                    ],
                 },
                 {
                     "task_id": 15,
@@ -184,13 +199,43 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
 
         lane._rebuild_counts(summary)
 
-        self.assertEqual({"timeout": 1, "coverage-gap": 1, "semantic-needs-fix": 1, "model-fail": 4}, summary["failure_category_counts"])
-        self.assertEqual({"timeout": [11], "coverage-gap": [12], "semantic-needs-fix": [13], "model-fail": [14, 16, 17, 18]}, summary["failure_category_task_ids"])
-        self.assertEqual({"11": "timeout", "12": "coverage-gap", "13": "semantic-needs-fix", "14": "model-fail", "16": "model-fail", "17": "model-fail", "18": "model-fail"}, summary["failure_category_by_task"])
+        self.assertEqual({"timeout": 1, "coverage-gap": 1, "semantic-needs-fix": 1, "model-fail": 5}, summary["failure_category_counts"])
+        self.assertEqual({"timeout": [11], "coverage-gap": [12], "semantic-needs-fix": [13], "model-fail": [14, 16, 17, 18, 19]}, summary["failure_category_task_ids"])
+        self.assertEqual({"11": "timeout", "12": "coverage-gap", "13": "semantic-needs-fix", "14": "model-fail", "16": "model-fail", "17": "model-fail", "18": "model-fail", "19": "model-fail"}, summary["failure_category_by_task"])
         self.assertEqual([13], summary["prompt_trimmed_task_ids"])
         self.assertEqual(1, summary["prompt_trimmed_count"])
-        self.assertEqual({"timeout": 1, "hard_uncovered": 1, "schema_error": 1, "model_fail": 1}, summary["extract_fail_bucket_counts"])
-        self.assertEqual({"timeout": [11], "hard_uncovered": [16], "schema_error": [17], "model_fail": [18]}, summary["extract_fail_bucket_task_ids"])
+        self.assertEqual({"timeout": 1, "hard_uncovered": 1, "schema_error": 1, "model_fail": 2}, summary["extract_fail_bucket_counts"])
+        self.assertEqual({"timeout": [11], "hard_uncovered": [16], "schema_error": [17], "model_fail": [18, 19]}, summary["extract_fail_bucket_task_ids"])
+        self.assertEqual(
+            {
+                "timeout": 1,
+                "hard_uncovered": 1,
+                "schema_error": 1,
+                "stderr:model output invalid at line <num>": 1,
+                "error:model_output_invalid": 1,
+            },
+            summary["extract_fail_signature_counts"],
+        )
+        self.assertEqual(
+            {
+                "timeout": [11],
+                "hard_uncovered": [16],
+                "schema_error": [17],
+                "stderr:model output invalid at line <num>": [18],
+                "error:model_output_invalid": [19],
+            },
+            summary["extract_fail_signature_task_ids"],
+        )
+        self.assertEqual(
+            [
+                {"signature": "error:model_output_invalid", "count": 1, "task_ids": [19]},
+                {"signature": "hard_uncovered", "count": 1, "task_ids": [16]},
+                {"signature": "schema_error", "count": 1, "task_ids": [17]},
+                {"signature": "stderr:model output invalid at line <num>", "count": 1, "task_ids": [18]},
+                {"signature": "timeout", "count": 1, "task_ids": [11]},
+            ],
+            summary["extract_fail_top_signatures"],
+        )
         self.assertEqual(
             [
                 {

@@ -93,6 +93,9 @@ class MergeSingleTaskLightLaneSummariesTests(unittest.TestCase):
             self.assertEqual([11], merged["overridden_task_ids"])
             self.assertEqual("logs/ci/2026-03-29/single-task-light-lane-v2-b/summary.json", merged["task_source_map"]["11"])
             self.assertEqual(2, len(merged["source_summaries"]))
+            self.assertEqual("ok", merged["status"])
+            self.assertEqual(0, merged["validation"]["hard_issue_count"])
+            self.assertEqual([11], merged["validation"]["overlapping_task_ids"])
             self.assertEqual(
                 {
                     "extract": 0,
@@ -145,6 +148,100 @@ class MergeSingleTaskLightLaneSummariesTests(unittest.TestCase):
                 },
                 merged["failed_first_step_counter"],
             )
+
+    def test_merge_summaries_should_fail_validation_when_result_is_outside_declared_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            logs_root = root / "logs" / "ci" / "2026-03-29"
+            source = logs_root / "single-task-light-lane-v2" / "summary.json"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(
+                json.dumps(
+                    {
+                        "task_id_start": 21,
+                        "task_id_end": 21,
+                        "task_count": 1,
+                        "processed_tasks": 2,
+                        "passed_tasks": 2,
+                        "failed_tasks": 0,
+                        "status": "ok",
+                        "results": [
+                            {"task_id": 21, "ok": True, "failed_steps": [], "first_failed_step": "", "steps": [{"step": "extract", "rc": 0}]},
+                            {"task_id": 22, "ok": True, "failed_steps": [], "first_failed_step": "", "steps": [{"step": "extract", "rc": 0}]},
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            merged = merge_mod.merge_summaries(root, [source])
+
+            self.assertEqual("fail", merged["status"])
+            self.assertEqual([22], merged["validation"]["undeclared_result_task_ids"])
+            self.assertEqual(2, merged["validation"]["hard_issue_count"])
+            issue_kinds = {item["kind"] for item in merged["validation"]["hard_issues"]}
+            self.assertEqual({"undeclared_result_task_ids", "source_result_outside_declared_scope"}, issue_kinds)
+
+    def test_merge_summaries_should_warn_on_incomplete_source_without_failing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            logs_root = root / "logs" / "ci" / "2026-03-29"
+            source_a = logs_root / "single-task-light-lane-v2-a" / "summary.json"
+            source_b = logs_root / "single-task-light-lane-v2-b" / "summary.json"
+            source_a.parent.mkdir(parents=True, exist_ok=True)
+            source_b.parent.mkdir(parents=True, exist_ok=True)
+            source_a.write_text(
+                json.dumps(
+                    {
+                        "task_id_start": 11,
+                        "task_id_end": 13,
+                        "task_count": 3,
+                        "processed_tasks": 2,
+                        "passed_tasks": 2,
+                        "failed_tasks": 0,
+                        "status": "fail",
+                        "results": [
+                            {"task_id": 11, "ok": True, "failed_steps": [], "first_failed_step": "", "steps": [{"step": "extract", "rc": 0}]},
+                            {"task_id": 12, "ok": True, "failed_steps": [], "first_failed_step": "", "steps": [{"step": "extract", "rc": 0}]},
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            time.sleep(0.02)
+            source_b.write_text(
+                json.dumps(
+                    {
+                        "task_id_start": 13,
+                        "task_id_end": 13,
+                        "task_count": 1,
+                        "processed_tasks": 1,
+                        "passed_tasks": 1,
+                        "failed_tasks": 0,
+                        "status": "ok",
+                        "results": [
+                            {"task_id": 13, "ok": True, "failed_steps": [], "first_failed_step": "", "steps": [{"step": "extract", "rc": 0}]},
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            merged = merge_mod.merge_summaries(root, [source_a, source_b])
+
+            self.assertEqual("ok", merged["status"])
+            self.assertEqual(0, merged["validation"]["hard_issue_count"])
+            warning_kinds = {item["kind"] for item in merged["validation"]["warnings"]}
+            self.assertIn("source_declared_missing_results", warning_kinds)
 
 
 if __name__ == "__main__":

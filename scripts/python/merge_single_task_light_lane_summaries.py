@@ -37,6 +37,21 @@ def _load_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def _result_task_ids(summary: dict[str, Any]) -> list[int]:
+    task_ids: list[int] = []
+    for row in summary.get("results", []) or []:
+        if not isinstance(row, dict):
+            continue
+        raw = str(row.get("task_id") or "").strip()
+        if raw.isdigit():
+            task_ids.append(int(raw))
+    return sorted(set(task_ids))
+
+
+def _final_status(status: Any) -> bool:
+    return str(status or "").strip() in {"ok", "fail"}
+
+
 def _summary_declared_task_ids(summary: dict[str, Any]) -> list[int]:
     resume_scope = summary.get("resume_scope")
     if isinstance(resume_scope, dict):
@@ -74,21 +89,20 @@ def _discover_inputs(logs_root: Path, pattern: str) -> list[Path]:
 
 def _source_meta(root: Path, summary_path: Path, summary: dict[str, Any]) -> dict[str, Any]:
     declared = _summary_declared_task_ids(summary)
-    result_ids = []
-    for row in summary.get("results", []) or []:
-        if not isinstance(row, dict):
-            continue
-        raw = str(row.get("task_id") or "").strip()
-        if raw.isdigit():
-            result_ids.append(int(raw))
+    result_ids = _result_task_ids(summary)
+    declared_set = set(declared)
+    result_set = set(result_ids)
     return {
         "path": str(summary_path.relative_to(root)).replace("\\", "/"),
         "status": summary.get("status"),
+        "status_is_final": _final_status(summary.get("status")),
         "generated_at": summary.get("finished_at") or summary.get("last_updated_at") or summary.get("started_at"),
         "task_id_start": summary.get("task_id_start"),
         "task_id_end": summary.get("task_id_end"),
         "declared_task_count": len(declared),
-        "result_task_count": len(set(result_ids)),
+        "result_task_count": len(result_set),
+        "declared_missing_task_ids": sorted(declared_set.difference(result_set)),
+        "unexpected_result_task_ids": sorted(result_set.difference(declared_set)) if declared_set else [],
         "processed_tasks": summary.get("processed_tasks"),
         "passed_tasks": summary.get("passed_tasks"),
         "failed_tasks": summary.get("failed_tasks"),
@@ -109,21 +123,109 @@ def _row_sort_key(summary_path: Path, row: dict[str, Any]) -> tuple[float, int]:
     return (mtime, task_id)
 
 
+def _issue(kind: str, *, level: str, **payload: Any) -> dict[str, Any]:
+    issue = {"kind": str(kind), "level": str(level)}
+    issue.update(payload)
+    return issue
+
+
+def _build_validation(
+    *,
+    invalid_inputs: list[str],
+    duplicate_input_paths: list[str],
+    source_entries: list[dict[str, Any]],
+    all_declared_ids: set[int],
+    covered_ids: list[int],
+    missing_ids: list[int],
+    candidate_sources: dict[int, list[str]],
+) -> dict[str, Any]:
+    hard_issues: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
+
+    if invalid_inputs:
+        hard_issues.append(_issue("invalid_input_summary", level="hard", paths=list(invalid_inputs)))
+    if duplicate_input_paths:
+        warnings.append(_issue("duplicate_input_paths", level="warning", paths=list(duplicate_input_paths)))
+
+    if not all_declared_ids and covered_ids:
+        hard_issues.append(_issue("no_declared_task_ids", level="hard"))
+
+    if missing_ids:
+        hard_issues.append(_issue("missing_declared_tasks", level="hard", task_ids=list(missing_ids)))
+
+    undeclared_result_task_ids = sorted(set(covered_ids).difference(all_declared_ids)) if all_declared_ids else []
+    if undeclared_result_task_ids:
+        hard_issues.append(_issue("undeclared_result_task_ids", level="hard", task_ids=list(undeclared_result_task_ids)))
+
+    overlapping_task_ids = sorted(task_id for task_id, sources in candidate_sources.items() if len(set(sources)) > 1)
+    if overlapping_task_ids:
+        warnings.append(_issue("overlapping_task_ids", level="warning", task_ids=list(overlapping_task_ids)))
+
+    for source in source_entries:
+        path = str(source.get("path") or "")
+        if not bool(source.get("status_is_final")):
+            hard_issues.append(_issue("source_status_not_final", level="hard", path=path, status=source.get("status")))
+        unexpected = list(source.get("unexpected_result_task_ids") or [])
+        if unexpected:
+            hard_issues.append(_issue("source_result_outside_declared_scope", level="hard", path=path, task_ids=unexpected))
+        missing_local = list(source.get("declared_missing_task_ids") or [])
+        if missing_local:
+            warnings.append(_issue("source_declared_missing_results", level="warning", path=path, task_ids=missing_local))
+        processed_tasks = source.get("processed_tasks")
+        result_task_count = int(source.get("result_task_count") or 0)
+        if processed_tasks is not None:
+            try:
+                processed_int = int(processed_tasks)
+            except Exception:
+                processed_int = None
+            if processed_int is not None and processed_int != result_task_count:
+                warnings.append(
+                    _issue(
+                        "source_processed_tasks_mismatch",
+                        level="warning",
+                        path=path,
+                        processed_tasks=processed_int,
+                        result_task_count=result_task_count,
+                    )
+                )
+
+    return {
+        "status": "ok" if not hard_issues else "fail",
+        "hard_issue_count": len(hard_issues),
+        "warning_count": len(warnings),
+        "hard_issues": hard_issues,
+        "warnings": warnings,
+        "overlapping_task_ids": overlapping_task_ids,
+        "undeclared_result_task_ids": undeclared_result_task_ids,
+    }
+
+
 def merge_summaries(root: Path, input_paths: list[Path]) -> dict[str, Any]:
     source_entries: list[dict[str, Any]] = []
     all_declared_ids: set[int] = set()
     chosen_rows: dict[int, dict[str, Any]] = {}
     chosen_sources: dict[int, str] = {}
     candidate_sources: dict[int, list[str]] = {}
+    invalid_inputs: list[str] = []
+    seen_input_paths: set[str] = set()
+    duplicate_input_paths: list[str] = []
 
     for summary_path in input_paths:
         summary = _load_json(summary_path)
         if not isinstance(summary, dict):
+            try:
+                invalid_inputs.append(str(summary_path.relative_to(root)).replace("\\", "/"))
+            except Exception:
+                invalid_inputs.append(str(summary_path).replace("\\", "/"))
             continue
+        source_rel = str(summary_path.relative_to(root)).replace("\\", "/")
+        if source_rel in seen_input_paths:
+            duplicate_input_paths.append(source_rel)
+        else:
+            seen_input_paths.add(source_rel)
         source_entries.append(_source_meta(root, summary_path, summary))
         declared_ids = _summary_declared_task_ids(summary)
         all_declared_ids.update(declared_ids)
-        source_rel = str(summary_path.relative_to(root)).replace("\\", "/")
         for row in summary.get("results", []) or []:
             if not isinstance(row, dict):
                 continue
@@ -163,9 +265,19 @@ def merge_summaries(root: Path, input_paths: list[Path]) -> dict[str, Any]:
             failed_first_step_counter[bucket] = failed_first_step_counter.get(bucket, 0) + 1
 
     overridden_task_ids = sorted(task_id for task_id, sources in candidate_sources.items() if len(set(sources)) > 1)
+    validation = _build_validation(
+        invalid_inputs=invalid_inputs,
+        duplicate_input_paths=sorted(set(duplicate_input_paths)),
+        source_entries=source_entries,
+        all_declared_ids=all_declared_ids,
+        covered_ids=covered_ids,
+        missing_ids=missing_ids,
+        candidate_sources=candidate_sources,
+    )
     merged = {
         "cmd": "merge-single-task-light-lane-summaries",
         "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
+        "status": str(validation.get("status") or "fail"),
         "range": {
             "task_id_start": min(all_declared_ids) if all_declared_ids else None,
             "task_id_end": max(all_declared_ids) if all_declared_ids else None,
@@ -182,6 +294,7 @@ def merge_summaries(root: Path, input_paths: list[Path]) -> dict[str, Any]:
         "passed_task_ids": passed_ids,
         "failed_task_ids": failed_ids,
         "failed_first_step_counter": failed_first_step_counter,
+        "validation": validation,
         "results": results,
     }
     return merged
@@ -218,12 +331,14 @@ def main() -> int:
     merged = merge_summaries(root, input_paths)
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    status = str(merged.get("status") or "fail")
     print(
         "MERGE_SINGLE_TASK_LIGHT_LANE "
-        f"status=ok sources={len(input_paths)} covered={merged.get('covered_count', 0)} "
-        f"missing={merged.get('missing_count', 0)} out={str(summary_path).replace('\\', '/')}"
+        f"status={status} sources={len(input_paths)} covered={merged.get('covered_count', 0)} "
+        f"missing={merged.get('missing_count', 0)} hard_issues={((merged.get('validation') or {}).get('hard_issue_count') or 0)} "
+        f"out={str(summary_path).replace('\\', '/')}"
     )
-    return 0
+    return 0 if status == "ok" else 1
 
 
 if __name__ == "__main__":
