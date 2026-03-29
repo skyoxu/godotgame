@@ -123,6 +123,7 @@ Why this is stable:
 - merged/top-level summaries surface extract-failure signatures and failure families for faster batch triage
 - it supports rolling `warn|degrade|stop` behavior when cumulative extract failure rate becomes untrustworthy
 - it can also back off automatically after one shard times out heavily by increasing next-shard LLM timeout and reducing next-shard size
+- it can warn or stop on repeated extract failure families and emits `family_hotspots` / `quarantine_ranges` for later targeted reruns
 
 ### `py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile <profile> [--no-align-apply]`
 
