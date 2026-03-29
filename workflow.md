@@ -244,7 +244,15 @@ dotnet test Game.Core.Tests/Game.Core.Tests.csproj
 
 ### 5.1 单任务轻量 lane
 
-Recommended wrapper first (full-step resilient execution + resume-friendly summary):
+For long multi-task ranges, prefer the batch coordinator first (isolated shard `out-dir` + automatic merged summary):
+
+```powershell
+py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --task-id-end 180 --delivery-profile fast-ship --max-tasks-per-shard 12
+```
+
+The coordinator writes shard summaries under `shards/`, writes the merged report to `merged/summary.json`, and keeps the top-level `summary.json` as the one-file batch dashboard. This avoids `last_task_id` / resume pollution when you need to rerun only part of a long range. It also supports a rolling extract-failure policy: `--rolling-extract-policy warn|degrade|stop` with threshold/min-observed guards. `degrade` switches later shards to read-only / no-fill-refs / `skip-all` after extract fail, while `stop` stops launching remaining shards once the cumulative extract fail rate crosses the configured threshold.
+
+For one task or a small ad-hoc batch, use the direct wrapper (full-step resilient execution + resume-friendly summary):
 
 ```powershell
 py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship
@@ -259,7 +267,7 @@ py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-pr
 ```
 
 The wrapper also snapshots shared inner step artifacts into `tNNNN--<step>.artifacts/`, so later tasks do not overwrite earlier semantic/align/fill-refs evidence.
-Top-level `summary.json` also aggregates failure categories (`failure_category_*`), extract failure buckets (`extract_fail_bucket_*`), skipped-step counts, and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log.
+Top-level `summary.json` also aggregates failure categories (`failure_category_*`), extract failure buckets (`extract_fail_bucket_*`), extract failure signatures (`extract_fail_signature_*`, `extract_fail_top_signatures`), skipped-step counts, and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log.
 
 Default extract-failure behavior:
 - `fill_refs_dry/write/verify` are skipped after `extract` fails
@@ -281,6 +289,8 @@ For split full-batch runs, merge summaries into one transparent report:
 ```powershell
 py -3 scripts/python/merge_single_task_light_lane_summaries.py --date 2026-03-29
 ```
+
+The merged summary now includes a `validation` block. Hard issues such as missing declared tasks, source summaries still in `running`, or result task ids outside declared scope will make the merge command return non-zero. Warnings still allow merge success, but they tell you that some input summaries were partial or overlapping.
 
 When tasks are heavy or model response is slow, increase the inner LLM timeout explicitly:
 
