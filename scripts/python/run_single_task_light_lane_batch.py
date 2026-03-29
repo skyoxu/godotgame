@@ -43,6 +43,8 @@ _BATCH_PRESETS: dict[str, dict[str, Any]] = {
         "rolling_extract_policy": "degrade",
         "rolling_extract_rate_threshold": 0.45,
         "rolling_extract_min_observed_tasks": 8,
+        "rolling_family_policy": "warn",
+        "rolling_family_streak_threshold": 5,
         "rolling_timeout_backoff_threshold": 0.5,
         "rolling_timeout_backoff_min_observed_tasks": 4,
         "rolling_timeout_backoff_sec": 180,
@@ -56,6 +58,8 @@ _BATCH_PRESETS: dict[str, dict[str, Any]] = {
         "rolling_extract_policy": "stop",
         "rolling_extract_rate_threshold": 0.4,
         "rolling_extract_min_observed_tasks": 6,
+        "rolling_family_policy": "stop",
+        "rolling_family_streak_threshold": 4,
         "rolling_timeout_backoff_threshold": 0.45,
         "rolling_timeout_backoff_min_observed_tasks": 4,
         "rolling_timeout_backoff_sec": 240,
@@ -171,6 +175,8 @@ def _apply_batch_preset(args: argparse.Namespace, argv: list[str]) -> argparse.N
         "rolling_extract_policy": "--rolling-extract-policy",
         "rolling_extract_rate_threshold": "--rolling-extract-rate-threshold",
         "rolling_extract_min_observed_tasks": "--rolling-extract-min-observed-tasks",
+        "rolling_family_policy": "--rolling-family-policy",
+        "rolling_family_streak_threshold": "--rolling-family-streak-threshold",
         "rolling_timeout_backoff_threshold": "--rolling-timeout-backoff-threshold",
         "rolling_timeout_backoff_min_observed_tasks": "--rolling-timeout-backoff-min-observed-tasks",
         "rolling_timeout_backoff_sec": "--rolling-timeout-backoff-sec",
@@ -302,6 +308,37 @@ def _extract_metrics_from_summary(shard_summary: dict[str, Any] | None) -> dict[
     }
 
 
+def _extract_family_events_from_summary(shard_summary: dict[str, Any] | None) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    if not isinstance(shard_summary, dict):
+        return events
+    rows: list[dict[str, Any]] = []
+    for row in shard_summary.get("results", []) or []:
+        if isinstance(row, dict):
+            rows.append(row)
+    rows.sort(key=lambda item: int(str(item.get("task_id") or "0").strip()) if str(item.get("task_id") or "").strip().isdigit() else 0)
+    for row in rows:
+        raw = str(row.get("task_id") or "").strip()
+        if not raw.isdigit():
+            continue
+        task_id = int(raw)
+        family = ""
+        signature = ""
+        for step in row.get("steps", []) or []:
+            if not isinstance(step, dict):
+                continue
+            if str(step.get("step") or "").strip() != "extract":
+                continue
+            if bool(step.get("skipped")):
+                break
+            if int(step.get("rc") or 0) != 0:
+                signature = str(_LANE._extract_fail_signature(step) or "")
+                family = str(_LANE._extract_fail_signature_family(signature) or "")
+            break
+        events.append({"task_id": task_id, "family": family, "signature": signature})
+    return events
+
+
 def _new_rolling_extract_state(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "policy": str(args.rolling_extract_policy),
@@ -323,6 +360,25 @@ def _new_rolling_extract_state(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _new_rolling_family_state(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "policy": str(args.rolling_family_policy),
+        "streak_threshold": int(args.rolling_family_streak_threshold),
+        "current_family": "",
+        "current_signature": "",
+        "current_streak": 0,
+        "current_range_start": None,
+        "current_range_end": None,
+        "triggered": False,
+        "trigger_shard_index": None,
+        "trigger_reason": "",
+        "action": "none",
+        "warnings": [],
+        "hotspots": [],
+        "quarantine_ranges": [],
+    }
+
+
 def _rolling_extract_effective_args(args: argparse.Namespace, state: dict[str, Any]) -> argparse.Namespace:
     overrides: dict[str, Any] = {}
     current_llm_timeout_sec = state.get("current_llm_timeout_sec")
@@ -340,6 +396,112 @@ def _rolling_extract_effective_args(args: argparse.Namespace, state: dict[str, A
 def _compute_next_shard_size(state: dict[str, Any], default_shard_size: int) -> int:
     current = int(state.get("current_max_tasks_per_shard") or default_shard_size or 1)
     return max(1, current)
+
+
+def _append_family_hotspot(state: dict[str, Any]) -> dict[str, Any]:
+    family = str(state.get("current_family") or "")
+    start = state.get("current_range_start")
+    end = state.get("current_range_end")
+    streak = int(state.get("current_streak") or 0)
+    threshold = int(state.get("streak_threshold") or 0)
+    if not family or start is None or end is None or streak < max(1, threshold):
+        return state
+    hotspot = {
+        "family": family,
+        "signature": str(state.get("current_signature") or ""),
+        "task_id_start": int(start),
+        "task_id_end": int(end),
+        "count": int(streak),
+    }
+    hotspots = list(state.get("hotspots") or [])
+    if hotspots and hotspots[-1].get("family") == hotspot["family"] and int(hotspots[-1].get("task_id_start") or -1) == hotspot["task_id_start"]:
+        hotspots[-1] = hotspot
+    else:
+        hotspots.append(hotspot)
+    state["hotspots"] = hotspots
+    quarantine = list(state.get("quarantine_ranges") or [])
+    if quarantine and quarantine[-1].get("family") == hotspot["family"] and int(quarantine[-1].get("task_id_start") or -1) == hotspot["task_id_start"]:
+        quarantine[-1] = {
+            "family": hotspot["family"],
+            "task_id_start": hotspot["task_id_start"],
+            "task_id_end": hotspot["task_id_end"],
+            "reason": f"family_streak>={threshold}",
+        }
+    else:
+        quarantine.append(
+            {
+                "family": hotspot["family"],
+                "task_id_start": hotspot["task_id_start"],
+                "task_id_end": hotspot["task_id_end"],
+                "reason": f"family_streak>={threshold}",
+            }
+        )
+    state["quarantine_ranges"] = quarantine
+    return state
+
+
+def _reset_family_streak(state: dict[str, Any]) -> dict[str, Any]:
+    state["current_family"] = ""
+    state["current_signature"] = ""
+    state["current_streak"] = 0
+    state["current_range_start"] = None
+    state["current_range_end"] = None
+    return state
+
+
+def _update_rolling_family_state(
+    *,
+    state: dict[str, Any],
+    shard_entry: dict[str, Any],
+    shard_summary: dict[str, Any] | None,
+    shard_index: int,
+) -> dict[str, Any]:
+    threshold = max(1, int(state.get("streak_threshold") or 1))
+    for event in _extract_family_events_from_summary(shard_summary):
+        task_id = int(event.get("task_id") or 0)
+        family = str(event.get("family") or "")
+        signature = str(event.get("signature") or "")
+        current_family = str(state.get("current_family") or "")
+        if family and family == current_family:
+            state["current_streak"] = int(state.get("current_streak") or 0) + 1
+            state["current_range_end"] = task_id
+            if signature:
+                state["current_signature"] = signature
+        else:
+            state = _append_family_hotspot(state)
+            state = _reset_family_streak(state)
+            if family:
+                state["current_family"] = family
+                state["current_signature"] = signature
+                state["current_streak"] = 1
+                state["current_range_start"] = task_id
+                state["current_range_end"] = task_id
+
+        if family and int(state.get("current_streak") or 0) >= threshold:
+            state = _append_family_hotspot(state)
+            if not bool(state.get("triggered")):
+                policy = str(state.get("policy") or "off")
+                if policy in {"warn", "stop"}:
+                    state["triggered"] = True
+                    state["trigger_shard_index"] = int(shard_index)
+                    state["action"] = policy
+                    state["trigger_reason"] = (
+                        f"extract_family={family} streak={int(state.get('current_streak') or 0)} "
+                        f">= threshold={threshold}"
+                    )
+                    warnings = list(state.get("warnings") or [])
+                    warnings.append(
+                        {
+                            "shard_index": int(shard_index),
+                            "action": policy,
+                            "family": family,
+                            "task_id_start": int(state.get("current_range_start") or task_id),
+                            "task_id_end": int(state.get("current_range_end") or task_id),
+                            "reason": str(state.get("trigger_reason") or ""),
+                        }
+                    )
+                    state["warnings"] = warnings
+    return state
 
 
 def _apply_timeout_backoff(
@@ -550,6 +712,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Minimum observed extract tasks before evaluating rolling extract policy.",
     )
     parser.add_argument(
+        "--rolling-family-policy",
+        default="off",
+        choices=["off", "warn", "stop"],
+        help="Rolling policy for repeated extract failure families across consecutive tasks.",
+    )
+    parser.add_argument(
+        "--rolling-family-streak-threshold",
+        type=int,
+        default=5,
+        help="Trigger rolling family policy when one extract failure family repeats across this many consecutive tasks.",
+    )
+    parser.add_argument(
         "--rolling-timeout-backoff-threshold",
         type=float,
         default=0.5,
@@ -618,6 +792,7 @@ def main() -> int:
         "downstream_on_extract_fail": str(args.downstream_on_extract_fail),
         "resume_failed_task_from": str(args.resume_failed_task_from),
         "rolling_extract": _new_rolling_extract_state(args),
+        "rolling_family": _new_rolling_family_state(args),
         "shard_count": len(initial_shard_task_groups),
         "shards": [
             {
@@ -647,6 +822,7 @@ def main() -> int:
     shard_entries: list[dict[str, Any]] = []
     skipped_planned_shards: list[dict[str, Any]] = []
     rolling_extract_state = dict(summary.get("rolling_extract") or _new_rolling_extract_state(args))
+    rolling_family_state = dict(summary.get("rolling_family") or _new_rolling_family_state(args))
     pending_task_ids = list(selected)
     planned_shards: list[dict[str, Any]] = []
     shard_index = 0
@@ -677,6 +853,7 @@ def main() -> int:
         )
         entry["rolling_extract_mode"] = "degraded" if bool(rolling_extract_state.get("degraded_mode_active")) else "normal"
         shard_entries.append(entry)
+        shard_summary = _load_json(root / str(entry.get("summary_path")))
         rolling_extract_state = _apply_timeout_backoff(
             state=rolling_extract_state,
             shard_entry=entry,
@@ -688,6 +865,12 @@ def main() -> int:
             shard_entry=entry,
             shard_index=shard_index,
         )
+        rolling_family_state = _update_rolling_family_state(
+            state=rolling_family_state,
+            shard_entry=entry,
+            shard_summary=shard_summary,
+            shard_index=shard_index,
+        )
         summary["shards"] = shard_entries
         summary["planned_shards"] = planned_shards
         summary["last_shard_index"] = shard_index
@@ -695,9 +878,17 @@ def main() -> int:
         summary["last_updated_at"] = dt.datetime.now().isoformat(timespec="seconds")
         summary["shard_status_counts"] = _summarize_shard_results(shard_entries)
         summary["rolling_extract"] = rolling_extract_state
+        summary["rolling_family"] = rolling_family_state
+        summary["family_hotspots"] = list(rolling_family_state.get("hotspots") or [])
+        summary["quarantine_ranges"] = list(rolling_family_state.get("quarantine_ranges") or [])
         summary["shard_count"] = len(planned_shards) + (1 if pending_task_ids else 0)
         _write_json(summary_path, summary)
-        if str(rolling_extract_state.get("action") or "") == "stop" and bool(rolling_extract_state.get("triggered")):
+        stop_reason = ""
+        if str(rolling_family_state.get("action") or "") == "stop" and bool(rolling_family_state.get("triggered")):
+            stop_reason = str(rolling_family_state.get("trigger_reason") or "rolling_family_stop")
+        elif str(rolling_extract_state.get("action") or "") == "stop" and bool(rolling_extract_state.get("triggered")):
+            stop_reason = str(rolling_extract_state.get("trigger_reason") or "rolling_extract_stop")
+        if stop_reason:
             remaining = list(pending_task_ids)
             pending_index = shard_index + 1
             while remaining:
@@ -713,7 +904,7 @@ def main() -> int:
                         "task_id_end": int(next_ids[-1]),
                         "task_count": len(next_ids),
                         "status": "skipped",
-                        "skip_reason": str(rolling_extract_state.get("trigger_reason") or "rolling_extract_stop"),
+                        "skip_reason": stop_reason,
                     }
                 )
                 pending_index += 1
@@ -721,6 +912,10 @@ def main() -> int:
 
     if skipped_planned_shards:
         summary["skipped_planned_shards"] = skipped_planned_shards
+    rolling_family_state = _append_family_hotspot(rolling_family_state)
+    summary["rolling_family"] = rolling_family_state
+    summary["family_hotspots"] = list(rolling_family_state.get("hotspots") or [])
+    summary["quarantine_ranges"] = list(rolling_family_state.get("quarantine_ranges") or [])
     summary["shard_count"] = len(shard_entries) + len(skipped_planned_shards)
 
     merged = _merge_outputs(root, out_dir, shard_entries)

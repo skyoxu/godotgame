@@ -93,6 +93,8 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual("skip-soft", payload["downstream_on_extract_fail"])
             self.assertEqual("degrade", payload["rolling_extract"]["policy"])
             self.assertEqual(0.45, payload["rolling_extract"]["threshold"])
+            self.assertEqual("warn", payload["rolling_family"]["policy"])
+            self.assertEqual(5, payload["rolling_family"]["streak_threshold"])
 
     def test_main_self_check_should_keep_explicit_flags_over_preset(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -494,6 +496,89 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual("stop", summary["rolling_extract"]["action"])
             self.assertEqual(2, len(summary["skipped_planned_shards"]))
             self.assertEqual([12], summary["skipped_planned_shards"][0]["task_ids"])
+
+    def test_main_should_stop_future_shards_after_repeated_failure_family(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "batch-run-family-stop"
+            commands: list[list[str]] = []
+
+            def fake_run_command(_root: Path, cmd: list[str]):
+                commands.append(list(cmd))
+                task_id = int(cmd[cmd.index("--task-ids") + 1])
+                shard_out_dir = Path(cmd[cmd.index("--out-dir") + 1])
+                shard_out_dir.mkdir(parents=True, exist_ok=True)
+                row = {
+                    "task_id": task_id,
+                    "ok": False,
+                    "failed_steps": ["extract"],
+                    "first_failed_step": "extract",
+                    "steps": [
+                        {
+                            "step": "extract",
+                            "rc": 1,
+                            "stdout_tail": f"SC_LLM_OBLIGATIONS status=fail out=C:/logs/task-{task_id}",
+                        }
+                    ],
+                }
+                (shard_out_dir / "summary.json").write_text(
+                    json.dumps(
+                        {
+                            "task_id_start": task_id,
+                            "task_id_end": task_id,
+                            "task_count": 1,
+                            "processed_tasks": 1,
+                            "passed_tasks": 0,
+                            "failed_tasks": 1,
+                            "remaining_tasks": 0,
+                            "status": "fail",
+                            "results": [row],
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+
+                class _Result:
+                    returncode = 1
+                    stdout = "done\n"
+                    stderr = ""
+
+                return _Result()
+
+            argv = [
+                "run_single_task_light_lane_batch.py",
+                "--task-ids",
+                "11,12,13,14",
+                "--max-tasks-per-shard",
+                "1",
+                "--out-dir",
+                str(out_dir),
+                "--rolling-extract-policy",
+                "off",
+                "--rolling-family-policy",
+                "stop",
+                "--rolling-family-streak-threshold",
+                "2",
+            ]
+            with mock.patch.object(batch, "_repo_root", return_value=root), mock.patch.object(
+                batch, "_selected_task_ids", return_value=[11, 12, 13, 14]
+            ), mock.patch.object(batch, "_run_command", side_effect=fake_run_command), mock.patch.object(sys, "argv", argv):
+                rc = batch.main()
+
+            self.assertEqual(1, rc)
+            self.assertEqual(2, len(commands))
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("stop", summary["rolling_family"]["action"])
+            self.assertTrue(summary["rolling_family"]["triggered"])
+            self.assertEqual(1, len(summary["family_hotspots"]))
+            self.assertEqual("stdout:sc_llm_obligations_status_fail", summary["family_hotspots"][0]["family"])
+            self.assertEqual(11, summary["family_hotspots"][0]["task_id_start"])
+            self.assertEqual(12, summary["family_hotspots"][0]["task_id_end"])
+            self.assertEqual(1, len(summary["quarantine_ranges"]))
+            self.assertEqual(2, len(summary["skipped_planned_shards"]))
 
     def test_main_should_increase_timeout_and_reduce_next_shard_after_timeout_spike(self) -> None:
         with tempfile.TemporaryDirectory() as td:
