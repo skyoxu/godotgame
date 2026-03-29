@@ -40,6 +40,7 @@ _BATCH_PRESETS: dict[str, dict[str, Any]] = {
         "batch_lane": "extract-first",
         "fill_refs_mode": "none",
         "downstream_on_extract_fail": "skip-soft",
+        "downstream_on_extract_family_fail": "auto",
         "rolling_extract_policy": "degrade",
         "rolling_extract_rate_threshold": 0.45,
         "rolling_extract_min_observed_tasks": 8,
@@ -55,6 +56,7 @@ _BATCH_PRESETS: dict[str, dict[str, Any]] = {
         "batch_lane": "extract-first",
         "fill_refs_mode": "none",
         "downstream_on_extract_fail": "skip-soft",
+        "downstream_on_extract_family_fail": "auto",
         "rolling_extract_policy": "stop",
         "rolling_extract_rate_threshold": 0.4,
         "rolling_extract_min_observed_tasks": 6,
@@ -135,6 +137,8 @@ def _build_lane_command(args: argparse.Namespace, shard_task_ids: list[int], sha
         str(args.fill_refs_mode),
         "--downstream-on-extract-fail",
         str(args.downstream_on_extract_fail),
+        "--downstream-on-extract-family-fail",
+        str(args.downstream_on_extract_family_fail),
         "--batch-lane",
         str(args.batch_lane),
         "--resume-failed-task-from",
@@ -172,6 +176,7 @@ def _apply_batch_preset(args: argparse.Namespace, argv: list[str]) -> argparse.N
         "batch_lane": "--batch-lane",
         "fill_refs_mode": "--fill-refs-mode",
         "downstream_on_extract_fail": "--downstream-on-extract-fail",
+        "downstream_on_extract_family_fail": "--downstream-on-extract-family-fail",
         "rolling_extract_policy": "--rolling-extract-policy",
         "rolling_extract_rate_threshold": "--rolling-extract-rate-threshold",
         "rolling_extract_min_observed_tasks": "--rolling-extract-min-observed-tasks",
@@ -261,6 +266,7 @@ def _run_shard(
             "batch_lane_resolved",
             "fill_refs_mode_resolved",
             "downstream_on_extract_fail_resolved",
+            "downstream_on_extract_family_fail_resolved",
             "failure_category_counts",
             "extract_fail_bucket_counts",
             "prompt_trimmed_count",
@@ -339,6 +345,84 @@ def _extract_family_events_from_summary(shard_summary: dict[str, Any] | None) ->
     return events
 
 
+def _recommended_action_for_extract_family(family: str) -> dict[str, str]:
+    value = str(family or "").strip()
+    if not value:
+        return {
+            "recommended_action": "inspect_extract_logs",
+            "downstream_policy_hint": "manual",
+            "reason": "extract failed but no stable failure family was detected",
+        }
+    if value == "timeout":
+        return {
+            "recommended_action": "raise_extract_timeout_or_reduce_batch_scope",
+            "downstream_policy_hint": "skip-all",
+            "reason": "extract timed out; retry extract first before spending more downstream work",
+        }
+    if value in {"stdout:sc_llm_obligations_status_fail", "stderr:sc_llm_obligations_status_fail"}:
+        return {
+            "recommended_action": "repair_obligations_or_task_context_before_downstream",
+            "downstream_policy_hint": "skip-all",
+            "reason": "extract already reported obligations failure; align/coverage/review are low-value until obligations recover",
+        }
+    if value in {"stdout:model_output_invalid", "stderr:model_output_invalid", "error:model_output_invalid"}:
+        return {
+            "recommended_action": "tighten_prompt_or_reduce_extract_scope_then_retry",
+            "downstream_policy_hint": "skip-soft",
+            "reason": "model output was invalid; fix extract prompt/scope first and only then continue downstream",
+        }
+    if value == "schema_error":
+        return {
+            "recommended_action": "repair_extract_schema_or_refs_then_retry",
+            "downstream_policy_hint": "skip-soft",
+            "reason": "extract output/schema was invalid; repair schema contract before downstream checks",
+        }
+    if value == "hard_uncovered":
+        return {
+            "recommended_action": "fill_required_obligations_or_acceptance_refs_then_retry",
+            "downstream_policy_hint": "skip-soft",
+            "reason": "required obligations were uncovered; finish mandatory refs before downstream work",
+        }
+    if value.startswith("error:"):
+        return {
+            "recommended_action": "inspect_extract_inner_summary_and_error",
+            "downstream_policy_hint": "manual",
+            "reason": "extract failed with an explicit error from inner summary",
+        }
+    return {
+        "recommended_action": "inspect_extract_log_for_family",
+        "downstream_policy_hint": "manual",
+        "reason": "extract family is uncommon; inspect the shard log before changing downstream behavior",
+    }
+
+
+def _build_extract_family_recommended_actions(merged_payload: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not isinstance(merged_payload, dict):
+        return []
+    counts = merged_payload.get("extract_fail_family_counts")
+    if not isinstance(counts, dict):
+        return []
+    task_ids_map = merged_payload.get("extract_fail_family_task_ids")
+    out: list[dict[str, Any]] = []
+    for family, raw_count in sorted(
+        ((str(key), int(value or 0)) for key, value in counts.items() if str(key).strip()),
+        key=lambda item: (-item[1], item[0]),
+    ):
+        action = _recommended_action_for_extract_family(family)
+        task_ids = []
+        if isinstance(task_ids_map, dict):
+            task_ids = [int(task_id) for task_id in list(task_ids_map.get(family) or []) if str(task_id).strip().isdigit()]
+        out.append(
+            {
+                "family": family,
+                "count": int(raw_count),
+                "task_ids": task_ids,
+                **action,
+            }
+        )
+    return out
+
+
 def _new_rolling_extract_state(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "policy": str(args.rolling_extract_policy),
@@ -388,6 +472,7 @@ def _rolling_extract_effective_args(args: argparse.Namespace, state: dict[str, A
         overrides["no_align_apply"] = True
         overrides["fill_refs_mode"] = "none"
         overrides["downstream_on_extract_fail"] = "skip-all"
+        overrides["downstream_on_extract_family_fail"] = "skip-all"
     if not overrides:
         return args
     return _copy_args_with_overrides(args, **overrides)
@@ -673,6 +758,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pass-through downstream behavior after extract fails.",
     )
     parser.add_argument(
+        "--downstream-on-extract-family-fail",
+        default="auto",
+        choices=["auto", "off", "continue", "skip-soft", "skip-all"],
+        help="Pass-through family-aware downstream behavior after extract fails.",
+    )
+    parser.add_argument(
         "--batch-lane",
         default="extract-first",
         choices=["auto", "standard", "extract-first"],
@@ -790,6 +881,7 @@ def main() -> int:
         "batch_lane": str(args.batch_lane),
         "fill_refs_mode": str(args.fill_refs_mode),
         "downstream_on_extract_fail": str(args.downstream_on_extract_fail),
+        "downstream_on_extract_family_fail": str(args.downstream_on_extract_family_fail),
         "resume_failed_task_from": str(args.resume_failed_task_from),
         "rolling_extract": _new_rolling_extract_state(args),
         "rolling_family": _new_rolling_family_state(args),
@@ -948,6 +1040,7 @@ def main() -> int:
         ]:
             if key in merged_payload:
                 summary[key] = merged_payload.get(key)
+        summary["extract_family_recommended_actions"] = _build_extract_family_recommended_actions(merged_payload)
 
     shard_rc_failures = [entry for entry in shard_entries if int(entry.get("rc") or 0) not in {0, 1}]
     shard_missing_summary = [entry for entry in shard_entries if not bool(entry.get("summary_exists"))]

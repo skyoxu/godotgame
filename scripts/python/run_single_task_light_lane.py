@@ -26,6 +26,16 @@ _RETRY_TIMEOUT_BOOST_SEC = 240
 _RETRYABLE_TIMEOUT_STEPS = {"extract", "align"}
 _FILL_REF_STEP_NAMES = {"fill_refs_dry", "fill_refs_write", "fill_refs_verify"}
 _SKIP_SOFT_STEP_NAMES = {"coverage", "semantic_gate", *_FILL_REF_STEP_NAMES}
+_EXTRACT_FAIL_FAMILY_AUTO_SKIP_ALL = {
+    "timeout",
+    "stdout:sc_llm_obligations_status_fail",
+    "stderr:sc_llm_obligations_status_fail",
+}
+_EXTRACT_FAIL_FAMILY_AUTO_SKIP_SOFT = {
+    "stdout:model_output_invalid",
+    "stderr:model_output_invalid",
+    "error:model_output_invalid",
+}
 _SNAPSHOT_PATTERNS = (
     "summary.json",
     "report.md",
@@ -395,6 +405,22 @@ def _resolve_downstream_on_extract_fail(policy: str, *, selected_count: int) -> 
     return str(policy)
 
 
+def _resolve_downstream_on_extract_family_fail(policy: str, *, extract_fail_family: str) -> str:
+    family = str(extract_fail_family or "").strip().lower()
+    value = str(policy or "").strip().lower()
+    if not family or value in {"", "off", "continue"}:
+        return ""
+    if value in {"skip-soft", "skip-all"}:
+        return value
+    if value != "auto":
+        return ""
+    if family in _EXTRACT_FAIL_FAMILY_AUTO_SKIP_ALL:
+        return "skip-all"
+    if family in _EXTRACT_FAIL_FAMILY_AUTO_SKIP_SOFT:
+        return "skip-soft"
+    return ""
+
+
 def _resolve_batch_lane(mode: str, *, selected_count: int) -> str:
     if str(mode) == "auto":
         return "extract-first" if int(selected_count) > 1 else "standard"
@@ -406,7 +432,17 @@ def _skip_reason_for_step_after_extract_fail(
     *,
     fill_refs_after_extract_fail: str,
     downstream_on_extract_fail: str,
+    downstream_on_extract_family_fail: str,
+    extract_fail_family: str,
 ) -> str:
+    family_policy = _resolve_downstream_on_extract_family_fail(
+        downstream_on_extract_family_fail,
+        extract_fail_family=extract_fail_family,
+    )
+    if family_policy == "skip-all" and step_name != "extract":
+        return "extract_failed_family_policy_skip_all"
+    if family_policy == "skip-soft" and step_name in _SKIP_SOFT_STEP_NAMES:
+        return "extract_failed_family_policy_skip_soft"
     if downstream_on_extract_fail == "skip-all" and step_name != "extract":
         return "extract_failed_downstream_policy_skip_all"
     if downstream_on_extract_fail == "skip-soft" and step_name in _SKIP_SOFT_STEP_NAMES:
@@ -864,6 +900,7 @@ def _build_resume_scope(
     align_apply: bool,
     fill_refs_after_extract_fail: str,
     downstream_on_extract_fail: str,
+    downstream_on_extract_family_fail: str,
     fill_refs_mode: str,
     batch_lane: str,
 ) -> dict[str, Any]:
@@ -880,6 +917,7 @@ def _build_resume_scope(
         "align_apply": bool(align_apply),
         "fill_refs_after_extract_fail": str(fill_refs_after_extract_fail),
         "downstream_on_extract_fail": str(downstream_on_extract_fail),
+        "downstream_on_extract_family_fail": str(downstream_on_extract_family_fail),
         "fill_refs_mode": str(fill_refs_mode),
         "batch_lane": str(batch_lane),
         "step_names": step_names,
@@ -1014,6 +1052,7 @@ def _run_named_steps_for_task(
     llm_timeout_sec: int | None,
     fill_refs_after_extract_fail: str,
     downstream_on_extract_fail: str,
+    downstream_on_extract_family_fail: str,
     stop_on_step_failure: bool,
 ) -> list[str]:
     failed_steps: list[str] = []
@@ -1021,13 +1060,21 @@ def _run_named_steps_for_task(
         extract_step = step_map.get("extract")
         extract_failed = isinstance(extract_step, dict) and not bool(extract_step.get("skipped")) and int(extract_step.get("rc") or 0) != 0
         if extract_failed:
+            extract_fail_signature = _extract_fail_signature(extract_step) or ""
+            extract_fail_family = _extract_fail_signature_family(extract_fail_signature)
             skip_reason = _skip_reason_for_step_after_extract_fail(
                 step_name,
                 fill_refs_after_extract_fail=fill_refs_after_extract_fail,
                 downstream_on_extract_fail=downstream_on_extract_fail,
+                downstream_on_extract_family_fail=downstream_on_extract_family_fail,
+                extract_fail_family=extract_fail_family,
             )
             if skip_reason:
                 step_map[step_name] = _make_skipped_step(step_name, skip_reason=skip_reason)
+                if extract_fail_signature:
+                    step_map[step_name]["extract_fail_signature"] = extract_fail_signature
+                if extract_fail_family:
+                    step_map[step_name]["extract_fail_family"] = extract_fail_family
                 continue
 
         cmd = [part.format(id=task_id) for part in template]
@@ -1132,6 +1179,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="How later steps should behave after extract fails. 'auto' resolves to continue for one task and skip-soft for multi-task batches.",
     )
     parser.add_argument(
+        "--downstream-on-extract-family-fail",
+        default="auto",
+        choices=["auto", "off", "continue", "skip-soft", "skip-all"],
+        help="Family-aware override after extract fails. 'auto' skip-all for timeout / obligations-fail and skip-soft for model-output-invalid families.",
+    )
+    parser.add_argument(
         "--batch-lane",
         default="auto",
         choices=["auto", "standard", "extract-first"],
@@ -1181,6 +1234,7 @@ def main() -> int:
         str(args.downstream_on_extract_fail),
         selected_count=len(selected),
     )
+    downstream_on_extract_family_fail_resolved = str(args.downstream_on_extract_family_fail)
     if batch_lane_resolved == "extract-first" and downstream_on_extract_fail_resolved == "continue":
         downstream_on_extract_fail_resolved = "skip-soft"
     step_lookup = {name: cmd for name, cmd in steps}
@@ -1193,6 +1247,7 @@ def main() -> int:
         align_apply=align_apply,
         fill_refs_after_extract_fail=str(args.fill_refs_after_extract_fail),
         downstream_on_extract_fail=downstream_on_extract_fail_resolved,
+        downstream_on_extract_family_fail=downstream_on_extract_family_fail_resolved,
         fill_refs_mode=fill_refs_mode_resolved,
         batch_lane=batch_lane_resolved,
     )
@@ -1213,6 +1268,8 @@ def main() -> int:
             "fill_refs_mode_resolved": fill_refs_mode_resolved,
             "downstream_on_extract_fail_requested": str(args.downstream_on_extract_fail),
             "downstream_on_extract_fail_resolved": downstream_on_extract_fail_resolved,
+            "downstream_on_extract_family_fail_requested": str(args.downstream_on_extract_family_fail),
+            "downstream_on_extract_family_fail_resolved": downstream_on_extract_family_fail_resolved,
             "batch_lane_requested": str(args.batch_lane),
             "batch_lane_resolved": batch_lane_resolved,
             "phase1_step_names": phase1_step_names,
@@ -1249,6 +1306,8 @@ def main() -> int:
     summary["fill_refs_mode_resolved"] = fill_refs_mode_resolved
     summary["downstream_on_extract_fail_requested"] = str(args.downstream_on_extract_fail)
     summary["downstream_on_extract_fail_resolved"] = downstream_on_extract_fail_resolved
+    summary["downstream_on_extract_family_fail_requested"] = str(args.downstream_on_extract_family_fail)
+    summary["downstream_on_extract_family_fail_resolved"] = downstream_on_extract_family_fail_resolved
     summary["batch_lane_requested"] = str(args.batch_lane)
     summary["batch_lane_resolved"] = batch_lane_resolved
     summary["phase1_step_names"] = phase1_step_names
@@ -1300,6 +1359,7 @@ def main() -> int:
                 llm_timeout_sec=args.llm_timeout_sec,
                 fill_refs_after_extract_fail=str(args.fill_refs_after_extract_fail),
                 downstream_on_extract_fail=downstream_on_extract_fail_resolved,
+                downstream_on_extract_family_fail=downstream_on_extract_family_fail_resolved,
                 stop_on_step_failure=bool(args.stop_on_step_failure),
             )
             ordered = [step_map[name] for name in step_names if name in step_map]
@@ -1345,6 +1405,7 @@ def main() -> int:
                 llm_timeout_sec=args.llm_timeout_sec,
                 fill_refs_after_extract_fail=str(args.fill_refs_after_extract_fail),
                 downstream_on_extract_fail=downstream_on_extract_fail_resolved,
+                downstream_on_extract_family_fail=downstream_on_extract_family_fail_resolved,
                 stop_on_step_failure=bool(args.stop_on_step_failure),
             )
             ordered = [step_map[name] for name in step_names if name in step_map]
@@ -1388,6 +1449,7 @@ def main() -> int:
                 llm_timeout_sec=args.llm_timeout_sec,
                 fill_refs_after_extract_fail=str(args.fill_refs_after_extract_fail),
                 downstream_on_extract_fail=downstream_on_extract_fail_resolved,
+                downstream_on_extract_family_fail=downstream_on_extract_family_fail_resolved,
                 stop_on_step_failure=bool(args.stop_on_step_failure),
             )
 
