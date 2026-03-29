@@ -1214,6 +1214,7 @@ Purpose:
 - keep one top-level `summary.json` for batch monitoring and one `merged/summary.json` for merged task results
 
 Important parameters:
+- `--batch-preset`: recommended bundle such as `stable-batch` or `long-batch`; explicit flags still win
 - `--task-ids` / `--task-id-start` / `--task-id-end` / `--max-tasks`: select the task range using the same selection semantics as the direct light-lane wrapper
 - `--max-tasks-per-shard`: shard size for one batch coordinator run
 - `--out-dir`: coordinator output root; shard summaries go under `shards/`, merged report goes under `merged/`
@@ -1231,7 +1232,7 @@ Notes:
 - shard runs use isolated subdirectories, so overlapping reruns do not mutate another shard's `last_task_id`
 - coordinator `summary.json` tracks shard-level status while `merged/summary.json` tracks task-level merged results
 - merged output reuses the transparent source mapping from `merge_single_task_light_lane_summaries.py`
-- top-level and merged summaries surface `extract_fail_signature_*` and `extract_fail_top_signatures` for extract triage
+- top-level and merged summaries surface both `extract_fail_signature_*` and `extract_fail_family_*`; prefer families for grouped extract triage and signatures for exact evidence
 
 #### `scripts/python/run_single_task_light_lane.py`
 
