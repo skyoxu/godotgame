@@ -61,6 +61,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/sc/check_tdd_execution_plan.py`
 - `scripts/sc/llm_generate_tests_from_acceptance_refs.py`
 - `scripts/python/run_single_task_light_lane.py`
+- `scripts/python/merge_single_task_light_lane_summaries.py`
 
 ### Taskmaster / semantics / overlay
 
@@ -1181,6 +1182,27 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
   - Model-backed steps require the repo's LLM runtime/CLI; deterministic-only or skip modes can reduce that requirement, but do not assume zero-model execution unless the script explicitly supports it.
+
+#### `scripts/python/merge_single_task_light_lane_summaries.py`
+
+Purpose:
+- merge split workflow 5.1 summaries into one transparent merged summary
+- preserve per-task winning source, candidate source list, and overridden task ids
+
+Important parameters:
+- `--date`: logs date folder under `logs/ci/YYYY-MM-DD`
+- `--logs-root`: override logs root if you are merging from a custom folder
+- `--input`: explicit summary paths, repeatable
+- `--out-dir`: merged output directory
+
+Prerequisites:
+- one or more `single-task-light-lane-v2*/summary.json` files already exist
+- source summaries should be from the same repo and same logical batch family
+
+Notes:
+- default discovery ignores `*-merged` outputs
+- later/newer source summaries win for overlapping `task_id`
+- output adds `task_source_map`, `task_source_candidates`, and `overridden_task_ids`
 
 #### `scripts/python/run_single_task_light_lane.py`
 

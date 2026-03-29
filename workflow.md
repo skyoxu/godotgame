@@ -259,7 +259,29 @@ py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-pr
 ```
 
 The wrapper also snapshots shared inner step artifacts into `tNNNN--<step>.artifacts/`, so later tasks do not overwrite earlier semantic/align/fill-refs evidence.
-Top-level `summary.json` also aggregates failure categories (`failure_category_*`) and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log.
+Top-level `summary.json` also aggregates failure categories (`failure_category_*`), extract failure buckets (`extract_fail_bucket_*`), skipped-step counts, and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log.
+
+Default extract-failure behavior:
+- `fill_refs_dry/write/verify` are skipped after `extract` fails
+- `--downstream-on-extract-fail auto` resolves to `continue` for one task and `skip-soft` for multi-task batches
+- `skip-soft` keeps `align`, but skips `coverage`, `semantic_gate`, and all `fill_refs_*`
+- `--fill-refs-mode auto` resolves to `write-verify` for one task and `none` for multi-task batches
+- `--batch-lane auto` resolves to `standard` for one task and `extract-first` for multi-task batches
+
+Examples:
+
+```powershell
+py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship --fill-refs-after-extract-fail continue
+py -3 scripts/python/run_single_task_light_lane.py --task-ids 101,102,103 --delivery-profile fast-ship --downstream-on-extract-fail skip-soft
+py -3 scripts/python/run_single_task_light_lane.py --task-ids 101,102,103 --delivery-profile fast-ship --batch-lane extract-first --fill-refs-mode dry
+```
+
+For split full-batch runs, merge summaries into one transparent report:
+
+```powershell
+py -3 scripts/python/merge_single_task_light_lane_summaries.py --date 2026-03-29
+```
+
 When tasks are heavy or model response is slow, increase the inner LLM timeout explicitly:
 
 ```powershell
