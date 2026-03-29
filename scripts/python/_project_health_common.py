@@ -178,6 +178,69 @@ def _normalize_report_value(value: Any, *, limit: int = 240) -> str:
     return text[:limit]
 
 
+def _compact_extract_family_actions(items: Any, *, limit: int = 6) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    if not isinstance(items, list):
+        return out
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        out.append(
+            {
+                "family": _normalize_report_value(item.get("family"), limit=80),
+                "count": int(item.get("count") or 0),
+                "recommended_action": _normalize_report_value(item.get("recommended_action"), limit=120),
+                "downstream_policy_hint": _normalize_report_value(item.get("downstream_policy_hint"), limit=40),
+                "reason": _normalize_report_value(item.get("reason"), limit=200),
+                "task_ids": [int(task_id) for task_id in list(item.get("task_ids") or [])[:12] if str(task_id).strip().isdigit()],
+            }
+        )
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _compact_range_items(items: Any, *, limit: int = 6) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    if not isinstance(items, list):
+        return out
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        out.append(
+            {
+                "family": _normalize_report_value(item.get("family"), limit=80),
+                "task_id_start": int(item.get("task_id_start") or 0),
+                "task_id_end": int(item.get("task_id_end") or 0),
+                "count": int(item.get("count") or 0),
+                "reason": _normalize_report_value(item.get("reason"), limit=160),
+            }
+        )
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _extract_report_highlights(payload: dict[str, Any]) -> dict[str, Any]:
+    highlights: dict[str, Any] = {}
+    family_actions = _compact_extract_family_actions(payload.get("extract_family_recommended_actions"))
+    if family_actions:
+        highlights["extract_family_recommended_actions"] = family_actions
+    hotspots = _compact_range_items(payload.get("family_hotspots"))
+    if hotspots:
+        highlights["family_hotspots"] = hotspots
+    quarantine = _compact_range_items(payload.get("quarantine_ranges"))
+    if quarantine:
+        highlights["quarantine_ranges"] = quarantine
+    if not highlights:
+        return {}
+    if "covered_count" in payload:
+        highlights["covered_count"] = int(payload.get("covered_count") or 0)
+    if "failed_count" in payload:
+        highlights["failed_count"] = int(payload.get("failed_count") or 0)
+    return highlights
+
+
 def build_report_catalog(root: Path) -> dict[str, Any]:
     """汇总 logs/ci 下可读取的 JSON 报告索引，供 latest.html 展示。"""
     logs_root = root / "logs" / "ci"
@@ -210,11 +273,14 @@ def build_report_catalog(root: Path) -> dict[str, Any]:
                     limit=60,
                 )
                 summary = _normalize_report_value(payload.get("summary") or payload.get("message"), limit=200)
+                highlights = _extract_report_highlights(payload)
             else:
                 parse_error = "json-not-object"
+                highlights = {}
         except Exception:
             invalid += 1
             parse_error = "invalid-json"
+            highlights = {}
 
         entries.append(
             {
@@ -226,6 +292,7 @@ def build_report_catalog(root: Path) -> dict[str, Any]:
                 "size_bytes": int(stat.st_size) if stat else 0,
                 "modified_at": modified_at,
                 "parse_error": parse_error,
+                "highlights": highlights,
             }
         )
 
@@ -273,6 +340,61 @@ def dashboard_html(
                 ]
             )
         )
+
+    highlight_sections = []
+    highlighted_entries = [
+        item for item in report_catalog.get("entries", []) if isinstance(item, dict) and isinstance(item.get("highlights"), dict) and item.get("highlights")
+    ][:4]
+    for item in highlighted_entries:
+        highlights = dict(item.get("highlights") or {})
+        lines = [
+            f"<section class=\"highlight-card\">",
+            f"<h3>{html.escape(str(item.get('kind', 'unknown')))}</h3>",
+            f"<div class=\"meta\">path: {html.escape(str(item.get('path', '')))}</div>",
+            f"<div class=\"meta\">status: {html.escape(str(item.get('status', 'unknown') or 'unknown'))}</div>",
+        ]
+        if "covered_count" in highlights or "failed_count" in highlights:
+            lines.append(
+                f"<div class=\"meta\">covered={int(highlights.get('covered_count') or 0)} failed={int(highlights.get('failed_count') or 0)}</div>"
+            )
+        family_actions = highlights.get("extract_family_recommended_actions") or []
+        if family_actions:
+            lines.append("<div class=\"subhead\">Extract failure families</div>")
+            for family_item in family_actions:
+                lines.append("<div class=\"highlight-item\">")
+                lines.append(
+                    f"<div><strong>{html.escape(str(family_item.get('family') or 'unknown'))}</strong> "
+                    f"(<span>{int(family_item.get('count') or 0)}</span>)</div>"
+                )
+                lines.append(
+                    f"<div class=\"meta\">hint: {html.escape(str(family_item.get('downstream_policy_hint') or 'manual'))} | "
+                    f"action: {html.escape(str(family_item.get('recommended_action') or 'inspect'))}</div>"
+                )
+                if family_item.get("task_ids"):
+                    lines.append(f"<div class=\"meta\">tasks: {html.escape(','.join(str(task_id) for task_id in family_item['task_ids']))}</div>")
+                if family_item.get("reason"):
+                    lines.append(f"<div class=\"meta\">reason: {html.escape(str(family_item['reason']))}</div>")
+                lines.append("</div>")
+        hotspots = highlights.get("family_hotspots") or []
+        if hotspots:
+            lines.append("<div class=\"subhead\">Family hotspots</div>")
+            for hotspot in hotspots:
+                lines.append(
+                    f"<div class=\"meta\">{html.escape(str(hotspot.get('family') or 'unknown'))}: "
+                    f"T{int(hotspot.get('task_id_start') or 0)}-T{int(hotspot.get('task_id_end') or 0)} "
+                    f"count={int(hotspot.get('count') or 0)}</div>"
+                )
+        quarantine = highlights.get("quarantine_ranges") or []
+        if quarantine:
+            lines.append("<div class=\"subhead\">Quarantine ranges</div>")
+            for item_range in quarantine:
+                lines.append(
+                    f"<div class=\"meta\">{html.escape(str(item_range.get('family') or 'unknown'))}: "
+                    f"T{int(item_range.get('task_id_start') or 0)}-T{int(item_range.get('task_id_end') or 0)} "
+                    f"{html.escape(str(item_range.get('reason') or ''))}</div>"
+                )
+        lines.append("</section>")
+        highlight_sections.append("\n".join(lines))
 
     report_rows = []
     for item in report_catalog.get("entries", []):
@@ -324,6 +446,11 @@ def dashboard_html(
     .btn {{ border: 1px solid #cbd2d9; border-radius: 8px; background: #fff; padding: 6px 10px; font-size: 13px; cursor: pointer; }}
     .btn:hover {{ background: #f8fafc; }}
     .table-wrap {{ margin-top: 18px; overflow: auto; background: #fff; border: 1px solid #d2d6dc; border-radius: 12px; }}
+    .highlight-wrap {{ margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }}
+    .highlight-card {{ background: #fff; border: 1px solid #d2d6dc; border-radius: 12px; padding: 16px; box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06); }}
+    .highlight-card h3 {{ margin: 0 0 10px; font-size: 16px; }}
+    .highlight-item {{ border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px; }}
+    .subhead {{ margin-top: 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #52606d; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
     th, td {{ border-bottom: 1px solid #e5e7eb; text-align: left; padding: 8px; vertical-align: top; }}
     th {{ background: #f8fafc; position: sticky; top: 0; z-index: 1; }}
@@ -353,6 +480,13 @@ def dashboard_html(
     <div class="grid">
       {''.join(cards)}
     </div>
+    <details open>
+      <summary>批量任务诊断摘录</summary>
+      <div class="hint">这里优先展示报告 JSON 里可直接消费的高价值字段，例如 extract family 建议动作、family hotspot、quarantine 范围。</div>
+      <div class="highlight-wrap">
+        {''.join(highlight_sections) if highlight_sections else '<div class="meta">当前没有可直接展示的批量诊断摘要。</div>'}
+      </div>
+    </details>
     <div class="hint">JSON 报告总数: {report_total}；解析失败: {report_invalid}；索引文件: {report_catalog_path_escaped}</div>
     <details>
       <summary>展开查看全部 JSON 报告索引</summary>

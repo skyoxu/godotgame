@@ -45,6 +45,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
             align_apply=True,
             fill_refs_after_extract_fail="skip",
             downstream_on_extract_fail="skip-soft",
+            downstream_on_extract_family_fail="auto",
             fill_refs_mode="none",
             batch_lane="extract-first",
         )
@@ -57,6 +58,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                         align_apply=True,
                         fill_refs_after_extract_fail="skip",
                         downstream_on_extract_fail="skip-soft",
+                        downstream_on_extract_family_fail="auto",
                         fill_refs_mode="none",
                         batch_lane="extract-first",
                     )
@@ -69,6 +71,33 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
         self.assertEqual("continue", lane._resolve_downstream_on_extract_fail("auto", selected_count=1))
         self.assertEqual("skip-soft", lane._resolve_downstream_on_extract_fail("auto", selected_count=2))
         self.assertEqual("skip-all", lane._resolve_downstream_on_extract_fail("skip-all", selected_count=9))
+
+    def test_resolve_downstream_on_extract_family_fail_should_apply_auto_family_policies(self) -> None:
+        self.assertEqual(
+            "skip-all",
+            lane._resolve_downstream_on_extract_family_fail("auto", extract_fail_family="timeout"),
+        )
+        self.assertEqual(
+            "skip-all",
+            lane._resolve_downstream_on_extract_family_fail(
+                "auto",
+                extract_fail_family="stdout:sc_llm_obligations_status_fail",
+            ),
+        )
+        self.assertEqual(
+            "skip-soft",
+            lane._resolve_downstream_on_extract_family_fail(
+                "auto",
+                extract_fail_family="error:model_output_invalid",
+            ),
+        )
+        self.assertEqual(
+            "",
+            lane._resolve_downstream_on_extract_family_fail(
+                "off",
+                extract_fail_family="timeout",
+            ),
+        )
 
     def test_steps_should_toggle_align_apply_and_delivery_profile(self) -> None:
         steps_apply = lane._steps(align_apply=True, delivery_profile="fast-ship", llm_timeout_sec=777)
@@ -427,6 +456,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                             "align_apply": True,
                             "fill_refs_after_extract_fail": "skip",
                             "downstream_on_extract_fail": "skip-soft",
+                            "downstream_on_extract_family_fail": "auto",
                             "fill_refs_mode": "none",
                             "batch_lane": "extract-first",
                             "step_names": ["extract", "align", "coverage", "semantic_gate"],
@@ -492,6 +522,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                             "align_apply": True,
                             "fill_refs_after_extract_fail": "skip",
                             "downstream_on_extract_fail": "continue",
+                            "downstream_on_extract_family_fail": "auto",
                             "fill_refs_mode": "write-verify",
                             "batch_lane": "standard",
                             "step_names": ["extract", "align", "coverage", "semantic_gate", "fill_refs_dry", "fill_refs_write", "fill_refs_verify"],
@@ -557,13 +588,25 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 rc = lane.main()
 
             self.assertEqual(1, rc)
-            self.assertEqual(4, run_step_mock.call_count)
+            self.assertEqual(1, run_step_mock.call_count)
             payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             row = payload["results"][0]
-            fill_steps = row["steps"][4:]
-            self.assertEqual(["fill_refs_dry", "fill_refs_write", "fill_refs_verify"], [item["step"] for item in fill_steps])
-            self.assertTrue(all(bool(item.get("skipped")) for item in fill_steps))
-            self.assertTrue(all(str(item.get("skip_reason")) == "extract_failed_fill_refs_policy" for item in fill_steps))
+            self.assertEqual("auto", payload["downstream_on_extract_family_fail_resolved"])
+            self.assertEqual(
+                ["extract", "align", "coverage", "semantic_gate", "fill_refs_dry", "fill_refs_write", "fill_refs_verify"],
+                [item["step"] for item in row["steps"]],
+            )
+            skipped = {item["step"]: item for item in row["steps"][1:]}
+            self.assertTrue(all(bool(item.get("skipped")) for item in skipped.values()))
+            self.assertTrue(
+                all(str(item.get("skip_reason")) == "extract_failed_family_policy_skip_all" for item in skipped.values())
+            )
+            self.assertTrue(
+                all(
+                    str(item.get("extract_fail_family")) == "stdout:sc_llm_obligations_status_fail"
+                    for item in skipped.values()
+                )
+            )
 
     def test_main_should_skip_soft_downstream_after_extract_fail_for_multi_task_auto(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -605,7 +648,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 rc = lane.main()
 
             self.assertEqual(1, rc)
-            self.assertEqual(6, run_step_mock.call_count)
+            self.assertEqual(5, run_step_mock.call_count)
             payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("skip-soft", payload["downstream_on_extract_fail_resolved"])
             self.assertEqual("extract-first", payload["batch_lane_resolved"])
@@ -616,7 +659,9 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 [item["step"] for item in row["steps"]],
             )
             skipped = {item["step"]: item for item in row["steps"] if item.get("skipped")}
-            self.assertEqual(set(), set(skipped.keys()))
+            self.assertEqual({"align"}, set(skipped.keys()))
+            self.assertEqual("extract_failed_family_policy_skip_all", skipped["align"]["skip_reason"])
+            self.assertEqual("stdout:sc_llm_obligations_status_fail", skipped["align"]["extract_fail_family"])
 
     def test_main_should_retry_extract_timeout_once_with_expanded_timeout(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -91,6 +91,7 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual("extract-first", payload["batch_lane"])
             self.assertEqual("none", payload["fill_refs_mode"])
             self.assertEqual("skip-soft", payload["downstream_on_extract_fail"])
+            self.assertEqual("auto", payload["downstream_on_extract_family_fail"])
             self.assertEqual("degrade", payload["rolling_extract"]["policy"])
             self.assertEqual(0.45, payload["rolling_extract"]["threshold"])
             self.assertEqual("warn", payload["rolling_family"]["policy"])
@@ -125,6 +126,32 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual("warn", payload["rolling_extract"]["policy"])
             self.assertNotIn("fill_refs_mode", payload["batch_preset_applied"])
             self.assertNotIn("rolling_extract_policy", payload["batch_preset_applied"])
+
+    def test_main_self_check_should_keep_explicit_extract_family_flag_over_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "batch-preset-family-override-self-check"
+            argv = [
+                "run_single_task_light_lane_batch.py",
+                "--task-ids",
+                "11,12,13",
+                "--batch-preset",
+                "stable-batch",
+                "--downstream-on-extract-family-fail",
+                "off",
+                "--self-check",
+                "--out-dir",
+                str(out_dir),
+            ]
+            with mock.patch.object(batch, "_repo_root", return_value=root), mock.patch.object(
+                batch, "_selected_task_ids", return_value=[11, 12, 13]
+            ), mock.patch.object(sys, "argv", argv):
+                rc = batch.main()
+
+            self.assertEqual(0, rc)
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("off", payload["downstream_on_extract_family_fail"])
+            self.assertNotIn("downstream_on_extract_family_fail", payload["batch_preset_applied"])
 
     def test_main_should_run_isolated_shards_and_write_merged_summary(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -286,6 +313,54 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
                 [{"family": "stderr:model_output_invalid", "count": 1, "task_ids": [11]}],
                 summary["extract_fail_top_families"],
             )
+            self.assertEqual(
+                [
+                    {
+                        "family": "stderr:model_output_invalid",
+                        "count": 1,
+                        "task_ids": [11],
+                        "recommended_action": "tighten_prompt_or_reduce_extract_scope_then_retry",
+                        "downstream_policy_hint": "skip-soft",
+                        "reason": "model output was invalid; fix extract prompt/scope first and only then continue downstream",
+                    }
+                ],
+                summary["extract_family_recommended_actions"],
+            )
+
+    def test_build_extract_family_recommended_actions_should_sort_and_attach_hints(self) -> None:
+        actions = batch._build_extract_family_recommended_actions(
+            {
+                "extract_fail_family_counts": {
+                    "stdout:sc_llm_obligations_status_fail": 3,
+                    "timeout": 1,
+                },
+                "extract_fail_family_task_ids": {
+                    "stdout:sc_llm_obligations_status_fail": [67, 68, 69],
+                    "timeout": [93],
+                },
+            }
+        )
+        self.assertEqual(
+            [
+                {
+                    "family": "stdout:sc_llm_obligations_status_fail",
+                    "count": 3,
+                    "task_ids": [67, 68, 69],
+                    "recommended_action": "repair_obligations_or_task_context_before_downstream",
+                    "downstream_policy_hint": "skip-all",
+                    "reason": "extract already reported obligations failure; align/coverage/review are low-value until obligations recover",
+                },
+                {
+                    "family": "timeout",
+                    "count": 1,
+                    "task_ids": [93],
+                    "recommended_action": "raise_extract_timeout_or_reduce_batch_scope",
+                    "downstream_policy_hint": "skip-all",
+                    "reason": "extract timed out; retry extract first before spending more downstream work",
+                },
+            ],
+            actions,
+        )
 
     def test_main_should_fail_when_merge_validation_has_hard_issues(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -419,6 +494,7 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertIn("--no-align-apply", commands[1])
             self.assertEqual("none", commands[1][commands[1].index("--fill-refs-mode") + 1])
             self.assertEqual("skip-all", commands[1][commands[1].index("--downstream-on-extract-fail") + 1])
+            self.assertEqual("skip-all", commands[1][commands[1].index("--downstream-on-extract-family-fail") + 1])
             summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("degrade", summary["rolling_extract"]["action"])
             self.assertTrue(summary["rolling_extract"]["triggered"])
