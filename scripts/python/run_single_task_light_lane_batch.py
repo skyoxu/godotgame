@@ -34,6 +34,36 @@ def _load_local_module(name: str, filename: str):
 _LANE = _load_local_module("single_task_light_lane_batch_lane", "run_single_task_light_lane.py")
 _MERGE = _load_local_module("single_task_light_lane_batch_merge", "merge_single_task_light_lane_summaries.py")
 
+_BATCH_PRESETS: dict[str, dict[str, Any]] = {
+    "none": {},
+    "stable-batch": {
+        "batch_lane": "extract-first",
+        "fill_refs_mode": "none",
+        "downstream_on_extract_fail": "skip-soft",
+        "rolling_extract_policy": "degrade",
+        "rolling_extract_rate_threshold": 0.45,
+        "rolling_extract_min_observed_tasks": 8,
+        "rolling_timeout_backoff_threshold": 0.5,
+        "rolling_timeout_backoff_min_observed_tasks": 4,
+        "rolling_timeout_backoff_sec": 180,
+        "rolling_timeout_backoff_max_llm_timeout_sec": 1200,
+        "rolling_shard_reduction_factor": 0.5,
+    },
+    "long-batch": {
+        "batch_lane": "extract-first",
+        "fill_refs_mode": "none",
+        "downstream_on_extract_fail": "skip-soft",
+        "rolling_extract_policy": "stop",
+        "rolling_extract_rate_threshold": 0.4,
+        "rolling_extract_min_observed_tasks": 6,
+        "rolling_timeout_backoff_threshold": 0.45,
+        "rolling_timeout_backoff_min_observed_tasks": 4,
+        "rolling_timeout_backoff_sec": 240,
+        "rolling_timeout_backoff_max_llm_timeout_sec": 1500,
+        "rolling_shard_reduction_factor": 0.5,
+    },
+}
+
 
 def _today() -> str:
     return dt.date.today().strftime("%Y-%m-%d")
@@ -123,6 +153,44 @@ def _copy_args_with_overrides(args: argparse.Namespace, **overrides: Any) -> arg
     data = vars(args).copy()
     data.update(overrides)
     return Namespace(**data)
+
+
+def _argv_has_option(argv: list[str], option: str) -> bool:
+    return any(str(part).strip() == option for part in list(argv or []))
+
+
+def _apply_batch_preset(args: argparse.Namespace, argv: list[str]) -> argparse.Namespace:
+    preset_name = str(getattr(args, "batch_preset", "none") or "none")
+    preset = dict(_BATCH_PRESETS.get(preset_name) or {})
+    if not preset:
+        return args
+    option_map = {
+        "batch_lane": "--batch-lane",
+        "fill_refs_mode": "--fill-refs-mode",
+        "downstream_on_extract_fail": "--downstream-on-extract-fail",
+        "rolling_extract_policy": "--rolling-extract-policy",
+        "rolling_extract_rate_threshold": "--rolling-extract-rate-threshold",
+        "rolling_extract_min_observed_tasks": "--rolling-extract-min-observed-tasks",
+        "rolling_timeout_backoff_threshold": "--rolling-timeout-backoff-threshold",
+        "rolling_timeout_backoff_min_observed_tasks": "--rolling-timeout-backoff-min-observed-tasks",
+        "rolling_timeout_backoff_sec": "--rolling-timeout-backoff-sec",
+        "rolling_timeout_backoff_max_llm_timeout_sec": "--rolling-timeout-backoff-max-llm-timeout-sec",
+        "rolling_shard_reduction_factor": "--rolling-shard-reduction-factor",
+    }
+    overrides: dict[str, Any] = {}
+    applied: dict[str, Any] = {}
+    for key, value in preset.items():
+        option = option_map.get(key)
+        if option and _argv_has_option(argv, option):
+            continue
+        overrides[key] = value
+        applied[key] = value
+    if not overrides:
+        setattr(args, "batch_preset_applied", {})
+        return args
+    updated = _copy_args_with_overrides(args, **overrides)
+    setattr(updated, "batch_preset_applied", applied)
+    return updated
 
 
 def _run_command(root: Path, cmd: list[str]) -> subprocess.CompletedProcess[str]:
@@ -409,6 +477,12 @@ def _merge_outputs(root: Path, out_dir: Path, shard_entries: list[dict[str, Any]
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Coordinate workflow 5.1 light-lane runs across isolated shards, then merge summaries.")
+    parser.add_argument(
+        "--batch-preset",
+        default="none",
+        choices=sorted(_BATCH_PRESETS.keys()),
+        help="Recommended batch preset. Explicit flags still override preset values.",
+    )
     parser.add_argument("--task-ids", default="", help="Optional CSV task ids override (e.g. 12,14,21).")
     parser.add_argument("--task-id-start", type=int, default=1)
     parser.add_argument("--task-id-end", type=int, default=0, help="0 means until max task id.")
@@ -509,7 +583,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    argv = list(sys.argv[1:])
     args = build_parser().parse_args()
+    args = _apply_batch_preset(args, argv)
     root = _repo_root()
     selected = _selected_task_ids(root, args)
     if not selected:
@@ -530,6 +606,8 @@ def main() -> int:
         "status": "running",
         "out_dir": _relative_to_root(root, out_dir),
         "selected_task_ids": [int(task_id) for task_id in selected],
+        "batch_preset": str(args.batch_preset),
+        "batch_preset_applied": dict(getattr(args, "batch_preset_applied", {}) or {}),
         "task_id_start": int(selected[0]),
         "task_id_end": int(selected[-1]),
         "task_count": len(selected),
@@ -666,6 +744,9 @@ def main() -> int:
             "extract_fail_signature_counts",
             "extract_fail_signature_task_ids",
             "extract_fail_top_signatures",
+            "extract_fail_family_counts",
+            "extract_fail_family_task_ids",
+            "extract_fail_top_families",
             "prompt_trimmed_task_ids",
             "semantic_gate_budget_hits",
             "overridden_task_ids",

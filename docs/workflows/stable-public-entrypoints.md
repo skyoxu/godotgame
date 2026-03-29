@@ -111,6 +111,7 @@ Use when:
 - you want to run workflow 5.1 across a long task range without manually splitting directories
 - you want isolated shard `out-dir`s plus one coordinator summary and one merged summary
 - you want to avoid `last_task_id` / resume pollution caused by reusing the same `out-dir` for overlapping reruns
+- you want one preset like `stable-batch` or `long-batch` instead of manually restating every rolling/backoff flag
 
 Prerequisites:
 - task triplet available
@@ -119,7 +120,7 @@ Prerequisites:
 Why this is stable:
 - it is the top-level batch coordinator for workflow 5.1
 - it wraps the existing light-lane runner instead of duplicating lower-level semantics logic
-- merged/top-level summaries surface extract-failure signatures for faster batch triage
+- merged/top-level summaries surface extract-failure signatures and failure families for faster batch triage
 - it supports rolling `warn|degrade|stop` behavior when cumulative extract failure rate becomes untrustworthy
 - it can also back off automatically after one shard times out heavily by increasing next-shard LLM timeout and reducing next-shard size
 

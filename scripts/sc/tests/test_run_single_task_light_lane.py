@@ -189,6 +189,18 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                     ],
                 },
                 {
+                    "task_id": 20,
+                    "ok": False,
+                    "failed_steps": ["extract"],
+                    "steps": [
+                        {
+                            "step": "extract",
+                            "rc": 1,
+                            "stdout_tail": "SC_LLM_OBLIGATIONS status=fail out=C:/buildgame/sanguo/logs/ci/2026-03-28/sc-llm-obligations-task-67",
+                        }
+                    ],
+                },
+                {
                     "task_id": 15,
                     "ok": True,
                     "failed_steps": [],
@@ -199,13 +211,13 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
 
         lane._rebuild_counts(summary)
 
-        self.assertEqual({"timeout": 1, "coverage-gap": 1, "semantic-needs-fix": 1, "model-fail": 5}, summary["failure_category_counts"])
-        self.assertEqual({"timeout": [11], "coverage-gap": [12], "semantic-needs-fix": [13], "model-fail": [14, 16, 17, 18, 19]}, summary["failure_category_task_ids"])
-        self.assertEqual({"11": "timeout", "12": "coverage-gap", "13": "semantic-needs-fix", "14": "model-fail", "16": "model-fail", "17": "model-fail", "18": "model-fail", "19": "model-fail"}, summary["failure_category_by_task"])
+        self.assertEqual({"timeout": 1, "coverage-gap": 1, "semantic-needs-fix": 1, "model-fail": 6}, summary["failure_category_counts"])
+        self.assertEqual({"timeout": [11], "coverage-gap": [12], "semantic-needs-fix": [13], "model-fail": [14, 16, 17, 18, 19, 20]}, summary["failure_category_task_ids"])
+        self.assertEqual({"11": "timeout", "12": "coverage-gap", "13": "semantic-needs-fix", "14": "model-fail", "16": "model-fail", "17": "model-fail", "18": "model-fail", "19": "model-fail", "20": "model-fail"}, summary["failure_category_by_task"])
         self.assertEqual([13], summary["prompt_trimmed_task_ids"])
         self.assertEqual(1, summary["prompt_trimmed_count"])
-        self.assertEqual({"timeout": 1, "hard_uncovered": 1, "schema_error": 1, "model_fail": 2}, summary["extract_fail_bucket_counts"])
-        self.assertEqual({"timeout": [11], "hard_uncovered": [16], "schema_error": [17], "model_fail": [18, 19]}, summary["extract_fail_bucket_task_ids"])
+        self.assertEqual({"timeout": 1, "hard_uncovered": 1, "schema_error": 1, "model_fail": 3}, summary["extract_fail_bucket_counts"])
+        self.assertEqual({"timeout": [11], "hard_uncovered": [16], "schema_error": [17], "model_fail": [18, 19, 20]}, summary["extract_fail_bucket_task_ids"])
         self.assertEqual(
             {
                 "timeout": 1,
@@ -213,6 +225,7 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 "schema_error": 1,
                 "stderr:model output invalid at line <num>": 1,
                 "error:model_output_invalid": 1,
+                "stdout:sc_llm_obligations status=fail out=<path>": 1,
             },
             summary["extract_fail_signature_counts"],
         )
@@ -223,8 +236,31 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 "schema_error": [17],
                 "stderr:model output invalid at line <num>": [18],
                 "error:model_output_invalid": [19],
+                "stdout:sc_llm_obligations status=fail out=<path>": [20],
             },
             summary["extract_fail_signature_task_ids"],
+        )
+        self.assertEqual(
+            {
+                "timeout": 1,
+                "hard_uncovered": 1,
+                "schema_error": 1,
+                "stderr:model_output_invalid": 1,
+                "error:model_output_invalid": 1,
+                "stdout:sc_llm_obligations_status_fail": 1,
+            },
+            summary["extract_fail_family_counts"],
+        )
+        self.assertEqual(
+            {
+                "timeout": [11],
+                "hard_uncovered": [16],
+                "schema_error": [17],
+                "stderr:model_output_invalid": [18],
+                "error:model_output_invalid": [19],
+                "stdout:sc_llm_obligations_status_fail": [20],
+            },
+            summary["extract_fail_family_task_ids"],
         )
         self.assertEqual(
             [
@@ -232,9 +268,21 @@ class RunSingleTaskLightLaneTests(unittest.TestCase):
                 {"signature": "hard_uncovered", "count": 1, "task_ids": [16]},
                 {"signature": "schema_error", "count": 1, "task_ids": [17]},
                 {"signature": "stderr:model output invalid at line <num>", "count": 1, "task_ids": [18]},
+                {"signature": "stdout:sc_llm_obligations status=fail out=<path>", "count": 1, "task_ids": [20]},
                 {"signature": "timeout", "count": 1, "task_ids": [11]},
             ],
             summary["extract_fail_top_signatures"],
+        )
+        self.assertEqual(
+            [
+                {"family": "error:model_output_invalid", "count": 1, "task_ids": [19]},
+                {"family": "hard_uncovered", "count": 1, "task_ids": [16]},
+                {"family": "schema_error", "count": 1, "task_ids": [17]},
+                {"family": "stderr:model_output_invalid", "count": 1, "task_ids": [18]},
+                {"family": "stdout:sc_llm_obligations_status_fail", "count": 1, "task_ids": [20]},
+                {"family": "timeout", "count": 1, "task_ids": [11]},
+            ],
+            summary["extract_fail_top_families"],
         )
         self.assertEqual(
             [

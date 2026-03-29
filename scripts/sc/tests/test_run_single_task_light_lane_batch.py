@@ -66,6 +66,64 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
                 [entry["task_ids"] for entry in payload["shards"]],
             )
 
+    def test_main_self_check_should_apply_stable_batch_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "batch-preset-self-check"
+            argv = [
+                "run_single_task_light_lane_batch.py",
+                "--task-ids",
+                "11,12,13",
+                "--batch-preset",
+                "stable-batch",
+                "--self-check",
+                "--out-dir",
+                str(out_dir),
+            ]
+            with mock.patch.object(batch, "_repo_root", return_value=root), mock.patch.object(
+                batch, "_selected_task_ids", return_value=[11, 12, 13]
+            ), mock.patch.object(sys, "argv", argv):
+                rc = batch.main()
+
+            self.assertEqual(0, rc)
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("stable-batch", payload["batch_preset"])
+            self.assertEqual("extract-first", payload["batch_lane"])
+            self.assertEqual("none", payload["fill_refs_mode"])
+            self.assertEqual("skip-soft", payload["downstream_on_extract_fail"])
+            self.assertEqual("degrade", payload["rolling_extract"]["policy"])
+            self.assertEqual(0.45, payload["rolling_extract"]["threshold"])
+
+    def test_main_self_check_should_keep_explicit_flags_over_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "batch-preset-override-self-check"
+            argv = [
+                "run_single_task_light_lane_batch.py",
+                "--task-ids",
+                "11,12,13",
+                "--batch-preset",
+                "stable-batch",
+                "--fill-refs-mode",
+                "dry",
+                "--rolling-extract-policy",
+                "warn",
+                "--self-check",
+                "--out-dir",
+                str(out_dir),
+            ]
+            with mock.patch.object(batch, "_repo_root", return_value=root), mock.patch.object(
+                batch, "_selected_task_ids", return_value=[11, 12, 13]
+            ), mock.patch.object(sys, "argv", argv):
+                rc = batch.main()
+
+            self.assertEqual(0, rc)
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("dry", payload["fill_refs_mode"])
+            self.assertEqual("warn", payload["rolling_extract"]["policy"])
+            self.assertNotIn("fill_refs_mode", payload["batch_preset_applied"])
+            self.assertNotIn("rolling_extract_policy", payload["batch_preset_applied"])
+
     def test_main_should_run_isolated_shards_and_write_merged_summary(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -220,6 +278,11 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual(
                 [{"signature": "stderr:model output invalid at line <num>", "count": 1, "task_ids": [11]}],
                 summary["extract_fail_top_signatures"],
+            )
+            self.assertEqual({"stderr:model_output_invalid": 1}, summary["extract_fail_family_counts"])
+            self.assertEqual(
+                [{"family": "stderr:model_output_invalid", "count": 1, "task_ids": [11]}],
+                summary["extract_fail_top_families"],
             )
 
     def test_main_should_fail_when_merge_validation_has_hard_issues(self) -> None:

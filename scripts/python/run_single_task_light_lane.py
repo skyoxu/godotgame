@@ -466,6 +466,9 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
     extract_fail_signature_counts: dict[str, int] = {}
     extract_fail_signature_task_ids: dict[str, list[int]] = {}
     extract_fail_signature_by_task: dict[str, str] = {}
+    extract_fail_family_counts: dict[str, int] = {}
+    extract_fail_family_task_ids: dict[str, list[int]] = {}
+    extract_fail_family_by_task: dict[str, str] = {}
     prompt_trimmed_task_ids: list[int] = []
     semantic_gate_budget_hits: list[dict[str, Any]] = []
     skipped_step_counts: dict[str, int] = {}
@@ -513,6 +516,11 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
                     extract_fail_signature_counts[signature] = extract_fail_signature_counts.get(signature, 0) + 1
                     extract_fail_signature_task_ids.setdefault(signature, []).append(int(task_raw))
                     extract_fail_signature_by_task[task_raw] = signature
+                    family = _extract_fail_signature_family(signature)
+                    if family:
+                        extract_fail_family_counts[family] = extract_fail_family_counts.get(family, 0) + 1
+                        extract_fail_family_task_ids.setdefault(family, []).append(int(task_raw))
+                        extract_fail_family_by_task[task_raw] = family
         if bool(row.get("ok")):
             passed_tasks += 1
             continue
@@ -541,6 +549,9 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
     summary["extract_fail_signature_counts"] = extract_fail_signature_counts
     summary["extract_fail_signature_task_ids"] = extract_fail_signature_task_ids
     summary["extract_fail_signature_by_task"] = extract_fail_signature_by_task
+    summary["extract_fail_family_counts"] = extract_fail_family_counts
+    summary["extract_fail_family_task_ids"] = extract_fail_family_task_ids
+    summary["extract_fail_family_by_task"] = extract_fail_family_by_task
     summary["extract_fail_top_signatures"] = [
         {
             "signature": signature,
@@ -549,6 +560,17 @@ def _rebuild_counts(summary: dict[str, Any]) -> None:
         }
         for signature, count in sorted(
             extract_fail_signature_counts.items(),
+            key=lambda item: (-int(item[1]), str(item[0])),
+        )[:10]
+    ]
+    summary["extract_fail_top_families"] = [
+        {
+            "family": family,
+            "count": int(count),
+            "task_ids": list(extract_fail_family_task_ids.get(family) or []),
+        }
+        for family, count in sorted(
+            extract_fail_family_counts.items(),
             key=lambda item: (-int(item[1]), str(item[0])),
         )[:10]
     ]
@@ -761,6 +783,41 @@ def _normalize_extract_signature_text(value: Any) -> str:
     if len(text) > 96:
         text = text[:96].rstrip()
     return text
+
+
+def _extract_fail_signature_family(signature: str) -> str:
+    value = str(signature or "").strip().lower()
+    if not value:
+        return ""
+    if value in {"timeout", "schema_error", "hard_uncovered"}:
+        return value
+    if value.startswith("error:"):
+        return value
+    if value.startswith("auto_escalate:"):
+        return "auto_escalate"
+    if value == "auto_escalate":
+        return value
+    if value.startswith("rc:"):
+        return value
+    if value.startswith("stdout:") or value.startswith("stderr:"):
+        channel, raw = value.split(":", 1)
+        text = str(raw or "").strip()
+        text = re.sub(r"\bout=<path>\b", "", text).strip()
+        text = re.sub(r"\btask[-_/]<num>\b", "task", text)
+        text = re.sub(r"\s+", " ", text).strip(" .,:;|/-")
+        if text.startswith("sc_llm_obligations status=fail"):
+            return f"{channel}:sc_llm_obligations_status_fail"
+        if text.startswith("sc_llm_obligations status=ok"):
+            return f"{channel}:sc_llm_obligations_status_ok"
+        if "model output invalid" in text:
+            return f"{channel}:model_output_invalid"
+        if "schema error" in text:
+            return f"{channel}:schema_error"
+        if "hard uncovered" in text:
+            return f"{channel}:hard_uncovered"
+        head = text[:48].strip() if text else "unknown"
+        return f"{channel}:{head}"
+    return value
 
 
 def _extract_fail_signature(step: dict[str, Any]) -> str | None:

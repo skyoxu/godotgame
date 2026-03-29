@@ -247,8 +247,10 @@ dotnet test Game.Core.Tests/Game.Core.Tests.csproj
 For long multi-task ranges, prefer the batch coordinator first (isolated shard `out-dir` + automatic merged summary):
 
 ```powershell
-py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --task-id-end 180 --delivery-profile fast-ship --max-tasks-per-shard 12
+py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --task-id-end 180 --batch-preset stable-batch --delivery-profile fast-ship --max-tasks-per-shard 12
 ```
+
+Preset notes: `stable-batch` is the recommended default for normal long ranges, while `long-batch` is more conservative and leans toward earlier stop. Explicit flags still override preset values.
 
 The coordinator writes shard summaries under `shards/`, writes the merged report to `merged/summary.json`, and keeps the top-level `summary.json` as the one-file batch dashboard. This avoids `last_task_id` / resume pollution when you need to rerun only part of a long range. It also supports a rolling extract-failure policy: `--rolling-extract-policy warn|degrade|stop` with threshold/min-observed guards. `degrade` switches later shards to read-only / no-fill-refs / `skip-all` after extract fail, while `stop` stops launching remaining shards once the cumulative extract fail rate crosses the configured threshold. Separately, shard-local timeout backoff can increase the next shard's `--llm-timeout-sec` and shrink the next shard size when the previous shard's extract timeout rate spikes.
 
@@ -267,7 +269,7 @@ py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-pr
 ```
 
 The wrapper also snapshots shared inner step artifacts into `tNNNN--<step>.artifacts/`, so later tasks do not overwrite earlier semantic/align/fill-refs evidence.
-Top-level `summary.json` also aggregates failure categories (`failure_category_*`), extract failure buckets (`extract_fail_bucket_*`), extract failure signatures (`extract_fail_signature_*`, `extract_fail_top_signatures`), skipped-step counts, and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log.
+Top-level `summary.json` also aggregates failure categories (`failure_category_*`), extract failure buckets (`extract_fail_bucket_*`), extract failure signatures (`extract_fail_signature_*`, `extract_fail_top_signatures`), extract failure families (`extract_fail_family_*`, `extract_fail_top_families`), skipped-step counts, and semantic gate prompt-budget pressure (`prompt_trimmed_task_ids`, `semantic_gate_budget_hits`), so batch triage does not require opening each inner step log. Prefer families for cross-task diagnosis; signatures remain useful for exact per-run detail.
 
 Default extract-failure behavior:
 - `fill_refs_dry/write/verify` are skipped after `extract` fails
