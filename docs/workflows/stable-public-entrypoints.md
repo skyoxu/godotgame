@@ -108,8 +108,8 @@ Why this is stable:
 ### `py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile <profile> [--no-align-apply]`
 
 Use when:
-- a task needs workflow 5.1 semantics stabilization but you do not want to hand-stitch 7 commands
-- you want resilient full-step execution (default continues after single-step failures)
+- a task needs workflow 5.1 semantics stabilization but you do not want to hand-stitch the lower-level commands
+- you want resilient execution with task resume, timeout retry, extract-failure skip policy, and optional batch extract-first mode
 - you want one rolling summary/log directory for resume-friendly long runs
 
 Prerequisites:
@@ -117,8 +117,21 @@ Prerequisites:
 - LLM runtime for semantics-related steps
 
 Why this is stable:
-- it is the optional wrapper for workflow 5.1 single-task light lane
-- it supports read-only lane mode (`--no-align-apply`) and resume from `summary.json`
+- it is the optional wrapper for workflow 5.1 single-task / batch light lane
+- it supports read-only lane mode (`--no-align-apply`), `extract-first` batch mode, and resume from `summary.json`
+
+### `py -3 scripts/python/merge_single_task_light_lane_summaries.py --date <YYYY-MM-DD>`
+
+Use when:
+- you split a full workflow 5.1 run into multiple `single-task-light-lane-v2*` directories
+- you want one merged summary with transparent per-task source mapping
+
+Prerequisites:
+- one or more light-lane summary files already exist
+
+Why this is stable:
+- it provides the post-batch merge/report entrypoint for split workflow 5.1 runs
+- it writes transparent source metadata instead of a path-only source list
 
 ### `py -3 scripts/sc/llm_generate_tests_from_acceptance_refs.py --task-id <id> --tdd-stage red-first --verify <mode>`
 
