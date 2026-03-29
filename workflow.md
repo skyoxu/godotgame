@@ -250,7 +250,7 @@ For long multi-task ranges, prefer the batch coordinator first (isolated shard `
 py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --task-id-end 180 --delivery-profile fast-ship --max-tasks-per-shard 12
 ```
 
-The coordinator writes shard summaries under `shards/`, writes the merged report to `merged/summary.json`, and keeps the top-level `summary.json` as the one-file batch dashboard. This avoids `last_task_id` / resume pollution when you need to rerun only part of a long range. It also supports a rolling extract-failure policy: `--rolling-extract-policy warn|degrade|stop` with threshold/min-observed guards. `degrade` switches later shards to read-only / no-fill-refs / `skip-all` after extract fail, while `stop` stops launching remaining shards once the cumulative extract fail rate crosses the configured threshold.
+The coordinator writes shard summaries under `shards/`, writes the merged report to `merged/summary.json`, and keeps the top-level `summary.json` as the one-file batch dashboard. This avoids `last_task_id` / resume pollution when you need to rerun only part of a long range. It also supports a rolling extract-failure policy: `--rolling-extract-policy warn|degrade|stop` with threshold/min-observed guards. `degrade` switches later shards to read-only / no-fill-refs / `skip-all` after extract fail, while `stop` stops launching remaining shards once the cumulative extract fail rate crosses the configured threshold. Separately, shard-local timeout backoff can increase the next shard's `--llm-timeout-sec` and shrink the next shard size when the previous shard's extract timeout rate spikes.
 
 For one task or a small ad-hoc batch, use the direct wrapper (full-step resilient execution + resume-friendly summary):
 

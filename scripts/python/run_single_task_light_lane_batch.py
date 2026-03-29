@@ -8,6 +8,7 @@ import argparse
 import datetime as dt
 import importlib.util
 import json
+import math
 import subprocess
 import sys
 from argparse import Namespace
@@ -171,7 +172,9 @@ def _run_shard(
         "stderr_tail": str(proc.stderr or "").splitlines()[-20:],
         "extract_observed_tasks": int(extract_metrics.get("observed_tasks") or 0),
         "extract_failed_tasks": int(extract_metrics.get("failed_tasks") or 0),
+        "extract_timeout_tasks": int(extract_metrics.get("timeout_tasks") or 0),
         "extract_fail_rate": float(extract_metrics.get("fail_rate") or 0.0),
+        "extract_timeout_rate": float(extract_metrics.get("timeout_rate") or 0.0),
         "extract_failed_task_ids": list(extract_metrics.get("failed_task_ids") or []),
     }
     if isinstance(shard_summary, dict):
@@ -196,9 +199,10 @@ def _run_shard(
 def _extract_metrics_from_summary(shard_summary: dict[str, Any] | None) -> dict[str, Any]:
     observed = 0
     failed = 0
+    timeouts = 0
     failed_task_ids: list[int] = []
     if not isinstance(shard_summary, dict):
-        return {"observed_tasks": 0, "failed_tasks": 0, "fail_rate": 0.0, "failed_task_ids": []}
+        return {"observed_tasks": 0, "failed_tasks": 0, "timeout_tasks": 0, "fail_rate": 0.0, "timeout_rate": 0.0, "failed_task_ids": []}
     for row in shard_summary.get("results", []) or []:
         if not isinstance(row, dict):
             continue
@@ -213,14 +217,19 @@ def _extract_metrics_from_summary(shard_summary: dict[str, Any] | None) -> dict[
             observed += 1
             if int(step.get("rc") or 0) != 0:
                 failed += 1
+                if int(step.get("rc") or 0) == 124:
+                    timeouts += 1
                 if task_raw.isdigit():
                     failed_task_ids.append(int(task_raw))
             break
     rate = (float(failed) / float(observed)) if observed > 0 else 0.0
+    timeout_rate = (float(timeouts) / float(observed)) if observed > 0 else 0.0
     return {
         "observed_tasks": int(observed),
         "failed_tasks": int(failed),
+        "timeout_tasks": int(timeouts),
         "fail_rate": rate,
+        "timeout_rate": timeout_rate,
         "failed_task_ids": failed_task_ids,
     }
 
@@ -239,18 +248,80 @@ def _new_rolling_extract_state(args: argparse.Namespace) -> dict[str, Any]:
         "action": "none",
         "degraded_mode_active": False,
         "warnings": [],
+        "current_llm_timeout_sec": int(args.llm_timeout_sec) if args.llm_timeout_sec is not None else None,
+        "current_max_tasks_per_shard": int(args.max_tasks_per_shard),
+        "backoff_adjustment_count": 0,
+        "backoff_history": [],
     }
 
 
 def _rolling_extract_effective_args(args: argparse.Namespace, state: dict[str, Any]) -> argparse.Namespace:
-    if not bool(state.get("degraded_mode_active")):
+    overrides: dict[str, Any] = {}
+    current_llm_timeout_sec = state.get("current_llm_timeout_sec")
+    if current_llm_timeout_sec is not None:
+        overrides["llm_timeout_sec"] = int(current_llm_timeout_sec)
+    if bool(state.get("degraded_mode_active")):
+        overrides["no_align_apply"] = True
+        overrides["fill_refs_mode"] = "none"
+        overrides["downstream_on_extract_fail"] = "skip-all"
+    if not overrides:
         return args
-    return _copy_args_with_overrides(
-        args,
-        no_align_apply=True,
-        fill_refs_mode="none",
-        downstream_on_extract_fail="skip-all",
+    return _copy_args_with_overrides(args, **overrides)
+
+
+def _compute_next_shard_size(state: dict[str, Any], default_shard_size: int) -> int:
+    current = int(state.get("current_max_tasks_per_shard") or default_shard_size or 1)
+    return max(1, current)
+
+
+def _apply_timeout_backoff(
+    *,
+    state: dict[str, Any],
+    shard_entry: dict[str, Any],
+    args: argparse.Namespace,
+    shard_index: int,
+) -> dict[str, Any]:
+    observed = int(shard_entry.get("extract_observed_tasks") or 0)
+    timeout_rate = float(shard_entry.get("extract_timeout_rate") or 0.0)
+    if observed < max(1, int(args.rolling_timeout_backoff_min_observed_tasks)):
+        return state
+    if timeout_rate < float(args.rolling_timeout_backoff_threshold):
+        return state
+
+    previous_timeout = state.get("current_llm_timeout_sec")
+    if previous_timeout is None:
+        previous_timeout = int(args.llm_timeout_sec) if args.llm_timeout_sec is not None else int(_LANE._profile_step_llm_timeout_sec(_repo_root(), step_name="extract", delivery_profile=str(args.delivery_profile)))
+    next_timeout = min(
+        int(args.rolling_timeout_backoff_max_llm_timeout_sec),
+        int(previous_timeout) + int(args.rolling_timeout_backoff_sec),
     )
+    previous_shard_size = int(state.get("current_max_tasks_per_shard") or int(args.max_tasks_per_shard))
+    next_shard_size = max(
+        1,
+        min(
+            previous_shard_size,
+            int(math.floor(previous_shard_size * float(args.rolling_shard_reduction_factor))),
+        ),
+    )
+    if next_shard_size == previous_shard_size and next_timeout == int(previous_timeout):
+        return state
+
+    history = list(state.get("backoff_history") or [])
+    history.append(
+        {
+            "shard_index": int(shard_index),
+            "reason": f"extract_timeout_rate={timeout_rate:.3f} >= threshold={float(args.rolling_timeout_backoff_threshold):.3f}",
+            "previous_llm_timeout_sec": int(previous_timeout),
+            "next_llm_timeout_sec": int(next_timeout),
+            "previous_max_tasks_per_shard": int(previous_shard_size),
+            "next_max_tasks_per_shard": int(next_shard_size),
+        }
+    )
+    state["current_llm_timeout_sec"] = int(next_timeout)
+    state["current_max_tasks_per_shard"] = int(next_shard_size)
+    state["backoff_adjustment_count"] = int(state.get("backoff_adjustment_count") or 0) + 1
+    state["backoff_history"] = history
+    return state
 
 
 def _update_rolling_extract_state(
@@ -404,6 +475,36 @@ def build_parser() -> argparse.ArgumentParser:
         default=12,
         help="Minimum observed extract tasks before evaluating rolling extract policy.",
     )
+    parser.add_argument(
+        "--rolling-timeout-backoff-threshold",
+        type=float,
+        default=0.5,
+        help="If one shard's extract timeout rate >= threshold, increase next shard timeout and reduce next shard size.",
+    )
+    parser.add_argument(
+        "--rolling-timeout-backoff-min-observed-tasks",
+        type=int,
+        default=4,
+        help="Minimum extract-observed tasks in one shard before timeout backoff can trigger.",
+    )
+    parser.add_argument(
+        "--rolling-timeout-backoff-sec",
+        type=int,
+        default=180,
+        help="LLM timeout increment for the next shard after timeout backoff triggers.",
+    )
+    parser.add_argument(
+        "--rolling-timeout-backoff-max-llm-timeout-sec",
+        type=int,
+        default=1200,
+        help="Upper bound for LLM timeout after repeated timeout backoff.",
+    )
+    parser.add_argument(
+        "--rolling-shard-reduction-factor",
+        type=float,
+        default=0.5,
+        help="Next shard size multiplier after timeout backoff triggers.",
+    )
     return parser
 
 
@@ -420,7 +521,7 @@ def main() -> int:
 
     out_dir = Path(args.out_dir) if str(args.out_dir).strip() else _default_out_dir(root)
     shards_root = out_dir / "shards"
-    shard_task_groups = _split_task_ids(selected, int(args.max_tasks_per_shard))
+    initial_shard_task_groups = _split_task_ids(selected, int(args.max_tasks_per_shard))
     summary_path = out_dir / "summary.json"
 
     summary: dict[str, Any] = {
@@ -439,7 +540,7 @@ def main() -> int:
         "downstream_on_extract_fail": str(args.downstream_on_extract_fail),
         "resume_failed_task_from": str(args.resume_failed_task_from),
         "rolling_extract": _new_rolling_extract_state(args),
-        "shard_count": len(shard_task_groups),
+        "shard_count": len(initial_shard_task_groups),
         "shards": [
             {
                 "index": idx,
@@ -450,7 +551,7 @@ def main() -> int:
                 "task_count": len(shard_task_ids),
                 "out_dir": _relative_to_root(root, shards_root / _build_shard_name(idx, shard_task_ids)),
             }
-            for idx, shard_task_ids in enumerate(shard_task_groups, start=1)
+            for idx, shard_task_ids in enumerate(initial_shard_task_groups, start=1)
         ],
     }
 
@@ -460,7 +561,7 @@ def main() -> int:
         _write_json(summary_path, summary)
         print(
             "SINGLE_TASK_LIGHT_LANE_BATCH_SELF_CHECK "
-            f"status=ok tasks={len(selected)} shards={len(shard_task_groups)} "
+            f"status=ok tasks={len(selected)} shards={len(initial_shard_task_groups)} "
             f"range=T{selected[0]}-T{selected[-1]} out={_relative_to_root(root, summary_path)}"
         )
         return 0
@@ -468,48 +569,81 @@ def main() -> int:
     shard_entries: list[dict[str, Any]] = []
     skipped_planned_shards: list[dict[str, Any]] = []
     rolling_extract_state = dict(summary.get("rolling_extract") or _new_rolling_extract_state(args))
-    for shard_index, shard_task_ids in enumerate(shard_task_groups, start=1):
+    pending_task_ids = list(selected)
+    planned_shards: list[dict[str, Any]] = []
+    shard_index = 0
+    while pending_task_ids:
+        shard_index += 1
+        current_shard_size = _compute_next_shard_size(rolling_extract_state, int(args.max_tasks_per_shard))
+        shard_task_ids = list(pending_task_ids[:current_shard_size])
+        pending_task_ids = list(pending_task_ids[current_shard_size:])
+        planned_shards.append(
+            {
+                "index": shard_index,
+                "name": _build_shard_name(shard_index, shard_task_ids),
+                "task_ids": [int(task_id) for task_id in shard_task_ids],
+                "task_id_start": int(shard_task_ids[0]),
+                "task_id_end": int(shard_task_ids[-1]),
+                "task_count": len(shard_task_ids),
+                "out_dir": _relative_to_root(root, shards_root / _build_shard_name(shard_index, shard_task_ids)),
+            }
+        )
         effective_args = _rolling_extract_effective_args(args, rolling_extract_state)
         entry = _run_shard(
             root=root,
             args=effective_args,
             shard_task_ids=shard_task_ids,
             shard_index=shard_index,
-            shard_count=len(shard_task_groups),
+            shard_count=max(shard_index, shard_index + (1 if pending_task_ids else 0)),
             shards_root=shards_root,
         )
         entry["rolling_extract_mode"] = "degraded" if bool(rolling_extract_state.get("degraded_mode_active")) else "normal"
         shard_entries.append(entry)
+        rolling_extract_state = _apply_timeout_backoff(
+            state=rolling_extract_state,
+            shard_entry=entry,
+            args=args,
+            shard_index=shard_index,
+        )
         rolling_extract_state = _update_rolling_extract_state(
             state=rolling_extract_state,
             shard_entry=entry,
             shard_index=shard_index,
         )
         summary["shards"] = shard_entries
+        summary["planned_shards"] = planned_shards
         summary["last_shard_index"] = shard_index
         summary["last_task_id"] = int(shard_task_ids[-1])
         summary["last_updated_at"] = dt.datetime.now().isoformat(timespec="seconds")
         summary["shard_status_counts"] = _summarize_shard_results(shard_entries)
         summary["rolling_extract"] = rolling_extract_state
+        summary["shard_count"] = len(planned_shards) + (1 if pending_task_ids else 0)
         _write_json(summary_path, summary)
         if str(rolling_extract_state.get("action") or "") == "stop" and bool(rolling_extract_state.get("triggered")):
-            for pending_index, pending_task_ids in enumerate(shard_task_groups[shard_index:], start=shard_index + 1):
+            remaining = list(pending_task_ids)
+            pending_index = shard_index + 1
+            while remaining:
+                next_size = _compute_next_shard_size(rolling_extract_state, int(args.max_tasks_per_shard))
+                next_ids = list(remaining[:next_size])
+                remaining = list(remaining[next_size:])
                 skipped_planned_shards.append(
                     {
                         "index": pending_index,
-                        "name": _build_shard_name(pending_index, pending_task_ids),
-                        "task_ids": [int(task_id) for task_id in pending_task_ids],
-                        "task_id_start": int(pending_task_ids[0]),
-                        "task_id_end": int(pending_task_ids[-1]),
-                        "task_count": len(pending_task_ids),
+                        "name": _build_shard_name(pending_index, next_ids),
+                        "task_ids": [int(task_id) for task_id in next_ids],
+                        "task_id_start": int(next_ids[0]),
+                        "task_id_end": int(next_ids[-1]),
+                        "task_count": len(next_ids),
                         "status": "skipped",
                         "skip_reason": str(rolling_extract_state.get("trigger_reason") or "rolling_extract_stop"),
                     }
                 )
+                pending_index += 1
             break
 
     if skipped_planned_shards:
         summary["skipped_planned_shards"] = skipped_planned_shards
+    summary["shard_count"] = len(shard_entries) + len(skipped_planned_shards)
 
     merged = _merge_outputs(root, out_dir, shard_entries)
     if merged is not None:
