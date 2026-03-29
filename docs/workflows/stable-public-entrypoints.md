@@ -121,6 +121,7 @@ Why this is stable:
 - it wraps the existing light-lane runner instead of duplicating lower-level semantics logic
 - merged/top-level summaries surface extract-failure signatures for faster batch triage
 - it supports rolling `warn|degrade|stop` behavior when cumulative extract failure rate becomes untrustworthy
+- it can also back off automatically after one shard times out heavily by increasing next-shard LLM timeout and reducing next-shard size
 
 ### `py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile <profile> [--no-align-apply]`
 

@@ -1219,6 +1219,7 @@ Important parameters:
 - `--out-dir`: coordinator output root; shard summaries go under `shards/`, merged report goes under `merged/`
 - `--batch-lane`, `--fill-refs-mode`, `--downstream-on-extract-fail`, `--resume-failed-task-from`: pass-through shard behavior
 - `--rolling-extract-policy`, `--rolling-extract-rate-threshold`, `--rolling-extract-min-observed-tasks`: rolling early-stop / degrade guard for long ranges
+- `--rolling-timeout-backoff-threshold`, `--rolling-timeout-backoff-min-observed-tasks`, `--rolling-timeout-backoff-sec`, `--rolling-timeout-backoff-max-llm-timeout-sec`, `--rolling-shard-reduction-factor`: shard-local timeout backoff for the next shard
 - `--self-check`: write the resolved shard plan without executing shards
 
 Prerequisites:

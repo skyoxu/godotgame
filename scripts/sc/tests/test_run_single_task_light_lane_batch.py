@@ -432,6 +432,89 @@ class RunSingleTaskLightLaneBatchTests(unittest.TestCase):
             self.assertEqual(2, len(summary["skipped_planned_shards"]))
             self.assertEqual([12], summary["skipped_planned_shards"][0]["task_ids"])
 
+    def test_main_should_increase_timeout_and_reduce_next_shard_after_timeout_spike(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "batch-run-backoff"
+            commands: list[list[str]] = []
+
+            def fake_run_command(_root: Path, cmd: list[str]):
+                commands.append(list(cmd))
+                task_ids = [int(part) for part in cmd[cmd.index("--task-ids") + 1].split(",")]
+                shard_out_dir = Path(cmd[cmd.index("--out-dir") + 1])
+                shard_out_dir.mkdir(parents=True, exist_ok=True)
+                rows = []
+                for task_id in task_ids:
+                    rows.append(
+                        {
+                            "task_id": task_id,
+                            "ok": False if task_id <= 14 else True,
+                            "failed_steps": ["extract"] if task_id <= 14 else [],
+                            "first_failed_step": "extract" if task_id <= 14 else "",
+                            "steps": [{"step": "extract", "rc": 124 if task_id <= 14 else 0}],
+                        }
+                    )
+                (shard_out_dir / "summary.json").write_text(
+                    json.dumps(
+                        {
+                            "task_id_start": task_ids[0],
+                            "task_id_end": task_ids[-1],
+                            "task_count": len(task_ids),
+                            "processed_tasks": len(task_ids),
+                            "passed_tasks": sum(1 for row in rows if bool(row.get("ok"))),
+                            "failed_tasks": sum(1 for row in rows if not bool(row.get("ok"))),
+                            "remaining_tasks": 0,
+                            "status": "fail" if any(not bool(row.get("ok")) for row in rows) else "ok",
+                            "results": rows,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+
+                class _Result:
+                    returncode = 1 if any(not bool(row.get("ok")) for row in rows) else 0
+                    stdout = "done\n"
+                    stderr = ""
+
+                return _Result()
+
+            argv = [
+                "run_single_task_light_lane_batch.py",
+                "--task-ids",
+                "11,12,13,14,15,16",
+                "--max-tasks-per-shard",
+                "4",
+                "--llm-timeout-sec",
+                "300",
+                "--rolling-timeout-backoff-threshold",
+                "0.5",
+                "--rolling-timeout-backoff-min-observed-tasks",
+                "4",
+                "--rolling-timeout-backoff-sec",
+                "180",
+                "--rolling-shard-reduction-factor",
+                "0.5",
+                "--out-dir",
+                str(out_dir),
+            ]
+            with mock.patch.object(batch, "_repo_root", return_value=root), mock.patch.object(
+                batch, "_selected_task_ids", return_value=[11, 12, 13, 14, 15, 16]
+            ), mock.patch.object(batch, "_run_command", side_effect=fake_run_command), mock.patch.object(sys, "argv", argv):
+                rc = batch.main()
+
+            self.assertEqual(1, rc)
+            self.assertEqual(2, len(commands))
+            self.assertEqual("11,12,13,14", commands[0][commands[0].index("--task-ids") + 1])
+            self.assertEqual("15,16", commands[1][commands[1].index("--task-ids") + 1])
+            self.assertEqual("480", commands[1][commands[1].index("--llm-timeout-sec") + 1])
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(1, summary["rolling_extract"]["backoff_adjustment_count"])
+            self.assertEqual(480, summary["rolling_extract"]["current_llm_timeout_sec"])
+            self.assertEqual(2, summary["rolling_extract"]["current_max_tasks_per_shard"])
+
 
 if __name__ == "__main__":
     unittest.main()
