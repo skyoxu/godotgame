@@ -89,6 +89,109 @@ class AcceptanceSemanticsRuntimeRetryTests(unittest.TestCase):
             self.assertEqual(1, calls["n"])
 
 
+class AcceptanceSemanticsRefsRestoreTests(unittest.TestCase):
+    def _master(self, task_id: int = 7) -> runtime.MasterTaskInput:
+        return runtime.MasterTaskInput(
+            task_id=task_id,
+            status="in-progress",
+            title="Demo task",
+            description="Demo description",
+            details="Demo details",
+            test_strategy="",
+            subtasks=[],
+        )
+
+    def test_should_restore_existing_refs_before_validation(self) -> None:
+        master_index = {7: self._master()}
+        back = [
+            {
+                "taskmaster_id": 7,
+                "description": "old",
+                "acceptance": ["ACC:T7.1 old text. Refs: Game.Core.Tests/FooTests.cs"],
+            }
+        ]
+        gameplay: list[dict[str, object]] = []
+        out_obj = {
+            "task_id": 7,
+            "mode": "rewrite-only",
+            "back": {
+                "description": "old",
+                "acceptance": ["ACC:T7.1 rewritten text. Refs: Game.Core.Tests/ChangedTests.cs"],
+            },
+            "gameplay": None,
+            "notes": [],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            with patch.object(runtime, "_run_model_with_retry", return_value=("ok", out_obj, 1)):
+                result = runtime.run_alignment_tasks(
+                    task_ids=[7],
+                    master_index=master_index,
+                    semantic_hints={},
+                    back=back,
+                    gameplay=gameplay,
+                    out_dir=Path(td),
+                    apply=True,
+                    timeout_sec=1,
+                    delivery_profile_context="",
+                    max_failures=0,
+                    structural_for_not_done=False,
+                    append_only_for_done=False,
+                    align_view_descriptions_to_master=False,
+                )
+
+        self.assertEqual(0, result["failed"])
+        self.assertEqual("ok", result["results"][0]["status"])
+        self.assertEqual(1, result["results"][0]["refs_restored_count"])
+        self.assertEqual(
+            ["ACC:T7.1 rewritten text. Refs: Game.Core.Tests/FooTests.cs"],
+            back[0]["acceptance"],
+        )
+
+    def test_should_still_fail_when_model_adds_new_refs_to_existing_item(self) -> None:
+        master_index = {7: self._master()}
+        back = [
+            {
+                "taskmaster_id": 7,
+                "description": "old",
+                "acceptance": ["ACC:T7.1 old text without refs."],
+            }
+        ]
+        gameplay: list[dict[str, object]] = []
+        out_obj = {
+            "task_id": 7,
+            "mode": "rewrite-only",
+            "back": {
+                "description": "old",
+                "acceptance": ["ACC:T7.1 rewritten text. Refs: Game.Core.Tests/FooTests.cs"],
+            },
+            "gameplay": None,
+            "notes": [],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            with patch.object(runtime, "_run_model_with_retry", return_value=("ok", out_obj, 1)):
+                result = runtime.run_alignment_tasks(
+                    task_ids=[7],
+                    master_index=master_index,
+                    semantic_hints={},
+                    back=back,
+                    gameplay=gameplay,
+                    out_dir=Path(td),
+                    apply=True,
+                    timeout_sec=1,
+                    delivery_profile_context="",
+                    max_failures=0,
+                    structural_for_not_done=False,
+                    append_only_for_done=False,
+                    align_view_descriptions_to_master=False,
+                )
+
+        self.assertEqual(1, result["failed"])
+        self.assertEqual("fail", result["results"][0]["status"])
+        self.assertEqual("back:unexpected_refs_added_at_1", result["results"][0]["reason"])
+
+
 class AlignAcceptanceCliGuardTests(unittest.TestCase):
     def test_should_fail_when_missing_task_ids_in_scope_and_flag_enabled(self) -> None:
         with staged_taskmaster_triplet(include_task1=True):
