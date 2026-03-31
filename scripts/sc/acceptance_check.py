@@ -17,6 +17,7 @@ from _acceptance_orchestration import (
 )
 from _acceptance_report import write_markdown_report
 from _acceptance_runtime import (
+    apply_delivery_profile_defaults,
     build_parser,
     compute_perf_p95_ms,
     normalize_subtasks_mode,
@@ -197,7 +198,7 @@ def _run_self_check(args: Any) -> int:
 
 
 def main() -> int:
-    args = build_parser().parse_args()
+    args = apply_delivery_profile_defaults(build_parser().parse_args())
     if bool(getattr(args, "self_check", False)):
         return _run_self_check(args)
     task_id = parse_task_id(args.task_id)

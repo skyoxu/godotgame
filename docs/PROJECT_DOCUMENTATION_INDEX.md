@@ -20,10 +20,10 @@
 - 模板升级协议：`docs/workflows/template-upgrade-protocol.md`
 - Project Health Dashboard: `docs/workflows/project-health-dashboard.md`
 - Prototype Lane：`docs/workflows/prototype-lane.md`
-- Chapter 6 T56 ?????`docs/workflows/chapter-6-t56-optimization-guide.md`
-- Stable Public Entrypoints?`docs/workflows/stable-public-entrypoints.md`
-- Script Entrypoints Index?`docs/workflows/script-entrypoints-index.md`
-- Harness Run Protocol?`docs/workflows/run-protocol.md`
+- Chapter 6 T56 ä¼åæåï¼`docs/workflows/chapter-6-t56-optimization-guide.md`
+- Stable Public Entrypointsï¼`docs/workflows/stable-public-entrypoints.md`
+- Script Entrypoints Indexï¼`docs/workflows/script-entrypoints-index.md`
+- Harness Run Protocolï¼`docs/workflows/run-protocol.md`
 
 ---
 
@@ -80,13 +80,13 @@
 - `docs/workflows/serena-mcp-command-reference.md`：Serena / Codex CLI 常用命令
 - `docs/workflows/superclaude-command-reference.md`：SuperClaude 工作流说明
 - `docs/workflows/task-master-superclaude-integration.md`：Taskmaster + SuperClaude 集成（如仅做 Godot 桌面模板，可先跳过 Web/旧桌面壳 相关段落）
-- `docs/workflows/overlay-generation-quickstart.md`?Minimal safe command set for overlay generation
-- `docs/workflows/overlay-generation-sop.md`?Standard flow for generate, repair, and small-batch apply
-- `docs/workflows/overlays-authoring-guide.md`?Directory, front matter, task backlinks, and contract reference rules
-- `docs/workflows/template-upgrade-protocol.md`?Stable migration protocol for template -> business repo upgrades
-- `docs/workflows/project-health-dashboard.md`?Repo stage detection, doctor checks, directory-boundary scan, and live local dashboard
-- `docs/workflows/business-repo-upgrade-guide.md`?Compare-range-specific migration report for one template upgrade wave
-- `docs/workflows/prototype-lane.md`?Exploration lane policy separated from formal delivery profiles
+- `docs/workflows/overlay-generation-quickstart.md`ï¼Overlay çæçæå°å®å¨å½ä»¤é
+- `docs/workflows/overlay-generation-sop.md`ï¼çæãä¿®å¤ä¸å°æ¹éåºç¨çæ åæµç¨
+- `docs/workflows/overlays-authoring-guide.md`ï¼ç®å½ãfront matterãä»»å¡åé¾ä¸ contract å¼ç¨è§å
+- `docs/workflows/template-upgrade-protocol.md`ï¼æ¨¡æ¿ä»åçº§å°ä¸å¡ä»çç¨³å®è¿ç§»åè®®
+- `docs/workflows/project-health-dashboard.md`ï¼ä»åºé¶æ®µè¯å«ãdoctor æ£æ¥ãç®å½è¾¹çæ«æä¸æ¬å°çæ¿
+- `docs/workflows/business-repo-upgrade-guide.md`ï¼é¢ååæ¬¡æ¨¡æ¿åçº§æ³¢æ¬¡ç compare-range è¿ç§»æå
+- `docs/workflows/prototype-lane.md`ï¼ä¸æ­£å¼äº¤ä» profile åç¦»çæ¢ç´¢ééç­ç¥
 
 ---
 
