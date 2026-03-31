@@ -6,8 +6,7 @@ This document defines the contract for py -3 scripts/python/dev_cli.py run-local
 
 - Provide one stable local entrypoint for full hard validation.
 - Avoid step drift caused by manually stitching commands together.
-- Avoid re-running 
-un_gate_bundle.py --mode hard and creating duplicate noise.
+- Avoid re-running `run_gate_bundle.py --mode hard` and creating duplicate noise.
 - Treat local hard validation as a first-class run object for recovery after context resets.
 
 ## When To Use It
@@ -48,10 +47,8 @@ py -3 scripts/python/dev_cli.py run-local-hard-checks
 ## Main Parameters
 
 - --godot-bin <path>: enables the GdUnit4 hard set and strict smoke.
-- --solution <path>: forwarded to 
-un_dotnet.py; default Game.sln.
-- --configuration <Debug|Release>: forwarded to 
-un_dotnet.py; default Debug.
+- `--solution <path>`: forwarded to `run_dotnet.py`; auto-resolved when omitted.
+- `--configuration <Debug|Release>`: forwarded to `run_dotnet.py`; default `Debug`.
 - --delivery-profile <profile>: resolves the run-level delivery profile and default security profile.
 - --task-file <path>: repeatable; overrides the default task views and is forwarded to the hard gate bundle.
 - --out-dir <path>: overrides the harness run root; default is logs/ci/<YYYY-MM-DD>/local-hard-checks-<run-id>/.

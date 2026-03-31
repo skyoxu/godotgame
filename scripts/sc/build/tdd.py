@@ -7,7 +7,6 @@ red/green/refactor loop with logs under logs/ci/<date>/.
 
 Usage (Windows):
   py -3 scripts/sc/build/tdd.py --stage green
-  py -3 scripts/sc/build/tdd.py --stage green --green-scope task
   py -3 scripts/sc/build/tdd.py --stage red --generate-red-test
 """
 
@@ -72,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--configuration", default="Debug")
     ap.add_argument("--delivery-profile", default=None, choices=DELIVERY_PROFILE_CHOICES, help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).")
     ap.add_argument("--security-profile", default=None, choices=["strict", "host-safe"], help="Security profile override (default derives from delivery profile).")
-    ap.add_argument("--green-scope", choices=["task", "all"], default="all", help="green stage test scope: all (default) or task-scoped")
+    ap.add_argument("--green-scope", choices=["task", "all"], default="task", help="green stage test scope: task-scoped (default) or all tests")
     ap.add_argument("--generate-red-test", action="store_true", help="create a failing test skeleton if missing")
     ap.add_argument("--no-coverage-gate", action="store_true", help="do not enforce default coverage thresholds")
     ap.add_argument("--allow-contract-changes", action="store_true", help="allow creating new files under Game.Core/Contracts during this TDD stage")
@@ -222,6 +221,8 @@ def main() -> int:
     before_contracts = snapshot_contract_files()
     triplet = resolve_triplet(task_id=args.task_id)
     summary = build_summary(stage=args.stage, allow_contract_changes=bool(args.allow_contract_changes), triplet=triplet)
+    summary["delivery_profile"] = str(runtime["delivery_profile"])
+    summary["security_profile"] = str(runtime["security_profile"])
 
     try:
         if args.stage == "red":
