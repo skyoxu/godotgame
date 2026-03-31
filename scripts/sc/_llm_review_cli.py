@@ -9,10 +9,14 @@ import argparse
 from pathlib import Path
 from typing import Any
 
+from _delivery_profile import known_delivery_profiles, profile_llm_review_defaults, resolve_delivery_profile
 from _deterministic_review import DETERMINISTIC_AGENTS
 from _llm_review_acceptance import truncate
 from _security_profile import security_profile_payload
 from _util import repo_rel, split_csv, today_str
+
+
+DELIVERY_PROFILE_CHOICES = tuple(sorted(known_delivery_profiles()))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,6 +24,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--self-check", action="store_true", help="Validate args and plan only; do not execute LLM calls.")
     ap.add_argument("--dry-run-plan", action="store_true", help="Resolve task + agents and write execution plan without LLM calls.")
     ap.add_argument("--task-id", default=None, help="Taskmaster id to include as review context (optional)")
+    ap.add_argument(
+        "--delivery-profile",
+        default=None,
+        choices=DELIVERY_PROFILE_CHOICES,
+        help="Delivery profile (default: env DELIVERY_PROFILE or fast-ship).",
+    )
     ap.add_argument("--review-profile", default="default", choices=["default", "bmad-godot"], help="Inject a structured review template into prompts.")
     ap.add_argument("--review-template", default="", help="Optional template file path (relative to repo root). Overrides --review-profile.")
     ap.add_argument("--no-acceptance-semantic", action="store_true", help="Do not inject acceptance anchors + referenced test excerpts into prompts.")
@@ -48,6 +58,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="How to treat prompt truncation: skip|warn|require",
     )
     return ap
+
+
+def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namespace:
+    delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
+    defaults = profile_llm_review_defaults(delivery_profile)
+    args.delivery_profile = delivery_profile
+
+    if not str(getattr(args, "agents", "") or "").strip():
+        args.agents = str(defaults.get("agents") or "")
+    if str(getattr(args, "diff_mode", "") or "").strip() == "full":
+        args.diff_mode = str(defaults.get("diff_mode") or args.diff_mode)
+    if int(getattr(args, "timeout_sec", 0) or 0) == 900:
+        args.timeout_sec = int(defaults.get("timeout_sec", args.timeout_sec) or args.timeout_sec)
+    if int(getattr(args, "agent_timeout_sec", 0) or 0) == 300:
+        args.agent_timeout_sec = int(defaults.get("agent_timeout_sec", args.agent_timeout_sec) or args.agent_timeout_sec)
+    if str(getattr(args, "semantic_gate", "") or "").strip() == "skip":
+        args.semantic_gate = str(defaults.get("semantic_gate") or args.semantic_gate)
+    if not bool(getattr(args, "strict", False)):
+        args.strict = bool(defaults.get("strict", False))
+    if str(getattr(args, "model_reasoning_effort", "") or "").strip() == "low":
+        args.model_reasoning_effort = str(defaults.get("model_reasoning_effort") or args.model_reasoning_effort)
+    if str(getattr(args, "prompt_budget_gate", "") or "").strip() == "warn":
+        args.prompt_budget_gate = str(defaults.get("prompt_budget_gate") or args.prompt_budget_gate)
+    return args
 
 
 def parse_agent_timeout_overrides(raw: str) -> dict[str, int]:
