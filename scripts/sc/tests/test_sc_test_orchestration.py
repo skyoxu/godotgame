@@ -208,6 +208,41 @@ class ScTestOrchestrationTests(unittest.TestCase):
             self.assertEqual("fail", summary["status"])
             self.assertEqual(["gdunit-hard", "smoke"], [item["name"] for item in summary["steps"]])
 
+    def test_main_should_require_task_scoped_gd_refs_for_explicit_e2e_lane(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "sc-test"
+            argv = ["test.py", "--type", "e2e", "--run-id", "6" * 32, "--godot-bin", "C:/Godot/Godot.exe", "--task-id", "56"]
+            gdunit_step = {
+                "name": "gdunit-hard",
+                "cmd": ["py", "-3", "scripts/python/run_gdunit.py"],
+                "rc": 0,
+                "log": str(out_dir / "gdunit-hard.log"),
+                "report_dir": str(out_dir / "gdunit-hard"),
+                "status": "ok",
+            }
+            smoke_step = {
+                "name": "smoke",
+                "cmd": ["py", "-3", "scripts/python/smoke_headless.py"],
+                "rc": 0,
+                "log": str(out_dir / "smoke.log"),
+                "status": "ok",
+            }
+            with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(sc_test, "ci_dir", return_value=out_dir), \
+                mock.patch.object(sc_test, "run_gdunit_hard", return_value=gdunit_step) as gdunit_mock, \
+                mock.patch.object(sc_test, "run_smoke", return_value=smoke_step):
+                rc = sc_test.main()
+
+            self.assertEqual(0, rc)
+            gdunit_mock.assert_called_once_with(
+                out_dir,
+                "C:/Godot/Godot.exe",
+                600,
+                run_id="6" * 32,
+                task_id="56",
+                require_task_scoped_refs=True,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

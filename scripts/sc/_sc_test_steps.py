@@ -115,26 +115,47 @@ def run_gdunit_hard(
     *,
     run_id: str,
     task_id: str | None = None,
+    require_task_scoped_refs: bool = False,
 ) -> dict[str, Any]:
     date = today_str()
     report_dir = Path("logs") / "e2e" / date / "sc-test" / "gdunit-hard"
     os.environ["AUDIT_LOG_ROOT"] = str(repo_root() / "logs" / "ci" / date)
     add_dirs: list[str] = []
     tests_project = repo_root() / "Tests.Godot"
-    for rel in ["tests/Scenes", "tests/UI", "tests/Adapters/Config", "tests/Security/Hard"]:
-        if (tests_project / rel).exists():
-            add_dirs.append(rel)
-        elif (repo_root() / rel).exists():
-            add_dirs.append(rel)
     if str(task_id or "").strip():
-        rel = "tests/Tasks"
-        if (tests_project / rel).exists():
-            add_dirs.append(rel)
-        elif (repo_root() / rel).exists():
-            add_dirs.append(rel)
-        for rel_ref in task_scoped_gdunit_refs(task_id=task_id, tests_project=tests_project):
-            if rel_ref not in add_dirs:
-                add_dirs.append(rel_ref)
+        task_refs = task_scoped_gdunit_refs(task_id=task_id, tests_project=tests_project)
+        if not task_refs and require_task_scoped_refs:
+            log_path = out_dir / "gdunit-hard.log"
+            write_text(
+                log_path,
+                "\n".join(
+                    [
+                        "SC_TEST_GDUNIT_HARD status=fail reason=missing_task_scoped_gd_refs",
+                        f"task_id: {str(task_id).strip()}",
+                        "error: no task-scoped .gd refs resolved from task view files",
+                    ]
+                )
+                + "\n",
+            )
+            return {
+                "name": "gdunit-hard",
+                "cmd": [],
+                "rc": 1,
+                "log": str(log_path),
+                "report_dir": str(report_dir),
+                "error": "missing_task_scoped_gd_refs",
+                "status": "fail",
+            }
+        if task_refs:
+            for rel_ref in task_refs:
+                if rel_ref not in add_dirs:
+                    add_dirs.append(rel_ref)
+    if not add_dirs:
+        for rel in ["tests/Scenes", "tests/UI", "tests/Adapters/Config", "tests/Security/Hard"]:
+            if (tests_project / rel).exists():
+                add_dirs.append(rel)
+            elif (repo_root() / rel).exists():
+                add_dirs.append(rel)
     cmd = [
         "py",
         "-3",

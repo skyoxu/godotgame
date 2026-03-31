@@ -167,8 +167,23 @@ def run_csharp_test_conventions(out_dir: Path, *, task_id: str | None = None) ->
     return _run_csharp_test_conventions_impl(out_dir, task_id=task_id)
 
 
-def run_gdunit_hard(out_dir: Path, godot_bin: str, timeout_sec: int, *, run_id: str, task_id: str | None = None) -> dict[str, Any]:
-    return _run_gdunit_hard_impl(out_dir, godot_bin, timeout_sec, run_id=run_id, task_id=task_id)
+def run_gdunit_hard(
+    out_dir: Path,
+    godot_bin: str,
+    timeout_sec: int,
+    *,
+    run_id: str,
+    task_id: str | None = None,
+    require_task_scoped_refs: bool = False,
+) -> dict[str, Any]:
+    return _run_gdunit_hard_impl(
+        out_dir,
+        godot_bin,
+        timeout_sec,
+        run_id=run_id,
+        task_id=task_id,
+        require_task_scoped_refs=require_task_scoped_refs,
+    )
 
 
 def run_smoke(out_dir: Path, godot_bin: str, scene: str, task_id: str | None = None, *, strict: bool = True) -> dict[str, Any]:
@@ -273,7 +288,14 @@ def main() -> int:
         if not godot_bin:
             print("[sc-test] ERROR: --godot-bin (or env GODOT_BIN) is required for e2e/integration tests.")
             return 2
-        step = run_gdunit_hard(out_dir, godot_bin, args.timeout_sec, run_id=run_id, task_id=args.task_id)
+        step = run_gdunit_hard(
+            out_dir,
+            godot_bin,
+            args.timeout_sec,
+            run_id=run_id,
+            task_id=args.task_id,
+            require_task_scoped_refs=bool(args.type in ("integration", "e2e", "all")),
+        )
         summary["steps"].append(step)
         if not _persist_summary():
             return 2

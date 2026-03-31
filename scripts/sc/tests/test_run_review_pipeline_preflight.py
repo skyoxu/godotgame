@@ -79,6 +79,7 @@ class RunReviewPipelinePreflightTests(unittest.TestCase):
                 mock.patch.object(sys, "argv", argv),
                 mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir),
                 mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path),
+                mock.patch.object(run_review_pipeline_module, "run_review_prerequisite_check", return_value=None),
                 mock.patch.object(run_review_pipeline_module, "_run_step", side_effect=fake_run_step),
                 mock.patch.object(run_review_pipeline_module, "resolve_triplet", return_value=self._triplet()),
             ):
@@ -115,6 +116,7 @@ class RunReviewPipelinePreflightTests(unittest.TestCase):
                 mock.patch.object(sys, "argv", argv),
                 mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir),
                 mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path),
+                mock.patch.object(run_review_pipeline_module, "run_review_prerequisite_check", return_value=None),
                 mock.patch.object(run_review_pipeline_module, "resolve_triplet", return_value=self._triplet()),
                 mock.patch.object(
                     run_review_pipeline_module,
@@ -138,6 +140,51 @@ class RunReviewPipelinePreflightTests(unittest.TestCase):
             summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("fail", summary["status"])
             self.assertEqual(["sc-acceptance-check"], [item["name"] for item in summary["steps"]])
+
+    def test_refactor_preflight_failure_should_stop_before_sc_test(self) -> None:
+        run_id = uuid.uuid4().hex
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_root = Path(tmpdir)
+            out_dir = tmp_root / f"sc-review-pipeline-task-56-{run_id}"
+            latest_path = tmp_root / "sc-review-pipeline-task-56" / "latest.json"
+            argv = [
+                str(SCRIPT),
+                "--task-id",
+                "56",
+                "--run-id",
+                run_id,
+                "--delivery-profile",
+                "fast-ship",
+                "--skip-agent-review",
+            ]
+            with (
+                mock.patch.dict(os.environ, _stable_env(), clear=False),
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(run_review_pipeline_module, "_pipeline_run_dir", return_value=out_dir),
+                mock.patch.object(run_review_pipeline_module, "_pipeline_latest_index_path", return_value=latest_path),
+                mock.patch.object(run_review_pipeline_module, "resolve_triplet", return_value=self._triplet()),
+                mock.patch.object(
+                    run_review_pipeline_module,
+                    "run_review_prerequisite_check",
+                    return_value={
+                        "name": "sc-build-tdd-refactor-preflight",
+                        "cmd": ["internal:review_prerequisite_check"],
+                        "rc": 1,
+                        "status": "fail",
+                        "log": str(out_dir / "sc-build-tdd-refactor-preflight.log"),
+                        "reported_out_dir": "",
+                        "summary_file": "",
+                    },
+                ),
+                mock.patch.object(run_review_pipeline_module, "_run_step") as run_step_mock,
+            ):
+                rc = run_review_pipeline_module.main()
+
+            self.assertEqual(1, rc)
+            run_step_mock.assert_not_called()
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("fail", summary["status"])
+            self.assertEqual(["sc-build-tdd-refactor-preflight"], [item["name"] for item in summary["steps"]])
 
 
 if __name__ == "__main__":

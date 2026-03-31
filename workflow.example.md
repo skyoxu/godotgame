@@ -125,7 +125,7 @@ py -3 scripts/python/dev_cli.py new-decision-log --title "<topic>" --task-id <id
 ```
 
 
-TDD 建议顺序：
+TDD å»ºè®®é¡ºåºï¼
 
 ```powershell
 py -3 scripts/sc/check_tdd_execution_plan.py --task-id <id> --tdd-stage red-first --verify unit --execution-plan-policy draft
@@ -134,6 +134,17 @@ py -3 scripts/sc/build.py tdd --task-id <id> --stage green
 py -3 scripts/sc/build.py tdd --task-id <id> --stage refactor
 ```
 
+é¡ºåºçº¦æï¼
+
+- green ä¼å
+æ£æ¥æè¿ä¸æ¬¡ `sc-llm-acceptance-tests/summary-<task>.json` æ¯å¦æ¯å¹²åç `red-first` ç»æã
+- å¦æ red-first åå»ºäºæ°æµè¯æä»¶ï¼è¿è¦æ± `red_verify.status = ok`ã
+- refactor ä¼å
+æ£æ¥æè¿ä¸æ¬¡ green summary æ¯å¦ä¸º `status = ok`ã
+- review pipeline ä¼å
+æ£æ¥æè¿ä¸æ¬¡ refactor summary æ¯å¦ä¸º `status = ok`ã
+- å½ `--verify auto|all` å¸¦ `--task-id` æ¶ï¼å¦æä»»å¡è§å¾éæ²¡æ `.gd` refsï¼task-scoped GdUnit ä¼ç´æ¥å¤±è´¥ï¼èä¸æ¯åéè·å
+¨éç®å½ã
 如果 `check_tdd_execution_plan.py` 已经明显提示这是复杂任务，不要立刻手工加重所有步骤；先做两件事：
 
 1. 先补一个最小 `execution-plan`
