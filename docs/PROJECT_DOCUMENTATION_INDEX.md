@@ -20,6 +20,10 @@
 - 模板升级协议：`docs/workflows/template-upgrade-protocol.md`
 - Project Health Dashboard: `docs/workflows/project-health-dashboard.md`
 - Prototype Lane：`docs/workflows/prototype-lane.md`
+- Chapter 6 T56 ?????`docs/workflows/chapter-6-t56-optimization-guide.md`
+- Stable Public Entrypoints?`docs/workflows/stable-public-entrypoints.md`
+- Script Entrypoints Index?`docs/workflows/script-entrypoints-index.md`
+- Harness Run Protocol?`docs/workflows/run-protocol.md`
 
 ---
 
