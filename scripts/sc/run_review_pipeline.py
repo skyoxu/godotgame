@@ -225,6 +225,48 @@ def _run_cli_capability_preflight(*, out_dir: Path, step_name: str, cmd: list[st
     }
 
 
+def _latest_tdd_stage_summary(*, task_id: str, stage: str) -> tuple[Path | None, dict[str, Any]]:
+    logs_root = repo_root() / "logs" / "ci"
+    if not logs_root.exists():
+        return None, {}
+    candidates = sorted(logs_root.glob("*/sc-build-tdd/summary.json"), key=lambda item: item.stat().st_mtime, reverse=True)
+    for candidate in candidates:
+        payload = _read_json(candidate)
+        task_meta = payload.get("task") if isinstance(payload.get("task"), dict) else {}
+        payload_task_id = str(task_meta.get("task_id") or payload.get("task_id") or "").strip()
+        if payload_task_id != str(task_id).strip():
+            continue
+        if str(payload.get("stage") or "").strip() != stage:
+            continue
+        return candidate, payload
+    return None, {}
+
+
+def run_review_prerequisite_check(*, out_dir: Path, task_id: str) -> dict[str, Any] | None:
+    summary_path, payload = _latest_tdd_stage_summary(task_id=task_id, stage="refactor")
+    if summary_path is not None and str(payload.get("status") or "").strip() == "ok":
+        return None
+    log_path = out_dir / "sc-build-tdd-refactor-preflight.log"
+    reason = "missing_refactor_summary" if summary_path is None else "refactor_stage_not_ok"
+    lines = [
+        f"SC_REVIEW_PREREQUISITE status=fail reason={reason}",
+        f"summary_path: {summary_path}" if summary_path is not None else "summary_path: (missing)",
+    ]
+    if summary_path is not None:
+        lines.append(f"status: {str(payload.get('status') or '').strip() or '(missing)'}")
+    lines.append("error: latest refactor-stage sc-build-tdd summary must exist and be ok before running review pipeline")
+    write_text(log_path, "\n".join(lines) + "\n")
+    return {
+        "name": "sc-build-tdd-refactor-preflight",
+        "cmd": ["internal:review_prerequisite_check"],
+        "rc": 1,
+        "status": "fail",
+        "log": str(log_path),
+        "reported_out_dir": "",
+        "summary_file": str(summary_path) if summary_path is not None else "",
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     return _build_parser_impl()
 
@@ -626,6 +668,12 @@ def main() -> int:
         os.environ.pop("SC_TEST_REUSE_SUMMARY", None)
 
     if not bool(args.dry_run or args.resume or args.fork):
+        review_preflight_failed = run_review_prerequisite_check(out_dir=out_dir, task_id=task_id)
+        if review_preflight_failed is not None:
+            if not session.add_step(review_preflight_failed):
+                return 2 if session.schema_error_log.exists() else 1
+            print(f"SC_REVIEW_PIPELINE status={session.summary['status']} out={out_dir}")
+            return session.finish()
         for step_name, cmd, _timeout_sec, skipped in steps:
             if skipped:
                 continue

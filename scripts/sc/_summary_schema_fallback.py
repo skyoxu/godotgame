@@ -10,7 +10,7 @@ TASK_ID_RE = re.compile(r"^[0-9]+$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
-PIPELINE_STEP_NAMES = {"sc-test", "sc-acceptance-check", "sc-llm-review"}
+PIPELINE_STEP_NAMES = {"sc-test", "sc-acceptance-check", "sc-llm-review", "sc-build-tdd-refactor-preflight"}
 PIPELINE_STEP_STATUS = {"ok", "fail", "skipped", "planned"}
 PIPELINE_SUMMARY_STATUS = {"ok", "fail"}
 

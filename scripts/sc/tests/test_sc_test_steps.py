@@ -62,6 +62,93 @@ class ScTestStepsUnitFallbackTests(unittest.TestCase):
             self.assertEqual("fail", step["status"])
             self.assertIn("--filter", step["cmd"])
 
+    def test_run_gdunit_hard_should_fail_when_task_has_no_gd_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out_dir = Path(td)
+            with (
+                mock.patch.object(sc_steps, "repo_root", return_value=REPO_ROOT),
+                mock.patch.object(sc_steps, "today_str", return_value="2026-04-01"),
+                mock.patch.object(sc_steps, "task_scoped_gdunit_refs", return_value=[]),
+                mock.patch.object(sc_steps, "run_cmd") as run_cmd_mock,
+            ):
+                step = sc_steps.run_gdunit_hard(
+                    out_dir,
+                    "godot.exe",
+                    120,
+                    run_id="r3",
+                    task_id="56",
+                    require_task_scoped_refs=True,
+                )
+
+            self.assertEqual(1, int(step["rc"]))
+            self.assertEqual("fail", step["status"])
+            self.assertEqual("missing_task_scoped_gd_refs", step["error"])
+            run_cmd_mock.assert_not_called()
+            log_text = (out_dir / "gdunit-hard.log").read_text(encoding="utf-8")
+            self.assertIn("no task-scoped .gd refs resolved", log_text)
+
+    def test_run_gdunit_hard_should_fallback_to_default_dirs_when_task_has_no_gd_refs_but_gate_is_not_required(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci"
+            tests_project = root / "Tests.Godot"
+            (tests_project / "tests" / "Scenes").mkdir(parents=True, exist_ok=True)
+            captured: list[list[str]] = []
+
+            def fake_run_cmd(cmd, *, cwd=None, timeout_sec=0):  # noqa: ANN001
+                captured.append(list(cmd))
+                return 0, "ok\n"
+
+            with (
+                mock.patch.object(sc_steps, "repo_root", return_value=root),
+                mock.patch.object(sc_steps, "today_str", return_value="2026-04-01"),
+                mock.patch.object(sc_steps, "task_scoped_gdunit_refs", return_value=[]),
+                mock.patch.object(sc_steps, "run_cmd", side_effect=fake_run_cmd),
+            ):
+                step = sc_steps.run_gdunit_hard(
+                    out_dir,
+                    "godot.exe",
+                    120,
+                    run_id="r3b",
+                    task_id="56",
+                    require_task_scoped_refs=False,
+                )
+
+            self.assertEqual(0, int(step["rc"]))
+            self.assertEqual("ok", step["status"])
+            self.assertIn("tests/Scenes", captured[0])
+
+    def test_run_gdunit_hard_should_only_use_task_scoped_gd_refs_when_task_id_present(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci"
+            tests_project = root / "Tests.Godot"
+            (tests_project / "tests" / "Tasks").mkdir(parents=True, exist_ok=True)
+            (tests_project / "tests" / "Scenes").mkdir(parents=True, exist_ok=True)
+            refs = ["tests/Tasks/test_task_56_a.gd", "tests/Tasks/test_task_56_b.gd"]
+            for rel in refs:
+                path = tests_project / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("extends Node\n", encoding="utf-8")
+            captured: list[list[str]] = []
+
+            def fake_run_cmd(cmd, *, cwd=None, timeout_sec=0):  # noqa: ANN001
+                captured.append(list(cmd))
+                return 0, "ok\n"
+
+            with (
+                mock.patch.object(sc_steps, "repo_root", return_value=root),
+                mock.patch.object(sc_steps, "today_str", return_value="2026-04-01"),
+                mock.patch.object(sc_steps, "task_scoped_gdunit_refs", return_value=refs),
+                mock.patch.object(sc_steps, "run_cmd", side_effect=fake_run_cmd),
+            ):
+                step = sc_steps.run_gdunit_hard(out_dir, "godot.exe", 120, run_id="r4", task_id="56")
+
+            self.assertEqual(0, int(step["rc"]))
+            cmd = captured[0]
+            self.assertEqual(refs, [cmd[idx + 1] for idx, token in enumerate(cmd[:-1]) if token == "--add"])
+            self.assertNotIn("tests/Scenes", cmd)
+
 
 if __name__ == "__main__":
     unittest.main()
