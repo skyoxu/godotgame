@@ -59,6 +59,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 ### Daily Ops
 - Daily Workflow: `workflow.md`
 - Bootstrap Workflow Example: `workflow.example.md`
+- Chapter 6 T56 Optimization Guide: `docs/workflows/chapter-6-t56-optimization-guide.md`
 - Stable Public Entrypoints: `docs/workflows/stable-public-entrypoints.md`
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
 - Session Recovery: `docs/agents/01-session-recovery.md`
