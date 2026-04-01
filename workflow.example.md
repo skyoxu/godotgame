@@ -204,7 +204,9 @@ py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --t
 
 默认理解：
 
-- `extract` 是第一判断点
+- `preflight_acceptance_extract_guard` 会先跑一次确定性 acceptance 预检查，提前拦截明显缺少 Refs 或硬门语义的任务
+- preflight 通过后，`extract`、`align`、`coverage`、`semantic_gate` 仍然照常执行；它不是质量替代品，只是节省时间的前置守卫
+- `extract` 仍然是第一判断点
 - 如果 `extract` 已失败，脚本会自动做后续降载
 - 遇到 `timeout` 或 `SC_LLM_OBLIGATIONS status=fail` 这类 family，会更早短路
 - 只有在长批次明显不稳定时，才去调 `rolling-*`、`fill-refs-mode`、`no-align-apply`
