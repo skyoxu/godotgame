@@ -78,7 +78,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 
 - `Task triplet required`: any `--task-id` / `--task-file` flow assumes Taskmaster data. Template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
 - `Godot runtime required`: any engine-side verification (`--godot-bin`, GdUnit, smoke, acceptance evidence, scene tests) needs a local Godot .NET console binary.
-- `Dotnet required`: `.NET 8 SDK` and valid `Game.sln` / `.csproj` paths must exist.
+- `Dotnet required`: `.NET 8 SDK` and a valid auto-resolved `.sln` or explicit `.csproj` path must exist.
 - `PRD / overlay input required`: PRD source files, overlay roots, and business-local `PRD-ID` values must be real.
 - `LLM runtime required`: model-backed generation / review scripts require the repo's configured LLM runtime or CLI unless the script has an explicit deterministic-only mode.
 - `Write flow`: commands with `--write` / `--apply` / `--in-place` or migration verbs mutate repo files and should be reviewed like code changes.
@@ -813,7 +813,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Direct local deps: None.
 - Transitive local deps: None.
 - Subcommands: None.
-- Declared args: `--write`, `--dry-run`, `--prd-id`, `--tasks-dir`
+- Declared args: `--write`, `--dry-run`, `--prd-id`, `--tasks-dir`, `--skip-done`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - PRD/overlay parameters require real PRD sources, overlay roots, and business-local `PRD-ID` values.
@@ -887,7 +887,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 #### `scripts/python/detect_project_stage.py`
 
@@ -908,7 +908,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
   - Windows PowerShell + `py -3` from repo root.
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
   - Serving parameters are local-only: use on `127.0.0.1`, not in CI.
 
 #### `scripts/python/doctor_project.py`
@@ -968,7 +968,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Declared args: `--test-project`, `--configuration`, `--out-dir`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 #### `scripts/python/prepare_gd_tests.py`
 
@@ -1000,7 +1000,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
   - Windows PowerShell + `py -3` from repo root.
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 #### `scripts/python/resume_task.py`
 
@@ -1020,7 +1020,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Declared args: `--solution`, `--configuration`, `--filter`, `--out-dir`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 #### `scripts/python/run_gate_bundle.py`
 
@@ -1139,7 +1139,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
   - Windows PowerShell + `py -3` from repo root.
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 #### `scripts/sc/check_tdd_execution_plan.py`
 
@@ -1291,7 +1291,7 @@ Notes:
   - Windows PowerShell + `py -3` from repo root.
   - Engine-side options require a local Godot .NET console binary; without it, Godot/GdUnit/smoke stages will skip or fail depending on the script.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
-  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `Game.sln`).
+  - Dotnet-related options require `.NET 8 SDK` and valid solution/project paths (default usually `auto`, which resolves to the project-preferred `.sln`).
 
 ### Taskmaster triplet and refs maintenance
 

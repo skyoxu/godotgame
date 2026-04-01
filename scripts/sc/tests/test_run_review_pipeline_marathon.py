@@ -33,6 +33,15 @@ def _stable_env() -> dict[str, str]:
 
 
 class RunReviewPipelineMarathonTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._review_preflight_patcher = mock.patch.object(
+            run_review_pipeline_module,
+            "run_review_prerequisite_check",
+            return_value=None,
+        )
+        self._review_preflight_patcher.start()
+        self.addCleanup(self._review_preflight_patcher.stop)
+
     def test_find_reusable_sc_test_step_should_pick_matching_failed_pipeline_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

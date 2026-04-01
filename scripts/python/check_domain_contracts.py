@@ -32,11 +32,19 @@ from pathlib import Path
 from typing import Any
 
 
-EVENT_TYPE_CONST_RE = re.compile(
+EVENT_TYPE_LITERAL_RE = re.compile(
     r"\bpublic\s+const\s+string\s+EventType\s*=\s*\"([^\"]+)\"\s*;",
     re.MULTILINE,
 )
-DOC_DOMAIN_EVENT_RE = re.compile(r"\bDomain\s+event:\s*([a-z0-9.]+)\b", re.IGNORECASE)
+EVENT_TYPE_SYMBOL_RE = re.compile(
+    r"\bpublic\s+const\s+string\s+EventType\s*=\s*EventTypes\.([A-Za-z_][A-Za-z0-9_]*)\s*;",
+    re.MULTILINE,
+)
+EVENT_TYPES_MEMBER_RE = re.compile(
+    r"\bpublic\s+const\s+string\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\"([^\"]+)\"\s*;",
+    re.MULTILINE,
+)
+DOC_DOMAIN_EVENT_RE = re.compile(r"\bDomain\s+event:\s*([a-z0-9._]+)\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -72,13 +80,25 @@ def _iter_contract_files(contracts_dir: Path) -> list[Path]:
     return sorted(files)
 
 
+def _load_event_types_map(contracts_dir: Path) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    event_types_path = contracts_dir / "EventTypes.cs"
+    if not event_types_path.exists():
+        return mapping
+
+    text = event_types_path.read_text(encoding="utf-8", errors="ignore")
+    for symbol, value in EVENT_TYPES_MEMBER_RE.findall(text):
+        mapping[symbol] = value
+    return mapping
+
+
 def _validate_event_type(value: str, *, domain_prefix: str) -> list[str]:
     issues: list[str] = []
     s = value.strip()
     if s != value:
         issues.append("event type contains leading/trailing whitespace")
 
-    token_re = re.compile(r"^[a-z][a-z0-9]*$")
+    token_re = re.compile(r"^[a-z][a-z0-9_]*$")
     parts = s.split(".")
     if len(parts) < 3:
         issues.append("event type must have >= 3 dot-separated segments (prefix.entity.action)")
@@ -86,12 +106,21 @@ def _validate_event_type(value: str, *, domain_prefix: str) -> list[str]:
 
     for part in parts:
         if not token_re.fullmatch(part):
-            issues.append(f"invalid segment: {part!r} (require [a-z][a-z0-9]*)")
+            issues.append(f"invalid segment: {part!r} (require [a-z][a-z0-9_]*)")
 
     if parts and parts[0] != domain_prefix:
         issues.append(f"domain prefix mismatch: expected '{domain_prefix}.'")
 
     return issues
+
+
+def _doc_value_for_position(doc_matches: list[re.Match[str]], position: int) -> str | None:
+    nearest: str | None = None
+    for match in doc_matches:
+        if match.start() > position:
+            break
+        nearest = match.group(1).strip()
+    return nearest
 
 
 def main() -> int:
@@ -123,16 +152,37 @@ def main() -> int:
 
     findings: list[Finding] = []
     all_event_types: dict[str, list[str]] = {}
+    event_type_map = _load_event_types_map(contracts_dir)
 
     for cs in _iter_contract_files(contracts_dir):
         text = cs.read_text(encoding="utf-8", errors="ignore")
-        const_values = EVENT_TYPE_CONST_RE.findall(text)
-        doc_values = DOC_DOMAIN_EVENT_RE.findall(text)
-        doc_value = doc_values[0].strip() if doc_values else None
+        doc_matches = list(DOC_DOMAIN_EVENT_RE.finditer(text))
+        resolved_values: list[tuple[int, str]] = []
 
-        for event_type in const_values:
+        for match in EVENT_TYPE_LITERAL_RE.finditer(text):
+            resolved_values.append((match.start(), match.group(1)))
+
+        for match in EVENT_TYPE_SYMBOL_RE.finditer(text):
+            symbol = match.group(1)
+            event_type = event_type_map.get(symbol)
+            if event_type:
+                resolved_values.append((match.start(), event_type))
+                continue
+            rel = _to_posix(cs.relative_to(root))
+            findings.append(
+                Finding(
+                    file=rel,
+                    event_type=f"EventTypes.{symbol}",
+                    ok=False,
+                    issues=[f"unresolved EventTypes symbol: {symbol}"],
+                    warnings=[],
+                )
+            )
+
+        for source_pos, event_type in resolved_values:
             issues = _validate_event_type(event_type, domain_prefix=args.domain_prefix)
             warnings: list[str] = []
+            doc_value = _doc_value_for_position(doc_matches, source_pos)
             if doc_value and doc_value.lower() != event_type.strip().lower():
                 warnings.append(f"doc 'Domain event' mismatch: doc={doc_value!r} const={event_type!r}")
 
@@ -179,4 +229,3 @@ if __name__ == "__main__":
     except Exception as exc:  # noqa: BLE001
         print(f"DOMAIN_CONTRACTS_CHECK status=fail error={exc}")
         raise SystemExit(2)
-
