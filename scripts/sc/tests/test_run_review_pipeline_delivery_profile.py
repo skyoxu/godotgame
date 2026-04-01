@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
@@ -38,6 +39,34 @@ def _stable_subprocess_env() -> dict[str, str]:
 
 
 class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._review_preflight_patcher = mock.patch.object(
+            run_review_pipeline_module,
+            "run_review_prerequisite_check",
+            return_value=None,
+        )
+        self._review_preflight_patcher.start()
+        self.addCleanup(self._review_preflight_patcher.stop)
+
+    @contextmanager
+    def _refactor_summary_fixture(self, *, task_id: str = "1"):
+        logs_root = REPO_ROOT / "logs" / "ci"
+        logs_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=logs_root) as tmpdir:
+            summary_dir = Path(tmpdir) / "sc-build-tdd"
+            summary_dir.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "cmd": "sc-build-tdd",
+                "task": {"task_id": str(task_id)},
+                "stage": "refactor",
+                "status": "ok",
+            }
+            (summary_dir / "summary.json").write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            yield summary_dir / "summary.json"
+
     def _triplet(self, *, back: dict | None = None, priority: str = "P2", title: str = "Implement feature") -> TaskmasterTriplet:
         return TaskmasterTriplet(
             task_id="1",
@@ -183,16 +212,17 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
             self.assertIn('SC_AGENT_REVIEW status=needs-fix', hook_log)
 
     def test_skip_all_steps_should_generate_agent_review_sidecar(self) -> None:
-        proc = subprocess.run(
-            [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review'],
-            cwd=str(REPO_ROOT),
-            env=_stable_subprocess_env(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding='utf-8',
-            errors='ignore',
-        )
+        with self._refactor_summary_fixture():
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review'],
+                cwd=str(REPO_ROOT),
+                env=_stable_subprocess_env(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                errors='ignore',
+            )
         self.assertEqual(0, proc.returncode, proc.stdout)
         out_dir = _extract_out_dir(proc.stdout or '')
         summary = json.loads((out_dir / 'summary.json').read_text(encoding='utf-8'))
@@ -205,16 +235,17 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
         self.assertEqual(str(out_dir / 'agent-review.md'), latest['agent_review_md_path'])
 
     def test_skip_agent_review_should_not_generate_sidecar_outputs(self) -> None:
-        proc = subprocess.run(
-            [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review', '--skip-agent-review'],
-            cwd=str(REPO_ROOT),
-            env=_stable_subprocess_env(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding='utf-8',
-            errors='ignore',
-        )
+        with self._refactor_summary_fixture():
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), '--task-id', '1', '--skip-test', '--skip-acceptance', '--skip-llm-review', '--skip-agent-review'],
+                cwd=str(REPO_ROOT),
+                env=_stable_subprocess_env(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                errors='ignore',
+            )
         self.assertEqual(0, proc.returncode, proc.stdout)
         out_dir = _extract_out_dir(proc.stdout or '')
         latest = json.loads((REPO_ROOT / 'logs' / 'ci' / out_dir.parent.name / 'sc-review-pipeline-task-1' / 'latest.json').read_text(encoding='utf-8'))

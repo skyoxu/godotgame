@@ -232,7 +232,7 @@ Use when:
 Stop-loss:
 - this script may be a lighter or repo-specific supplement; do not treat it as a replacement for `validate_contracts.py`
 
-### `py -3 scripts/python/sync_task_overlay_refs.py --prd-id <PRD-ID> --write`
+### `py -3 scripts/python/sync_task_overlay_refs.py --prd-id <PRD-ID> --write [--skip-done]`
 
 Use when:
 - task overlay refs drift from overlay docs
@@ -242,6 +242,7 @@ Prerequisites:
 - task triplet available
 - real PRD / overlay roots
 - write review after execution
+- add `--skip-done` when completed tasks should keep their frozen overlay refs
 
 Why this is stable:
 - it is already part of the documented overlay/task maintenance path
