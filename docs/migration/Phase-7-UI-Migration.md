@@ -603,7 +603,7 @@ public partial class UserCard : PanelContainer
 
 ## 3. 状态管理迁移
 
-### LegacyUIFramework useState 鈫?Godot Properties + Signals
+### LegacyUIFramework useState -> Godot Properties + Signals
 
 **LegacyUIFramework State (LegacyProject)**:
 

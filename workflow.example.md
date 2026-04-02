@@ -125,7 +125,7 @@ py -3 scripts/python/dev_cli.py new-decision-log --title "<topic>" --task-id <id
 ```
 
 
-TDD å»ºè®®é¡ºåºï¼
+TDD Sequence:
 
 ```powershell
 py -3 scripts/sc/check_tdd_execution_plan.py --task-id <id> --tdd-stage red-first --verify unit --execution-plan-policy draft
@@ -134,17 +134,14 @@ py -3 scripts/sc/build.py tdd --task-id <id> --stage green
 py -3 scripts/sc/build.py tdd --task-id <id> --stage refactor
 ```
 
-é¡ºåºçº¦æï¼
+Ordering Constraints:
 
-- green ä¼å
-æ£æ¥æè¿ä¸æ¬¡ `sc-llm-acceptance-tests/summary-<task>.json` æ¯å¦æ¯å¹²åç `red-first` ç»æã
-- å¦æ red-first åå»ºäºæ°æµè¯æä»¶ï¼è¿è¦æ± `red_verify.status = ok`ã
-- refactor ä¼å
-æ£æ¥æè¿ä¸æ¬¡ green summary æ¯å¦ä¸º `status = ok`ã
-- review pipeline ä¼å
-æ£æ¥æè¿ä¸æ¬¡ refactor summary æ¯å¦ä¸º `status = ok`ã
-- å½ `--verify auto|all` å¸¦ `--task-id` æ¶ï¼å¦æä»»å¡è§å¾éæ²¡æ `.gd` refsï¼task-scoped GdUnit ä¼ç´æ¥å¤±è´¥ï¼èä¸æ¯åéè·å
-¨éç®å½ã
+- 6.5 green 会强制读取最近一次 `sc-llm-acceptance-tests/summary-<task>.json`。
+- 这份 summary 必须来自 `red-first`，且不能存在失败 ref。
+- 如果 6.4 创建了新测试文件，还要求 `red_verify.status = ok`，否则 6.5 直接阻断。
+- 当你在 6.4 使用 `--verify auto|all` 且带 `--task-id` 时，task-scoped GdUnit 现在必须能从任务视图解析出 `.gd` refs；不再静默回退到 `tests/Scenes` 等全量目录。
+
+
 如果 `check_tdd_execution_plan.py` 已经明显提示这是复杂任务，不要立刻手工加重所有步骤；先做两件事：
 
 1. 先补一个最小 `execution-plan`
@@ -186,14 +183,6 @@ py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin "$env:GODOT_BI
 py -3 scripts/python/inspect_run.py --kind local-hard-checks
 ```
 
-### Day 4 补充：轻量 lane 的默认口径
-
-默认只记住两种入口：
-
-1. 单任务或很小的临时批次：
-
-```powershell
-py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship
 ```
 
 2. 长区间、多任务：
