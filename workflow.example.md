@@ -173,7 +173,28 @@ py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_B
 如果出现可执行的 `Needs Fix`：
 
 ```powershell
-py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id <id> --max-rounds 1 --rerun-failing-only --time-budget-min 20 --agents code-reviewer,test-automator,semantic-equivalence-auditor
+py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id <id> --delivery-profile fast-ship
+```
+
+说明：
+
+- 6.7 会按 profile 自动选择默认 reviewer 集合；如果上一轮只有个别 reviewer timeout，当前轮只会定向放大这些 reviewer 的超时预算。
+- 6.7 的进一步 `sc-test` 复用只在 `playable-ea` / `fast-ship` 自动启用，而且只接受“文档/任务语义层”变更；只要触及代码、脚本、contracts、测试文件或运行时资源，就会回退到正常 `sc-test`。
+- 6.8 首轮会优先读取上一轮 `agent-review.json` / `sc-llm-review summary.json`，自动收缩 reviewer；如果没有稳定历史信号，再回退到 profile 默认集合。
+- 6.8 对 task semantics 文本改动会切到最小 acceptance 子集；如果 change fingerprint 没变，会优先复用上一次已经成功的最小 acceptance 结果。
+- `standard` 不启用上面两条放宽路径；它只接受完全相同 snapshot 的复用，否则回到完整 deterministic 链路。
+- 最后一轮正式收口时，直接用 `--final-pass` 强制完整 deterministic 和完整 reviewer 集合。
+
+如果只是快速验证可玩性：
+
+```powershell
+py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile playable-ea
+```
+
+如果准备做更重的收口：
+
+```powershell
+py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id <id> --delivery-profile standard --final-pass
 ```
 
 在 commit 或 PR 前：
@@ -181,8 +202,6 @@ py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id <id> --max-rounds 1 --re
 ```powershell
 py -3 scripts/python/dev_cli.py run-local-hard-checks --godot-bin "$env:GODOT_BIN"
 py -3 scripts/python/inspect_run.py --kind local-hard-checks
-```
-
 ```
 
 2. 长区间、多任务：
@@ -227,3 +246,4 @@ py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --t
 - 不要因为 Serena 暂时不可用就阻塞整项工作
 - 当 `run_review_pipeline.py` 已存在时，不要手工串 test + acceptance + llm review
 - 新仓不要等到第一笔业务提交前，才第一次跑 `run-local-hard-checks`
+

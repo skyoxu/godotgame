@@ -68,6 +68,7 @@ def build_pipeline_steps(
     llm_agents: str,
     llm_timeout_sec: int,
     llm_agent_timeout_sec: int,
+    llm_agent_timeouts: str,
     llm_semantic_gate: str,
     llm_strict: bool,
     llm_diff_mode: str,
@@ -117,6 +118,8 @@ def build_pipeline_steps(
         "--agent-timeout-sec",
         str(llm_agent_timeout_sec),
     ]
+    if str(llm_agent_timeouts).strip():
+        llm_cmd += ["--agent-timeouts", str(llm_agent_timeouts).strip()]
     if not args.llm_no_uncommitted:
         llm_cmd.append("--uncommitted")
     if llm_strict:
