@@ -1261,14 +1261,17 @@ Notes:
 
 #### `scripts/sc/llm_review_needs_fix_fast.py`
 
-- Direct local deps: `scripts/sc/_util.py`
-- Transitive local deps: `scripts/sc/_util.py`
+- Direct local deps: `scripts/sc/_delivery_profile.py`, `scripts/sc/_util.py`
+- Transitive local deps: `scripts/sc/_delivery_profile.py`, `scripts/sc/_util.py`
 - Subcommands: None.
-- Declared args: `--task-id`, `--security-profile`, `--agents`, `--review-template`, `--base`, `--diff-mode`, `--max-rounds`, `--rerun-failing-only`, `--time-budget-min`, `--llm-timeout-sec`, `--agent-timeout-sec`, `--step-timeout-sec`, `--skip-sc-test`, `--python`
+- Declared args: `--task-id`, `--delivery-profile`, `--security-profile`, `--agents`, `--review-template`, `--base`, `--diff-mode`, `--max-rounds`, `--rerun-failing-only`, `--no-rerun-failing-only`, `--time-budget-min`, `--llm-timeout-sec`, `--agent-timeout-sec`, `--step-timeout-sec`, `--min-llm-budget-min`, `--final-pass`, `--skip-sc-test`, `--python`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
   - Model-backed steps require the repo's LLM runtime/CLI; deterministic-only or skip modes can reduce that requirement, but do not assume zero-model execution unless the script explicitly supports it.
+  - First round reviewer selection can auto-shrink from the previous task run's `agent-review.json` or `sc-llm-review` summary when those artifacts exist and are stable.
+  - Deterministic reuse can scan recent same-task pipeline artifacts across dates; git snapshot or security-profile mismatch still disables reuse.
+  - `--final-pass` disables deterministic shortcuts and reviewer auto-shrink, forces a full reviewer set, and is intended for the last closure run before handoff/PR.
 
 #### `scripts/sc/run_review_pipeline.py`
 
@@ -1276,6 +1279,7 @@ Notes:
 - Transitive local deps: `scripts/sc/_active_task_sidecar.py`, `scripts/sc/_agent_review_contract.py`, `scripts/sc/_agent_review_policy.py`, `scripts/sc/_approval_contract.py`, `scripts/sc/_artifact_schema.py`, `scripts/sc/_artifact_schema_fallback.py`, `scripts/sc/_delivery_profile.py`, `scripts/sc/_harness_capabilities.py`, `scripts/sc/_llm_review_tier.py`, `scripts/sc/_marathon_policy.py`, `scripts/sc/_marathon_state.py`, `scripts/sc/_pipeline_approval.py`, `scripts/sc/_pipeline_events.py`, `scripts/sc/_pipeline_helpers.py`, `scripts/sc/_pipeline_plan.py`, `scripts/sc/_pipeline_session.py`, `scripts/sc/_pipeline_support.py`, `scripts/sc/_repair_approval.py`, `scripts/sc/_repair_guidance.py`, `scripts/sc/_repair_recommendations.py`, `scripts/sc/_sidecar_schema.py`, `scripts/sc/_summary_schema.py`, `scripts/sc/_summary_schema_fallback.py`, `scripts/sc/_summary_schema_local_hard_checks.py`, `scripts/sc/_taskmaster.py`, `scripts/sc/_taskmaster_paths.py`, `scripts/sc/_technical_debt.py`, `scripts/sc/_util.py`, `scripts/sc/agent_to_agent_review.py`
 - Subcommands: None.
 - Declared args: None.
+- Behavior notes: task-scoped previous timeout evidence can inject targeted `--agent-timeouts` for timed-out reviewers only; this is automatic and profile-aware.
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
@@ -1617,4 +1621,3 @@ Helper modules below are referenced directly by at least two included entry scri
 - When adding or deleting a workflow-facing entrypoint, update this document in the same change set as the script.
 - If a business repo copies entrypoints from this template, copy the listed direct and transitive local deps in the same migration batch.
 - Do not re-add one-off migration or sibling-sync scripts unless they graduate into a recurring workflow and are documented elsewhere first.
-

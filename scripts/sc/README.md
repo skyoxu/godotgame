@@ -183,6 +183,10 @@ py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN
 # Standard profile for release hardening
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile standard
 
+# Final closure pass for remaining Needs Fix items:
+# force full deterministic checks + full reviewer set and disable fast-path shortcuts
+py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id 10 --delivery-profile standard --final-pass
+
 # Optional: explicit security override when you intentionally break the default mapping
 py -3 scripts/sc/run_review_pipeline.py --task-id 10 --godot-bin "$env:GODOT_BIN" --delivery-profile fast-ship --security-profile strict
 
