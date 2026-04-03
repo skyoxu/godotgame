@@ -64,16 +64,19 @@ class EntrypointDeliveryProfileTests(unittest.TestCase):
         self.assertFalse(playable["coverage_gate"])
         self.assertEqual(0, playable["coverage_lines_min"])
         self.assertEqual(0, playable["coverage_branches_min"])
+        self.assertFalse(playable["allow_full_unit_fallback"])
 
         self.assertTrue(fast_ship["coverage_gate"])
         self.assertEqual(70, fast_ship["coverage_lines_min"])
         self.assertEqual(60, fast_ship["coverage_branches_min"])
         self.assertEqual("host-safe", fast_ship["security_profile"])
+        self.assertFalse(fast_ship["allow_full_unit_fallback"])
 
         self.assertTrue(standard["coverage_gate"])
         self.assertEqual(90, standard["coverage_lines_min"])
         self.assertEqual(85, standard["coverage_branches_min"])
         self.assertEqual("strict", standard["security_profile"])
+        self.assertFalse(standard["allow_full_unit_fallback"])
 
     def test_test_runtime_should_respect_explicit_no_coverage_gate(self) -> None:
         runtime = sc_test.resolve_test_runtime(delivery_profile="standard", security_profile=None, no_coverage_gate=True)
