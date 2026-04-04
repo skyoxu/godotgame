@@ -26,6 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-acceptance", action="store_true", help="Skip sc-acceptance-check step.")
     parser.add_argument("--skip-llm-review", action="store_true", help="Skip sc-llm-review step.")
     parser.add_argument("--skip-agent-review", action="store_true", help="Skip the post-pipeline agent review sidecar.")
+    parser.add_argument(
+        "--allow-full-unit-fallback",
+        action="store_true",
+        help="Pass through to sc-test: when task-scoped unit coverage is 0.0%, retry once without the task filter.",
+    )
     parser.add_argument("--llm-agents", default=None, help="llm_review --agents value. Default follows delivery profile.")
     parser.add_argument("--llm-timeout-sec", type=int, default=None, help="llm_review total timeout. Default follows delivery profile.")
     parser.add_argument("--llm-agent-timeout-sec", type=int, default=None, help="llm_review per-agent timeout. Default follows delivery profile.")

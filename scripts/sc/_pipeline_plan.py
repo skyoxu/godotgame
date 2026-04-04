@@ -80,6 +80,8 @@ def build_pipeline_steps(
     test_cmd = ["py", "-3", "scripts/sc/test.py", "--type", test_type, "--task-id", task_id, "--run-id", run_id, "--delivery-profile", delivery_profile]
     if args.godot_bin:
         test_cmd += ["--godot-bin", str(args.godot_bin)]
+    if bool(getattr(args, "allow_full_unit_fallback", False)):
+        test_cmd.append("--allow-full-unit-fallback")
     steps.append(("sc-test", test_cmd, 1800, args.skip_test))
 
     acceptance_cmd = build_acceptance_command(
