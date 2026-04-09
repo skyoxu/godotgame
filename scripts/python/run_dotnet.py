@@ -8,7 +8,7 @@ Env thresholds (optional):
   COVERAGE_BRANCHES_MIN e.g., "85" (percent)
 
 Usage (Windows):
-  py -3 scripts/python/run_dotnet.py --solution Game.sln --configuration Debug
+  py -3 scripts/python/run_dotnet.py --solution auto --configuration Debug
 """
 import argparse
 import datetime as dt
@@ -20,6 +20,9 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
+
+from solution_target import resolve_test_solution_arg
 
 
 def run_cmd(args, cwd=None, timeout=900_000):
@@ -83,56 +86,31 @@ def pick_latest_existing(paths):
     return max(existing, key=lambda p: os.path.getmtime(p))
 
 
-def extract_failure_excerpt(output: str, max_lines: int = 40):
-    patterns = [
-        r"\[xUnit\.net.*\[FAIL\]",
-        r"^\s*Failed\s+",
-        r"^\s*失败\s+",
-        r"^.*error CS\d+.*$",
-        r"^.*Error Message:.*$",
-        r"^.*堆栈跟踪:.*$",
-        r"^.*Stack Trace:.*$",
-    ]
-    rx = [re.compile(p, re.IGNORECASE) for p in patterns]
-    lines = []
-    for line in output.splitlines():
-        if any(r.search(line) for r in rx):
-            lines.append(line)
-            if len(lines) >= max_lines:
-                break
-    return lines
-
-
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--solution', default='Game.sln')
+    ap.add_argument('--solution', default='')
     ap.add_argument('--configuration', default='Debug')
     ap.add_argument('--filter', default=None, help='Optional dotnet test filter expression.')
     ap.add_argument('--out-dir', default=None)
     args = ap.parse_args()
 
     root = os.getcwd()
+    resolved_solution = resolve_test_solution_arg(args.solution, root=Path(root))
     date = dt.date.today().strftime('%Y-%m-%d')
     out_dir = args.out_dir or os.path.join(root, 'logs', 'unit', date)
     ensure_dir(out_dir)
 
-    try:
-        test_timeout_ms = int(os.environ.get('DOTNET_TEST_TIMEOUT_MS', '1800000') or '1800000')
-    except ValueError:
-        test_timeout_ms = 1_800_000
-    test_timeout_ms = max(60_000, test_timeout_ms)
-
     summary = {
-        'solution': args.solution,
+        'solution': resolved_solution,
+        'solution_input': args.solution,
         'configuration': args.configuration,
         'filter': args.filter or '',
         'out_dir': out_dir,
         'status': 'fail',
-        'test_timeout_ms': test_timeout_ms,
     }
 
     # Restore
-    rc, out = run_cmd(['dotnet', 'restore', args.solution], cwd=root)
+    rc, out = run_cmd(['dotnet', 'restore', resolved_solution], cwd=root)
     with io.open(os.path.join(out_dir, 'dotnet-restore.log'), 'w', encoding='utf-8') as f:
         f.write(out)
     summary['restore_rc'] = rc
@@ -142,36 +120,17 @@ def main():
         print(f'RUN_DOTNET status=fail stage=restore out={out_dir}')
         return 1
 
-    # Test with coverage (retry once for transient failures)
-    try:
-        retry_on_fail = int(os.environ.get('DOTNET_TEST_RETRY_ON_FAIL', '1') or '1')
-    except ValueError:
-        retry_on_fail = 1
-    retry_on_fail = max(0, retry_on_fail)
-
-    test_attempt = 0
-    rc = 1
-    out = ''
-    attempts_log = []
-    while test_attempt <= retry_on_fail:
-        test_attempt += 1
-        test_cmd = ['dotnet', 'test', args.solution,
-                    f'-c', args.configuration,
-                    '--collect:XPlat Code Coverage',
-                    '--logger', 'trx;LogFileName=tests.trx']
-        if args.filter:
-            test_cmd.extend(['--filter', args.filter])
-        rc, out = run_cmd(test_cmd, cwd=root, timeout=test_timeout_ms)
-        attempts_log.append({'attempt': test_attempt, 'rc': rc})
-        with io.open(os.path.join(out_dir, f'dotnet-test-output-attempt-{test_attempt}.txt'), 'w', encoding='utf-8') as f:
-            f.write(out)
-        if rc == 0:
-            break
-
+    # Test with coverage
+    test_cmd = ['dotnet', 'test', resolved_solution,
+                f'-c', args.configuration,
+                '--collect:XPlat Code Coverage',
+                '--logger', 'trx;LogFileName=tests.trx']
+    if args.filter:
+        test_cmd.extend(['--filter', args.filter])
+    rc, out = run_cmd(test_cmd, cwd=root)
     with io.open(os.path.join(out_dir, 'dotnet-test-output.txt'), 'w', encoding='utf-8') as f:
         f.write(out)
     summary['test_rc'] = rc
-    summary['test_attempts'] = attempts_log
 
     # Copy artifacts using paths emitted by dotnet test output (preferred).
     artifacts = parse_paths_from_test_output(out)
@@ -236,13 +195,6 @@ def main():
     summary['threshold_ok'] = threshold_ok
 
     summary['status'] = 'ok' if (rc == 0 and threshold_ok) else ('tests_failed' if rc != 0 else 'coverage_failed')
-    if summary['status'] == 'tests_failed':
-        excerpt = extract_failure_excerpt(out)
-        summary['failure_excerpt'] = excerpt
-        if excerpt:
-            print('RUN_DOTNET failure excerpt:')
-            for line in excerpt:
-                print(line)
     with io.open(os.path.join(out_dir, 'summary.json'), 'w', encoding='utf-8') as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 

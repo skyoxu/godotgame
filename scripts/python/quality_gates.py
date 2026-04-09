@@ -22,6 +22,7 @@ from quality_gates_builders import (
     build_gdunit_hard_cmd,
     build_smoke_headless_cmd,
 )
+from solution_target import resolve_test_solution_arg
 
 
 def _run(cmd: list[str]) -> int:
@@ -66,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
         "all",
         help="run hard gate bundle with optional GdUnit hard and smoke follow-up steps",
     )
-    p_all.add_argument("--solution", default="Game.sln")
+    p_all.add_argument("--solution", default="")
     p_all.add_argument("--configuration", default="Debug")
     p_all.add_argument("--build-solutions", action="store_true")
     p_all.add_argument("--godot-bin", default="")
@@ -86,6 +87,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd != "all":
         print("Unsupported command", file=sys.stderr)
         return 1
+
+    # Keep argument compatibility while normalizing default behavior.
+    # This value is currently not consumed by the gate-bundle branch.
+    _resolved_solution = resolve_test_solution_arg(args.solution)
 
     if (args.gdunit_hard or args.smoke) and not args.godot_bin:
         print("[quality_gates] error: --godot-bin is required when --gdunit-hard or --smoke is enabled", file=sys.stderr)

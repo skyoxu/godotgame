@@ -87,6 +87,25 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - 手动发布指引：`docs/release/WINDOWS_MANUAL_RELEASE.md`
 - Release/Sentry 软门禁与工作流说明：`docs/workflows/GM-NG-T2-playable-guide.md`
 
+## Recovery First
+
+任务在 context reset、跨会话或隔天恢复时，先走恢复链，不要直接重开一轮完整 Chapter 6。
+
+1. 先读：`docs/agents/01-session-recovery.md`
+2. 先执行：`py -3 scripts/python/dev_cli.py resume-task --task-id <id>`
+3. 只有当 recovery summary 仍然不够时，再执行：`py -3 scripts/python/inspect_run.py --kind pipeline --task-id <id>`
+
+在重开完整 `6.7` 前，至少先看这些信号：
+
+- `Latest reason`
+- `Latest run type`
+- `Latest reuse mode`
+- `Latest artifact integrity`
+- `Chapter6 blocked by`
+- `recommended_action_why`
+
+如果恢复链已经显示 `planned-only`、`artifact_integrity`、`rerun_guard`、`llm_retry_stop_loss`、`sc_test_retry_stop_loss` 或 `needs-fix-fast`，先按恢复建议做窄修复或回退，不要直接付出一次新的完整重跑成本。
+
 ### Deep Reference
 - 文档索引：`docs/PROJECT_DOCUMENTATION_INDEX.md`
 - Script Entrypoints Index: `docs/workflows/script-entrypoints-index.md`
