@@ -27,6 +27,7 @@ from local_hard_checks_support import (
     write_latest_index,
     write_step_log,
 )
+from solution_target import resolve_test_solution_arg
 
 try:
     from _delivery_profile import default_security_profile_for_delivery, resolve_delivery_profile
@@ -55,7 +56,7 @@ def _run_step_default(cmd: list[str]) -> int:
 
 def run_local_hard_checks(
     *,
-    solution: str = "Game.sln",
+    solution: str = "",
     configuration: str = "Debug",
     godot_bin: str = "",
     delivery_profile: str = "",
@@ -65,6 +66,7 @@ def run_local_hard_checks(
     timeout_sec: int = 5,
     run_fn: Callable[[list[str]], int] | None = None,
 ) -> int:
+    resolved_solution = resolve_test_solution_arg(solution)
     resolved_delivery_profile = resolve_delivery_profile(delivery_profile or None)
     security_profile = default_security_profile_for_delivery(resolved_delivery_profile)
     requested_run_id = str(run_id or "").strip() or uuid.uuid4().hex
@@ -93,7 +95,7 @@ def run_local_hard_checks(
         delivery_profile=resolved_delivery_profile,
         security_profile=security_profile,
         status="running",
-        details={"requested_run_id": requested_run_id, "cmd": CMD_NAME},
+        details={"requested_run_id": requested_run_id, "cmd": CMD_NAME, "solution": resolved_solution},
     )
 
     summary: dict[str, Any] = {
@@ -119,7 +121,7 @@ def run_local_hard_checks(
         task_files=task_file_list,
         out_dir=resolved_out_dir,
         run_id=resolved_run_id,
-        solution=solution,
+        solution=resolved_solution,
         configuration=configuration,
         godot_bin=godot_bin,
         timeout_sec=timeout_sec,
