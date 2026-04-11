@@ -73,6 +73,8 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - Template Upgrade Protocol: `docs/workflows/template-upgrade-protocol.md`
 - Business Repo Upgrade Guide: `docs/workflows/business-repo-upgrade-guide.md`
 - Prototype Lane: `docs/workflows/prototype-lane.md`
+- Prototype Lane Playbook: `docs/workflows/prototype-lane-playbook.md`
+- Prototype TDD: `docs/workflows/prototype-tdd.md`
 - Overlay Generation Quickstart: `docs/workflows/overlay-generation-quickstart.md`
 - Overlay Generation SOP: `docs/workflows/overlay-generation-sop.md`
 - Overlay Authoring Guide: `docs/workflows/overlays-authoring-guide.md`
@@ -129,7 +131,10 @@ README 只保留稳定公共入口摘要，不再在这里维护长脚本清单�
 - `py -3 scripts/python/dev_cli.py project-health-scan`
 - `py -3 scripts/python/dev_cli.py serve-project-health`
 - `py -3 scripts/python/dev_cli.py resume-task --task-id <id>`
-- `py -3 scripts/python/inspect_run.py --kind <kind> [--task-id <id>]`
+- `py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage <red|green|refactor> ...`
+- `py -3 scripts/python/dev_cli.py inspect-run --kind <kind> [--task-id <id>]`
+- `py -3 scripts/python/dev_cli.py chapter6-route --task-id <id> --recommendation-only`
+- `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
 
 2. 任务交付主环
 - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`

@@ -40,6 +40,17 @@ Recommended location:
 - `docs/prototypes/` for design-heavy prototypes
 - `prototypes/` or feature-local scratch area for code-heavy prototypes
 
+
+- Full operator flow: `docs/workflows/prototype-lane-playbook.md`
+
+## Prototype TDD Option
+If you still want TDD while staying in prototype lane, use the lightweight prototype entrypoint instead of formal Chapter 6 evidence:
+
+- `py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage red --dotnet-target Game.Core.Tests/Game.Core.Tests.csproj --filter <Expr>`
+- It writes prototype notes under `docs/prototypes/` and local evidence under `logs/ci/<date>/prototype-tdd-<slug>-<stage>/`.
+- It does not consume Taskmaster triplets, acceptance refs, overlay refs, or review sidecars.
+- If the prototype is promoted, rerun the work through formal `6.3 -> 6.4 -> 6.5 -> 6.6` instead of treating prototype evidence as production evidence.
+
 ## Allowed Relaxations
 Prototype lane may relax:
 - full `run_review_pipeline.py` usage

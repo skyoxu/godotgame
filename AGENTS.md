@@ -27,6 +27,8 @@ This file is the repository map. It routes you to the right source document by t
   - [Session Recovery](docs/agents/01-session-recovery.md)
   - `logs/ci/active-tasks/task-<id>.active.md` for the shortest local recovery summary when it exists
   - `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` when a task-scoped local run already exists
+  - `py -3 scripts/python/dev_cli.py chapter6-route --task-id <id> --recommendation-only` before paying for another `6.7` or `6.8`
+  - `py -3 scripts/python/dev_cli.py inspect-run --kind pipeline --task-id <id>` when resume and route are still not enough
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
   - [Harness Run Protocol](docs/workflows/run-protocol.md)
   - [Harness Boundary Matrix](docs/workflows/harness-boundary-matrix.md)
@@ -60,6 +62,8 @@ This file is the repository map. It routes you to the right source document by t
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
+- [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
+- [Prototype TDD](docs/workflows/prototype-tdd.md)
 - [Prototype Workspace](docs/prototypes/README.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
@@ -86,6 +90,8 @@ This file is the repository map. It routes you to the right source document by t
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
+- [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
+- [Prototype TDD](docs/workflows/prototype-tdd.md)
 - Need tests, logs, artifacts, Test-Refs, or DoD:
   - [Testing Framework](docs/testing-framework.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
@@ -156,7 +162,10 @@ This file is the repository map. It routes you to the right source document by t
 - Task-scoped execution entry: `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN"`
 - Targeted test / acceptance / review checks are internal pipeline stages behind `run_review_pipeline.py`; do not document them as standalone task-level commands.
 - First recovery entry: read `logs/ci/active-tasks/task-<id>.active.md` if present, then run `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` for the full task-scoped summary.
-- If deeper inspection is still needed, inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory before reaching for internal helper scripts.
+- Before paying for another Chapter 6 rerun, use `py -3 scripts/python/dev_cli.py chapter6-route --task-id <id> --recommendation-only` to decide whether the right lane is `6.7`, `6.8`, residual recording, or inspection-first.
+- If deeper inspection is still needed, run `py -3 scripts/python/dev_cli.py inspect-run --kind pipeline --task-id <id>` or inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory.
+- Single-task Chapter 6 orchestrator: `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
+- Prototype-lane TDD entry: `py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage <red|green|refactor> ...`
 - Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files
@@ -187,6 +196,8 @@ This file is the repository map. It routes you to the right source document by t
 - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
+- [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
+- [Prototype TDD](docs/workflows/prototype-tdd.md)
 
 ## Change Policy
 - Keep `summary.json` schema stable.

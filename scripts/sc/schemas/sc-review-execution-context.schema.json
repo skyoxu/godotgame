@@ -101,6 +101,30 @@
     "agent_review": {
       "type": "object"
     },
+    "recommended_action": {
+      "type": "string"
+    },
+    "recommended_action_why": {
+      "type": "string"
+    },
+    "candidate_commands": {
+      "type": "object"
+    },
+    "recommended_command": {
+      "type": "string"
+    },
+    "forbidden_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "latest_summary_signals": {
+      "type": "object"
+    },
+    "chapter6_hints": {
+      "type": "object"
+    },
     "llm_review": {
       "type": "object"
     },
@@ -139,6 +163,21 @@
         },
         "response_path": {
           "type": "string"
+        },
+        "recommended_action": {
+          "type": "string"
+        },
+        "allowed_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -230,66 +269,6 @@
             }
           }
         },
-        "change_scope_ceiling": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "type": "string"
-            },
-            "blocked": {
-              "type": "boolean"
-            },
-            "recommended_path": {
-              "type": "string"
-            },
-            "deterministic_strategy": {
-              "type": "string"
-            },
-            "changed_paths_count": {
-              "type": "integer"
-            },
-            "unsafe_paths_count": {
-              "type": "integer"
-            },
-            "allow_override_flag": {
-              "type": "string"
-            },
-            "changed_paths_sample": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "unsafe_paths_sample": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "profile_drift_present": {
-              "type": "boolean"
-            },
-            "ceilings": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "changed_paths": {
-                  "type": "integer"
-                },
-                "unsafe_paths": {
-                  "type": "integer"
-                },
-                "profile_drift_changed_paths": {
-                  "type": "integer"
-                },
-                "profile_drift_unsafe_paths": {
-                  "type": "integer"
-                }
-              }
-            }
-          }
-        },
         "llm_timeout_memory": {
           "type": "object",
           "additionalProperties": false,
@@ -315,6 +294,9 @@
             "timed_out_step": {
               "type": "string"
             },
+            "kind": {
+              "type": "string"
+            },
             "retry_count": {
               "type": "integer"
             },
@@ -333,8 +315,14 @@
             "step_name": {
               "type": "string"
             },
+            "kind": {
+              "type": "string"
+            },
             "retry_count": {
               "type": "integer"
+            },
+            "deterministic_ok": {
+              "type": "boolean"
             }
           }
         }
