@@ -278,6 +278,12 @@
               "additionalProperties": {
                 "type": "integer"
               }
+            },
+            "planned_agents": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
