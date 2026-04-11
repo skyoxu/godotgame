@@ -196,9 +196,9 @@ jobs:
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
           $env:GODOT_DOTNET_CLI = (Get-Command dotnet).Path
-          dotnet restore GodotGame.csproj
+          dotnet restore Game.sln
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet build GodotGame.csproj -c Release -v minimal
+          dotnet build Game.sln -c Release -v minimal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           $prewarm = Start-Process -FilePath "$env:GODOT_BIN" -ArgumentList "--headless", "--path", ".", "--quit" -Wait -PassThru -NoNewWindow
