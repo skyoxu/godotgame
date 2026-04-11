@@ -340,7 +340,11 @@ class RunArtifactSchemaTests(unittest.TestCase):
                 "llm_timeout_memory": {
                     "overrides": {
                         "code-reviewer": 480,
-                    }
+                    },
+                    "planned_agents": [
+                        "code-reviewer",
+                        "architecture-reviewer",
+                    ]
                 },
                 "llm_retry_stop_loss": {
                     "blocked": True,
