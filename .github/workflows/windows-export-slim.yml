@@ -95,8 +95,8 @@ jobs:
           $env:GODOT_DOTNET_CLI = (Get-Command dotnet).Path
           & "$env:GODOT_BIN" --headless --path . --quit
           & "$env:GODOT_BIN" --headless --path . --build-solutions --verbose --quit
-          dotnet restore GodotGame.csproj
-          dotnet build GodotGame.csproj -c Release -v minimal
+          dotnet restore Game.sln
+          dotnet build Game.sln -c Release -v minimal
 
       - name: Export Windows EXE
         if: always()
@@ -131,5 +131,4 @@ jobs:
           path: |
             build/Game.exe
             logs/ci/**
-
 
