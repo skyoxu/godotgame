@@ -379,7 +379,8 @@ def main() -> int:
             continue
 
         agent_cap = per_agent_overrides.get(agent, per_agent_timeout_sec)
-        effective_timeout = max(1, min(int(agent_cap), int(remaining)))
+        remaining_before_sec = max(0, int(remaining))
+        effective_timeout = max(1, int(agent_cap))
         rc, trace_out, cmd = run_codex_exec(
             backend=str(args.llm_backend),
             prompt=prompt_used,
@@ -431,7 +432,7 @@ def main() -> int:
                 cmd=cmd,
                 prompt_path=str(prompt_path.relative_to(repo_root())).replace("\\", "/"),
                 output_path=str(output_path.relative_to(repo_root())).replace("\\", "/"),
-                details={"trace": str(trace_path.relative_to(repo_root())).replace("\\", "/"), "claude_agents_root": str(claude_agents_root), "agent_prompt_source": prompt_meta.get("agent_prompt_source"), "security_profile": security_profile_payload(security_profile), "total_timeout_sec": total_timeout_sec, "agent_timeout_sec": effective_timeout, "prompt_budget": budget_meta, "prompt_shape": {**prompt_shape, **prompt_fit_meta}, "acceptance_semantic_meta": acceptance_semantic_meta, "verdict": verdict, "verdict_normalization": verdict_normalization, "note": "This step is best-effort. Use --strict to make it a hard gate."},
+                details={"trace": str(trace_path.relative_to(repo_root())).replace("\\", "/"), "claude_agents_root": str(claude_agents_root), "agent_prompt_source": prompt_meta.get("agent_prompt_source"), "security_profile": security_profile_payload(security_profile), "total_timeout_sec": total_timeout_sec, "agent_timeout_sec": effective_timeout, "remaining_before_sec": remaining_before_sec, "prompt_budget": budget_meta, "prompt_shape": {**prompt_shape, **prompt_fit_meta}, "acceptance_semantic_meta": acceptance_semantic_meta, "verdict": verdict, "verdict_normalization": verdict_normalization, "note": "This step is best-effort. Use --strict to make it a hard gate."},
             )
         )
 
