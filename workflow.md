@@ -154,25 +154,16 @@ py -3 scripts/python/dev_cli.py project-health-scan --serve
 
 只有当仓库明确要试点 `openai-api`，并且你希望把部分 LLM 脚本从 `codex-cli` 切到 API transport 时，才进入这一步。
 
-最小顺序：
+这里不要在 `workflow.md` 里重复维护底层脚本自检命令，统一按以下文档执行：
 
-```powershell
-py -3 -m pip install openai
-$env:OPENAI_API_KEY = "<your-key>"
-py -3 scripts/sc/llm_review.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_extract_task_obligations.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_align_acceptance_semantics.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_fill_acceptance_refs.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_check_subtasks_coverage.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_semantic_gate_all.py --self-check --llm-backend openai-api
-```
+- `docs/workflows/template-bootstrap-checklist.md`
 
-止损规则：
+最短口径：
 
 - `openai-api` 仍然是显式 opt-in，不是默认 backend
-- 先过 `llm_review` 自检，再过 semantic family 自检，最后才考虑 test generation 或接 CI
-- `llm_generate_tests_from_acceptance_refs.py` 目前没有 deterministic `--self-check`，只适合在前面几项都稳定后再做 spot check
-- 如果 self-check 还没干净，不要把 `openai-api` 接进正式 CI 或日常默认命令
+- 先让 checklist 里的 backend 自检通过，再考虑 test generation 或接 CI
+- `llm_generate_tests_from_acceptance_refs.py` 没有 deterministic `--self-check`，只适合在前面的 backend 自检已经稳定后再做 spot check
+- 如果 checklist 里的自检还没干净，不要把 `openai-api` 接进正式 CI 或日常默认命令
 
 ## 3. Phase 1：任务三联（Task Triplet）初始化
 
