@@ -11,6 +11,7 @@ from typing import Any
 
 from _delivery_profile import known_delivery_profiles, profile_llm_review_defaults, resolve_delivery_profile
 from _deterministic_review import DETERMINISTIC_AGENTS
+from _llm_backend import KNOWN_LLM_BACKENDS, inspect_llm_backend, resolve_llm_backend
 from _llm_review_acceptance import truncate
 from _security_profile import security_profile_payload
 from _util import repo_rel, split_csv, today_str
@@ -34,6 +35,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--review-template", default="", help="Optional template file path (relative to repo root). Overrides --review-profile.")
     ap.add_argument("--no-acceptance-semantic", action="store_true", help="Do not inject acceptance anchors + referenced test excerpts into prompts.")
     ap.add_argument("--prompts-only", action="store_true", help="Write prompts to logs/ and skip LLM execution.")
+    ap.add_argument(
+        "--llm-backend",
+        default=None,
+        choices=KNOWN_LLM_BACKENDS,
+        help="LLM transport backend. Default: env SC_LLM_BACKEND or codex-cli.",
+    )
     ap.add_argument("--agents", default="", help="Comma-separated agent list. Empty=default 3. Special: all|full.")
     ap.add_argument("--diff-mode", default="full", choices=["full", "summary", "none"], help="How much diff to include in prompts.")
     ap.add_argument("--base", default="main", help="Base branch for diff review.")
@@ -64,6 +71,7 @@ def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namesp
     delivery_profile = resolve_delivery_profile(getattr(args, "delivery_profile", None))
     defaults = profile_llm_review_defaults(delivery_profile)
     args.delivery_profile = delivery_profile
+    args.llm_backend = resolve_llm_backend(getattr(args, "llm_backend", None))
 
     if not str(getattr(args, "agents", "") or "").strip():
         args.agents = str(defaults.get("agents") or "")
@@ -128,10 +136,18 @@ def validate_args(args: argparse.Namespace) -> list[str]:
         errors.append("--agent-timeout-sec must be > 0.")
     if int(args.prompt_max_chars) <= 0:
         errors.append("--prompt-max-chars must be > 0.")
+    requires_backend_ready = bool(getattr(args, "self_check", False) or getattr(args, "dry_run_plan", False) or not getattr(args, "prompts_only", False))
+    backend_info = inspect_llm_backend(getattr(args, "llm_backend", None))
+    setattr(args, "_llm_backend_info", backend_info)
+    if requires_backend_ready:
+        errors.extend(str(item) for item in list(backend_info.get("blocking_errors") or []))
     return errors
 
 
 def summary_base(*, mode: str, out_dir: Path, args: argparse.Namespace, security_profile: str, status: str) -> dict[str, Any]:
+    backend_info = getattr(args, "_llm_backend_info", None)
+    if not isinstance(backend_info, dict):
+        backend_info = inspect_llm_backend(getattr(args, "llm_backend", None))
     return {
         "schema_version": "1.0.0",
         "cmd": "sc-llm-review",
@@ -140,6 +156,7 @@ def summary_base(*, mode: str, out_dir: Path, args: argparse.Namespace, security
         "status": status,
         "out_dir": repo_rel(out_dir),
         "strict": bool(args.strict),
+        "llm_backend": dict(backend_info),
         "security_profile": security_profile_payload(security_profile),
         "prompt_budget": {
             "max_chars": int(args.prompt_max_chars),

@@ -112,7 +112,7 @@ class GenerateTestsFromAcceptanceRefsTests(unittest.TestCase):
                 intents.append(str(kwargs["intent"]))
                 return "{}"
 
-            def fake_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
+            def fake_codex_exec(*, backend: str = "codex-cli", prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
                 payload = {
                     "file_path": "Game.Core.Tests/FooTests.cs" if "FooTests.cs" in str(out_last_message) else "Tests.Godot/tests/test_bar.gd",
                     "content": "\n".join(
@@ -197,7 +197,7 @@ class GenerateTestsFromAcceptanceRefsTests(unittest.TestCase):
                     return 0, "SC_TEST status=ok out=logs/ci/2026-03-20/sc-test\n"
                 raise AssertionError(f"unexpected command: {cmd}")
 
-            def fake_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
+            def fake_codex_exec(*, backend: str = "codex-cli", prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
                 payload = {
                     "file_path": "Game.Core.Tests/FooTests.cs",
                     "content": "\n".join(
@@ -273,7 +273,7 @@ class GenerateTestsFromAcceptanceRefsTests(unittest.TestCase):
                     return 0, "SC_TEST status=ok out=logs/ci/2026-03-20/sc-test\n"
                 raise AssertionError(f"unexpected command: {cmd}")
 
-            def fake_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
+            def fake_codex_exec(*, backend: str = "codex-cli", prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
                 payload = {
                     "file_path": "Game.Core.Tests/FooTests.cs",
                     "content": "\n".join(
@@ -344,7 +344,7 @@ class GenerateTestsFromAcceptanceRefsTests(unittest.TestCase):
                     return 1, "SC_TEST status=fail out=logs/ci/2026-03-20/sc-test\n"
                 raise AssertionError(f"unexpected command: {cmd}")
 
-            def fake_codex_exec(*, prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
+            def fake_codex_exec(*, backend: str = "codex-cli", prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
                 payload = {
                     "file_path": "Game.Core.Tests/FooTests.cs",
                     "content": "\n".join(
@@ -381,6 +381,64 @@ class GenerateTestsFromAcceptanceRefsTests(unittest.TestCase):
 
         self.assertEqual(0, rc)
         self.assertEqual(1, len(seen_test_cmds))
+
+    def test_generate_missing_files_should_forward_explicit_llm_backend(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            out_dir = root / "logs" / "ci" / "2026-03-20" / "sc-llm-acceptance-tests"
+            seen: list[str] = []
+
+            def fake_codex_exec(*, backend: str = "codex-cli", prompt: str, out_last_message: Path, timeout_sec: int):  # noqa: ARG001
+                seen.append(backend)
+                payload = {
+                    "file_path": "Game.Core.Tests/FooTests.cs",
+                    "content": "\n".join(
+                        [
+                            "using FluentAssertions;",
+                            "using Xunit;",
+                            "",
+                            "namespace Game.Core.Tests;",
+                            "",
+                            "public sealed class FooTests",
+                            "{",
+                            "    // ACC:T11.1",
+                            "    [Fact]",
+                            "    public void ShouldPublishJoinEvent_WhenMemberJoinsGuild()",
+                            "    {",
+                            "        var memberId = \"u1\";",
+                            "        memberId.Should().Be(\"u1\");",
+                            "    }",
+                            "}",
+                        ]
+                    ),
+                }
+                out_last_message.parent.mkdir(parents=True, exist_ok=True)
+                out_last_message.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+                return 0, "trace ok\n", ["openai-api", "gpt-5"]
+
+            with mock.patch.object(gen_script, "repo_root", return_value=root), \
+                mock.patch.object(gen_script, "_run_codex_exec", side_effect=fake_codex_exec):
+                results, created, any_gd, _primary_ref = gen_script._generate_missing_files(
+                    refs=["Game.Core.Tests/FooTests.cs"],
+                    by_ref={"Game.Core.Tests/FooTests.cs": [{"anchor": "ACC:T11.1", "text": "Alpha"}]},
+                    task_id="11",
+                    title="Generate missing tests",
+                    args=SimpleNamespace(
+                        tdd_stage="normal",
+                        include_prd_context=False,
+                        prd_context_path=".taskmaster/docs/prd.txt",
+                        select_timeout_sec=30,
+                        timeout_sec=30,
+                        llm_backend="openai-api",
+                    ),
+                    task_context_md="Task context markdown",
+                    out_dir=out_dir,
+                )
+
+        self.assertEqual(["openai-api"], seen)
+        self.assertEqual(1, created)
+        self.assertFalse(any_gd)
+        self.assertEqual(["ok"], [item.status for item in results])
 
 
 if __name__ == "__main__":

@@ -360,7 +360,13 @@ def main() -> int:
 
         agent_cap = per_agent_overrides.get(agent, per_agent_timeout_sec)
         effective_timeout = max(1, min(int(agent_cap), int(remaining)))
-        rc, trace_out, cmd = run_codex_exec(prompt=prompt_used, output_last_message=output_path, timeout_sec=effective_timeout, codex_configs=codex_configs)
+        rc, trace_out, cmd = run_codex_exec(
+            backend=str(args.llm_backend),
+            prompt=prompt_used,
+            output_last_message=output_path,
+            timeout_sec=effective_timeout,
+            codex_configs=codex_configs,
+        )
         write_text(trace_path, trace_out)
 
         last_msg = ""

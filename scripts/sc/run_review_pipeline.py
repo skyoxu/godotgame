@@ -1959,6 +1959,7 @@ def main() -> int:
         llm_semantic_gate=llm_semantic_gate,
         llm_strict=llm_strict,
         llm_diff_mode=llm_diff_mode,
+        llm_backend=getattr(args, "llm_backend", None),
     )
     force_full_rerun = False
     skip_deterministic = bool(args.skip_test and args.skip_acceptance and not args.skip_llm_review)
