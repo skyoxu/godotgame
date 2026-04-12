@@ -72,8 +72,10 @@ def apply_delivery_profile_defaults(args: argparse.Namespace) -> argparse.Namesp
     defaults = profile_llm_review_defaults(delivery_profile)
     args.delivery_profile = delivery_profile
     args.llm_backend = resolve_llm_backend(getattr(args, "llm_backend", None))
+    explicit_agents = bool(str(getattr(args, "agents", "") or "").strip())
+    setattr(args, "_agents_explicit", explicit_agents)
 
-    if not str(getattr(args, "agents", "") or "").strip():
+    if not explicit_agents:
         args.agents = str(defaults.get("agents") or "")
     if str(getattr(args, "diff_mode", "") or "").strip() == "full":
         args.diff_mode = str(defaults.get("diff_mode") or args.diff_mode)
@@ -114,10 +116,12 @@ def parse_agent_timeout_overrides(raw: str) -> dict[str, int]:
 def resolve_agents(raw: str, semantic_gate: str) -> list[str]:
     default_agents = ["architect-reviewer", "code-reviewer", "security-auditor"]
     all_agents = [*DETERMINISTIC_AGENTS, "architect-reviewer", "code-reviewer", "security-auditor", "test-automator"]
-    agents_raw = str(raw or "").strip().lower()
-    agents = all_agents if agents_raw in {"all", "full", "6"} else (split_csv(raw) or default_agents)
+    raw_text = str(raw or "").strip()
+    agents_raw = raw_text.lower()
+    explicit_agents = bool(raw_text) and agents_raw not in {"all", "full", "6"}
+    agents = all_agents if agents_raw in {"all", "full", "6"} else (split_csv(raw_text) or default_agents)
     semantic_agent = "semantic-equivalence-auditor"
-    if semantic_gate != "skip" and semantic_agent not in agents:
+    if semantic_gate != "skip" and semantic_agent not in agents and not explicit_agents:
         agents = [*agents, semantic_agent]
     return agents
 
@@ -136,6 +140,11 @@ def validate_args(args: argparse.Namespace) -> list[str]:
         errors.append("--agent-timeout-sec must be > 0.")
     if int(args.prompt_max_chars) <= 0:
         errors.append("--prompt-max-chars must be > 0.")
+    explicit_agents = bool(getattr(args, "_agents_explicit", False))
+    if str(getattr(args, "semantic_gate", "") or "").strip().lower() == "require" and explicit_agents:
+        resolved_agents = resolve_agents(str(getattr(args, "agents", "") or ""), "skip")
+        if "semantic-equivalence-auditor" not in resolved_agents:
+            errors.append("--semantic-gate require needs semantic-equivalence-auditor in explicit --agents.")
     requires_backend_ready = bool(getattr(args, "self_check", False) or getattr(args, "dry_run_plan", False) or not getattr(args, "prompts_only", False))
     backend_info = inspect_llm_backend(getattr(args, "llm_backend", None))
     setattr(args, "_llm_backend_info", backend_info)

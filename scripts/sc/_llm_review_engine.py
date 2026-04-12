@@ -37,12 +37,27 @@ from _taskmaster import resolve_triplet
 from _util import ci_dir, repo_rel, repo_root, write_json, write_text
 
 
-def _prompt_shape_for_agent(agent: str) -> dict[str, str]:
+def _prompt_shape_for_agent(
+    agent: str,
+    *,
+    delivery_profile: str | None = None,
+    resolved_agents: list[str] | None = None,
+    semantic_gate: str | None = None,
+) -> dict[str, str]:
     if agent == "semantic-equivalence-auditor":
         return {
             "task_context_mode": "semantic",
             "acceptance_semantic_profile": "semantic",
             "diff_position": "tail",
+        }
+    normalized_profile = str(delivery_profile or "").strip().lower()
+    normalized_gate = str(semantic_gate or "").strip().lower()
+    reviewer_set = {str(item).strip() for item in (resolved_agents or []) if str(item).strip()}
+    if normalized_profile in {"playable-ea", "fast-ship"} and "semantic-equivalence-auditor" not in reviewer_set and normalized_gate in {"skip", "warn"}:
+        return {
+            "task_context_mode": "compact",
+            "acceptance_semantic_profile": "none",
+            "diff_position": "before_acceptance_semantic",
         }
     return {
         "task_context_mode": "compact",
@@ -292,12 +307,17 @@ def main() -> int:
             continue
 
         base_prompt, prompt_meta = agent_prompt(agent, claude_agents_root=claude_agents_root, skip_agent_files=bool(args.skip_agent_prompts))
-        prompt_shape = _prompt_shape_for_agent(agent)
+        prompt_shape = _prompt_shape_for_agent(
+            agent,
+            delivery_profile=str(getattr(args, "delivery_profile", "") or ""),
+            resolved_agents=agents,
+            semantic_gate=str(args.semantic_gate or "skip").strip().lower(),
+        )
         ctx = build_task_context(triplet, mode=prompt_shape["task_context_mode"])
         acceptance_semantic_ctx = ""
         acceptance_semantic_meta: dict[str, Any] | None = None
         acceptance_semantic_profile = prompt_shape["acceptance_semantic_profile"]
-        if triplet and not bool(args.no_acceptance_semantic):
+        if triplet and acceptance_semantic_profile != "none" and not bool(args.no_acceptance_semantic):
             if acceptance_semantic_profile not in acceptance_semantic_cache:
                 try:
                     acceptance_semantic_cache[acceptance_semantic_profile] = build_acceptance_semantic_context(

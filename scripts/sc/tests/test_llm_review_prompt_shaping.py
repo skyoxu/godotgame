@@ -91,6 +91,18 @@ class LlmReviewPromptShapingTests(unittest.TestCase):
         self.assertEqual("semantic", semantic["acceptance_semantic_profile"])
         self.assertEqual("tail", semantic["diff_position"])
 
+    def test_prompt_shape_should_drop_acceptance_semantic_for_low_risk_narrow_reviewers(self) -> None:
+        normal = _prompt_shape_for_agent(
+            "code-reviewer",
+            delivery_profile="fast-ship",
+            resolved_agents=["code-reviewer", "security-auditor"],
+            semantic_gate="warn",
+        )
+
+        self.assertEqual("compact", normal["task_context_mode"])
+        self.assertEqual("none", normal["acceptance_semantic_profile"])
+        self.assertEqual("before_acceptance_semantic", normal["diff_position"])
+
     def test_fit_prompt_context_should_fallback_to_summary_diff_before_budget_truncation(self) -> None:
         prompt, meta = _fit_prompt_context(
             blocks=["Role: code-reviewer", "Task Context:\n- title: Task 56"],

@@ -102,6 +102,51 @@ class LlmReviewCliGuardTests(unittest.TestCase):
         agents = [str(x) for x in (summary.get("agents") or [])]
         self.assertIn("semantic-equivalence-auditor", agents)
 
+    def test_dry_run_plan_should_not_auto_add_semantic_reviewer_when_agents_are_explicit(self) -> None:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--dry-run-plan",
+                "--agents",
+                "code-reviewer,security-auditor",
+                "--semantic-gate",
+                "warn",
+            ],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        self.assertEqual(0, proc.returncode, proc.stdout)
+        out_dir = _extract_out_dir(proc.stdout or "")
+        summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+        agents = [str(x) for x in (summary.get("agents") or [])]
+        self.assertEqual(["code-reviewer", "security-auditor"], agents)
+
+    def test_self_check_should_fail_when_semantic_gate_require_omits_semantic_reviewer_from_explicit_agents(self) -> None:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--self-check",
+                "--agents",
+                "code-reviewer,security-auditor",
+                "--semantic-gate",
+                "require",
+            ],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        self.assertEqual(2, proc.returncode)
+        self.assertIn("semantic-equivalence-auditor", proc.stdout or "")
+
     def test_self_check_should_validate_timeout(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--self-check", "--timeout-sec", "0"],
