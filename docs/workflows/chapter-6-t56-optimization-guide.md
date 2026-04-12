@@ -173,7 +173,13 @@
 
 - `code-reviewer`
 - `security-auditor`
-- `semantic-equivalence-auditor`
+
+但这里要分两层理解：
+
+- `run_review_pipeline.py` 在低风险 `minimal / targeted` tier 下，默认先收窄到 `code-reviewer + security-auditor`
+- `semantic-equivalence-auditor` 会在高风险任务、`contractRefs` 命中、P0/P1 升级、或 tier 升到 `full` 时自动补回
+- `llm_review_needs_fix_fast.py` 作为第 6.8 定向收口脚本，仍可按问题类别或 profile 默认值补跑 `semantic-equivalence-auditor`
+- 如果最近一轮已经证明 deterministic 绿，只剩 reviewer 问题，且你这轮只改 reviewer/语义侧文件，`run_review_pipeline.py` 还会进一步把 6.7 自动收窄到“上一轮真正非 OK 的 reviewers”；只有显式传 `--llm-agents` 时才关闭这条自动缩窄
 
 默认 `diff_mode`：
 
