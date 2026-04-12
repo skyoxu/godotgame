@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -22,6 +23,12 @@ def _extract_out_dir(output: str) -> Path:
 
 
 class LlmReviewCliGuardTests(unittest.TestCase):
+    def _env_without_codex(self) -> dict[str, str]:
+        env = dict(os.environ)
+        env["PATH"] = str(REPO_ROOT)
+        env.pop("SC_LLM_BACKEND", None)
+        return env
+
     def test_self_check_should_exit_zero(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--self-check"],
@@ -33,6 +40,20 @@ class LlmReviewCliGuardTests(unittest.TestCase):
             errors="ignore",
         )
         self.assertEqual(0, proc.returncode)
+        self.assertIn("SC_LLM_REVIEW_SELF_CHECK status=ok", proc.stdout or "")
+
+    def test_self_check_should_exit_zero_without_codex_in_path(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--self-check"],
+            cwd=str(REPO_ROOT),
+            env=self._env_without_codex(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        self.assertEqual(0, proc.returncode, proc.stdout)
         self.assertIn("SC_LLM_REVIEW_SELF_CHECK status=ok", proc.stdout or "")
 
     def test_self_check_should_fail_on_conflicting_args(self) -> None:
@@ -65,6 +86,20 @@ class LlmReviewCliGuardTests(unittest.TestCase):
         self.assertEqual("dry-run-plan", summary.get("mode"))
         self.assertIsInstance(summary.get("plan"), list)
         self.assertGreaterEqual(len(summary.get("plan") or []), 2)
+
+    def test_dry_run_plan_should_emit_summary_without_codex_in_path(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--dry-run-plan", "--agents", "architect-reviewer,security-auditor"],
+            cwd=str(REPO_ROOT),
+            env=self._env_without_codex(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        self.assertEqual(0, proc.returncode, proc.stdout)
+        self.assertIn("SC_LLM_REVIEW_DRY_RUN_PLAN status=ok", proc.stdout or "")
 
     def test_dry_run_plan_should_relax_defaults_for_playable_ea(self) -> None:
         proc = subprocess.run(
