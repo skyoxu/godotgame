@@ -65,6 +65,24 @@
 如果工作仍处于探索阶段、尚未准备进入正式 Taskmaster 跟踪，请先走 prototype lane。
 参考：`docs/workflows/prototype-lane.md`
 
+最短入口：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage red --dotnet-target Game.Core.Tests/Game.Core.Tests.csproj --filter <Expr>
+```
+
+使用 prototype-TDD 而不是正式 `6.3 -> 6.4 -> 6.5 -> 6.6` 的典型场景：
+
+- 你现在要回答的是“这套机制值不值得继续做”，而不是“这个正式任务是否已经达到交付标准”
+- 你还没有准备好写真实 `.taskmaster/tasks/*.json`、acceptance refs、overlay refs
+- 你希望保留 `red -> green -> refactor` 节奏，但暂时不想引入正式 review pipeline sidecars
+
+硬边界：
+
+- prototype 证据不能直接当成正式任务证据
+- prototype 被保留后，仍要回到正式 `6.3 -> 6.4 -> 6.5 -> 6.6` 重新走一遍
+- prototype lane 可以放宽 task/review/acceptance 编排，但不能绕过当前安全边界
+
 ## 2. Phase 0：仓库初始化（Repository Bootstrap）
 
 从模板创建新仓后，先执行这一阶段。
@@ -131,6 +149,30 @@ py -3 scripts/python/dev_cli.py project-health-scan --serve
 - 默认端口范围是 `8765-8799`
 - 同仓存在活跃服务时会复用
 - 选中的 URL 和 PID 会写入 `logs/ci/project-health/server.json`
+
+### 2.5 可选：OpenAI backend bootstrap
+
+只有当仓库明确要试点 `openai-api`，并且你希望把部分 LLM 脚本从 `codex-cli` 切到 API transport 时，才进入这一步。
+
+最小顺序：
+
+```powershell
+py -3 -m pip install openai
+$env:OPENAI_API_KEY = "<your-key>"
+py -3 scripts/sc/llm_review.py --self-check --llm-backend openai-api
+py -3 scripts/sc/llm_extract_task_obligations.py --self-check --llm-backend openai-api
+py -3 scripts/sc/llm_align_acceptance_semantics.py --self-check --llm-backend openai-api
+py -3 scripts/sc/llm_fill_acceptance_refs.py --self-check --llm-backend openai-api
+py -3 scripts/sc/llm_check_subtasks_coverage.py --self-check --llm-backend openai-api
+py -3 scripts/sc/llm_semantic_gate_all.py --self-check --llm-backend openai-api
+```
+
+止损规则：
+
+- `openai-api` 仍然是显式 opt-in，不是默认 backend
+- 先过 `llm_review` 自检，再过 semantic family 自检，最后才考虑 test generation 或接 CI
+- `llm_generate_tests_from_acceptance_refs.py` 目前没有 deterministic `--self-check`，只适合在前面几项都稳定后再做 spot check
+- 如果 self-check 还没干净，不要把 `openai-api` 接进正式 CI 或日常默认命令
 
 ## 3. Phase 1：任务三联（Task Triplet）初始化
 
@@ -257,6 +299,12 @@ dotnet test Game.Core.Tests/Game.Core.Tests.csproj
 - 重复的 `Needs Fix` 指向 semantics，而不是代码实现
 
 ### 5.1 单任务轻量 lane
+
+第五章的顶层编排入口分两类：
+
+- 单任务或很小批次：`py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile <profile>`
+- 长区间、多任务、需要自动分 shard 与汇总：`py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start <start> --task-id-end <end> --batch-preset <preset> --delivery-profile <profile>`
+
 
 这一组脚本的目标不是“把所有语义脚本都再跑一遍”，而是用最小必要的包装，快速判断某个任务或一段任务是否值得继续投入语义修复。
 
