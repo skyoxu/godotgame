@@ -88,9 +88,20 @@ def _view_items_as_list(view_obj: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _taskmaster_file(root: Path, name: str) -> Path:
+    candidates = [
+        root / ".taskmaster" / "tasks" / name,
+        root / "examples" / "taskmaster" / name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def load_task_maps() -> tuple[list[int], dict[int, dict[str, Any]], dict[int, dict[str, Any]], dict[int, dict[str, Any]]]:
     root = repo_root()
-    tasks_json = _read_json(root / ".taskmaster" / "tasks" / "tasks.json")
+    tasks_json = _read_json(_taskmaster_file(root, "tasks.json"))
     tasks = (tasks_json.get("master") or {}).get("tasks") or []
     master_by_id: dict[int, dict[str, Any]] = {}
     ids: list[int] = []
@@ -117,8 +128,8 @@ def load_task_maps() -> tuple[list[int], dict[int, dict[str, Any]], dict[int, di
             out[tid] = item
         return out
 
-    back_by_id = _load_view_map(root / ".taskmaster" / "tasks" / "tasks_back.json")
-    gameplay_by_id = _load_view_map(root / ".taskmaster" / "tasks" / "tasks_gameplay.json")
+    back_by_id = _load_view_map(_taskmaster_file(root, "tasks_back.json"))
+    gameplay_by_id = _load_view_map(_taskmaster_file(root, "tasks_gameplay.json"))
     return sorted(set(ids)), master_by_id, back_by_id, gameplay_by_id
 
 
