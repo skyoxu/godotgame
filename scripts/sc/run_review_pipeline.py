@@ -503,6 +503,8 @@ def _extract_non_ok_llm_agents_from_summary(summary_path: Path | None, planned_a
         status = str(row.get("status") or "").strip().lower()
         rc = int(row.get("rc") or 0)
         details = row.get("details") if isinstance(row.get("details"), dict) else {}
+        if status == "skipped" and str(details.get("reason_code") or "").strip() == "deferred_until_prior_reviewers_clean":
+            continue
         verdict = _normalize_llm_verdict(str(details.get("verdict") or ""))
         if rc != 0 or status != "ok" or verdict != "OK":
             hit_agents.append(agent)

@@ -967,6 +967,77 @@ class RunReviewPipelineDeliveryProfileTests(unittest.TestCase):
             self.assertEqual(["security-auditor", "semantic-equivalence-auditor"], decision.get("agents"))
             self.assertEqual("oldrun", decision.get("source_run_id"))
 
+    def test_derive_llm_reviewer_subset_should_ignore_semantic_skip_from_deferred_stage_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            previous_run = root / "logs" / "ci" / "2026-04-02" / "sc-review-pipeline-task-1-oldrun"
+            llm_dir = root / "logs" / "ci" / "2026-04-02" / "sc-llm-review-task-1"
+            previous_run.mkdir(parents=True, exist_ok=True)
+            llm_dir.mkdir(parents=True, exist_ok=True)
+            (previous_run / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "task_id": "1",
+                        "steps": [
+                            {"name": "sc-test", "status": "ok"},
+                            {"name": "sc-acceptance-check", "status": "ok"},
+                            {"name": "sc-llm-review", "status": "fail", "summary_file": str(llm_dir / "summary.json")},
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ) + "\n",
+                encoding="utf-8",
+            )
+            (previous_run / "execution-context.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": "oldrun",
+                        "delivery_profile": "fast-ship",
+                        "security_profile": "host-safe",
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ) + "\n",
+                encoding="utf-8",
+            )
+            (llm_dir / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "results": [
+                            {"agent": "code-reviewer", "status": "fail", "rc": 124, "details": {"verdict": ""}},
+                            {
+                                "agent": "semantic-equivalence-auditor",
+                                "status": "skipped",
+                                "rc": 0,
+                                "details": {
+                                    "reason_code": "deferred_until_prior_reviewers_clean",
+                                    "blocked_by_agents": ["code-reviewer"],
+                                },
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(run_review_pipeline_module, "repo_root", return_value=root):
+                decision = run_review_pipeline_module._derive_llm_reviewer_subset_from_recent_signals(
+                    current_out_dir=root / "logs" / "ci" / "2026-04-03" / "sc-review-pipeline-task-1-newrun",
+                    task_id="1",
+                    delivery_profile="fast-ship",
+                    security_profile="host-safe",
+                    llm_agents="code-reviewer,security-auditor,semantic-equivalence-auditor",
+                    llm_semantic_gate="warn",
+                    change_scope={"changed_paths": ["docs/architecture/overlays/PRD-X/08/_index.md"], "unsafe_paths": []},
+                    explicit_llm_agents=False,
+                )
+
+            self.assertTrue(bool(decision.get("applied")))
+            self.assertEqual(["code-reviewer"], decision.get("agents"))
+
     def test_dry_run_should_apply_recent_llm_reviewer_subset_narrowing(self) -> None:
         run_id = uuid.uuid4().hex
         with tempfile.TemporaryDirectory() as tmpdir:
