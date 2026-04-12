@@ -204,7 +204,7 @@ def _generate_missing_files(*, refs: list[str], by_ref, task_id: str, title: str
                     prompt_path=str(prompt_path),
                     trace_path=str(trace_path),
                     output_path=str(output_path),
-                    error="codex exec failed/empty output",
+                    error="llm backend failed/empty output",
                 )
             )
             continue
@@ -259,7 +259,7 @@ def main() -> int:
         choices=KNOWN_LLM_BACKENDS,
         help="LLM transport backend. Default: env SC_LLM_BACKEND or codex-cli.",
     )
-    ap.add_argument("--timeout-sec", type=int, default=600, help="Per-file codex exec timeout (seconds).")
+    ap.add_argument("--timeout-sec", type=int, default=600, help="Per-file LLM backend timeout (seconds).")
     ap.add_argument("--select-timeout-sec", type=int, default=120, help="LLM primary-ref selection timeout (seconds).")
     ap.add_argument("--tdd-stage", choices=["normal", "red-first"], default="normal")
     ap.add_argument("--verify", choices=["none", "unit", "all", "auto"], default="auto")

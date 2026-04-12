@@ -187,7 +187,7 @@ def main() -> int:
         choices=KNOWN_LLM_BACKENDS,
         help="LLM transport backend. Default: env SC_LLM_BACKEND or codex-cli.",
     )
-    ap.add_argument("--timeout-sec", type=int, default=600, help="codex exec timeout in seconds (default: 600).")
+    ap.add_argument("--timeout-sec", type=int, default=600, help="LLM backend timeout in seconds (default: 600).")
     ap.add_argument("--verify-red", action="store_true", help="Run sc-build tdd --stage red after writing the file.")
     args = ap.parse_args()
     args.llm_backend = resolve_llm_backend(getattr(args, "llm_backend", None))
@@ -273,7 +273,7 @@ def main() -> int:
     write_json(out_dir / f"meta-{task_id}.json", meta)
 
     if rc != 0 or not last_msg.strip():
-        print(f"SC_LLM_RED_TEST ERROR: codex exec failed/empty rc={rc} out={out_dir}")
+        print(f"SC_LLM_RED_TEST ERROR: llm backend failed/empty rc={rc} out={out_dir}")
         return 1
 
     obj = _extract_json_object(last_msg)
