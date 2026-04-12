@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from _approval_contract import approval_request_path, approval_response_path
 from _harness_capabilities import harness_capabilities_path
+from _llm_backend import KNOWN_LLM_BACKENDS
 from _pipeline_events import run_events_path
 from _util import repo_root, today_str, write_json, write_text
 
@@ -52,6 +53,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pass through to sc-test: when task-scoped unit coverage is 0.0%%, retry once without the task filter.",
     )
     parser.add_argument("--llm-agents", default=None, help="llm_review --agents value. Default follows delivery profile.")
+    parser.add_argument(
+        "--llm-backend",
+        default=None,
+        choices=KNOWN_LLM_BACKENDS,
+        help="llm_review backend transport. Default: env SC_LLM_BACKEND or codex-cli.",
+    )
     parser.add_argument("--llm-timeout-sec", type=int, default=None, help="llm_review total timeout. Default follows delivery profile.")
     parser.add_argument("--llm-agent-timeout-sec", type=int, default=None, help="llm_review per-agent timeout. Default follows delivery profile.")
     parser.add_argument("--llm-agent-timeouts", default="", help="llm_review per-agent timeout overrides: agent=sec,agent=sec.")
