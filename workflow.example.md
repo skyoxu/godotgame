@@ -30,18 +30,14 @@ py -3 scripts/python/dev_cli.py inspect-run --kind local-hard-checks
 py -3 scripts/python/dev_cli.py serve-project-health
 ```
 
-如果这个新仓明确要试点 `openai-api`，先做 backend 自检，不要直接改日常默认入口：
+如果这个新仓明确要试点 `openai-api`，不要在这份示例里手工维护底层自检命令，直接按下面的 bootstrap checklist 执行：
 
-```powershell
-py -3 -m pip install openai
-$env:OPENAI_API_KEY = "<your-key>"
-py -3 scripts/sc/llm_review.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_extract_task_obligations.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_align_acceptance_semantics.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_fill_acceptance_refs.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_check_subtasks_coverage.py --self-check --llm-backend openai-api
-py -3 scripts/sc/llm_semantic_gate_all.py --self-check --llm-backend openai-api
-```
+- `docs/workflows/template-bootstrap-checklist.md`
+
+最短口径：
+
+- `openai-api` 仍然是显式 opt-in，不是默认 backend
+- 先让 checklist 里的 backend 自检通过，再考虑把 API transport 接进 CI 或日常默认入口
 
 目标：
 
