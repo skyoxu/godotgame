@@ -302,6 +302,18 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
         self.assertIn("--recommendation-format", cmd)
         self.assertIn("json", cmd)
 
+    def test_route_forbidden_commands_should_accept_string_protocol(self) -> None:
+        review_cmd = lane.build_review_pipeline_cmd(
+            "15",
+            profile_policy=lane.resolve_profile_policy("fast-ship"),
+            godot_bin="C:/Godot/Godot.exe",
+        )
+
+        forbidden = lane._route_forbidden_commands({"forbidden_commands": " ".join(review_cmd)})
+
+        self.assertEqual([" ".join(review_cmd)], forbidden)
+        self.assertTrue(lane._command_is_forbidden({"forbidden_commands": " ".join(review_cmd)}, review_cmd))
+
     def test_decision_should_block_initial_phase_for_artifact_integrity(self) -> None:
         decision = lane.build_orchestration_decision(
             initial_route={
@@ -429,6 +441,29 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
         self.assertEqual("blocked", decision["initial_phase"]["action"])
         self.assertEqual("approval_pending", decision["initial_phase"]["stop_reason"])
 
+    def test_decision_should_auto_fork_review_when_fork_approval_is_approved(self) -> None:
+        decision = lane.build_orchestration_decision(
+            initial_route={
+                "preferred_lane": "inspect-first",
+                "run_id": "run-15",
+                "latest_reason": "approval_required:fork",
+                "blocked_by": "approval_approved",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+            resume_payload={
+                "approval": {
+                    "required_action": "fork",
+                    "status": "approved",
+                    "allowed_actions": ["fork", "inspect"],
+                    "blocked_actions": ["resume"],
+                }
+            },
+        )
+
+        self.assertEqual("fork-review", decision["initial_phase"]["action"])
+        self.assertEqual("", decision["initial_phase"]["stop_reason"])
+
     def test_decision_should_stop_on_route_when_fork_approval_was_denied(self) -> None:
         decision = lane.build_orchestration_decision(
             initial_route={
@@ -452,6 +487,43 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
 
         self.assertEqual("blocked", decision["initial_phase"]["action"])
         self.assertEqual("run-6.7", decision["initial_phase"]["stop_reason"])
+
+    def test_plan_should_auto_run_fork_review_pipeline_when_fork_approval_is_approved(self) -> None:
+        plan = lane.build_execution_plan(
+            task_id="15",
+            godot_bin="C:/Godot/Godot.exe",
+            profile_policy=lane.resolve_profile_policy("fast-ship"),
+            initial_route={
+                "preferred_lane": "inspect-first",
+                "run_id": "run-15",
+                "latest_reason": "approval_required:fork",
+                "blocked_by": "approval_approved",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+            resume_payload={
+                "approval": {
+                    "required_action": "fork",
+                    "status": "approved",
+                    "allowed_actions": ["fork", "inspect"],
+                    "blocked_actions": ["resume"],
+                }
+            },
+        )
+
+        self.assertEqual(
+            [
+                "resume-task",
+                "chapter6-route-initial",
+                "review-pipeline",
+                "chapter6-route-post-review",
+                "local-hard-checks-preflight",
+                "local-hard-checks",
+                "inspect-local-hard-checks",
+            ],
+            [step["name"] for step in plan["steps"]],
+        )
+        self.assertIn("--fork", plan["steps"][2]["cmd"])
 
     def test_main_self_check_should_write_summary(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -563,6 +635,122 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
             payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
             self.assertEqual("blocked", payload["status"])
             self.assertEqual("run-6.7", payload["stop_reason"])
+
+    def test_main_should_run_fork_review_pipeline_when_fork_approval_is_approved(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "chapter6-fork-approved"
+            argv = [
+                "run_single_task_chapter6_lane.py",
+                "--task-id",
+                "15",
+                "--godot-bin",
+                "C:/Godot/Godot.exe",
+                "--delivery-profile",
+                "fast-ship",
+                "--out-dir",
+                str(out_dir),
+            ]
+            executed_steps: list[tuple[str, list[str]]] = []
+            json_steps = iter(
+                [
+                    (
+                        {
+                            "name": "resume-task",
+                            "cmd": [],
+                            "rc": 0,
+                            "stdout_tail": "",
+                            "stderr_tail": "",
+                            "log": "resume.log",
+                        },
+                        {
+                            "task_id": "15",
+                            "recommended_action": "continue",
+                            "approval": {
+                                "required_action": "fork",
+                                "status": "approved",
+                                "allowed_actions": ["fork", "inspect"],
+                                "blocked_actions": ["resume"],
+                            },
+                        },
+                    ),
+                    (
+                        {
+                            "name": "chapter6-route-initial",
+                            "cmd": [],
+                            "rc": 0,
+                            "stdout_tail": "",
+                            "stderr_tail": "",
+                            "log": "route-initial.log",
+                        },
+                        {
+                            "preferred_lane": "inspect-first",
+                            "run_id": "run-15",
+                            "latest_reason": "approval_required:fork",
+                            "blocked_by": "approval_approved",
+                        },
+                    ),
+                    (
+                        {
+                            "name": "chapter6-route-post-review",
+                            "cmd": [],
+                            "rc": 0,
+                            "stdout_tail": "",
+                            "stderr_tail": "",
+                            "log": "route-post-review.log",
+                        },
+                        {
+                            "preferred_lane": "inspect-first",
+                            "run_id": "n/a",
+                            "latest_reason": "n/a",
+                            "blocked_by": "n/a",
+                        },
+                    ),
+                    (
+                        {
+                            "name": "inspect-local-hard-checks",
+                            "cmd": [],
+                            "rc": 0,
+                            "stdout_tail": "",
+                            "stderr_tail": "",
+                            "log": "inspect-local-hard-checks.log",
+                        },
+                        {"status": "ok"},
+                    ),
+                ]
+            )
+
+            def fake_run_json_step(*_args, **_kwargs):
+                return next(json_steps)
+
+            def fake_run_plain_step(*_args, name, cmd, **_kwargs):
+                executed_steps.append((str(name), list(cmd)))
+                return {
+                    "name": name,
+                    "cmd": list(cmd),
+                    "rc": 0,
+                    "stdout_tail": "",
+                    "stderr_tail": "",
+                    "log": f"{name}.log",
+                }
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(lane, "_repo_root", return_value=root),
+                mock.patch.object(lane, "_run_json_step", side_effect=fake_run_json_step),
+                mock.patch.object(lane, "_run_plain_step", side_effect=fake_run_plain_step),
+            ):
+                rc = lane.main()
+
+            self.assertEqual(0, rc)
+            self.assertEqual("review-pipeline", executed_steps[0][0])
+            self.assertIn("--fork", executed_steps[0][1])
+            self.assertEqual(
+                ["review-pipeline", "local-hard-checks-preflight", "local-hard-checks"],
+                [name for name, _cmd in executed_steps],
+            )
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("ok", payload["status"])
 
     def test_main_should_stop_before_expensive_steps_when_initial_route_is_run_67(self) -> None:
         with tempfile.TemporaryDirectory() as td:
