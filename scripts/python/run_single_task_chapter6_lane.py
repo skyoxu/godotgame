@@ -236,6 +236,17 @@ def _route_blocked_by(route_payload: dict[str, Any] | None) -> str:
     return str((route_payload or {}).get("blocked_by") or "").strip().lower()
 
 
+def _route_next_action(route_payload: dict[str, Any] | None) -> str:
+    route = route_payload or {}
+    value = route.get("chapter6_next_action")
+    if value is None:
+        value = route.get("next_action")
+    if value is None:
+        hints = route.get("chapter6_hints") if isinstance(route.get("chapter6_hints"), dict) else {}
+        value = hints.get("next_action") if isinstance(hints, dict) else ""
+    return str(value or "").strip().lower().replace("_", "-")
+
+
 def _route_run_type(route_payload: dict[str, Any] | None) -> str:
     return str((route_payload or {}).get("latest_run_type") or (route_payload or {}).get("run_type") or "").strip().lower()
 
@@ -251,6 +262,7 @@ def _initial_route_has_recovery_signal(route_payload: dict[str, Any] | None) -> 
         _route_run_id(route) not in {"", "n/a"}
         or _route_latest_reason(route) not in {"", "n/a", "none"}
         or _route_blocked_by(route) not in {"", "n/a", "none"}
+        or _route_next_action(route) not in {"", "n/a", "none"}
         or bool(_route_forbidden_commands(route))
     )
 
@@ -262,13 +274,20 @@ def _route_stop_reason(route_payload: dict[str, Any] | None) -> str:
     latest_reason = _route_latest_reason(route_payload)
     latest_run_type = _route_run_type(route_payload)
     lane = _route_lane(route_payload)
+    next_action = _route_next_action(route_payload)
 
     if blocked_by == "artifact_integrity" or latest_reason == "planned_only_incomplete" or latest_run_type == "planned-only":
         return "artifact-integrity"
     if blocked_by in {"approval_pending", "approval_approved", "approval_invalid"}:
         return blocked_by
+    if next_action in {"inspect-first", "record-residual", "repo-noise-stop", "fix-deterministic", "run-6.7"}:
+        return next_action
     if lane in {"repo-noise-stop", "fix-deterministic", "inspect-first", "record-residual"}:
         return lane
+    if lane == "run-6.7":
+        return "run-6.7"
+    if blocked_by in {"rerun_guard", "llm_retry_stop_loss", "sc_test_retry_stop_loss", "waste_signals", "repo-noise", "recent_failure_summary"}:
+        return blocked_by
     return ""
 
 
@@ -277,7 +296,9 @@ def _route_is_blocking(route_payload: dict[str, Any] | None) -> bool:
 
 
 def _route_requires_needs_fix(route_payload: dict[str, Any] | None) -> bool:
-    return _route_lane(route_payload) == "run-6.8"
+    lane = _route_lane(route_payload)
+    next_action = _route_next_action(route_payload)
+    return lane == "run-6.8" or next_action == "run-6.8"
 
 
 def _stringify_cmd(cmd: list[str]) -> str:
@@ -350,12 +371,6 @@ def _decide_phase(
     allow_needs_fix: bool,
     resume_payload: dict[str, Any] | None = None,
 ) -> dict[str, str]:
-    stop_reason = _route_stop_reason(route_payload)
-    if stop_reason:
-        return {
-            "action": "blocked",
-            "stop_reason": stop_reason,
-        }
     approval_stop_reason = _approval_stop_reason(resume_payload, desired_action="resume")
     if approval_stop_reason:
         return {
@@ -373,6 +388,12 @@ def _decide_phase(
             "action": "needs-fix-fast",
             "stop_reason": "",
         }
+    stop_reason = _route_stop_reason(route_payload)
+    if stop_reason:
+        return {
+            "action": "blocked",
+            "stop_reason": stop_reason,
+        }
     return {
         "action": "continue",
         "stop_reason": "",
@@ -388,11 +409,6 @@ def build_orchestration_decision(
 ) -> dict[str, Any]:
     initial_phase = _decide_phase(initial_route, allow_needs_fix=True, resume_payload=resume_payload)
     if initial_phase["action"] == "continue" and not _initial_route_has_recovery_signal(initial_route):
-        initial_phase = {
-            "action": "full-path",
-            "stop_reason": "",
-        }
-    elif initial_phase["action"] == "continue":
         initial_phase = {
             "action": "full-path",
             "stop_reason": "",
