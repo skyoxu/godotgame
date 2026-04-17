@@ -166,6 +166,10 @@ def build_review_pipeline_cmd(task_id: str, *, profile_policy: dict[str, str], g
     return cmd
 
 
+def build_review_pipeline_fork_cmd(task_id: str, *, profile_policy: dict[str, str], godot_bin: str) -> list[str]:
+    return build_review_pipeline_cmd(task_id, profile_policy=profile_policy, godot_bin=godot_bin, fork=True)
+
+
 def build_needs_fix_fast_cmd(task_id: str, *, profile_policy: dict[str, str]) -> list[str]:
     return [
         "py",
@@ -246,7 +250,7 @@ def _route_next_action(route_payload: dict[str, Any] | None) -> str:
     if value is None:
         hints = route.get("chapter6_hints") if isinstance(route.get("chapter6_hints"), dict) else {}
         value = hints.get("next_action") if isinstance(hints, dict) else ""
-    return str(value or "").strip().lower().replace("_", "-")
+    return _normalize_action(value)
 
 
 def _route_run_type(route_payload: dict[str, Any] | None) -> str:
@@ -259,8 +263,8 @@ def _route_forbidden_commands(route_payload: dict[str, Any] | None) -> list[str]
     if raw_value is None:
         return []
     if isinstance(raw_value, str):
-        value = raw_value.strip()
-        return [value] if value else []
+        items = [segment.strip() for segment in raw_value.split("|")]
+        return [item for item in items if item and item.lower() != "none"]
     if isinstance(raw_value, (list, tuple, set)):
         return [str(item).strip() for item in raw_value if str(item).strip()]
     value = str(raw_value).strip()
@@ -289,9 +293,17 @@ def _route_stop_reason(route_payload: dict[str, Any] | None) -> str:
 
     if blocked_by == "artifact_integrity" or latest_reason == "planned_only_incomplete" or latest_run_type == "planned-only":
         return "artifact-integrity"
-    if blocked_by in {"approval_pending", "approval_approved", "approval_invalid"}:
+    if blocked_by in {"approval_pending", "approval_invalid"}:
         return blocked_by
-    if next_action in {"inspect-first", "record-residual", "repo-noise-stop", "fix-deterministic", "run-6.7"}:
+    if blocked_by == "approval_approved" and next_action not in {"fork", "continue", ""}:
+        return blocked_by
+    if next_action == "continue":
+        return ""
+    if next_action == "needs-fix-fast":
+        return ""
+    if next_action == "fix-and-resume":
+        return "fix-deterministic"
+    if next_action in {"pause", "fork", "resume", "inspect", "rerun", "inspect-first", "record-residual", "repo-noise-stop", "fix-deterministic", "run-6.7"}:
         return next_action
     if lane in {"repo-noise-stop", "fix-deterministic", "inspect-first", "record-residual"}:
         return lane
@@ -307,9 +319,13 @@ def _route_is_blocking(route_payload: dict[str, Any] | None) -> bool:
 
 
 def _route_requires_needs_fix(route_payload: dict[str, Any] | None) -> bool:
-    lane = _route_lane(route_payload)
     next_action = _route_next_action(route_payload)
-    return lane == "run-6.8" or next_action == "run-6.8"
+    if next_action in {"run-6.8", "needs-fix-fast"}:
+        return True
+    if next_action in {"continue", "pause", "fork", "resume", "inspect", "rerun", "fix-and-resume"}:
+        return False
+    lane = _route_lane(route_payload)
+    return lane == "run-6.8"
 
 
 def _stringify_cmd(cmd: list[str]) -> str:
@@ -344,6 +360,8 @@ def _approval_stop_reason(resume_payload: dict[str, Any] | None, *, desired_acti
     if status == "pending":
         return "approval_pending"
     if status == "approved":
+        if desired == "resume" and "fork" not in allowed_actions:
+            return ""
         if desired == "fork" or "fork" in allowed_actions:
             return ""
         return "approval_approved"
@@ -384,41 +402,53 @@ def _decide_phase(
     allow_needs_fix: bool,
     resume_payload: dict[str, Any] | None = None,
 ) -> dict[str, str]:
-    approval_fork_reason = _approval_stop_reason(resume_payload, desired_action="fork")
-    if approval_fork_reason == "":
-        payload = resume_payload if isinstance(resume_payload, dict) else {}
-        approval = payload.get("approval") if isinstance(payload.get("approval"), dict) else {}
-        required_action = _normalize_action(approval.get("required_action"))
-        status = _normalize_action(approval.get("status"))
-        allowed_actions = {
-            _normalize_action(item)
-            for item in list(approval.get("allowed_actions") or [])
-            if _normalize_action(item)
-        }
-        if required_action == "fork" and status == "approved" and ("fork" in allowed_actions or not allowed_actions):
-            return {
-                "action": "fork-review",
-                "stop_reason": "",
-            }
+    payload = resume_payload if isinstance(resume_payload, dict) else {}
+    approval = payload.get("approval") if isinstance(payload.get("approval"), dict) else {}
+    required_action = _normalize_action(approval.get("required_action"))
+    status = _normalize_action(approval.get("status"))
+    allowed_actions = {
+        _normalize_action(item)
+        for item in list(approval.get("allowed_actions") or [])
+        if _normalize_action(item)
+    }
+    next_action = _route_next_action(route_payload)
+    blocked_by = _route_blocked_by(route_payload)
+    approval_resume_stop_reason = _approval_stop_reason(resume_payload, desired_action="resume")
+    approval_fork_ready = required_action == "fork" and status == "approved" and ("fork" in allowed_actions or not allowed_actions)
+    no_increment_stop_reason = _no_increment_stop_reason(resume_payload, route_payload)
 
-    approval_stop_reason = _approval_stop_reason(resume_payload, desired_action="resume")
-    if approval_stop_reason:
+    if approval_resume_stop_reason:
         return {
             "action": "blocked",
-            "stop_reason": approval_stop_reason,
+            "stop_reason": approval_resume_stop_reason,
         }
-    no_increment_stop_reason = _no_increment_stop_reason(resume_payload, route_payload)
+    if approval_fork_ready and (next_action in {"", "fork"} or blocked_by == "approval_approved"):
+        return {
+            "action": "fork",
+            "stop_reason": "fork",
+        }
     if no_increment_stop_reason:
         return {
             "action": "blocked",
             "stop_reason": no_increment_stop_reason,
+        }
+    if next_action == "continue":
+        return {
+            "action": "complete",
+            "stop_reason": "continue",
         }
     if allow_needs_fix and _route_requires_needs_fix(route_payload):
         return {
             "action": "needs-fix-fast",
             "stop_reason": "",
         }
+
     stop_reason = _route_stop_reason(route_payload)
+    if stop_reason == "fork" and approval_fork_ready:
+        return {
+            "action": "fork",
+            "stop_reason": "fork",
+        }
     if stop_reason:
         return {
             "action": "blocked",
@@ -484,13 +514,19 @@ def build_execution_plan(
             "stop_reason": str(decision["initial_phase"]["stop_reason"] or ""),
             "steps": steps,
         }
+    if decision["initial_phase"]["action"] == "complete":
+        return {
+            "status": "complete",
+            "stop_reason": str(decision["initial_phase"]["stop_reason"] or "continue"),
+            "steps": steps,
+        }
 
-    if decision["initial_phase"]["action"] == "fork-review":
+    if decision["initial_phase"]["action"] == "fork":
         steps.extend(
             [
                 _build_step(
-                    "review-pipeline",
-                    build_review_pipeline_cmd(task_id, profile_policy=profile_policy, godot_bin=godot_bin, fork=True),
+                    "review-pipeline-fork",
+                    build_review_pipeline_fork_cmd(task_id, profile_policy=profile_policy, godot_bin=godot_bin),
                 ),
                 _build_step("chapter6-route-post-review", build_chapter6_route_cmd(task_id, record_residual=record_residual)),
             ]
@@ -628,10 +664,21 @@ def _write_step_log(out_dir: Path, *, name: str, cmd: list[str], stdout: str, st
 
 
 def _parse_json_stdout(stdout: str) -> dict[str, Any]:
-    text = str(stdout or "").strip()
-    if not text:
+    text = str(stdout or "")
+    if not text.strip():
         return {}
-    payload = json.loads(text)
+    decoder = json.JSONDecoder()
+    start = -1
+    for marker in ("{", "["):
+        idx = text.find(marker)
+        if idx >= 0 and (start < 0 or idx < start):
+            start = idx
+    if start < 0:
+        return {}
+    try:
+        payload, _ = decoder.raw_decode(text[start:])
+    except json.JSONDecodeError:
+        return {}
     return payload if isinstance(payload, dict) else {}
 
 
@@ -770,13 +817,19 @@ def main() -> int:
         _write_json(out_dir / "summary.json", summary)
         print(f"SINGLE_TASK_CHAPTER6 status=blocked task={task_id} stop={plan['stop_reason']}")
         return 1
+    if plan["status"] == "complete":
+        summary["status"] = "complete"
+        summary["stop_reason"] = str(plan["stop_reason"] or "continue")
+        _write_json(out_dir / "summary.json", summary)
+        print(f"SINGLE_TASK_CHAPTER6 status=complete task={task_id} stop={summary['stop_reason']}")
+        return 0
 
     post_review_route: dict[str, Any] = {}
     final_route: dict[str, Any] = {}
 
     def _run_required(name: str, cmd: list[str]) -> bool:
         route_payload: dict[str, Any] | None = None
-        if name in {"check-tdd-plan", "red-first", "green", "refactor", "review-pipeline"}:
+        if name in {"check-tdd-plan", "red-first", "green", "refactor", "review-pipeline", "review-pipeline-fork"}:
             route_payload = initial_route
         elif name in {"local-hard-checks-preflight", "local-hard-checks"}:
             route_payload = final_route if isinstance(final_route, dict) and final_route else post_review_route
@@ -836,10 +889,10 @@ def main() -> int:
             _write_json(out_dir / "summary.json", summary)
             print(f"SINGLE_TASK_CHAPTER6 status=blocked task={task_id} stop={summary['stop_reason']}")
             return 1
-    elif decision["initial_phase"]["action"] == "fork-review":
+    elif decision["initial_phase"]["action"] == "fork":
         if not _run_required(
-            "review-pipeline",
-            build_review_pipeline_cmd(task_id, profile_policy=profile_policy, godot_bin=str(args.godot_bin), fork=True),
+            "review-pipeline-fork",
+            build_review_pipeline_fork_cmd(task_id, profile_policy=profile_policy, godot_bin=str(args.godot_bin)),
         ):
             return 1
         post_review_route = _run_route("chapter6-route-post-review")
