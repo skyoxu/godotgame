@@ -31,10 +31,24 @@ Do not use prototype lane when the work already:
 ## Minimum Required Artifacts
 Every prototype should record:
 - hypothesis
+- core player fantasy
+- minimum playable loop
 - scope boundary
 - success criteria
 - evidence links (video, notes, screenshots, logs, or benchmark summary)
 - exit decision: `discard | archive | promote`
+
+## Solo-Dev Absorption
+Prototype lane should also support a lightweight solo-developer mindset without becoming a second workflow engine.
+
+Use the following operator questions early:
+- what is the core player fantasy?
+- what is the minimum playable loop for this prototype?
+- what proves this idea should be promoted?
+- what proves this idea should be archived?
+- what proves this idea should be discarded?
+
+The point is to keep the prototype small, playable, and decision-oriented rather than prematurely complete.
 
 Recommended location:
 - `docs/prototypes/` for design-heavy prototypes
@@ -69,6 +83,20 @@ Prototype lane does **not** allow:
 
 ## Promotion Rule
 Promote a prototype into formal delivery only after it has a clear keep decision.
+
+A good promote decision usually means:
+- the core player fantasy is understandable enough to keep
+- the minimum playable loop can be executed end to end
+- the next formal task is clearer than the remaining prototype uncertainty
+
+A good archive decision usually means:
+- the idea is still interesting
+- but the loop is not yet strong enough to justify formal delivery
+- and keeping the evidence is still useful for later comparison
+
+A good discard decision usually means:
+- the loop is not fun enough, clear enough, or viable enough
+- and more prototype iteration is unlikely to change that cheaply
 
 Promotion should add or update:
 - real task entries in `.taskmaster/tasks/*.json`

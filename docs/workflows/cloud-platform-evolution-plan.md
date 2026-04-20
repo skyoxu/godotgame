@@ -462,6 +462,44 @@ What may move into skills is the operator-guidance layer, for example:
 
 So the goal is not to make the harness thin by deleting script capabilities. The goal is to keep the execution kernel script-first while moving some usage guidance out of long repository docs and into thin skills.
 
+Phase A is also the right place to add a small amount of game-specific operator guidance, but only as a thin layer above the existing workflow kernel.
+
+Recommended game-specific Phase A additions:
+
+1. Prototype-lane `solo mode` guidance
+   - Keep the existing prototype lane, promotion boundary, and repository-native TDD flow.
+   - Add a lighter independent-developer guidance layer that helps answer:
+     - what is the core player fantasy
+     - what is the minimum playable loop for this prototype
+     - what proves the prototype should be promoted, iterated, or killed
+   - This belongs in skills/docs, not in a new execution engine.
+
+2. Lightweight game-QA checklist and playtest-plan guidance
+   - The repository already has stronger executable closure than role-only systems in deterministic gating, recovery, rerun stop-loss, and sidecar-driven follow-up.
+   - What it can still absorb is a thin game-specific QA layer for:
+     - gameplay feel
+     - progression and balance sanity
+     - performance hot spots
+     - manual playtest scope
+   - Keep `6.7` / `6.8` as the execution backbone. Add game-specific QA guidance around them rather than replacing them.
+
+3. Scrum-style sprint summary layer above structured task data
+   - Keep `tasks.json`, `tasks_back.json`, `tasks_gameplay.json`, overlays, and sidecars as the machine-readable execution substrate.
+   - Do not replace that substrate with a role-style scrum agent.
+   - Instead, add a thin summary layer that makes the current slice easier to read:
+     - current sprint goal
+     - this round only
+     - explicitly out of scope this round
+     - what must be true before entering Chapter 6
+   - This should remain a summary/productivity layer, not a second planner.
+
+Placement rule for these game-specific additions:
+
+- if it changes execution authority, stop-loss, quality gates, or recovery routing, it stays in scripts
+- if it helps a game-focused agent use existing scripts better, it belongs in skills/docs
+- if it summarizes structured task state for readability, it belongs in thin summaries/templates
+- if it starts competing with task triplets, overlays, or route scripts, it is too heavy for Phase A
+
 In other words, the right Phase A mindset is not only "remote execution" but also "hosted tool-layer productization". Ideas similar to auto-wiring, multi-entry reuse, and low-setup natural-language control belong here as long as they do not replace repository-native decision authority.
 
 ### Phase B: Multi-Tenant Workspace Hosting

@@ -69,6 +69,30 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
         self.assertIn("--out-dir", cmd)
         self.assertIn("logs/ci/demo/prototype-hud-loop", cmd)
 
+    def test_create_prototype_scene_should_forward_arguments(self) -> None:
+        with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
+            rc = dev_cli.main(
+                [
+                    "create-prototype-scene",
+                    "--slug",
+                    "combat-loop",
+                    "--scene-root",
+                    "Node2D",
+                    "--prototype-root",
+                    "Game.Godot/Prototypes",
+                ]
+            )
+
+        self.assertEqual(0, rc)
+        cmd = run_mock.call_args[0][0]
+        self.assertEqual(["py", "-3", "scripts/python/create_prototype_scene.py"], cmd[:3])
+        self.assertIn("--slug", cmd)
+        self.assertIn("combat-loop", cmd)
+        self.assertIn("--scene-root", cmd)
+        self.assertIn("Node2D", cmd)
+        self.assertIn("--prototype-root", cmd)
+        self.assertIn("Game.Godot/Prototypes", cmd)
+
 
 if __name__ == "__main__":
     unittest.main()

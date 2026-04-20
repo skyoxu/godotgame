@@ -6,6 +6,13 @@ Use this entrypoint when the work is still in `prototype lane`, but you still wa
 
 It answers whether the idea is worth keeping. It does not replace the formal Chapter 6 delivery path.
 
+Prototype TDD is especially useful for a solo-developer style loop:
+
+- keep the scope small
+- prove the core player fantasy quickly
+- prove the minimum playable loop before expanding the system
+- decide `discard | archive | promote` before turning the prototype into formal work
+
 ## Difference From Formal 6.4 / 6.5 / 6.6
 
 - Prototype TDD can still run `red -> green -> refactor`.
@@ -46,6 +53,12 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug hud-loop --create-recor
 ```
 
 This creates a prototype note under `docs/prototypes/` and exits without running verification.
+
+Recommended record additions for solo-style prototype work:
+- the core player fantasy
+- the minimum playable loop
+- what would make the idea worth promoting
+- what would make the idea worth discarding
 
 ### 2. Prototype red
 
@@ -130,6 +143,12 @@ Do not use it when the work already needs:
 - or formal Chapter 6 evidence for delivery.
 
 ## Promotion Rule
+
+When deciding whether to promote, use this quick filter:
+
+- promote when the minimum playable loop already demonstrates the value of the idea
+- archive when the idea still has signal but the loop is not yet strong enough for formal delivery
+- discard when the prototype has already answered the question negatively
 
 When the prototype becomes real work:
 

@@ -10,9 +10,16 @@ Use this directory when the question is still whether a mechanic, UI flow, archi
 - `<date>-<slug>.md`
   - One prototype record per exploration topic.
 
+## Recommended Start
+- Create the prototype record from `TEMPLATE.md`.
+- If you need a playable Godot scene scaffold, run:
+  - `py -3 scripts/python/dev_cli.py create-prototype-scene --slug <slug>`
+
 ## Required Minimum Fields
 Every prototype record should contain:
 - hypothesis
+- core player fantasy
+- minimum playable loop
 - scope
 - success criteria
 - evidence
@@ -20,11 +27,11 @@ Every prototype record should contain:
 
 ## Decision Values
 - `discard`
-  - The idea failed; remove or abandon it.
+  - The idea is not fun enough, clear enough, or viable enough; stop here.
 - `archive`
-  - Keep notes/evidence, but do not promote it yet.
+  - Keep notes/evidence because the idea has signal, but it is not ready for formal work.
 - `promote`
-  - Convert the result into formal task work.
+  - Convert the result into formal task work once the core player fantasy and minimum playable loop are clear enough.
 
 ## Promotion Checklist
 When a prototype is promoted, follow up outside this directory:

@@ -23,11 +23,12 @@
 
 因此优先级是：
 
-1. 可玩
-2. 可验证
-3. 可做出 discard / archive / promote 决策
-4. 可以在后续 promote 时迁移回正式流程
-5. 最后才是架构优雅性
+1. 可玩：先让核心玩家幻想能被实际感受到
+2. 可闭环：最小可玩循环能端到端完成
+3. 可验证：至少有 prototype red/green 或实际试玩证据
+4. 可做出 discard / archive / promote 决策
+5. 可以在后续 promote 时迁移回正式流程
+6. 最后才是架构优雅性
 
 ## 3. 推荐目录结构
 
@@ -65,7 +66,9 @@ docs/prototypes/2026-04-15-combat-loop.md
 
 ### Day 1：建原型记录，明确假设
 
-目标：先写明要验证什么，而不是盲目写代码。
+目标：先写明要验证什么，而不是盲目写代码。此时还要写清楚核心玩家幻想和最小可玩循环：前者说明玩家应该感受到什么，后者说明玩家至少能完成哪一个端到端动作。
+
+建议先复制并填写模板：`docs/prototypes/TEMPLATE.md`
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --create-record-only --hypothesis "核心战斗循环值得继续做" --scope-in "移动、攻击、受击反馈、简单敌人" --scope-out "正式 task refs、acceptance refs、overlay refs、正式 review" --success-criteria "玩家可以完成一次完整战斗循环" --success-criteria "试玩后仍认为值得继续做" --next-step "先做最小可操作场景"
@@ -75,16 +78,73 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --create-re
 
 - `docs/prototypes/<date>-combat-loop.md`
 
+Day 1 的记录里建议至少能回答：
+
+- 核心玩家幻想是什么？
+- 最小可玩循环是什么？
+- 什么证据说明这个 prototype 值得 `promote`？
+- 什么证据说明它应该 `archive` 或 `discard`？
+
 ### Day 2：做出最小可操作场景
 
-目标：在 Godot 中做出一个可进入、可操作、可完成最小玩法循环的 prototype scene。
+目标：在 Godot 中做出一个可进入、可操作、可完成最小玩法循环的 prototype scene。重点不是“做大”，而是把 Day 1 写下的核心玩家幻想变成一个玩家可以亲手操作的最小闭环。
+
+建议先运行脚手架命令，生成最小 `.tscn` 场景和对应 C# stub：
+
+```powershell
+py -3 scripts/python/dev_cli.py create-prototype-scene --slug combat-loop
+```
+
+默认会创建：
+
+```text
+Game.Godot/Prototypes/combat-loop/
+  CombatLoopPrototype.tscn
+  Scripts/CombatLoopPrototype.cs
+  Assets/
+```
+
+如果你确认这个 prototype 更适合 `Node2D` 根节点，也可以显式指定：
+
+```powershell
+py -3 scripts/python/dev_cli.py create-prototype-scene --slug combat-loop --scene-root Node2D
+```
 
 建议最少包含：
 
 - 玩家节点
-- 一个敌人假体
+- 一个敌人假体或交互目标
 - 最简单的输入
 - 最简单的反馈
+- 一个可重复进入和重置的原型场景
+
+建议当天必须回答的 4 个问题：
+
+- 玩家进入场景后，10 到 30 秒内能否开始操作？
+- 玩家能否完成一次最小可玩循环？
+- 反馈是否足以让玩家知道“自己刚刚做成了什么”？
+- 如果失败，能否快速重试，而不是卡死在场景里？
+
+成功标准：
+
+- 场景可以在 Godot Editor 中稳定打开并运行。
+- 至少存在一条从“进入场景”到“完成一次核心动作”的可操作路径。
+- 玩家输入、目标状态变化、反馈三者之间已经形成最小闭环。
+- 你可以用一句话描述这个场景怎样体现核心玩家幻想。
+
+失败信号：
+
+- 场景能打开，但玩家无法开始操作。
+- 能操作，但无法完成一次最小可玩循环。
+- 完成动作后缺少明确反馈，无法判断是否成功。
+- 为了让场景跑起来，开始引入大量正式系统、正式架构或长期模块耦合。
+
+当天收口产物：
+
+- `Game.Godot/Prototypes/<slug>/` 下至少有一个可在 Godot Editor 中打开运行的 `.tscn` 场景。
+- 这个场景最好来自 `create-prototype-scene` 脚手架，再由你补上最小可玩循环。
+- 如有必要，补一张截图或一段短视频到 `docs/prototypes/<date>-<slug>.md` 的 Evidence。
+- 在 prototype 记录里更新 `Next Step`，明确 Day 3 要钉住哪一个最关键的 red 测试。
 
 这一天的验证以 Godot Editor 实际运行场景为主，不追求完整体系。
 
@@ -154,6 +214,13 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --stage gre
 - prototype summary / report
 - 自己的观察笔记
 
+轻量试玩/可读性检查问题：
+
+- 核心玩家幻想是否能在第一分钟内被感受到？
+- 玩家是否能在没有额外解释的情况下完成最小可玩循环？
+- 操作、反馈、HUD 或场景提示是否足够清楚？
+- 下一轮是否明显值得正式化，还是仍然只适合继续探索？
+
 重点读取产物：
 
 - `docs/prototypes/<date>-<slug>.md`
@@ -165,9 +232,9 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --stage gre
 
 只允许三种结果：
 
-- `discard`：方向不成立，停止
-- `archive`：保留证据，但暂不进入正式交付
-- `promote`：这个想法已经准备好转为正式任务
+- `discard`：玩法不够有趣、不够清晰，或继续探索的性价比已经很低，停止
+- `archive`：方向有信号，但循环还不够强，不足以进入正式任务；保留证据以便以后比较
+- `promote`：核心玩家幻想已清楚，最小可玩循环已能端到端跑通，下一步正式任务交付内容已经明确
 
 如果结果是 `promote`，后续再进入正式流程：
 
@@ -186,13 +253,14 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --stage gre
 - 不跑 `run_review_pipeline.py`
 - 不跑 `llm_review_needs_fix_fast.py`
 - 不把 prototype red/green 当成 Chapter 6 正式证据
+- 不新增第二套和现有 workflow 竞争的执行引擎
 
 ## 7. 常用命令模板
 
 ### Day 1
 
 ```powershell
-py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --create-record-only --hypothesis "核心战斗循环值得继续做"
+py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --create-record-only --hypothesis "核心战斗循环值得继续做" --scope-in "移动、攻击、受击反馈、简单敌人" --scope-out "正式 task refs、acceptance refs、overlay refs、正式 review" --success-criteria "核心玩家幻想能在第一分钟内被感受到" --success-criteria "玩家可以完成一次最小可玩循环"
 ```
 
 ### Day 3 red
@@ -221,4 +289,4 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --stage gre
 
 ## 8. 一句话总结
 
-如果你的目标只是“先做出一个能玩的 Godot 原型”，那么正确做法是：用 prototype lane 管边界，用 `run-prototype-tdd` 做最小 red/green 闭环，用 Godot 场景实际试玩，并尽快做出 `discard | archive | promote` 决策。
+如果你的目标只是“先做出一个能玩的 Godot 原型”，那么正确做法是：用 prototype lane 管边界，用 `run-prototype-tdd` 做最小 red/green 闭环，用 Godot 场景实际试玩，确认核心玩家幻想和最小可玩循环是否成立，并尽快做出 `discard | archive | promote` 决策。若最终 `promote`，必须回到正式 Chapter 6，不要把 prototype 证据当成正式交付证据。
