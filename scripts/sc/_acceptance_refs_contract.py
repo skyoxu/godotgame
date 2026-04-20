@@ -2,10 +2,57 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 
 SUMMARY_SCHEMA_VERSION = "acceptance-refs.v1"
+
+
+def validate_anchor_bound_ref_updates(
+    *,
+    root: Path,
+    updates: list[dict[str, Any]],
+    read_text=None,
+) -> tuple[bool, list[str]]:
+    """Validate that refs written by the LLM bind to concrete acceptance anchors."""
+
+    errors: list[str] = []
+    reader = read_text or (lambda path: Path(path).read_text(encoding="utf-8", errors="ignore"))
+    for update in updates:
+        if not isinstance(update, dict):
+            errors.append("update_not_object")
+            continue
+        task_id = str(update.get("task_id") or "").strip()
+        view = str(update.get("view") or "").strip() or "unknown"
+        index = update.get("index")
+        anchor = str(update.get("anchor") or "").strip()
+        paths = update.get("paths")
+        if not anchor:
+            errors.append(f"missing_anchor:{view}[{index}]")
+            continue
+        if not isinstance(paths, list) or not paths:
+            errors.append(f"missing_paths:{view}[{index}]:{anchor}")
+            continue
+        for raw_path in paths:
+            rel = str(raw_path or "").strip().replace("\\", "/")
+            if not rel:
+                errors.append(f"empty_path:{view}[{index}]:{anchor}")
+                continue
+            path = root / rel
+            if not path.exists() and read_text is None:
+                errors.append(f"missing_ref_file:{view}[{index}]:{anchor}:{rel}")
+                continue
+            try:
+                content = str(reader(path))
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"read_ref_file_failed:{view}[{index}]:{anchor}:{rel}:{exc}")
+                continue
+            if anchor not in content:
+                errors.append(f"missing_anchor:{view}[{index}]:{anchor}:{rel}")
+        if task_id and anchor and not anchor.startswith(f"ACC:T{task_id}."):
+            errors.append(f"anchor_task_mismatch:{view}[{index}]:{anchor}:task-{task_id}")
+    return not errors, errors
 
 
 def validate_fill_acceptance_summary(summary: dict[str, Any]) -> tuple[bool, list[str], dict[str, Any]]:
@@ -108,4 +155,3 @@ def run_fill_acceptance_refs_self_check(
     ]
     report_lines.extend([f"- {item.get('name')}: {'ok' if item.get('ok') else 'fail'}" for item in checks])
     return ok, payload, "\n".join(report_lines) + "\n"
-

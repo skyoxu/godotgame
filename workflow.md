@@ -249,7 +249,7 @@ py -3 scripts/sc/llm_generate_overlays_batch.py --prd <prd-main.md> --prd-id <PR
 
 ```powershell
 py -3 scripts/python/sync_task_overlay_refs.py --prd-id <PRD-ID> --write
-py -3 scripts/python/validate_overlay_execution.py --prd-id <PRD-ID>
+py -3 scripts/python/validate_overlay_execution.py --prd-id <PRD-ID> --strict-refs
 py -3 scripts/python/check_tasks_all_refs.py
 py -3 scripts/python/validate_task_master_triplet.py
 ```
@@ -350,6 +350,12 @@ py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-pr
 
 ```powershell
 py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship --stop-on-step-failure
+```
+
+???? 5.1 ??? wrapper ???? acceptance rewrite ?????????
+
+```powershell
+py -3 scripts/python/run_single_task_light_lane.py --task-ids <id> --delivery-profile fast-ship --max-rewrite-change-ratio 0.35
 ```
 
 #### 5.1.2 高级可选
@@ -1168,6 +1174,9 @@ py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_B
 - 当 approval sidecar 已进入 `pending`、`invalid` 或 `mismatched` 时，不要硬开 `--resume` / `--fork` 试图绕过恢复状态机。
 - 不要在 `standard` 上强行传 `--security-profile host-safe`；除非你明确要覆盖默认映射，否则让它自然落到 `strict`
 - 不要为 `llm_fill_acceptance_refs.py` 虚构 `--dry-run` 参数；不带 `--write` 就是 dry-run
+- `llm_fill_acceptance_refs.py --write` now requires written test refs to bind to the matching `ACC:T<id>.<n>` anchor; if the test file is missing or lacks the anchor, keep dry-run until evidence is repaired.
+- `llm_align_acceptance_semantics.py --apply` can use `--max-rewrite-change-ratio <0-1>` to hard-fail overly broad LLM rewrites before writing task views.
+- `chapter6-route --record-residual` will not record acceptance refs, artifact integrity, planned-only, security-boundary, or false-green findings as ordinary residual debt; those categories have a deterministic P1 floor.
 - 不要因为 Serena 暂时不可用就阻塞整项工作
 - 不要把 `run-local-hard-checks` 拖到新仓迁移结束时才跑
 

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from dev_cli_builders import (
     DEFAULT_GATE_BUNDLE_TASK_FILES,
+    build_create_prototype_scene_cmd,
     build_check_directory_boundaries_cmd,
     build_detect_project_stage_cmd,
     build_doctor_project_cmd,
@@ -216,6 +217,12 @@ def cmd_run_prototype_tdd(args: argparse.Namespace) -> int:
     return run(build_run_prototype_tdd_cmd(args))
 
 
+def cmd_create_prototype_scene(args: argparse.Namespace) -> int:
+    """Create a minimal prototype scene scaffold under Game.Godot/Prototypes."""
+
+    return run(build_create_prototype_scene_cmd(args))
+
+
 def cmd_new_execution_plan(args: argparse.Namespace) -> int:
     """Create a new execution plan scaffold."""
 
@@ -405,6 +412,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--timeout-sec", type=int, default=300)
     p_proto.add_argument("--out-dir", default="")
     p_proto.set_defaults(func=cmd_run_prototype_tdd)
+
+    # create-prototype-scene
+    p_scene = sub.add_parser(
+        "create-prototype-scene",
+        help="create a minimal prototype scene scaffold under Game.Godot/Prototypes",
+    )
+    p_scene.add_argument("--slug", required=True)
+    p_scene.add_argument("--prototype-root", default="Game.Godot/Prototypes")
+    p_scene.add_argument("--scene-root", default="Control", choices=["Control", "Node2D"])
+    p_scene.add_argument("--force", action="store_true")
+    p_scene.set_defaults(func=cmd_create_prototype_scene)
 
     # new-execution-plan
     p_ep = sub.add_parser("new-execution-plan", help="create an execution plan scaffold")

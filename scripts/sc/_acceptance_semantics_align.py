@@ -7,6 +7,7 @@ import re
 import sys
 from copy import deepcopy
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
@@ -244,6 +245,7 @@ def validate_output(
     view_inputs: list[ViewInput],
     out_obj: dict[str, Any],
     align_view_descriptions: bool,
+    max_rewrite_change_ratio: float = 0.0,
 ) -> tuple[bool, str]:
     if int(out_obj.get("task_id") or -1) != int(task_id):
         return False, "task_id_mismatch"
@@ -274,12 +276,19 @@ def validate_output(
             new_s = str(new_line)
             if i < len(v.acceptance):
                 old = v.acceptance[i]
-                _old_prefix, old_refs = split_refs(old)
-                _new_prefix, new_refs = split_refs(new_s)
+                old_prefix, old_refs = split_refs(old)
+                new_prefix, new_refs = split_refs(new_s)
                 if old_refs and new_refs != old_refs:
                     return False, f"{key}:refs_changed_at_{i+1}"
                 if (not old_refs) and new_refs:
                     return False, f"{key}:unexpected_refs_added_at_{i+1}"
+                if mode == "rewrite-only" and float(max_rewrite_change_ratio or 0.0) > 0.0:
+                    old_text = old_prefix.strip().lower()
+                    new_text = new_prefix.strip().lower()
+                    if old_text and new_text:
+                        change_ratio = 1.0 - SequenceMatcher(None, old_text, new_text).ratio()
+                        if change_ratio > float(max_rewrite_change_ratio):
+                            return False, f"{key}:rewrite_change_budget_exceeded_at_{i+1}"
             else:
                 _p, refs = split_refs(new_s)
                 if refs:

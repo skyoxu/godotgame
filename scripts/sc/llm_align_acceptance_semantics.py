@@ -100,6 +100,12 @@ def main() -> int:
     ap.add_argument("--timeout-sec", type=int, default=None)
     ap.add_argument("--max-failures", type=int, default=0, help="Stop early when failures reach threshold (0 = unlimited).")
     ap.add_argument(
+        "--max-rewrite-change-ratio",
+        type=float,
+        default=0.0,
+        help="Hard fail rewrite-only acceptance lines whose non-Refs text changes more than this ratio (0 disables).",
+    )
+    ap.add_argument(
         "--garbled-gate",
         default=None,
         choices=["on", "off"],
@@ -256,6 +262,7 @@ def main() -> int:
         structural_for_not_done=bool(args.structural_for_not_done),
         append_only_for_done=bool(args.append_only_for_done),
         align_view_descriptions_to_master=bool(args.align_view_descriptions_to_master),
+        max_rewrite_change_ratio=float(args.max_rewrite_change_ratio or 0.0),
     )
     results = run_result.get("results") or []
     changed = int(run_result.get("changed") or 0)
@@ -312,6 +319,7 @@ def main() -> int:
             "append_only_for_done": bool(args.append_only_for_done),
             "align_view_descriptions_to_master": bool(args.align_view_descriptions_to_master),
             "max_failures": max_failures,
+            "max_rewrite_change_ratio": float(args.max_rewrite_change_ratio or 0.0),
             "stopped_early": bool(stopped_early),
             "results": results,
         },

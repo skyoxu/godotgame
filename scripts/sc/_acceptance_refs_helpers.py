@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from _llm_backend import run_llm_exec
+from _acceptance_refs_contract import validate_anchor_bound_ref_updates
 
 
 REFS_RE = re.compile(r"\bRefs\s*:\s*(.+)$", flags=re.IGNORECASE)
@@ -114,6 +115,12 @@ def extract_refs_from_acceptance_item(text: str) -> list[str]:
     if not m:
         return []
     return split_refs_blob(m.group(1))
+
+
+def extract_acceptance_anchor(*, task_id: int, index: int, text: str) -> str:
+    pattern = rf"\bACC:T{re.escape(str(task_id))}\.{int(index) + 1}\b"
+    match = re.search(pattern, str(text or ""))
+    return match.group(0) if match else f"ACC:T{task_id}.{int(index) + 1}"
 
 
 def extract_prd_excerpt(*, root: Path) -> tuple[str, str]:
@@ -268,6 +275,7 @@ def apply_paths_to_view_entry(
     root: Path,
     entry: dict[str, Any],
     task_id: int,
+    view: str = "",
     a11y_task: bool,
     overwrite_existing: bool,
     overwrite_indices: set[int] | None,
@@ -295,6 +303,7 @@ def apply_paths_to_view_entry(
             extend_unique(evidence_refs, [ref])
 
     updated = 0
+    anchor_updates: list[dict[str, Any]] = []
     new_acceptance: list[str] = []
     for idx, raw in enumerate(acceptance):
         text = str(raw or "").strip()
@@ -334,7 +343,19 @@ def apply_paths_to_view_entry(
         new_acceptance.append(f"{base} Refs: {' '.join(chosen)}")
         updated += 1
         extend_unique(norm_test_refs, chosen)
+        anchor_updates.append(
+            {
+                "task_id": task_id,
+                "view": str(view or entry.get("view") or ""),
+                "index": idx,
+                "anchor": extract_acceptance_anchor(task_id=task_id, index=idx, text=text),
+                "paths": chosen,
+            }
+        )
 
+    ok, anchor_errors = validate_anchor_bound_ref_updates(root=root, updates=anchor_updates)
+    if not ok:
+        raise ValueError("anchor_bound_refs_invalid:" + "; ".join(anchor_errors))
     entry["acceptance"] = new_acceptance
     entry["test_refs"] = norm_test_refs
     entry["evidence_refs"] = evidence_refs

@@ -4,6 +4,11 @@ Purpose: define the **stable** migration protocol for moving a business reposito
 
 This file is the durable protocol. Use `docs/workflows/business-repo-upgrade-guide.md` as the compare-range-specific report that tells you **what changed this time**.
 
+Related durable protocol:
+
+- `docs/workflows/workflow-rule-feedback-protocol.md`
+  - defines how business repositories should feed workflow 5.1 and Chapter 6 execution evidence back into the template as reusable rules
+
 ## Inputs
 1. Current target-repo state:
    - branch / git head

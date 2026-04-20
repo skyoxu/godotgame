@@ -238,6 +238,23 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
     return cmd
 
 
+def build_create_prototype_scene_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/create_prototype_scene.py",
+        "--slug",
+        args.slug,
+    ]
+    if args.prototype_root:
+        cmd += ["--prototype-root", args.prototype_root]
+    if args.scene_root:
+        cmd += ["--scene-root", args.scene_root]
+    if getattr(args, "force", False):
+        cmd.append("--force")
+    return cmd
+
+
 def build_new_execution_plan_cmd(args) -> list[str]:
     cmd = [
         "py",

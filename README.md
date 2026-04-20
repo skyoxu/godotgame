@@ -71,6 +71,8 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 ### Migration / Template Upgrade
 - Template Bootstrap Checklist: `docs/workflows/template-bootstrap-checklist.md`
 - Template Upgrade Protocol: `docs/workflows/template-upgrade-protocol.md`
+- Workflow Rule Feedback Protocol: `docs/workflows/workflow-rule-feedback-protocol.md`
+- Workflow Rule Feedback Template: `docs/workflows/templates/workflow-rule-feedback-template.md`
 - Cloud Platform Evolution Plan: `docs/workflows/cloud-platform-evolution-plan.md`
 - Business Repo Upgrade Guide: `docs/workflows/business-repo-upgrade-guide.md`
 - Prototype Lane: `docs/workflows/prototype-lane.md`

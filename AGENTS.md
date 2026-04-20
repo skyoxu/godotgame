@@ -61,6 +61,7 @@ This file is the repository map. It routes you to the right source document by t
 - Tighten release or CI posture:
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
+- [Workflow Rule Feedback Protocol](docs/workflows/workflow-rule-feedback-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
 - [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
@@ -89,6 +90,7 @@ This file is the repository map. It routes you to the right source document by t
 - Need security posture, release health, logs, or runtime ops rules:
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
+- [Workflow Rule Feedback Protocol](docs/workflows/workflow-rule-feedback-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
 - [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
@@ -195,6 +197,7 @@ This file is the repository map. It routes you to the right source document by t
 - [Startup, Stack, And Template Structure](docs/agents/14-startup-stack-and-template-structure.md)
 - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
+- [Workflow Rule Feedback Protocol](docs/workflows/workflow-rule-feedback-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
 - [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
@@ -205,4 +208,5 @@ This file is the repository map. It routes you to the right source document by t
 - Keep `AGENTS.md` as a routing map, not a duplicate rules catalog.
 - Put detailed guidance into `docs/agents/`, `README.md`, or the relevant source doc.
 - Put durable intent in git-tracked markdown under `execution-plans/` and `decision-logs/`.
+- Store durable business-repo workflow rule feedback under `decision-logs/workflow-rule-feedback/`.
 - Put high-frequency evidence in `logs/`.
