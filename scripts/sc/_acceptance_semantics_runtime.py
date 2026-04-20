@@ -170,6 +170,7 @@ def run_alignment_tasks(
     structural_for_not_done: bool,
     append_only_for_done: bool,
     align_view_descriptions_to_master: bool,
+    max_rewrite_change_ratio: float = 0.0,
 ) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     changed = 0
@@ -233,6 +234,7 @@ def run_alignment_tasks(
             view_inputs=view_inputs,
             out_obj=out_obj,
             align_view_descriptions=bool(align_view_descriptions_to_master),
+            max_rewrite_change_ratio=float(max_rewrite_change_ratio or 0.0),
         )
         if not ok:
             failed += 1

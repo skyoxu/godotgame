@@ -282,36 +282,63 @@ def _initial_route_has_recovery_signal(route_payload: dict[str, Any] | None) -> 
     )
 
 
-def _route_stop_reason(route_payload: dict[str, Any] | None) -> str:
-    if not _initial_route_has_recovery_signal(route_payload):
-        return ""
+def _evaluate_route_state(route_payload: dict[str, Any] | None, *, allow_needs_fix: bool) -> dict[str, Any]:
     blocked_by = _route_blocked_by(route_payload)
     latest_reason = _route_latest_reason(route_payload)
     latest_run_type = _route_run_type(route_payload)
     lane = _route_lane(route_payload)
     next_action = _route_next_action(route_payload)
+    has_recovery_signal = _initial_route_has_recovery_signal(route_payload)
+    stop_reason = ""
+    needs_fix = False
 
-    if blocked_by == "artifact_integrity" or latest_reason == "planned_only_incomplete" or latest_run_type == "planned-only":
-        return "artifact-integrity"
-    if blocked_by in {"approval_pending", "approval_invalid"}:
-        return blocked_by
-    if blocked_by == "approval_approved" and next_action not in {"fork", "continue", ""}:
-        return blocked_by
-    if next_action == "continue":
-        return ""
-    if next_action == "needs-fix-fast":
-        return ""
-    if next_action == "fix-and-resume":
-        return "fix-deterministic"
-    if next_action in {"pause", "fork", "resume", "inspect", "rerun", "inspect-first", "record-residual", "repo-noise-stop", "fix-deterministic", "run-6.7"}:
-        return next_action
-    if lane in {"repo-noise-stop", "fix-deterministic", "inspect-first", "record-residual"}:
-        return lane
-    if lane == "run-6.7":
-        return "run-6.7"
-    if blocked_by in {"rerun_guard", "llm_retry_stop_loss", "sc_test_retry_stop_loss", "waste_signals", "repo-noise", "recent_failure_summary"}:
-        return blocked_by
-    return ""
+    if has_recovery_signal:
+        if blocked_by == "artifact_integrity" or latest_reason == "planned_only_incomplete" or latest_run_type == "planned-only":
+            stop_reason = "artifact-integrity"
+        elif blocked_by in {"approval_pending", "approval_invalid"}:
+            stop_reason = blocked_by
+        elif blocked_by == "approval_approved" and next_action not in {"fork", "continue", ""}:
+            stop_reason = blocked_by
+        elif next_action == "fix-and-resume":
+            stop_reason = "fix-deterministic"
+        elif next_action in {
+            "pause",
+            "fork",
+            "resume",
+            "inspect",
+            "rerun",
+            "inspect-first",
+            "record-residual",
+            "repo-noise-stop",
+            "fix-deterministic",
+            "run-6.7",
+        }:
+            stop_reason = next_action
+        elif lane in {"repo-noise-stop", "fix-deterministic", "inspect-first", "record-residual", "run-6.7"}:
+            stop_reason = lane
+        elif blocked_by in {"rerun_guard", "llm_retry_stop_loss", "sc_test_retry_stop_loss", "waste_signals", "repo-noise", "recent_failure_summary"}:
+            stop_reason = blocked_by
+
+    if allow_needs_fix:
+        if next_action in {"run-6.8", "needs-fix-fast"}:
+            needs_fix = True
+        elif next_action not in {"continue", "pause", "fork", "resume", "inspect", "rerun", "fix-and-resume"}:
+            needs_fix = lane == "run-6.8"
+
+    return {
+        "has_recovery_signal": has_recovery_signal,
+        "lane": lane,
+        "next_action": next_action,
+        "blocked_by": blocked_by,
+        "latest_reason": latest_reason,
+        "latest_run_type": latest_run_type,
+        "stop_reason": stop_reason,
+        "needs_fix": needs_fix,
+    }
+
+
+def _route_stop_reason(route_payload: dict[str, Any] | None) -> str:
+    return str(_evaluate_route_state(route_payload, allow_needs_fix=False)["stop_reason"] or "")
 
 
 def _route_is_blocking(route_payload: dict[str, Any] | None) -> bool:
@@ -319,13 +346,7 @@ def _route_is_blocking(route_payload: dict[str, Any] | None) -> bool:
 
 
 def _route_requires_needs_fix(route_payload: dict[str, Any] | None) -> bool:
-    next_action = _route_next_action(route_payload)
-    if next_action in {"run-6.8", "needs-fix-fast"}:
-        return True
-    if next_action in {"continue", "pause", "fork", "resume", "inspect", "rerun", "fix-and-resume"}:
-        return False
-    lane = _route_lane(route_payload)
-    return lane == "run-6.8"
+    return bool(_evaluate_route_state(route_payload, allow_needs_fix=True)["needs_fix"])
 
 
 def _stringify_cmd(cmd: list[str]) -> str:
@@ -411,8 +432,9 @@ def _decide_phase(
         for item in list(approval.get("allowed_actions") or [])
         if _normalize_action(item)
     }
-    next_action = _route_next_action(route_payload)
-    blocked_by = _route_blocked_by(route_payload)
+    route_eval = _evaluate_route_state(route_payload, allow_needs_fix=allow_needs_fix)
+    next_action = str(route_eval["next_action"] or "")
+    blocked_by = str(route_eval["blocked_by"] or "")
     approval_resume_stop_reason = _approval_stop_reason(resume_payload, desired_action="resume")
     approval_fork_ready = required_action == "fork" and status == "approved" and ("fork" in allowed_actions or not allowed_actions)
     no_increment_stop_reason = _no_increment_stop_reason(resume_payload, route_payload)
@@ -437,13 +459,13 @@ def _decide_phase(
             "action": "complete",
             "stop_reason": "continue",
         }
-    if allow_needs_fix and _route_requires_needs_fix(route_payload):
+    if bool(route_eval["needs_fix"]):
         return {
             "action": "needs-fix-fast",
             "stop_reason": "",
         }
 
-    stop_reason = _route_stop_reason(route_payload)
+    stop_reason = str(route_eval["stop_reason"] or "")
     if stop_reason == "fork" and approval_fork_ready:
         return {
             "action": "fork",
@@ -467,8 +489,11 @@ def build_orchestration_decision(
     final_route: dict[str, Any],
     resume_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    initial_route_eval = _evaluate_route_state(initial_route, allow_needs_fix=True)
+    post_review_route_eval = _evaluate_route_state(post_review_route, allow_needs_fix=True)
+    final_route_eval = _evaluate_route_state(final_route, allow_needs_fix=True)
     initial_phase = _decide_phase(initial_route, allow_needs_fix=True, resume_payload=resume_payload)
-    if initial_phase["action"] == "continue" and not _initial_route_has_recovery_signal(initial_route):
+    if initial_phase["action"] == "continue" and not bool(initial_route_eval["has_recovery_signal"]):
         initial_phase = {
             "action": "full-path",
             "stop_reason": "",
@@ -480,6 +505,11 @@ def build_orchestration_decision(
         "initial_phase": initial_phase,
         "post_review_phase": post_review_phase,
         "final_phase": final_phase,
+        "route_evaluations": {
+            "initial": initial_route_eval,
+            "post_review": post_review_route_eval,
+            "final": final_route_eval,
+        },
     }
 
 

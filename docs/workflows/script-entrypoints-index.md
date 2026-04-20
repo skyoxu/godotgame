@@ -587,7 +587,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Direct local deps: `scripts/sc/_acceptance_semantics_align.py`, `scripts/sc/_acceptance_semantics_runtime.py`, `scripts/sc/_delivery_profile.py`, `scripts/sc/_garbled_gate.py`, `scripts/sc/_taskmaster.py`, `scripts/sc/_util.py`
 - Transitive local deps: `scripts/sc/_acceptance_semantics_align.py`, `scripts/sc/_acceptance_semantics_runtime.py`, `scripts/sc/_delivery_profile.py`, `scripts/sc/_garbled_gate.py`, `scripts/sc/_taskmaster.py`, `scripts/sc/_taskmaster_paths.py`, `scripts/sc/_util.py`
 - Subcommands: None.
-- Declared args: `--delivery-profile`, `--llm-backend`, `--scope`, `--task-ids`, `--fail-on-missing-task-ids`, `--fail-on-missing-views`, `--strict-task-selection`, `--apply`, `--preflight-migrate-optional-hints`, `--skip-preflight-migrate-optional-hints`, `--structural-for-not-done`, `--append-only-for-done`, `--align-view-descriptions-to-master`, `--semantic-findings-json`, `--timeout-sec`, `--max-failures`, `--garbled-gate`, `--self-check`
+- Declared args: `--delivery-profile`, `--llm-backend`, `--scope`, `--task-ids`, `--fail-on-missing-task-ids`, `--fail-on-missing-views`, `--strict-task-selection`, `--apply`, `--preflight-migrate-optional-hints`, `--skip-preflight-migrate-optional-hints`, `--structural-for-not-done`, `--append-only-for-done`, `--align-view-descriptions-to-master`, `--semantic-findings-json`, `--timeout-sec`, `--max-failures`, `--max-rewrite-change-ratio`, `--garbled-gate`, `--self-check`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
@@ -613,6 +613,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Subcommands: None.
 - Declared args: `--all`, `--task-id`, `--llm-backend`, `--write`, `--overwrite-existing`, `--rewrite-placeholders`, `--timeout-sec`, `--max-refs-per-item`, `--candidate-limit`, `--max-tasks`, `--consensus-runs`, `--self-check`
 - Behavior notes: `--llm-backend codex-cli|openai-api` now routes the per-task consensus mapping call through the shared backend seam; `--self-check` stays deterministic.
+- Behavior notes: `--write` hard-fails when a proposed test ref file is missing or does not contain the matching `ACC:T<id>.<n>` anchor; keep dry-run until test evidence is anchor-bound.
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/**`, but business repos should use real `.taskmaster/tasks/*.json`.
@@ -832,10 +833,11 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Direct local deps: None.
 - Transitive local deps: None.
 - Subcommands: None.
-- Declared args: `--prd-id`, `--overlay-dir`, `--require-heading`
+- Declared args: `--prd-id`, `--overlay-dir`, `--require-heading`, `--strict-refs`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - PRD/overlay parameters require real PRD sources, overlay roots, and business-local `PRD-ID` values.
+  - Use `--strict-refs` after limited apply when missing `Arch-Refs` / `ADRs` / `Test-Refs` should block the overlay baseline.
 
 #### `scripts/python/validate_overlay_test_refs.py`
 
@@ -962,6 +964,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - Behavior notes: reads recovery artifacts first, then routes Chapter 6 to `run-6.7`, `run-6.8`, `fix-deterministic`, `repo-noise-stop`, `record-residual`, or `inspect-first`.
 - Behavior notes: `6.8` is only recommended when current edits hit the previous reviewer anchors.
 - Behavior notes: `--record-residual` writes `decision-logs/**` and `execution-plans/**` when only low-priority findings remain.
+- Behavior notes: residual recording applies a deterministic P1 floor for acceptance refs, artifact integrity, planned-only, security-boundary, and false-green categories.
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require real recovery artifacts under `logs/ci/**`.
@@ -1301,6 +1304,7 @@ Notes:
 - Transitive local deps: None.
 - Subcommands: None.
 - Declared args: `--task-ids`, `--task-id-start`, `--task-id-end`, `--max-tasks`, `--timeout-sec`, `--llm-timeout-sec`, `--out-dir`, `--no-resume`, `--fill-refs-after-extract-fail`, `--fill-refs-mode`, `--downstream-on-extract-fail`, `--batch-lane`, `--resume-failed-task-from`, `--stop-on-step-failure`, `--no-align-apply`, `--delivery-profile`, `--self-check`
+- Behavior notes: `--max-rewrite-change-ratio` forwards to `llm_align_acceptance_semantics.py` and hard-fails overly broad rewrite-only acceptance edits before task views are written.
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.
   - Task-scoped parameters require a Taskmaster triplet; template fallback can read `examples/taskmaster/tasks.json` when real `.taskmaster/tasks/tasks.json` is absent.

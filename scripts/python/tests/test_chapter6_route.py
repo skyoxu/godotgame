@@ -414,6 +414,64 @@ class Chapter6RouteTests(unittest.TestCase):
             self.assertFalse((root / "decision-logs").exists())
             self.assertFalse((root / "execution-plans").exists())
 
+    def test_should_not_record_residual_docs_when_medium_finding_hits_p1_floor_category(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            out_dir = root / "logs" / "ci" / "2026-04-10" / "sc-review-pipeline-task-15-run"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            _write_json(
+                out_dir / "agent-review.json",
+                {
+                    "review_verdict": "needs-fix",
+                    "findings": [
+                        {
+                            "finding_id": "acceptance-link-1",
+                            "severity": "medium",
+                            "category": "acceptance-refs",
+                            "owner_step": "sc-acceptance-check",
+                            "message": "Acceptance refs no longer bind to test evidence.",
+                            "suggested_fix": "Repair refs before recording residual debt.",
+                            "commands": [],
+                        }
+                    ],
+                },
+            )
+            payload = {
+                "task_id": "15",
+                "run_id": "run-15",
+                "recommended_action": "needs-fix-fast",
+                "recommended_command": "py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id 15",
+                "forbidden_commands": [],
+                "candidate_commands": {"needs_fix_fast": "py -3 scripts/sc/llm_review_needs_fix_fast.py --task-id 15"},
+                "latest_summary_signals": {"reason": "rerun_blocked:repeat_review_needs_fix"},
+                "chapter6_hints": {
+                    "next_action": "needs-fix-fast",
+                    "can_skip_6_7": True,
+                    "can_go_to_6_8": True,
+                    "blocked_by": "rerun_guard",
+                    "rerun_forbidden": True,
+                },
+                "inspection": {
+                    "failure": {"code": "review-needs-fix", "message": "Acceptance refs still broken."},
+                    "paths": {
+                        "latest": "logs/ci/2026-04-10/sc-review-pipeline-task-15/latest.json",
+                        "out_dir": "logs/ci/2026-04-10/sc-review-pipeline-task-15-run",
+                    },
+                },
+            }
+
+            with (
+                mock.patch.object(chapter6_route, "build_resume_payload", return_value=(1, payload)),
+                mock.patch.object(chapter6_route, "_derive_change_scope", return_value={"changed_paths": ["README.md"]}),
+            ):
+                _, route = chapter6_route.route_chapter6(repo_root=root, task_id="15", record_residual=True)
+
+            record = route["residual_recording"]
+            self.assertFalse(record["eligible"])
+            self.assertEqual("p1_floor_finding_present", record["reason"])
+            self.assertFalse(record["performed"])
+            self.assertFalse((root / "decision-logs").exists())
+
     def test_compact_payload_should_match_example_json(self) -> None:
         expected_path = REPO_ROOT / "docs" / "workflows" / "examples" / "sc-chapter6-route-compact.example.json"
         expected = json.loads(expected_path.read_text(encoding="utf-8"))

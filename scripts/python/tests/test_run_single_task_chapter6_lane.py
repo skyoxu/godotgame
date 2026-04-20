@@ -367,6 +367,8 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
 
         self.assertEqual("blocked", decision["initial_phase"]["action"])
         self.assertEqual("artifact-integrity", decision["initial_phase"]["stop_reason"])
+        self.assertEqual("artifact-integrity", decision["route_evaluations"]["initial"]["stop_reason"])
+        self.assertFalse(decision["route_evaluations"]["initial"]["needs_fix"])
 
     def test_decision_should_require_needs_fix_after_post_review_run_68(self) -> None:
         decision = lane.build_orchestration_decision(
@@ -387,6 +389,8 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
 
         self.assertEqual("full-path", decision["initial_phase"]["action"])
         self.assertEqual("needs-fix-fast", decision["post_review_phase"]["action"])
+        self.assertTrue(decision["route_evaluations"]["post_review"]["needs_fix"])
+        self.assertEqual("run-6.8", decision["route_evaluations"]["post_review"]["lane"])
 
     def test_decision_should_stop_initial_phase_for_run_67_recovery_lane(self) -> None:
         decision = lane.build_orchestration_decision(
@@ -417,6 +421,8 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
         )
 
         self.assertEqual("needs-fix-fast", decision["initial_phase"]["action"])
+        self.assertEqual("run-6.8", decision["route_evaluations"]["initial"]["next_action"])
+        self.assertTrue(decision["route_evaluations"]["initial"]["needs_fix"])
 
     def test_decision_should_complete_when_next_action_is_continue(self) -> None:
         decision = lane.build_orchestration_decision(
@@ -552,6 +558,23 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
 
         self.assertEqual("blocked", decision["initial_phase"]["action"])
         self.assertEqual("record-residual", decision["initial_phase"]["stop_reason"])
+        self.assertTrue(decision["route_evaluations"]["initial"]["needs_fix"])
+
+    def test_route_evaluator_should_keep_continue_without_recovery_signal(self) -> None:
+        decision = lane.build_orchestration_decision(
+            initial_route={
+                "preferred_lane": "inspect-first",
+                "run_id": "n/a",
+                "latest_reason": "n/a",
+                "blocked_by": "n/a",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+        )
+
+        self.assertEqual("full-path", decision["initial_phase"]["action"])
+        self.assertFalse(decision["route_evaluations"]["initial"]["has_recovery_signal"])
+        self.assertEqual("", decision["route_evaluations"]["initial"]["stop_reason"])
 
     def test_decision_should_block_initial_phase_for_pending_fork_approval(self) -> None:
         decision = lane.build_orchestration_decision(

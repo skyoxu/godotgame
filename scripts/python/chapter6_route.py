@@ -34,6 +34,24 @@ _REPO_NOISE_TOKENS = (
     "unable to write to the transport connection",
 )
 
+_P1_FLOOR_CATEGORIES = {
+    "acceptance-refs",
+    "acceptance-anchors",
+    "artifact-integrity",
+    "planned-only",
+    "planned_only",
+    "security",
+    "security-boundary",
+    "test-false-green",
+    "false-green",
+}
+
+_P1_FLOOR_OWNER_STEPS = {
+    "sc-acceptance-check",
+    "artifact-integrity",
+    "producer-pipeline",
+}
+
 
 def _contains_repo_noise_token(value: Any) -> bool:
     text = str(value or "").strip().lower()
@@ -156,6 +174,16 @@ def _residual_reason_from_agent_review(agent_review: dict[str, Any]) -> tuple[bo
     severities = {str(item.get("severity") or "").strip().lower() for item in findings if isinstance(item, dict)}
     if "high" in severities:
         return False, "high_severity_finding_present"
+    for item in findings:
+        if not isinstance(item, dict):
+            continue
+        category = str(item.get("category") or "").strip().lower()
+        owner_step = str(item.get("owner_step") or "").strip().lower()
+        message = str(item.get("message") or "").strip().lower()
+        if category in _P1_FLOOR_CATEGORIES or owner_step in _P1_FLOOR_OWNER_STEPS:
+            return False, "p1_floor_finding_present"
+        if "artifact_integrity" in message or "planned-only" in message or "acceptance refs" in message:
+            return False, "p1_floor_finding_present"
     if severities & {"medium", "low"}:
         return True, "only_medium_or_low_findings_remain"
     return False, "no_low_priority_findings"

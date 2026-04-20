@@ -144,6 +144,7 @@ Prerequisites:
 Why this is stable:
 - it is the single-task Chapter 6 top-level entrypoint
 - it always starts from `resume-task` and `chapter6-route` instead of assuming a fresh run
+- its lane / stop-loss / needs-fix decision now comes from one internal route-evaluation pass, which reduces drift between plan rendering and runtime execution when Chapter 6 rules keep growing
 - it only jumps directly to `6.8` when recovery artifacts already prove that this is the cheapest valid lane
 - by default it records residual `P2/P3` findings instead of repeatedly paying for the same-shape closure loop
 - it keeps `6.9` behind the same orchestrator, so repo-level hard checks are still part of the normal closeout path
