@@ -128,6 +128,24 @@ Why this is stable:
 - it can record residual low-priority findings into `decision-logs/**` and `execution-plans/**` instead of paying for another same-shape rerun
 - `scripts/sc/llm_review_needs_fix_fast.py` now consumes the same route preflight before spending deterministic / LLM budget when prior review artifacts exist; run `chapter6-route --recommendation-only` manually when you want the cheapest read-only go/no-go before touching 6.8.
 
+
+### `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
+
+Use when:
+- the selected formal backlog slice has completed Chapter 6
+- no unrecorded `P0/P1 Needs Fix` remains
+- you need to convert completed domain/gameplay capabilities into player-facing UI wiring tasks
+
+Prerequisites:
+- real `.taskmaster/tasks/tasks.json`, `.taskmaster/tasks/tasks_back.json`, and `.taskmaster/tasks/tasks_gameplay.json` in business repos
+- `docs/gdd/ui-gdd-flow.md` as the UI wiring GDD SSoT
+
+Why this is stable:
+- it is the Chapter 7 top-level orchestrator
+- it collects completed task triplet inputs before validating UI wiring
+- it writes `logs/ci/<date>/chapter7-ui-wiring/summary.json`
+- it skips safely in the bare template when real task triplet files are absent
+
 ## Task Delivery Loop
 
 ### `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`

@@ -60,6 +60,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - Daily Workflow: `workflow.md`
 - Bootstrap Workflow Example: `workflow.example.md`
 - Chapter 6 T56 Optimization Guide: `docs/workflows/chapter-6-t56-optimization-guide.md`
+- Chapter 7 UI Wiring GDD: `docs/gdd/ui-gdd-flow.md`
 - Stable Public Entrypoints: `docs/workflows/stable-public-entrypoints.md`
 - Delivery Profile 说明：`DELIVERY_PROFILE.md`
 - Session Recovery: `docs/agents/01-session-recovery.md`
@@ -138,6 +139,7 @@ README 只保留稳定公共入口摘要，不再在这里维护长脚本清单�
 - `py -3 scripts/python/dev_cli.py inspect-run --kind <kind> [--task-id <id>]`
 - `py -3 scripts/python/dev_cli.py chapter6-route --task-id <id> --recommendation-only`
 - `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
+- `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
 
 2. 任务交付主环
 - `py -3 scripts/sc/run_review_pipeline.py --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
