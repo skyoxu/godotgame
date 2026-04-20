@@ -535,6 +535,51 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
         self.assertEqual("blocked", decision["initial_phase"]["action"])
         self.assertEqual("sc_test_retry_stop_loss", decision["initial_phase"]["stop_reason"])
 
+    def test_decision_should_stop_initial_phase_for_run_67_recovery_lane(self) -> None:
+        decision = lane.build_orchestration_decision(
+            initial_route={
+                "preferred_lane": "run-6.7",
+                "run_id": "run-15",
+                "latest_reason": "step_failed:sc-test",
+                "blocked_by": "",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+        )
+
+        self.assertEqual("blocked", decision["initial_phase"]["action"])
+        self.assertEqual("run-6.7", decision["initial_phase"]["stop_reason"])
+
+    def test_decision_should_require_needs_fix_when_next_action_is_run_68(self) -> None:
+        decision = lane.build_orchestration_decision(
+            initial_route={
+                "preferred_lane": "inspect-first",
+                "run_id": "run-15",
+                "latest_reason": "rerun_blocked:repeat_review_needs_fix",
+                "blocked_by": "",
+                "chapter6_next_action": "run-6.8",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+        )
+
+        self.assertEqual("needs-fix-fast", decision["initial_phase"]["action"])
+
+    def test_decision_should_block_initial_phase_for_bare_blocked_by_stop_loss(self) -> None:
+        decision = lane.build_orchestration_decision(
+            initial_route={
+                "preferred_lane": "continue",
+                "run_id": "run-15",
+                "latest_reason": "step_failed:sc-test",
+                "blocked_by": "sc_test_retry_stop_loss",
+            },
+            post_review_route={"preferred_lane": "inspect-first"},
+            final_route={"preferred_lane": "inspect-first"},
+        )
+
+        self.assertEqual("blocked", decision["initial_phase"]["action"])
+        self.assertEqual("sc_test_retry_stop_loss", decision["initial_phase"]["stop_reason"])
+
     def test_decision_should_stop_initial_phase_when_needs_fix_path_has_no_increment(self) -> None:
         decision = lane.build_orchestration_decision(
             initial_route={
