@@ -2,6 +2,8 @@
 
 This document records the recommended evolution path for moving the current template workflow to the cloud while keeping the repository-native Codex orchestration model.
 
+Related follow-up: `docs/workflows/cloud-user-telemetry-and-feedback-plan.md` records which hosted usage data is most valuable for feeding repository self-improvement.
+
 ## Goal
 
 Keep the current repository workflow as the execution kernel:

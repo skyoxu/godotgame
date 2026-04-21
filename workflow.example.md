@@ -300,6 +300,23 @@ py -3 scripts/python/run_single_task_light_lane_batch.py --task-id-start 101 --t
 - 新仓不要等到第一笔业务提交前，才第一次跑 `run-local-hard-checks`
 
 
+
+## Optional Chapter 7 UI wiring closure
+
+Use this after the formal task backlog slice has completed Chapter 6 and no unrecorded P0/P1 Needs Fix remains.
+
+```powershell
+py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --self-check
+py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship
+```
+
+Notes:
+
+- `docs/gdd/ui-gdd-flow.md` is the UI wiring GDD SSoT.
+- In a bare template without real `.taskmaster/tasks/*.json`, this gate skips instead of failing.
+- In a business repo, every `status = done` task in `.taskmaster/tasks/tasks.json` must be referenced as `T<id>` in `ui-gdd-flow.md`.
+- Read `logs/ci/<date>/chapter7-ui-wiring*/summary.json` before creating follow-up UI wiring tasks.
+
 ## Optional prototype lane before formal tasking
 
 Use this only when the work is still exploratory and should not enter the formal Taskmaster loop yet.

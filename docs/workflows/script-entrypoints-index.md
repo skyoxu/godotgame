@@ -42,6 +42,8 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/serve_project_health.py`
 - `scripts/python/resume_task.py`
 - `scripts/python/run_single_task_chapter6_lane.py`
+- `scripts/python/run_prototype_workflow.py`
+- `scripts/python/run_chapter7_ui_wiring.py`
 
 ### Repo hard gates
 
@@ -72,10 +74,18 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/task_links_validate.py`
 - `scripts/python/check_tasks_all_refs.py`
 - `scripts/python/validate_task_master_triplet.py`
+- `scripts/python/collect_ui_wiring_inputs.py`
 - `scripts/python/validate_contracts.py`
 - `scripts/python/check_domain_contracts.py`
 - `scripts/python/sync_task_overlay_refs.py`
 - `scripts/sc/llm_generate_overlays_batch.py`
+
+
+### Chapter 7 UI wiring closure
+
+- `scripts/python/collect_ui_wiring_inputs.py`: collects `status = done` master tasks and joins task views by `taskmaster_id`. Requires real task triplet files in business repos; skips in bare template.
+- `scripts/python/validate_chapter7_ui_wiring.py`: validates `docs/gdd/ui-gdd-flow.md` sections and done-task `T<id>` coverage. Included in hard gate bundle as `chapter7_ui_wiring_gate`.
+- `scripts/python/run_chapter7_ui_wiring.py`: top-level Chapter 7 orchestrator. Prefer `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring`.
 
 ## Parameter Prerequisite Legend
 
@@ -127,6 +137,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/validate_security_audit_execution_evidence.py`
 - `scripts/python/validate_ui_event_json_guards.py`
 - `scripts/python/validate_ui_event_source_verification.py`
+- `scripts/python/validate_chapter7_ui_wiring.py`
 - `scripts/sc/check_acceptance_garbled.py`
 
 ### LLM-assisted semantics and generation

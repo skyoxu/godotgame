@@ -32,7 +32,13 @@ py -3 scripts/sc/build.py tdd --task-id <id> --stage refactor
 
 ## Stable Entrypoint
 
-Recommended entrypoint:
+For a guided Day 1 -> Day 5 flow with confirmation pauses, use:
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md
+```
+
+For direct stage-level control, use:
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage red --dotnet-target Game.Core.Tests/Game.Core.Tests.csproj --filter <Expr>

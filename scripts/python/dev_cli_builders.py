@@ -209,14 +209,26 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
         cmd += ["--related-task-id", item]
     if args.hypothesis:
         cmd += ["--hypothesis", args.hypothesis]
+    if getattr(args, "core_player_fantasy", ""):
+        cmd += ["--core-player-fantasy", args.core_player_fantasy]
+    if getattr(args, "minimum_playable_loop", ""):
+        cmd += ["--minimum-playable-loop", args.minimum_playable_loop]
     for item in args.scope_in:
         cmd += ["--scope-in", item]
     for item in args.scope_out:
         cmd += ["--scope-out", item]
     for item in args.success_criteria:
         cmd += ["--success-criteria", item]
+    for item in getattr(args, "promote_signal", []):
+        cmd += ["--promote-signal", item]
+    for item in getattr(args, "archive_signal", []):
+        cmd += ["--archive-signal", item]
+    for item in getattr(args, "discard_signal", []):
+        cmd += ["--discard-signal", item]
     for item in args.evidence:
         cmd += ["--evidence", item]
+    if getattr(args, "decision", ""):
+        cmd += ["--decision", args.decision]
     if args.next_step:
         cmd += ["--next-step", args.next_step]
     if args.create_record_only:
@@ -235,6 +247,33 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
         cmd += ["--timeout-sec", str(args.timeout_sec)]
     if args.out_dir:
         cmd += ["--out-dir", args.out_dir]
+    return cmd
+
+
+def build_run_prototype_workflow_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/run_prototype_workflow.py",
+    ]
+    if getattr(args, "prototype_file", ""):
+        cmd += ["--prototype-file", args.prototype_file]
+    if getattr(args, "confirm", False):
+        cmd.append("--confirm")
+    for item in getattr(args, "set", []) or []:
+        cmd += ["--set", item]
+    if getattr(args, "godot_bin", ""):
+        cmd += ["--godot-bin", args.godot_bin]
+    if int(getattr(args, "stop_after_day", 5) or 5) != 5:
+        cmd += ["--stop-after-day", str(args.stop_after_day)]
+    if getattr(args, "resume_active", ""):
+        cmd += ["--resume-active", args.resume_active]
+    if getattr(args, "score_engine", "deterministic") != "deterministic":
+        cmd += ["--score-engine", args.score_engine]
+    if int(getattr(args, "score_timeout_sec", 180) or 180) != 180:
+        cmd += ["--score-timeout-sec", str(args.score_timeout_sec)]
+    if getattr(args, "self_check", False):
+        cmd.append("--self-check")
     return cmd
 
 
@@ -431,6 +470,25 @@ def build_run_single_task_chapter6_cmd(args) -> list[str]:
         cmd += ["--fix-through", args.fix_through]
     if args.out_dir:
         cmd += ["--out-dir", args.out_dir]
+    if getattr(args, "self_check", False):
+        cmd.append("--self-check")
+    return cmd
+
+
+def build_run_chapter7_ui_wiring_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/run_chapter7_ui_wiring.py",
+    ]
+    if getattr(args, "repo_root", ""):
+        cmd += ["--repo-root", args.repo_root]
+    if getattr(args, "delivery_profile", ""):
+        cmd += ["--delivery-profile", args.delivery_profile]
+    if getattr(args, "write_doc", False):
+        cmd.append("--write-doc")
+    if getattr(args, "out_json", ""):
+        cmd += ["--out-json", args.out_json]
     if getattr(args, "self_check", False):
         cmd.append("--self-check")
     return cmd

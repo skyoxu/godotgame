@@ -71,10 +71,16 @@ def _render_record(
     owner: str,
     related_task_ids: list[str],
     hypothesis: str,
+    core_player_fantasy: str,
+    minimum_playable_loop: str,
     scope_in: list[str],
     scope_out: list[str],
     success_criteria: list[str],
+    promote_signals: list[str],
+    archive_signals: list[str],
+    discard_signals: list[str],
     evidence: list[str],
+    decision: str,
     next_step: str,
 ) -> str:
     related = ", ".join(related_task_ids) if related_task_ids else "none yet"
@@ -93,6 +99,12 @@ def _render_record(
         "## Hypothesis",
         f"- {hypothesis}",
         "",
+        "## Core Player Fantasy",
+        f"- {core_player_fantasy}",
+        "",
+        "## Minimum Playable Loop",
+        f"- {minimum_playable_loop}",
+        "",
         "## Scope",
         "- In:",
         scope_in_lines,
@@ -102,6 +114,15 @@ def _render_record(
         "## Success Criteria",
         criteria_lines,
         "",
+        "## Promote Signals",
+        "\n".join(f"- {item}" for item in (promote_signals or ["TBD"])),
+        "",
+        "## Archive Signals",
+        "\n".join(f"- {item}" for item in (archive_signals or ["TBD"])),
+        "",
+        "## Discard Signals",
+        "\n".join(f"- {item}" for item in (discard_signals or ["TBD"])),
+        "",
         "## Evidence",
         "- Code paths:",
         evidence_lines,
@@ -109,7 +130,7 @@ def _render_record(
         "  - TBD",
         "",
         "## Decision",
-        "- pending (choose discard | archive | promote)",
+        f"- {decision}",
         "",
         "## Next Step",
         f"- {next_step}",
@@ -128,10 +149,16 @@ def _ensure_record(
     owner: str,
     related_task_ids: list[str],
     hypothesis: str,
+    core_player_fantasy: str,
+    minimum_playable_loop: str,
     scope_in: list[str],
     scope_out: list[str],
     success_criteria: list[str],
+    promote_signals: list[str],
+    archive_signals: list[str],
+    discard_signals: list[str],
     evidence: list[str],
+    decision: str,
     next_step: str,
 ) -> str:
     if skip_record:
@@ -145,10 +172,16 @@ def _ensure_record(
                 owner=owner,
                 related_task_ids=related_task_ids,
                 hypothesis=hypothesis,
+                core_player_fantasy=core_player_fantasy,
+                minimum_playable_loop=minimum_playable_loop,
                 scope_in=scope_in,
                 scope_out=scope_out,
                 success_criteria=success_criteria,
+                promote_signals=promote_signals,
+                archive_signals=archive_signals,
+                discard_signals=discard_signals,
                 evidence=evidence,
+                decision=decision,
                 next_step=next_step,
             ),
         )
@@ -250,10 +283,16 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--owner", default="operator")
     ap.add_argument("--related-task-id", action="append", default=[])
     ap.add_argument("--hypothesis", default="TODO: describe the prototype hypothesis.")
+    ap.add_argument("--core-player-fantasy", default="TODO: describe what the player should feel or understand in the first minute.")
+    ap.add_argument("--minimum-playable-loop", default="TODO: describe the smallest end-to-end loop the player must complete.")
     ap.add_argument("--scope-in", action="append", default=[])
     ap.add_argument("--scope-out", action="append", default=[])
     ap.add_argument("--success-criteria", action="append", default=[])
+    ap.add_argument("--promote-signal", action="append", default=[])
+    ap.add_argument("--archive-signal", action="append", default=[])
+    ap.add_argument("--discard-signal", action="append", default=[])
     ap.add_argument("--evidence", action="append", default=[])
+    ap.add_argument("--decision", default="pending")
     ap.add_argument("--next-step", default="Decide discard | archive | promote after the prototype result is clear.")
     ap.add_argument("--create-record-only", action="store_true", help="Create the prototype record and exit without running verification.")
     ap.add_argument("--dotnet-target", action="append", default=[], help="Repeatable dotnet test project or solution target.")
@@ -282,10 +321,16 @@ def main(argv: list[str] | None = None) -> int:
         owner=str(args.owner),
         related_task_ids=[str(item) for item in args.related_task_id],
         hypothesis=str(args.hypothesis),
+        core_player_fantasy=str(args.core_player_fantasy),
+        minimum_playable_loop=str(args.minimum_playable_loop),
         scope_in=[str(item) for item in args.scope_in],
         scope_out=[str(item) for item in args.scope_out],
         success_criteria=[str(item) for item in args.success_criteria],
+        promote_signals=[str(item) for item in args.promote_signal],
+        archive_signals=[str(item) for item in args.archive_signal],
+        discard_signals=[str(item) for item in args.discard_signal],
         evidence=[str(item) for item in args.evidence],
+        decision=str(args.decision),
         next_step=str(args.next_step),
     )
 

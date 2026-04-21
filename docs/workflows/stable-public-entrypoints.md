@@ -15,6 +15,24 @@ Use `docs/workflows/script-entrypoints-index.md` when you need the full executab
 
 ## Repo Bootstrap And Recovery
 
+### `py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md`
+
+Use when:
+- you want a Day 1 -> Day 5 prototype lane router instead of manually chaining prototype commands
+- the prototype record already follows `docs/prototypes/TEMPLATE.md` or `docs/prototypes/TEMPLATE.zh-CN.md`
+- you want explicit confirmation pauses before execution continues
+
+Prerequisites:
+- a prototype file path, or enough `--set key=value` inputs to satisfy required fields
+- `--godot-bin` only becomes required before Day 5 Godot-side verification
+
+Why this is stable:
+- it is the top-level prototype lane router
+- it pauses for missing required fields instead of guessing through them
+- it writes lightweight active state under `logs/ci/active-prototypes/*.active.json` for resume after context compression
+- it stops at Day 5 and leaves Day 6 / Day 7 evidence review and discard/archive/promote judgment to the operator
+
+
 ### `py -3 scripts/python/dev_cli.py run-local-hard-checks`
 
 Use when:
@@ -127,6 +145,24 @@ Why this is stable:
 - it only recommends `6.8` when current edits hit the previous reviewer anchors
 - it can record residual low-priority findings into `decision-logs/**` and `execution-plans/**` instead of paying for another same-shape rerun
 - `scripts/sc/llm_review_needs_fix_fast.py` now consumes the same route preflight before spending deterministic / LLM budget when prior review artifacts exist; run `chapter6-route --recommendation-only` manually when you want the cheapest read-only go/no-go before touching 6.8.
+
+
+### `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
+
+Use when:
+- the selected formal backlog slice has completed Chapter 6
+- no unrecorded `P0/P1 Needs Fix` remains
+- you need to convert completed domain/gameplay capabilities into player-facing UI wiring tasks
+
+Prerequisites:
+- real `.taskmaster/tasks/tasks.json`, `.taskmaster/tasks/tasks_back.json`, and `.taskmaster/tasks/tasks_gameplay.json` in business repos
+- `docs/gdd/ui-gdd-flow.md` as the UI wiring GDD SSoT
+
+Why this is stable:
+- it is the Chapter 7 top-level orchestrator
+- it collects completed task triplet inputs before validating UI wiring
+- it writes `logs/ci/<date>/chapter7-ui-wiring/summary.json`
+- it skips safely in the bare template when real task triplet files are absent
 
 ## Task Delivery Loop
 

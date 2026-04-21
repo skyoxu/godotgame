@@ -81,6 +81,7 @@ Use this when you need the cheapest safe daily loop for a single task. Full deta
   - [../workflows/template-bootstrap-checklist.md](../workflows/template-bootstrap-checklist.md)
   - [../workflows/template-upgrade-protocol.md](../workflows/template-upgrade-protocol.md)
   - [../workflows/prototype-lane.md](../workflows/prototype-lane.md)
+  - [../gdd/ui-gdd-flow.md](../gdd/ui-gdd-flow.md)
   - [../architecture/ADR_INDEX_GODOT.md](../architecture/ADR_INDEX_GODOT.md)
 - AGENTS maintenance and information architecture:
   - [11-agents-construction-principles.md](11-agents-construction-principles.md)
