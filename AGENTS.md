@@ -170,6 +170,7 @@ This file is the repository map. It routes you to the right source document by t
 - Single-task Chapter 6 orchestrator: `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
 - Chapter 7 UI wiring orchestrator: `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
 - Prototype-lane TDD entry: `py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage <red|green|refactor> ...`
+- Prototype top-level router: `py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md`
 - Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`
 
 ## Recovery Files

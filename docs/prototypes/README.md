@@ -6,7 +6,9 @@ Use this directory when the question is still whether a mechanic, UI flow, archi
 
 ## Files
 - `TEMPLATE.md`
-  - Copy this when starting a new prototype.
+  - English template for a prototype record.
+- `TEMPLATE.zh-CN.md`
+  - 中文原型记录模板，可被 `run-prototype-workflow` 读取。
 - `<date>-<slug>.md`
   - One prototype record per exploration topic.
 

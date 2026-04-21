@@ -42,6 +42,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/serve_project_health.py`
 - `scripts/python/resume_task.py`
 - `scripts/python/run_single_task_chapter6_lane.py`
+- `scripts/python/run_prototype_workflow.py`
 - `scripts/python/run_chapter7_ui_wiring.py`
 
 ### Repo hard gates

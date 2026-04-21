@@ -15,6 +15,24 @@ Use `docs/workflows/script-entrypoints-index.md` when you need the full executab
 
 ## Repo Bootstrap And Recovery
 
+### `py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md`
+
+Use when:
+- you want a Day 1 -> Day 5 prototype lane router instead of manually chaining prototype commands
+- the prototype record already follows `docs/prototypes/TEMPLATE.md` or `docs/prototypes/TEMPLATE.zh-CN.md`
+- you want explicit confirmation pauses before execution continues
+
+Prerequisites:
+- a prototype file path, or enough `--set key=value` inputs to satisfy required fields
+- `--godot-bin` only becomes required before Day 5 Godot-side verification
+
+Why this is stable:
+- it is the top-level prototype lane router
+- it pauses for missing required fields instead of guessing through them
+- it writes lightweight active state under `logs/ci/active-prototypes/*.active.json` for resume after context compression
+- it stops at Day 5 and leaves Day 6 / Day 7 evidence review and discard/archive/promote judgment to the operator
+
+
 ### `py -3 scripts/python/dev_cli.py run-local-hard-checks`
 
 Use when:

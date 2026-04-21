@@ -218,6 +218,14 @@ def cmd_run_prototype_tdd(args: argparse.Namespace) -> int:
     return run(build_run_prototype_tdd_cmd(args))
 
 
+def cmd_run_prototype_workflow(args: argparse.Namespace) -> int:
+    """Run the top-level prototype 7-day workflow router through Day 5."""
+
+    from dev_cli_builders import build_run_prototype_workflow_cmd
+
+    return run(build_run_prototype_workflow_cmd(args))
+
+
 def cmd_create_prototype_scene(args: argparse.Namespace) -> int:
     """Create a minimal prototype scene scaffold under Game.Godot/Prototypes."""
 
@@ -405,10 +413,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--owner", default="operator")
     p_proto.add_argument("--related-task-id", action="append", default=[])
     p_proto.add_argument("--hypothesis", default="TODO: describe the prototype hypothesis.")
+    p_proto.add_argument("--core-player-fantasy", default="TODO: describe what the player should feel or understand in the first minute.")
+    p_proto.add_argument("--minimum-playable-loop", default="TODO: describe the smallest end-to-end loop the player must complete.")
     p_proto.add_argument("--scope-in", action="append", default=[])
     p_proto.add_argument("--scope-out", action="append", default=[])
     p_proto.add_argument("--success-criteria", action="append", default=[])
+    p_proto.add_argument("--promote-signal", action="append", default=[])
+    p_proto.add_argument("--archive-signal", action="append", default=[])
+    p_proto.add_argument("--discard-signal", action="append", default=[])
     p_proto.add_argument("--evidence", action="append", default=[])
+    p_proto.add_argument("--decision", default="pending")
     p_proto.add_argument("--next-step", default="Decide discard | archive | promote after the prototype result is clear.")
     p_proto.add_argument("--create-record-only", action="store_true")
     p_proto.add_argument("--dotnet-target", action="append", default=[])
@@ -419,6 +433,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--timeout-sec", type=int, default=300)
     p_proto.add_argument("--out-dir", default="")
     p_proto.set_defaults(func=cmd_run_prototype_tdd)
+
+    # run-prototype-workflow
+    p_proto_flow = sub.add_parser(
+        "run-prototype-workflow",
+        help="run the top-level prototype 7-day workflow router through Day 5 with confirmation pauses and lightweight active-state persistence",
+    )
+    p_proto_flow.add_argument("--prototype-file", default="")
+    p_proto_flow.add_argument("--confirm", action="store_true")
+    p_proto_flow.add_argument("--set", action="append", default=[])
+    p_proto_flow.add_argument("--godot-bin", default="")
+    p_proto_flow.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5])
+    p_proto_flow.add_argument("--resume-active", default="")
+    p_proto_flow.add_argument("--self-check", action="store_true")
+    p_proto_flow.set_defaults(func=cmd_run_prototype_workflow)
 
     # create-prototype-scene
     p_scene = sub.add_parser(

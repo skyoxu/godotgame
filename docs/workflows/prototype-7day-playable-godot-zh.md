@@ -2,6 +2,110 @@
 
 本文档用于指导新仓在仍处于玩法验证阶段时，不进入 `workflow.md` 第五章和第六章，而是通过 prototype lane 和 prototype TDD 尽快做出一个能玩、能判断是否值得继续的 Godot 原型。
 
+## 0. 顶层路由编排器（推荐入口）
+
+如果你希望按 7 天原型流程推进，但又不想一开始就手动拼命令，推荐优先使用顶层入口：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-prototype-file>.md
+```
+
+这个入口只覆盖 Day 1 到 Day 5，并且是轻量编排，不会引入 `workflow.md` 第五章、第六章那套正式任务 harness。
+
+### 0.1 可接受的输入来源
+
+支持两种输入方式：
+
+1. 直接传 `--prototype-file`
+   - 文件内容应遵循 `docs/prototypes/TEMPLATE.md` 或 `docs/prototypes/TEMPLATE.zh-CN.md`
+2. 不传文件，直接用 `--set key=value` 逐步补充
+   - 适合你还没建原型文件，只想先从 CLI 里把关键信息喂给路由器
+
+例如：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --set slug=combat-loop --set hypothesis="验证战斗循环是否值得继续" --set core_player_fantasy="玩家在第一分钟内感受到战斗节奏" --set minimum_playable_loop="进入场景并完成一次攻击反馈" --set success_criteria="玩家可以完成一次最小可玩循环,试玩后仍愿意继续"
+```
+
+### 0.2 必填项与默认值
+
+以下字段是必填项；缺任何一个，路由器都会暂停，不会继续进入 Day 1 之后的步骤：
+
+- `slug`
+- `hypothesis`
+- `core_player_fantasy`
+- `minimum_playable_loop`
+- `success_criteria`
+
+以下字段如果没填，会自动使用系统默认值，不要求你第一次就补齐：
+
+- `status=active`
+- `owner=operator`
+- `date=<today>`
+- `related_formal_task_ids=["none yet"]`
+- `scope_in=["TBD"]`
+- `scope_out=["TBD"]`
+- `promote_signals=["TBD"]`
+- `archive_signals=["TBD"]`
+- `discard_signals=["TBD"]`
+- `evidence=["TBD"]`
+- `decision=pending`
+- `next_step="Proceed to the next prototype workflow confirmation step."`
+
+建议口径是：先把必填项写准，再逐步细化默认值字段，而不是在玩法尚未证明前把文档写得过重。
+
+### 0.3 暂停与确认机制
+
+这个入口不是“拿到信息就一路跑到底”。它在以下场景会主动暂停：
+
+- 没传 `--prototype-file`，且也没有足够的 `--set`
+- 原型文件里缺少必填项
+- 必填项齐了，但你还没有用 `--confirm` 明确确认
+- 即将进入 Day 5，但没有传 `--godot-bin`
+
+暂停时会输出下一步动作，并写一份轻量恢复状态：
+
+```text
+logs/ci/active-prototypes/<slug>.active.json
+```
+
+这份 active state 只记录 prototype 路由所需的最小信息，用来防止上下文压缩后你又得重新整理原型目标，但不会做成正式 Chapter 6 那种重 sidecar。
+
+### 0.4 推荐执行节奏
+
+1. 先准备 `docs/prototypes/<your-file>.md`，按模板填写。
+2. 运行：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md
+```
+
+3. 路由器会先整理关键信息并暂停，等待你确认。
+4. 你确认无误后，再继续：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md --confirm --godot-bin "$env:GODOT_BIN"
+```
+
+5. 如果中途会话断了，或者 Codex 上下文被压缩，可通过轻量恢复状态继续：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug>
+py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug> --confirm --godot-bin "$env:GODOT_BIN"
+```
+
+### 0.5 这个路由器实际做什么
+
+它会按顺序推进到以下节点，并在 Day 5 停止：
+
+- Day 1：确保 prototype record 存在
+- Day 2：创建最小 Godot 原型场景脚手架
+- Day 3：跑 prototype red
+- Day 4：跑 prototype green
+- Day 5：跑 Godot / GdUnit 侧验证
+
+它不会替你进入 Day 6 的试玩判断和 Day 7 的 promote / archive / discard 决策。那两天仍然需要你基于证据做人工判断。
+
 ## 1. 适用前提
 
 适用于以下情况：
@@ -290,3 +394,43 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug combat-loop --stage gre
 ## 8. 一句话总结
 
 如果你的目标只是“先做出一个能玩的 Godot 原型”，那么正确做法是：用 prototype lane 管边界，用 `run-prototype-tdd` 做最小 red/green 闭环，用 Godot 场景实际试玩，确认核心玩家幻想和最小可玩循环是否成立，并尽快做出 `discard | archive | promote` 决策。若最终 `promote`，必须回到正式 Chapter 6，不要把 prototype 证据当成正式交付证据。
+
+## 9. 最佳使用提示词（给 Codex / AI 代理）
+
+如果你想让 Codex 或其他 AI 代理严格按 prototype lane 执行，而不是误入正式 Chapter 5 / Chapter 6，可以直接使用下面这份提示词：
+
+```text
+先读 AGENTS.md、docs/agents/00-index.md、docs/workflows/prototype-lane.md、docs/workflows/prototype-tdd.md，并以 docs/workflows/prototype-7day-playable-godot-zh.md 为当前原型执行准则。
+
+当前工作仍处于 prototype lane，不进入 workflow.md 第五章和第六章，不创建正式 task refs / acceptance refs / overlay refs，不跑 run_review_pipeline.py。
+
+默认优先使用顶层原型入口：
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file <path-to-prototype-file>
+
+执行要求：
+1. 先读取 prototype 文件，并按 docs/prototypes/TEMPLATE.md 或 TEMPLATE.zh-CN.md 解释字段。
+2. 先判断信息是否完整：
+   - 必填项只有：slug、hypothesis、core_player_fantasy、minimum_playable_loop、success_criteria。
+   - 其他字段可先接受系统默认值，不要为了补齐非关键字段阻断工作。
+3. 一旦信息不足、文件不存在、或需要进入下一步但缺少必要参数，必须暂停并明确告诉我缺什么；不要脑补，不要自行继续。
+4. 如果信息完整，也不要直接执行 Day 1 到 Day 5；先整理一份简洁确认摘要给我，得到确认后才继续。
+5. 如果会话中断、上下文被压缩或需要恢复，优先使用：
+   - py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug>
+   不要依赖聊天历史脑补恢复。
+6. 只执行到 Day 5：
+   - Day 1 建 prototype record
+   - Day 2 建最小可操作 Godot 场景
+   - Day 3 跑 red
+   - Day 4 跑 green
+   - Day 5 跑 Godot / GdUnit 验证
+   Day 6 和 Day 7 只做建议，不自动执行最终 promote / archive / discard 决策。
+7. 所有结论都围绕两件事：核心玩家幻想是否成立、最小可玩循环是否成立。
+8. 文档读写和记录统一使用 Python + UTF-8。
+9. 每完成一天，都要明确输出：
+   - 今天完成了什么
+   - 产物在哪里
+   - 下一天进入条件是否满足
+   - 目前更像是 promote、archive 还是 discard
+```
+
+这份提示词的核心目标只有一个：让代理始终停留在“验证玩法是否值得继续”的语境里，而不是提前滑入正式交付工作流。
