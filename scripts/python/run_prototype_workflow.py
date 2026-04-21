@@ -84,7 +84,12 @@ def parse_template_content(content: str) -> dict[str, Any]:
         if stripped.startswith("- "):
             entry = stripped[2:].strip()
             if current_section == "scope":
-                if scope_mode == "in":
+                lowered_entry = _normalize_heading(entry)
+                if lowered_entry in {"in", "纳入"}:
+                    scope_mode = "in"
+                elif lowered_entry in {"out", "排除"}:
+                    scope_mode = "out"
+                elif scope_mode == "in":
                     section_values.setdefault("scope_in", []).append(entry)
                 elif scope_mode == "out":
                     section_values.setdefault("scope_out", []).append(entry)
@@ -211,7 +216,184 @@ def write_active_state(*, repo_root: Path, slug: str, payload: dict[str, Any]) -
     return path
 
 
-def _build_confirmation_message(payload: dict[str, Any], *, file_path: str) -> str:
+def _score_text(value: Any) -> str:
+    if isinstance(value, list):
+        text = " ".join(str(item).strip() for item in value if str(item).strip())
+        return text.strip()
+    return str(value or "").strip()
+
+
+def _has_meaningful_items(items: list[Any]) -> bool:
+    meaningful = [item for item in items if _score_text(item) and _score_text(item).upper() != "TBD"]
+    return bool(meaningful)
+
+
+def build_prototype_intake_score(payload: dict[str, Any]) -> dict[str, Any]:
+    hypothesis_text = _score_text(payload.get("hypothesis"))
+    fantasy_text = _score_text(payload.get("core_player_fantasy"))
+    loop_text = _score_text(payload.get("minimum_playable_loop"))
+    next_step_text = _score_text(payload.get("next_step"))
+    success_items = [item for item in payload.get("success_criteria") or [] if _score_text(item)]
+    scope_in_items = [item for item in payload.get("scope_in") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+    scope_out_items = [item for item in payload.get("scope_out") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+    evidence_items = [item for item in payload.get("evidence") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+    promote_items = [item for item in payload.get("promote_signals") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+    archive_items = [item for item in payload.get("archive_signals") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+    discard_items = [item for item in payload.get("discard_signals") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
+
+    fantasy_score = 20 if (
+        len(hypothesis_text) >= 8
+        and len(fantasy_text) >= 12
+    ) else 8
+    loop_score = 20 if (
+        len(loop_text) >= 16
+        and len(success_items) >= 1
+    ) else 8
+    scope_score = 20 if (
+        len(scope_in_items) >= 1
+        and len(scope_out_items) >= 1
+    ) else 8
+    validation_score = 20 if (
+        len(success_items) >= 1
+        and (
+            len(evidence_items) >= 1
+            or len(promote_items) >= 1
+        )
+    ) else 8
+    execution_score = 20 if (
+        len(promote_items) >= 1
+        and len(archive_items) >= 1
+        and len(discard_items) >= 1
+        and next_step_text
+        and next_step_text != "Proceed to the next prototype workflow confirmation step."
+    ) else 8
+
+    dimensions = [
+        {
+            "id": "fantasy_clarity",
+            "label": "Fantasy clarity",
+            "score": fantasy_score,
+            "max_score": 20,
+            "focus": "Hypothesis and core player fantasy are specific enough for an indie prototype.",
+        },
+        {
+            "id": "loop_clarity",
+            "label": "Loop clarity",
+            "score": loop_score,
+            "max_score": 20,
+            "focus": "Minimum playable loop and success criteria describe a concrete playable slice.",
+        },
+        {
+            "id": "scope_discipline",
+            "label": "Scope discipline",
+            "score": scope_score,
+            "max_score": 20,
+            "focus": "The prototype keeps a small indie-friendly boundary with explicit in and out scope.",
+        },
+        {
+            "id": "validation_readiness",
+            "label": "Validation readiness",
+            "score": validation_score,
+            "max_score": 20,
+            "focus": "The prototype already defines observable validation signals or evidence paths.",
+        },
+        {
+            "id": "execution_readiness",
+            "label": "Execution readiness",
+            "score": execution_score,
+            "max_score": 20,
+            "focus": "The prototype already frames next-step and exit decisions for a small team.",
+        },
+    ]
+    total_score = sum(int(item["score"]) for item in dimensions)
+    recommendation = "ready-for-tdd" if total_score >= 80 else "refine-before-tdd"
+    return {
+        "total_score": total_score,
+        "max_score": 100,
+        "recommendation": recommendation,
+        "dimensions": dimensions,
+    }
+
+
+def _json_block(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+def _extract_json_object(text: str) -> dict[str, Any]:
+    stripped = str(text or "").strip()
+    if not stripped:
+        return {}
+    try:
+        parsed = json.loads(stripped)
+        return parsed if isinstance(parsed, dict) else {}
+    except json.JSONDecodeError:
+        pass
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start < 0 or end <= start:
+        return {}
+    try:
+        parsed = json.loads(stripped[start : end + 1])
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _build_llm_review_prompt(payload: dict[str, Any]) -> str:
+    return (
+        "You are reviewing an indie game prototype intake, not a full PRD/GDD.\n"
+        "Score only whether the prototype information is clear enough for a small studio to enter a short TDD prototype loop.\n"
+        "Use exactly five dimensions, 20 points each: fantasy_clarity, loop_clarity, scope_discipline, validation_readiness, execution_readiness.\n"
+        "Do not require a complete PRD, GDD, lore bible, production roadmap, economy design, or full architecture.\n"
+        "Return JSON only with keys: total_score, max_score, recommendation, dimensions, top_gaps.\n"
+        "recommendation must be ready-for-tdd or refine-before-tdd.\n\n"
+        f"Prototype intake:\n{_json_block(payload)}\n"
+    )
+
+
+def build_prototype_intake_llm_review(
+    payload: dict[str, Any],
+    *,
+    root: Path,
+    score_engine: str,
+    timeout_sec: int,
+) -> dict[str, Any]:
+    engine = str(score_engine or "deterministic").strip().lower()
+    if engine == "deterministic":
+        return {"engine": engine, "status": "skipped", "reason": "deterministic score engine only"}
+    if engine not in {"codex", "hybrid"}:
+        return {"engine": engine, "status": "skipped", "reason": f"unsupported score engine: {engine}"}
+
+    out_path = root / "logs" / "ci" / "active-prototypes" / f"{sanitize_slug(payload.get('slug') or 'prototype')}.llm-intake-review.md"
+    prompt = _build_llm_review_prompt(payload)
+    cmd = [
+        "codex",
+        "exec",
+        "-s",
+        "read-only",
+        "-C",
+        str(root),
+        "--output-last-message",
+        str(out_path),
+        "-",
+    ]
+    rc, trace = _run_with_input(cmd, cwd=root, input_text=prompt, timeout_sec=timeout_sec)
+    if rc != 0:
+        return {"engine": engine, "status": "failed", "rc": rc, "trace": trace[-2000:]}
+    review_text = out_path.read_text(encoding="utf-8") if out_path.exists() else trace
+    review = _extract_json_object(review_text)
+    if not review:
+        return {"engine": engine, "status": "failed", "rc": rc, "trace": trace[-2000:], "error": "missing-json-review"}
+    return {"engine": engine, "status": "ok", "review": review}
+
+
+def _build_confirmation_message(
+    payload: dict[str, Any],
+    *,
+    file_path: str,
+    intake_score: dict[str, Any],
+    llm_review: dict[str, Any] | None = None,
+) -> str:
     lines = [
         "Prototype workflow paused for confirmation.",
         f"Prototype file: {file_path or 'not provided'}",
@@ -220,7 +402,20 @@ def _build_confirmation_message(payload: dict[str, Any], *, file_path: str) -> s
         f"Core player fantasy: {payload.get('core_player_fantasy') or '(missing)'}",
         f"Minimum playable loop: {payload.get('minimum_playable_loop') or '(missing)'}",
         f"Success criteria: {', '.join(payload.get('success_criteria') or []) or '(missing)'}",
+        f"Prototype intake score: {intake_score['total_score']}/{intake_score['max_score']}",
+        f"Recommendation: {intake_score['recommendation']}",
     ]
+    for item in intake_score["dimensions"]:
+        lines.append(f"{item['label']}: {item['score']}/{item['max_score']}")
+    if llm_review and llm_review.get("status") == "ok":
+        review = dict(llm_review.get("review") or {})
+        lines.append(f"LLM intake score: {review.get('total_score', 'unknown')}/{review.get('max_score', 100)}")
+        lines.append(f"LLM recommendation: {review.get('recommendation', 'unknown')}")
+        top_gaps = [str(item) for item in list(review.get("top_gaps") or []) if str(item).strip()]
+        if top_gaps:
+            lines.append(f"LLM top gaps: {'; '.join(top_gaps[:3])}")
+    elif llm_review and llm_review.get("status") not in {"skipped", ""}:
+        lines.append(f"LLM intake review: {llm_review.get('status')} ({llm_review.get('reason') or llm_review.get('error') or 'see active state'})")
     return "\n".join(lines)
 
 
@@ -235,6 +430,27 @@ def _run(cmd: list[str], *, cwd: Path) -> tuple[int, str]:
         errors="ignore",
         check=False,
     )
+    return proc.returncode or 0, proc.stdout or ""
+
+
+def _run_with_input(cmd: list[str], *, cwd: Path, input_text: str, timeout_sec: int) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(
+            cmd,
+            input=input_text,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            check=False,
+            timeout=timeout_sec,
+        )
+    except subprocess.TimeoutExpired:
+        return 124, "codex exec timeout\n"
+    except Exception as exc:  # noqa: BLE001
+        return 1, f"codex exec failed to start: {exc}\n"
     return proc.returncode or 0, proc.stdout or ""
 
 
@@ -378,6 +594,8 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--godot-bin", default="", help="Required before running Day 5 Godot-side verification.")
     ap.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5], help="Stop after the selected day.")
     ap.add_argument("--resume-active", default="", help="Resume from an active prototype slug if no file is re-supplied.")
+    ap.add_argument("--score-engine", default="deterministic", choices=["deterministic", "codex", "hybrid"], help="Optional prototype intake score engine. Codex is a soft second opinion, not the hard gate.")
+    ap.add_argument("--score-timeout-sec", type=int, default=180, help="Timeout for optional codex intake review.")
     ap.add_argument("--self-check", action="store_true", help="Print planned behavior without executing steps.")
     return ap
 
@@ -468,13 +686,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Missing required fields: {', '.join(missing)}")
         return 0
 
+    intake_score = build_prototype_intake_score(payload)
+    llm_review = build_prototype_intake_llm_review(
+        payload,
+        root=root,
+        score_engine=str(args.score_engine),
+        timeout_sec=int(args.score_timeout_sec),
+    )
     if not args.confirm:
         state = {
             "status": "needs-confirmation",
             "prototype_file": file_label,
             "prototype": payload,
             "missing_required_fields": [],
-            "confirmation_summary": _build_confirmation_message(payload, file_path=file_label),
+            "prototype_intake_score": intake_score,
+            "prototype_intake_llm_review": llm_review,
+            "confirmation_summary": _build_confirmation_message(
+                payload,
+                file_path=file_label,
+                intake_score=intake_score,
+                llm_review=llm_review,
+            ),
             "resume_hint": f"py -3 scripts/python/dev_cli.py run-prototype-workflow {'--prototype-file ' + file_label if file_label else '--resume-active ' + str(payload['slug'])} --confirm",
         }
         path = write_active_state(repo_root=root, slug=str(payload["slug"]), payload=state)
@@ -488,6 +720,8 @@ def main(argv: list[str] | None = None) -> int:
             "status": "self-check",
             "prototype_file": file_label,
             "prototype": payload,
+            "prototype_intake_score": intake_score,
+            "prototype_intake_llm_review": llm_review,
             "planned_days": [step["day"] for step in _day_steps(payload) if int(step["day"]) <= int(args.stop_after_day)],
         }
         print(json.dumps(state, ensure_ascii=False, indent=2))
@@ -533,6 +767,8 @@ def main(argv: list[str] | None = None) -> int:
         "status": "completed-through-day",
         "prototype_file": file_label,
         "prototype": payload,
+        "prototype_intake_score": intake_score,
+        "prototype_intake_llm_review": llm_review,
         "completed_through_day": int(args.stop_after_day),
         "steps_run": steps_run,
     }

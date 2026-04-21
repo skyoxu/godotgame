@@ -106,6 +106,45 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug> --
 
 它不会替你进入 Day 6 的试玩判断和 Day 7 的 promote / archive / discard 决策。那两天仍然需要你基于证据做人工判断。
 
+### 0.6 进入 TDD 前的原型信息评分
+
+当必填信息已经齐全后，路由器不会立刻进入 TDD，而是先生成一份面向“小工作室独立游戏原型验证”的 intake score，并暂停等待用户确认。
+
+这不是 PRD/GDD 完整度审查，不要求完整世界观、完整系统设计、商业化设计、长期路线图或正式架构。它只回答一个问题：这份信息是否足够让小团队开始做一个短周期、可玩的 Godot 原型。
+
+评分总分 100 分，5 个维度，每项 20 分：
+
+- `fantasy_clarity`：核心玩家幻想是否清楚，玩家第一分钟应该感受到什么是否明确。
+- `loop_clarity`：最小可玩循环是否具体，是否能指导 Day 2 到 Day 5 的实现和验证。
+- `scope_discipline`：范围是否足够小，是否明确哪些先不做，避免原型膨胀。
+- `validation_readiness`：是否有可观察的成功标准、证据路径或 promote 信号。
+- `execution_readiness`：是否有下一步、promote / archive / discard 退出信号，适合小团队快速决策。
+
+默认只跑确定性评分：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md
+```
+
+如果你希望在确定性评分之外，让 Codex 从独立游戏原型视角给一次软审查，可以显式开启：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md --score-engine codex
+```
+
+或者同时保留确定性评分，并附加 Codex second opinion：
+
+```powershell
+py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md --score-engine hybrid
+```
+
+建议：
+
+- 日常默认用 `deterministic`，速度快、稳定、无模型成本。
+- 对玩法方向不确定、表达模糊、或你想让模型挑战原型假设时，再用 `codex` 或 `hybrid`。
+- Codex 评分是软建议，不替代确定性评分，也不要求你补成 PRD/GDD。
+- 用户确认评分摘要后，才继续加 `--confirm` 进入 Day 1 到 Day 5。
+
 ## 1. 适用前提
 
 适用于以下情况：
@@ -413,7 +452,8 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file <path-to
    - 必填项只有：slug、hypothesis、core_player_fantasy、minimum_playable_loop、success_criteria。
    - 其他字段可先接受系统默认值，不要为了补齐非关键字段阻断工作。
 3. 一旦信息不足、文件不存在、或需要进入下一步但缺少必要参数，必须暂停并明确告诉我缺什么；不要脑补，不要自行继续。
-4. 如果信息完整，也不要直接执行 Day 1 到 Day 5；先整理一份简洁确认摘要给我，得到确认后才继续。
+4. 如果信息完整，也不要直接执行 Day 1 到 Day 5；先生成“小工作室独立游戏原型验证”评分摘要，确认它不是 PRD/GDD 完整度审查，再等待我确认。
+5. 默认使用确定性评分；只有我明确要求时，才加 `--score-engine codex` 或 `--score-engine hybrid` 做 Codex 软评分。
 5. 如果会话中断、上下文被压缩或需要恢复，优先使用：
    - py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug>
    不要依赖聊天历史脑补恢复。

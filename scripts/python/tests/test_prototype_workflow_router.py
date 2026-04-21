@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -80,6 +83,170 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
         self.assertIn("core_player_fantasy", ids)
         self.assertIn("minimum_playable_loop", ids)
         self.assertIn("success_criteria", ids)
+
+    def test_indie_intake_score_should_be_100_for_rich_payload(self) -> None:
+        module = _load_module("prototype_workflow_router_score", "scripts/python/run_prototype_workflow.py")
+        payload = module.normalize_prototype_payload(
+            {
+                "slug": "combat-loop",
+                "owner": "solo-dev",
+                "hypothesis": "验证战斗循环是否值得继续。",
+                "core_player_fantasy": "玩家在第一分钟内感受到紧凑战斗节奏，并愿意继续下一轮。",
+                "minimum_playable_loop": "进入场景，接近敌人，攻击一次，看到受击反馈，然后可以立即重试。",
+                "scope_in": ["移动", "攻击", "受击反馈"],
+                "scope_out": ["正式任务拆分", "完整数值平衡"],
+                "success_criteria": ["玩家能完成一次最小循环", "试玩后愿意继续"],
+                "promote_signals": ["试玩后仍觉得值得继续"],
+                "archive_signals": ["方向有信号但反馈还不稳定"],
+                "discard_signals": ["循环无趣且反馈不清楚"],
+                "evidence": ["docs/prototypes/2026-04-21-combat-loop.md"],
+                "decision": "pending",
+                "next_step": "先进入 Day 2 做最小可操作场景。",
+            },
+            today="2026-04-21",
+        )
+
+        score = module.build_prototype_intake_score(payload)
+
+        self.assertEqual(100, score["total_score"])
+        self.assertEqual(100, score["max_score"])
+        self.assertEqual("ready-for-tdd", score["recommendation"])
+        self.assertEqual(5, len(score["dimensions"]))
+        self.assertEqual(
+            [
+                "fantasy_clarity",
+                "loop_clarity",
+                "scope_discipline",
+                "validation_readiness",
+                "execution_readiness",
+            ],
+            [item["id"] for item in score["dimensions"]],
+        )
+        self.assertTrue(all(item["score"] == 20 for item in score["dimensions"]))
+
+    def test_complete_payload_should_pause_with_score_before_tdd(self) -> None:
+        module = _load_module("prototype_workflow_router_confirm_score", "scripts/python/run_prototype_workflow.py")
+        template = """# 原型：combat-loop
+
+## 假设
+- 验证战斗循环是否值得继续。
+
+## 核心玩家幻想
+- 玩家在第一分钟内感受到紧凑战斗节奏，并愿意继续下一轮。
+
+## 最小可玩循环
+- 进入场景，接近敌人，攻击一次，看到受击反馈，然后可以立即重试。
+
+## 范围
+- 纳入：
+  - 移动
+  - 攻击
+  - 受击反馈
+- 排除：
+  - 正式任务拆分
+  - 完整数值平衡
+
+## 成功标准
+- 玩家能完成一次最小循环
+- 试玩后愿意继续
+
+## 进入 Promote 的信号
+- 试玩后仍觉得值得继续
+
+## 进入 Archive 的信号
+- 方向有信号但反馈还不稳定
+
+## 进入 Discard 的信号
+- 循环无趣且反馈不清楚
+
+## 证据
+- 代码路径：
+  - Game.Godot/Prototypes/combat-loop/CombatLoopPrototype.tscn
+
+## 下一步
+- 先进入 Day 2 做最小可操作场景。
+"""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            prototype_file = root / "docs" / "prototypes" / "combat-loop.md"
+            prototype_file.parent.mkdir(parents=True, exist_ok=True)
+            prototype_file.write_text(template, encoding="utf-8")
+            module.repo_root = lambda: root
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = module.main(["--prototype-file", str(prototype_file)])
+            active_path = root / "logs" / "ci" / "active-prototypes" / "combat-loop.active.json"
+            active_state = json.loads(active_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(0, rc)
+        self.assertEqual("needs-confirmation", active_state["status"])
+        self.assertEqual(100, active_state["prototype_intake_score"]["total_score"])
+        self.assertIn("Prototype intake score: 100/100", active_state["confirmation_summary"])
+        self.assertIn("Fantasy clarity: 20/20", active_state["confirmation_summary"])
+        self.assertIn("PROTOTYPE_WORKFLOW status=needs-confirmation", stdout.getvalue())
+
+    def test_codex_score_engine_should_add_optional_llm_review_without_replacing_hard_score(self) -> None:
+        module = _load_module("prototype_workflow_router_codex_score", "scripts/python/run_prototype_workflow.py")
+        payload = module.normalize_prototype_payload(
+            {
+                "slug": "combat-loop",
+                "hypothesis": "验证战斗循环是否值得继续。",
+                "core_player_fantasy": "玩家在第一分钟内感受到紧凑战斗节奏。",
+                "minimum_playable_loop": "进入场景，接近敌人，攻击一次，看到受击反馈。",
+                "scope_in": ["移动", "攻击"],
+                "scope_out": ["正式任务拆分"],
+                "success_criteria": ["玩家能完成一次最小循环"],
+                "promote_signals": ["试玩后仍值得继续"],
+                "archive_signals": ["方向有信号但反馈还不稳定"],
+                "discard_signals": ["循环无趣且反馈不清楚"],
+                "evidence": ["docs/prototypes/combat-loop.md"],
+                "next_step": "进入 Day 2 场景脚手架。",
+            },
+            today="2026-04-21",
+        )
+        fake_review = {
+            "total_score": 90,
+            "max_score": 100,
+            "recommendation": "ready-for-tdd",
+            "top_gaps": ["缩小 Day 2 场景目标"],
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with mock.patch.object(module, "_run_with_input", return_value=(0, json.dumps(fake_review, ensure_ascii=False))):
+                review = module.build_prototype_intake_llm_review(
+                    payload,
+                    root=root,
+                    score_engine="codex",
+                    timeout_sec=120,
+                )
+
+        self.assertEqual("codex", review["engine"])
+        self.assertEqual("ok", review["status"])
+        self.assertEqual(90, review["review"]["total_score"])
+        self.assertEqual("ready-for-tdd", review["review"]["recommendation"])
+
+    def test_dev_cli_should_forward_optional_score_engine_args(self) -> None:
+        builders = _load_module("dev_cli_builders_module_for_proto_score", "scripts/python/dev_cli_builders.py")
+        dev_cli = _load_module("dev_cli_module_for_proto_score", "scripts/python/dev_cli.py")
+        parser = dev_cli.build_parser()
+        args = parser.parse_args(
+            [
+                "run-prototype-workflow",
+                "--prototype-file",
+                "docs/prototypes/sample.md",
+                "--score-engine",
+                "codex",
+                "--score-timeout-sec",
+                "120",
+            ]
+        )
+        cmd = builders.build_run_prototype_workflow_cmd(args)
+
+        self.assertIn("--score-engine", cmd)
+        self.assertIn("codex", cmd)
+        self.assertIn("--score-timeout-sec", cmd)
+        self.assertIn("120", cmd)
 
     def test_active_state_should_round_trip(self) -> None:
         module = _load_module("prototype_workflow_router_state", "scripts/python/run_prototype_workflow.py")

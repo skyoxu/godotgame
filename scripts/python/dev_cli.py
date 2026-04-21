@@ -445,6 +445,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto_flow.add_argument("--godot-bin", default="")
     p_proto_flow.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5])
     p_proto_flow.add_argument("--resume-active", default="")
+    p_proto_flow.add_argument("--score-engine", default="deterministic", choices=["deterministic", "codex", "hybrid"])
+    p_proto_flow.add_argument("--score-timeout-sec", type=int, default=180)
     p_proto_flow.add_argument("--self-check", action="store_true")
     p_proto_flow.set_defaults(func=cmd_run_prototype_workflow)
 

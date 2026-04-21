@@ -268,6 +268,10 @@ def build_run_prototype_workflow_cmd(args) -> list[str]:
         cmd += ["--stop-after-day", str(args.stop_after_day)]
     if getattr(args, "resume_active", ""):
         cmd += ["--resume-active", args.resume_active]
+    if getattr(args, "score_engine", "deterministic") != "deterministic":
+        cmd += ["--score-engine", args.score_engine]
+    if int(getattr(args, "score_timeout_sec", 180) or 180) != 180:
+        cmd += ["--score-timeout-sec", str(args.score_timeout_sec)]
     if getattr(args, "self_check", False):
         cmd.append("--self-check")
     return cmd
