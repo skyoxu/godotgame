@@ -1143,7 +1143,7 @@ Enter Chapter 7 only when all of the following are true:
 
 1. The target backlog slice in `.taskmaster/tasks/tasks.json` has been completed through the earlier workflow chapters.
 2. There is no unrecorded `P0/P1 Needs Fix` from Chapter 6.
-3. `docs/gdd/ui-gdd-flow.md` exists and is treated as the UI wiring GDD SSoT.
+3. `docs/gdd/ui-gdd-flow.md` exists or is about to be created as the governed Chapter 7 artifact.
 4. `.taskmaster/tasks/tasks.json` remains the only source of truth for completed task status.
 5. `.taskmaster/tasks/tasks_back.json` and `.taskmaster/tasks/tasks_gameplay.json` are enrichment views joined by `taskmaster_id`, not completion-state authorities.
 
@@ -1153,23 +1153,35 @@ Template note: in a bare template without real `.taskmaster/tasks/*.json`, Chapt
 
 ### 7.2 Top-Level Orchestrator
 
-Default entry:
-
-```powershell
-py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship
-```
-
-Self-check entry:
+Read-only self-check entry:
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --self-check
 ```
 
-The orchestrator runs these steps in order:
+Governed write entry:
+
+```powershell
+py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --write-doc
+```
+
+The orchestrator must run these steps in order:
 
 1. `collect_ui_wiring_inputs.py` collects the completed-task UI wiring input set.
-2. `validate_chapter7_ui_wiring.py` validates the governed UI GDD artifact.
-3. `run_chapter7_ui_wiring.py` writes `logs/ci/<date>/chapter7-ui-wiring/summary.json`.
+2. `chapter7_ui_gdd_writer.py` rewrites `docs/gdd/ui-gdd-flow.md` and `docs/gdd/ui-gdd-flow.candidates.json` when `--write-doc` is enabled.
+3. `validate_chapter7_ui_wiring.py` validates the governed UI GDD artifact.
+4. `validate_chapter7_artifact_manifest.py` validates the Chapter 7 artifact manifest contract and hashes.
+5. `run_chapter7_ui_wiring.py` writes `logs/ci/<date>/chapter7-ui-wiring/summary.json` as the canonical Chapter 7 run summary.
+
+Canonical Chapter 7 outputs:
+
+1. `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`
+2. `logs/ci/<date>/chapter7-ui-wiring/inputs.snapshot.json`
+3. `docs/gdd/ui-gdd-flow.md`
+4. `docs/gdd/ui-gdd-flow.candidates.json`
+5. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+6. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
+7. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
 
 ### 7.3 Input Collection Rules
 
@@ -1184,8 +1196,9 @@ Rules:
 1. Read `.taskmaster/tasks/tasks.json` from `master.tasks[]`.
 2. Include only tasks whose master status is `done`.
 3. Join view rows from `.taskmaster/tasks/tasks_back.json` and `.taskmaster/tasks/tasks_gameplay.json` by `taskmaster_id`.
-4. Emit completed task count, missing view mappings, candidate UI wiring features, test refs, acceptance refs, and contract refs.
+4. Emit completed task count, missing view mappings, candidate UI wiring features, test refs, acceptance refs, contract refs, and feature-family counts.
 5. Write the default summary to `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`.
+6. The orchestrator also snapshots a canonical subset to `logs/ci/<date>/chapter7-ui-wiring/inputs.snapshot.json` for stable rerun comparison.
 
 Do not infer done-state from the two view files.
 
@@ -1200,8 +1213,9 @@ Do not infer done-state from the two view files.
 5. A list of completed features that are not yet wired to UI.
 6. Automated or manual validation for each flow.
 7. A `Feature -> UI Surface -> Player Action -> System Response -> Test Refs` wiring matrix.
+8. Candidate follow-up UI tasks in `docs/gdd/ui-gdd-flow.candidates.json`, grouped by screen or surface rather than by raw task order.
 
-The design may use a genre reference, but it must document this project's own scenes, contracts, tests, and acceptance evidence.
+The design may use a genre reference, but it must document this project's own scenes, contracts, tests, acceptance evidence, overlay requirement IDs, and artifact targets.
 
 ### 7.5 Hard Gate
 
@@ -1211,6 +1225,12 @@ Hard gate entry:
 py -3 scripts/python/validate_chapter7_ui_wiring.py
 ```
 
+Artifact manifest gate entry:
+
+```powershell
+py -3 scripts/python/validate_chapter7_artifact_manifest.py --manifest logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json
+```
+
 The hard gate requires:
 
 1. `docs/gdd/ui-gdd-flow.md` exists.
@@ -1218,6 +1238,7 @@ The hard gate requires:
 3. Every `status = done` task in `.taskmaster/tasks/tasks.json` is referenced in `ui-gdd-flow.md` as `T<id>`.
 4. The task triplet can be parsed successfully.
 5. `run_gate_bundle.py --mode hard` includes `chapter7_ui_wiring_gate`.
+6. The artifact manifest contains `input-snapshot`, `ui-gdd`, `candidate-sidecar`, and `summary` entries with valid hashes.
 
 If this gate fails, the Chapter 7 artifact is not complete.
 
@@ -1230,6 +1251,7 @@ When generating the next UI wiring tasks from Chapter 7:
 3. Each task must include test refs or an explicit new test entry.
 4. Prefer standalone scene assets for major player-facing surfaces such as `MainMenu`, `Map`, `Combat`, `Reward`, `Rest`, `Shop`, `Event`, and `RunSummary` when those concepts exist in the game.
 5. Do not mix P2 polish, animation, or skin work into P0/P1 wiring tasks required for the playable loop.
+6. Use `ui-gdd-flow.candidates.json` as the machine-readable backlog source when deriving the next Chapter 7 task slice.
 
 ### 7.7 Stop And Inspect
 
@@ -1240,12 +1262,15 @@ Stop Chapter 7 and inspect artifacts when any of these happen:
 3. `ui-gdd-flow.md` lacks required hard-gate sections.
 4. Completed tasks are not covered by the UI GDD.
 5. Chapter 6 still has unresolved `P0/P1 Needs Fix`.
+6. The artifact manifest fails contract or hash validation.
 
 Inspect these artifacts first:
 
 1. `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`
-2. `logs/ci/<date>/chapter7-ui-wiring-gate/summary.json`
-3. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
+2. `logs/ci/<date>/chapter7-ui-wiring/inputs.snapshot.json`
+3. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+4. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
+5. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
 
 ## 8. Profile 快速指引
 

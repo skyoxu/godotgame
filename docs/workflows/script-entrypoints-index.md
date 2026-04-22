@@ -83,9 +83,11 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 
 ### Chapter 7 UI wiring closure
 
-- `scripts/python/collect_ui_wiring_inputs.py`: collects `status = done` master tasks and joins task views by `taskmaster_id`. Requires real task triplet files in business repos; skips in bare template.
+- `scripts/python/collect_ui_wiring_inputs.py`: collects `status = done` master tasks, joins task views by `taskmaster_id`, and writes `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`. Requires real task triplet files in business repos; skips in bare template.
+- `scripts/python/chapter7_ui_gdd_writer.py`: writes the governed `docs/gdd/ui-gdd-flow.md` plus `docs/gdd/ui-gdd-flow.candidates.json` candidate sidecar from collected Chapter 7 inputs.
 - `scripts/python/validate_chapter7_ui_wiring.py`: validates `docs/gdd/ui-gdd-flow.md` sections and done-task `T<id>` coverage. Included in hard gate bundle as `chapter7_ui_wiring_gate`.
-- `scripts/python/run_chapter7_ui_wiring.py`: top-level Chapter 7 orchestrator. Prefer `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring`.
+- `scripts/python/validate_chapter7_artifact_manifest.py`: validates `artifact-manifest.json` top-level fields, required artifact types, file existence, and SHA-256 integrity.
+- `scripts/python/run_chapter7_ui_wiring.py`: top-level Chapter 7 orchestrator. Prefer `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring`. It also emits `inputs.snapshot.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json`.
 
 ## Parameter Prerequisite Legend
 
@@ -137,6 +139,8 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/validate_security_audit_execution_evidence.py`
 - `scripts/python/validate_ui_event_json_guards.py`
 - `scripts/python/validate_ui_event_source_verification.py`
+- `scripts/python/chapter7_ui_gdd_writer.py`
+- `scripts/python/validate_chapter7_artifact_manifest.py`
 - `scripts/python/validate_chapter7_ui_wiring.py`
 - `scripts/sc/check_acceptance_garbled.py`
 

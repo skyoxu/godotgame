@@ -150,19 +150,20 @@ Why this is stable:
 ### `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
 
 Use when:
-- the selected formal backlog slice has completed Chapter 6
-- no unrecorded `P0/P1 Needs Fix` remains
-- you need to convert completed domain/gameplay capabilities into player-facing UI wiring tasks
+- Chapter 6 has already closed the currently completed task slice and you want the top-level Chapter 7 UI wiring route
+- you need one stable entrypoint that collects done-task inputs and validates the governed UI wiring GDD artifact
+- you want a cheap self-check before editing `docs/gdd/ui-gdd-flow.md`
 
 Prerequisites:
-- real `.taskmaster/tasks/tasks.json`, `.taskmaster/tasks/tasks_back.json`, and `.taskmaster/tasks/tasks_gameplay.json` in business repos
-- `docs/gdd/ui-gdd-flow.md` as the UI wiring GDD SSoT
+- task triplet available
+- `docs/gdd/ui-gdd-flow.md` exists or is about to be created as the governed Chapter 7 artifact
 
 Why this is stable:
-- it is the Chapter 7 top-level orchestrator
-- it collects completed task triplet inputs before validating UI wiring
-- it writes `logs/ci/<date>/chapter7-ui-wiring/summary.json`
-- it skips safely in the bare template when real task triplet files are absent
+- it is the top-level Chapter 7 UI wiring orchestrator
+- it runs the collector, optional writer, validator, and artifact-manifest validator in fixed order
+- `--write-doc` also produces `docs/gdd/ui-gdd-flow.candidates.json` as the machine-readable candidate sidecar
+- it writes `logs/ci/<date>/chapter7-ui-wiring/summary.json` as the canonical Chapter 7 execution summary
+- it also writes `inputs.snapshot.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json` for deterministic rerun and integrity inspection
 
 ## Task Delivery Loop
 
