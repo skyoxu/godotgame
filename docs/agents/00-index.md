@@ -56,6 +56,17 @@ Use this when you need the cheapest safe daily loop for a single task. Full deta
 19. If two `6.8` rounds return the same `Needs Fix` category, severity, and anchors, stop and record instead of paying for a third similar rerun.
 20. Treat `status=ok` as clean only when the child `sc-llm-review` summary has no `Needs Fix`, no `Unknown`, and no timeout; if a round shows `failure_kind = timeout-no-summary`, treat it as observation gap, not clean.
 
+## Chapter 7 Fast-Ship Card
+
+Use this after Chapter 6 has closed the current completed backlog slice and you need the cheapest governed path for UI wiring planning.
+
+1. `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --self-check`
+2. `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --write-doc`
+3. `py -3 scripts/python/collect_ui_wiring_inputs.py`
+4. `py -3 scripts/python/validate_chapter7_ui_wiring.py`
+5. `py -3 scripts/python/validate_chapter7_artifact_manifest.py --manifest logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+6. `docs/gdd/ui-gdd-flow.md` is the governed Chapter 7 artifact and `docs/gdd/ui-gdd-flow.candidates.json` is the machine-readable candidate backlog sidecar.
+
 ## By Topic
 - Project overview, startup, stack, and legacy AGENTS background sections:
   - [14-startup-stack-and-template-structure.md](14-startup-stack-and-template-structure.md)
