@@ -62,10 +62,13 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 
 1. `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --self-check`
 2. `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --write-doc`
-3. `py -3 scripts/python/collect_ui_wiring_inputs.py`
-4. `py -3 scripts/python/validate_chapter7_ui_wiring.py`
-5. `py -3 scripts/python/validate_chapter7_artifact_manifest.py --manifest logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
-6. `docs/gdd/ui-gdd-flow.md` is the governed Chapter 7 artifact and `docs/gdd/ui-gdd-flow.candidates.json` is the machine-readable candidate backlog sidecar.
+3. `py -3 scripts/python/dev_cli.py run-chapter7-backlog-gap --design-doc-path <doc> --epics-doc-path <doc> --duplicate-audit-path <doc> --self-check`
+4. `py -3 scripts/python/collect_ui_wiring_inputs.py`
+5. `py -3 scripts/python/validate_chapter7_ui_wiring.py`
+6. `py -3 scripts/python/validate_chapter7_artifact_manifest.py --manifest logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+7. `docs/gdd/ui-gdd-flow.md` is the governed Chapter 7 artifact and `docs/gdd/ui-gdd-flow.candidates.json` is the machine-readable candidate backlog sidecar.
+8. `docs/workflows/chapter7-profile-guide.md` explains the repo-local profile, override fields, and template seeds.
+9. `logs/ci/<date>/chapter7-ui-wiring/closure-summary.json`, `task-status-patch-preview.json`, and `task-status-patch.json` are the closure and write-back sidecars.
 
 ## By Topic
 - Project overview, startup, stack, and legacy AGENTS background sections:

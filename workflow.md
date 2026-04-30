@@ -1151,6 +1151,14 @@ If Chapter 6 still has unresolved `P0/P1 Needs Fix`, stop and return to Chapter 
 
 Template note: in a bare template without real `.taskmaster/tasks/*.json`, Chapter 7 validation is skipped instead of failing. Business repos must provide real task triplet files before treating this gate as complete.
 
+Chapter 7 profile note:
+
+1. The default template profile now lives at `docs/workflows/chapter7-profile.json`.
+2. Pass `--chapter7-profile-path <path>` when a business repo needs to override bucket mapping, closure task ids, task identity templates, labels, refs, screen headings, or surface defaults without forking the Chapter 7 scripts.
+3. Use `docs/workflows/templates/chapter7-profile.template.json` as the full seed when you need a complete override file.
+4. Use `docs/workflows/templates/chapter7-profile.minimal.example.json` when you only need the most common business-repo overrides.
+5. See `docs/workflows/chapter7-profile-guide.md` for the field map, minimal override patterns, and field-to-example diff.
+
 ### 7.2 Top-Level Orchestrator
 
 Read-only self-check entry:
@@ -1165,13 +1173,20 @@ Governed write entry:
 py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --write-doc
 ```
 
+Optional task-creation entry:
+
+```powershell
+py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship --write-doc --create-tasks
+```
+
 The orchestrator must run these steps in order:
 
 1. `collect_ui_wiring_inputs.py` collects the completed-task UI wiring input set.
 2. `chapter7_ui_gdd_writer.py` rewrites `docs/gdd/ui-gdd-flow.md` and `docs/gdd/ui-gdd-flow.candidates.json` when `--write-doc` is enabled.
 3. `validate_chapter7_ui_wiring.py` validates the governed UI GDD artifact.
-4. `validate_chapter7_artifact_manifest.py` validates the Chapter 7 artifact manifest contract and hashes.
-5. `run_chapter7_ui_wiring.py` writes `logs/ci/<date>/chapter7-ui-wiring/summary.json` as the canonical Chapter 7 run summary.
+4. `create_chapter7_tasks_from_ui_candidates.py` optionally creates or refreshes Chapter 7 follow-up tasks when `--create-tasks` is enabled.
+5. `validate_chapter7_artifact_manifest.py` validates the Chapter 7 artifact manifest contract and hashes.
+6. `run_chapter7_ui_wiring.py` writes `logs/ci/<date>/chapter7-ui-wiring/summary.json` as the canonical Chapter 7 run summary.
 
 Canonical Chapter 7 outputs:
 
@@ -1179,9 +1194,13 @@ Canonical Chapter 7 outputs:
 2. `logs/ci/<date>/chapter7-ui-wiring/inputs.snapshot.json`
 3. `docs/gdd/ui-gdd-flow.md`
 4. `docs/gdd/ui-gdd-flow.candidates.json`
-5. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
-6. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
-7. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
+5. `logs/ci/<date>/chapter7-ui-wiring/closure-summary.json`
+6. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch-preview.json`
+7. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch-preview.md`
+8. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch.json`
+9. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+10. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
+11. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
 
 ### 7.3 Input Collection Rules
 
@@ -1253,6 +1272,32 @@ When generating the next UI wiring tasks from Chapter 7:
 5. Do not mix P2 polish, animation, or skin work into P0/P1 wiring tasks required for the playable loop.
 6. Use `ui-gdd-flow.candidates.json` as the machine-readable backlog source when deriving the next Chapter 7 task slice.
 
+Recommended routing before generating tasks:
+
+```powershell
+py -3 scripts/python/dev_cli.py run-chapter7-backlog-gap --design-doc-path <doc> --epics-doc-path <doc> --duplicate-audit-path <doc>
+```
+
+Rules:
+
+1. Use `run-chapter7-backlog-gap` before creating `T47+` tasks when BMAD design or epics docs may already be covered by `T1-T46`.
+2. Only create new tasks when the backlog-gap summary says the candidate stories or design gaps are not clearly covered by the existing task triplet.
+3. Prefer `run-chapter7-ui-wiring --create-tasks` so task creation stays coupled to the exact candidate sidecar that produced the closure summary.
+4. Parameterize `--repo-label`, `--back-story-id`, and `--gameplay-story-id` when the default derived story identities are not acceptable for the business repo.
+5. Prefer a Chapter 7 profile override when task ids, labels, owners, ADR refs, chapter refs, or section headings differ systematically from the template defaults; do not fork the scripts for those policy-only changes.
+
+Status write-back route:
+
+```powershell
+py -3 scripts/python/dev_cli.py apply-chapter7-status-patch --patch logs/ci/<date>/chapter7-ui-wiring/task-status-patch.json --dry-run
+```
+
+Rules:
+
+1. Review `task-status-patch-preview.md` before applying the patch contract.
+2. Use `--dry-run` first whenever the patch touches any currently open or user-edited task rows.
+3. Treat `task-status-patch.json` as the machine-readable contract; do not hand-translate it into ad-hoc edits unless the contract is wrong.
+
 ### 7.7 Stop And Inspect
 
 Stop Chapter 7 and inspect artifacts when any of these happen:
@@ -1263,14 +1308,20 @@ Stop Chapter 7 and inspect artifacts when any of these happen:
 4. Completed tasks are not covered by the UI GDD.
 5. Chapter 6 still has unresolved `P0/P1 Needs Fix`.
 6. The artifact manifest fails contract or hash validation.
+7. `run-chapter7-backlog-gap` says candidate stories are still already covered by `T1-T46`, but a task-creation step is about to create new rows anyway.
+8. `task-status-patch-preview.json` proposes task status changes that conflict with current operator intent or active implementation work.
 
 Inspect these artifacts first:
 
 1. `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`
 2. `logs/ci/<date>/chapter7-ui-wiring/inputs.snapshot.json`
-3. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
-4. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
-5. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
+3. `logs/ci/<date>/chapter7-ui-wiring/closure-summary.json`
+4. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch-preview.json`
+5. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch-preview.md`
+6. `logs/ci/<date>/chapter7-ui-wiring/task-status-patch.json`
+7. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest.json`
+8. `logs/ci/<date>/chapter7-ui-wiring/artifact-manifest-validation.json`
+9. `logs/ci/<date>/chapter7-ui-wiring/summary.json`
 
 ## 8. Profile 快速指引
 

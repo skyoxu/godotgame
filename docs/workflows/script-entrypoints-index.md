@@ -84,10 +84,13 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 ### Chapter 7 UI wiring closure
 
 - `scripts/python/collect_ui_wiring_inputs.py`: collects `status = done` master tasks, joins task views by `taskmaster_id`, and writes `logs/ci/<date>/chapter7-ui-wiring-inputs/summary.json`. Requires real task triplet files in business repos; skips in bare template.
-- `scripts/python/chapter7_ui_gdd_writer.py`: writes the governed `docs/gdd/ui-gdd-flow.md` plus `docs/gdd/ui-gdd-flow.candidates.json` candidate sidecar from collected Chapter 7 inputs.
+- `scripts/python/chapter7_ui_gdd_writer.py`: writes the governed `docs/gdd/ui-gdd-flow.md` plus `docs/gdd/ui-gdd-flow.candidates.json` candidate sidecar from collected Chapter 7 inputs. Supports `--chapter7-profile-path` for template-safe bucket/surface/title overrides.
 - `scripts/python/validate_chapter7_ui_wiring.py`: validates `docs/gdd/ui-gdd-flow.md` sections and done-task `T<id>` coverage. Included in hard gate bundle as `chapter7_ui_wiring_gate`.
 - `scripts/python/validate_chapter7_artifact_manifest.py`: validates `artifact-manifest.json` top-level fields, required artifact types, file existence, and SHA-256 integrity.
-- `scripts/python/run_chapter7_ui_wiring.py`: top-level Chapter 7 orchestrator. Prefer `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring`. It also emits `inputs.snapshot.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json`.
+- `scripts/python/create_chapter7_tasks_from_ui_candidates.py`: creates or refreshes Chapter 7 follow-up task rows from `docs/gdd/ui-gdd-flow.candidates.json`, with parameterized overlay root, story identity, and optional `--chapter7-profile-path` for ids/owners/labels/refs templating.
+- `scripts/python/run_chapter7_backlog_gap.py`: compares BMAD design/epics text against the current task triplet and recommends whether new Chapter 7 tasks are justified.
+- `scripts/python/apply_chapter7_status_patch.py`: applies or previews the machine-readable Chapter 7 task-status patch contract.
+- `scripts/python/run_chapter7_ui_wiring.py`: top-level Chapter 7 orchestrator. Prefer `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring`. It also emits `inputs.snapshot.json`, `closure-summary.json`, `task-status-patch-preview.json`, `task-status-patch-preview.md`, `task-status-patch.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json`. Optional profile override file: `docs/workflows/chapter7-profile.json`; template seed: `docs/workflows/templates/chapter7-profile.template.json`; operator guide: `docs/workflows/chapter7-profile-guide.md`.
 
 ## Parameter Prerequisite Legend
 

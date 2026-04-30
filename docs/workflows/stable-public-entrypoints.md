@@ -162,8 +162,42 @@ Why this is stable:
 - it is the top-level Chapter 7 UI wiring orchestrator
 - it runs the collector, optional writer, validator, and artifact-manifest validator in fixed order
 - `--write-doc` also produces `docs/gdd/ui-gdd-flow.candidates.json` as the machine-readable candidate sidecar
+- `--create-tasks` also runs `create_chapter7_tasks_from_ui_candidates.py` and can parameterize `--repo-label`, `--back-story-id`, and `--gameplay-story-id`
+- `docs/workflows/chapter7-profile-guide.md` is the operator-facing reference for repo-local profile overrides and template seeds
+- `--chapter7-profile-path` lets business repos override bucket mapping, task identity, labels, refs, headings, and surface defaults without forking the scripts; the template example lives at `docs/workflows/templates/chapter7-profile.template.json`
 - it writes `logs/ci/<date>/chapter7-ui-wiring/summary.json` as the canonical Chapter 7 execution summary
-- it also writes `inputs.snapshot.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json` for deterministic rerun and integrity inspection
+- it also writes `inputs.snapshot.json`, `closure-summary.json`, `task-status-patch-preview.json`, `task-status-patch-preview.md`, `task-status-patch.json`, `artifact-manifest.json`, and `artifact-manifest-validation.json` for deterministic rerun, closure inspection, and write-back planning
+
+### `py -3 scripts/python/dev_cli.py run-chapter7-backlog-gap --design-doc-path <doc> --epics-doc-path <doc> --duplicate-audit-path <doc>`
+
+Use when:
+- you want to decide whether Chapter 7 should create new `T47+` backlog items or stay in wiring-only closure
+- you need a cheap comparison between BMAD design/epics text and the current task triplet before generating new tasks
+- you want an explicit recommendation before paying for candidate task creation
+
+Prerequisites:
+- task triplet available
+- design / epics / duplicate-audit docs exist
+
+Why this is stable:
+- it is the top-level backlog-gap analyzer for Chapter 7
+- it emits a machine-readable summary and recommendation instead of relying on manual judgment
+- it helps separate "already covered by T1-T46" from "not clearly covered and may justify T47+"
+
+### `py -3 scripts/python/dev_cli.py apply-chapter7-status-patch --patch <path>`
+
+Use when:
+- you want to apply the machine-readable status patch contract produced by Chapter 7 closure analysis
+- you need a dry-run preview before mutating `.taskmaster/tasks/*.json`
+- you want one deterministic write path instead of hand-editing task status views
+
+Prerequisites:
+- an existing `task-status-patch.json` contract produced by `run-chapter7-ui-wiring`
+
+Why this is stable:
+- it is the public write-back entrypoint for Chapter 7 task status reconciliation
+- `--dry-run` lets you preview all operations without writing
+- it records an explicit summary of applied and failed operations
 
 ## Task Delivery Loop
 
