@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -84,7 +85,7 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
         self.assertIn("minimum_playable_loop", ids)
         self.assertIn("success_criteria", ids)
 
-    def test_indie_intake_score_should_be_100_for_rich_payload(self) -> None:
+    def test_hard_intake_score_should_cover_feasibility_and_completeness_only(self) -> None:
         module = _load_module("prototype_workflow_router_score", "scripts/python/run_prototype_workflow.py")
         payload = module.normalize_prototype_payload(
             {
@@ -108,21 +109,46 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
 
         score = module.build_prototype_intake_score(payload)
 
-        self.assertEqual(100, score["total_score"])
-        self.assertEqual(100, score["max_score"])
+        self.assertLess(score["total_score"], 50)
+        self.assertGreaterEqual(score["total_score"], 35)
+        self.assertEqual(50, score["max_score"])
         self.assertEqual("ready-for-tdd", score["recommendation"])
-        self.assertEqual(5, len(score["dimensions"]))
+        self.assertEqual(2, len(score["dimensions"]))
         self.assertEqual(
             [
-                "fantasy_clarity",
-                "loop_clarity",
-                "scope_discipline",
-                "validation_readiness",
-                "execution_readiness",
+                "prototype_feasibility",
+                "content_completeness",
             ],
             [item["id"] for item in score["dimensions"]],
         )
-        self.assertTrue(all(item["score"] == 20 for item in score["dimensions"]))
+        self.assertTrue(all(item["max_score"] == 25 for item in score["dimensions"]))
+
+    def test_hard_intake_score_should_block_thin_payload(self) -> None:
+        module = _load_module("prototype_workflow_router_score_penalty", "scripts/python/run_prototype_workflow.py")
+        payload = module.normalize_prototype_payload(
+            {
+                "slug": "mystery-cave",
+                "hypothesis": "验证解谜原型是否值得继续。",
+                "core_player_fantasy": "玩家感受到神秘 cave 氛围。",
+                "minimum_playable_loop": "进入场景后点击机关通关。",
+                "scope_in": ["单场景", "点击交互"],
+                "scope_out": ["多章节", "正式商业化"],
+                "success_criteria": ["玩家能完成一次最小循环"],
+                "promote_signals": ["玩家愿意继续"],
+                "archive_signals": ["有气质但不好玩"],
+                "discard_signals": ["玩家不愿继续"],
+                "next_step": "先做 Day 2 场景。",
+            },
+            today="2026-04-21",
+        )
+
+        score = module.build_prototype_intake_score(payload)
+
+        self.assertEqual("refine-before-tdd", score["recommendation"])
+        self.assertLess(score["total_score"], 35)
+        by_id = {item["id"]: item for item in score["dimensions"]}
+        self.assertLess(by_id["prototype_feasibility"]["score"], 18)
+        self.assertLess(by_id["content_completeness"]["score"], 18)
 
     def test_complete_payload_should_pause_with_score_before_tdd(self) -> None:
         module = _load_module("prototype_workflow_router_confirm_score", "scripts/python/run_prototype_workflow.py")
@@ -180,9 +206,10 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
 
         self.assertEqual(0, rc)
         self.assertEqual("needs-confirmation", active_state["status"])
-        self.assertEqual(100, active_state["prototype_intake_score"]["total_score"])
-        self.assertIn("Prototype intake score: 100/100", active_state["confirmation_summary"])
-        self.assertIn("Fantasy clarity: 20/20", active_state["confirmation_summary"])
+        self.assertLess(active_state["prototype_intake_score"]["total_score"], 50)
+        self.assertIn("Hard intake score:", active_state["confirmation_summary"])
+        self.assertIn("Prototype feasibility:", active_state["confirmation_summary"])
+        self.assertIn("AI market/commercial review: not run", active_state["confirmation_summary"])
         self.assertIn("PROTOTYPE_WORKFLOW status=needs-confirmation", stdout.getvalue())
 
     def test_codex_score_engine_should_add_optional_llm_review_without_replacing_hard_score(self) -> None:
@@ -205,9 +232,13 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
             today="2026-04-21",
         )
         fake_review = {
-            "total_score": 90,
-            "max_score": 100,
-            "recommendation": "ready-for-tdd",
+            "total_score": 31,
+            "max_score": 50,
+            "recommendation": "market-cautious",
+            "dimensions": [
+                {"id": "market_potential", "label": "Market potential", "score": 18, "max_score": 25},
+                {"id": "commercialization_cost", "label": "Commercialization cost", "score": 13, "max_score": 25},
+            ],
             "top_gaps": ["缩小 Day 2 场景目标"],
         }
 
@@ -223,8 +254,58 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
 
         self.assertEqual("codex", review["engine"])
         self.assertEqual("ok", review["status"])
-        self.assertEqual(90, review["review"]["total_score"])
-        self.assertEqual("ready-for-tdd", review["review"]["recommendation"])
+        self.assertEqual(31, review["review"]["total_score"])
+        self.assertEqual("market-cautious", review["review"]["recommendation"])
+
+    def test_resolve_codex_command_should_prefer_windows_cmd_wrapper(self) -> None:
+        module = _load_module("prototype_workflow_router_codex_cmd", "scripts/python/run_prototype_workflow.py")
+
+        with mock.patch.object(module.shutil, "which", side_effect=lambda name: {"codex.cmd": r"C:\npm\codex.cmd", "codex": r"C:\npm\codex"}.get(name)):
+            resolved = module._resolve_codex_command()
+
+        self.assertEqual(r"C:\npm\codex.cmd", resolved)
+
+    def test_confirmation_message_should_tolerate_non_dict_llm_dimensions(self) -> None:
+        module = _load_module("prototype_workflow_router_confirmation_llm_shape", "scripts/python/run_prototype_workflow.py")
+        payload = module.normalize_prototype_payload(
+            {
+                "slug": "combat-loop",
+                "hypothesis": "验证战斗循环是否值得继续。",
+                "core_player_fantasy": "玩家在第一分钟内感受到紧凑战斗节奏。",
+                "minimum_playable_loop": "进入场景，接近敌人，攻击一次，看到受击反馈。",
+                "success_criteria": ["玩家能完成一次最小循环"],
+            },
+            today="2026-04-21",
+        )
+        hard_score = {
+            "total_score": 40,
+            "max_score": 50,
+            "recommendation": "ready-for-tdd",
+            "dimensions": [
+                {"id": "prototype_feasibility", "label": "Prototype feasibility", "score": 20, "max_score": 25},
+                {"id": "content_completeness", "label": "Content completeness", "score": 20, "max_score": 25},
+            ],
+        }
+        llm_review = {
+            "status": "ok",
+            "review": {
+                "total_score": 30,
+                "max_score": 50,
+                "recommendation": "market-cautious",
+                "dimensions": ["market_potential: 18/25", {"id": "commercialization_cost", "label": "Commercialization cost", "score": 12, "max_score": 25}],
+            },
+        }
+
+        message = module._build_confirmation_message(
+            payload,
+            file_path="docs/prototypes/combat-loop.md",
+            intake_score=hard_score,
+            llm_review=llm_review,
+        )
+
+        self.assertIn("AI market/commercial score: 30/50", message)
+        self.assertIn("market_potential: 18/25", message)
+        self.assertIn("Commercialization cost: 12/25", message)
 
     def test_dev_cli_should_forward_optional_score_engine_args(self) -> None:
         builders = _load_module("dev_cli_builders_module_for_proto_score", "scripts/python/dev_cli_builders.py")

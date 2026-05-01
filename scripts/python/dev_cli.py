@@ -35,6 +35,7 @@ from dev_cli_builders import (
     build_run_single_task_chapter6_cmd,
     build_run_chapter7_ui_wiring_cmd,
     build_run_prototype_tdd_cmd,
+    build_run_prototype_workflow_cmd,
     build_quality_gates_cmd,
     build_run_dotnet_cmd,
     build_run_gdunit_full_cmd,
@@ -271,6 +272,12 @@ def cmd_run_prototype_tdd(args: argparse.Namespace) -> int:
     """Run a lightweight prototype-lane TDD loop."""
 
     return run(build_run_prototype_tdd_cmd(args))
+
+
+def cmd_run_prototype_workflow(args: argparse.Namespace) -> int:
+    """Run the top-level prototype workflow router."""
+
+    return run(build_run_prototype_workflow_cmd(args))
 
 
 def cmd_detect_project_stage(args: argparse.Namespace) -> int:
@@ -569,6 +576,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--timeout-sec", type=int, default=300)
     p_proto.add_argument("--out-dir", default="")
     p_proto.set_defaults(func=cmd_run_prototype_tdd)
+
+    # run-prototype-workflow
+    p_proto_workflow = sub.add_parser(
+        "run-prototype-workflow",
+        help="run the top-level prototype workflow router before promoting exploratory work into formal delivery",
+    )
+    p_proto_workflow.add_argument("--prototype-file", default="")
+    p_proto_workflow.add_argument("--set", action="append", default=[])
+    p_proto_workflow.add_argument("--assume-yes", action="store_true")
+    p_proto_workflow.add_argument("--force", action="store_true")
+    p_proto_workflow.add_argument("--dry-run", action="store_true")
+    p_proto_workflow.add_argument("--score-engine", default="none", choices=["none", "codex"])
+    p_proto_workflow.add_argument("--score-timeout-sec", type=int, default=90)
+    p_proto_workflow.set_defaults(func=cmd_run_prototype_workflow)
 
     # detect-project-stage
     p_stage = sub.add_parser("detect-project-stage", help="detect repo stage and refresh project-health artifacts")

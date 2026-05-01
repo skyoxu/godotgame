@@ -238,6 +238,25 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
     return cmd
 
 
+def build_run_prototype_workflow_cmd(args) -> list[str]:
+    cmd = ["py", "-3", "scripts/python/run_prototype_workflow.py"]
+    if args.prototype_file:
+        cmd += ["--prototype-file", args.prototype_file]
+    for item in args.set:
+        cmd += ["--set", item]
+    if args.assume_yes:
+        cmd.append("--assume-yes")
+    if args.force:
+        cmd.append("--force")
+    if args.dry_run:
+        cmd.append("--dry-run")
+    if args.score_engine:
+        cmd += ["--score-engine", args.score_engine]
+    if args.score_timeout_sec is not None:
+        cmd += ["--score-timeout-sec", str(args.score_timeout_sec)]
+    return cmd
+
+
 def build_apply_chapter7_status_patch_cmd(args) -> list[str]:
     cmd = [
         "py",
