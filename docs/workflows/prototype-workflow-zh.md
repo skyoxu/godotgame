@@ -214,6 +214,12 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug ui-flow --stage red --g
 3) 创建 prototype 记录。
 4) 跑 prototype red。
 5) 实现最小代码改动。
+9.2A Solo-dev playtest check
+- Before deciding, run a short hands-on check:
+- Is the core player fantasy visible within the first minute?
+- Can the minimum playable loop be completed without explanation?
+- Is the next decision clearly `promote`, `archive`, or `discard`?
+- This is a lightweight prototype check, not a formal Chapter 6 QA gate.
 6) 跑 prototype green。
 7) 仅在需要时跑 prototype refactor。
 8) 对交互/玩法类 prototype 做一次轻量试玩或可读性检查。
