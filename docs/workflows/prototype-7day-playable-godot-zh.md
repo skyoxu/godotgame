@@ -110,29 +110,42 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --resume-active <slug> --
 
 当必填信息已经齐全后，路由器不会立刻进入 TDD，而是先生成一份面向“小工作室独立游戏原型验证”的 intake score，并暂停等待用户确认。
 
-这不是 PRD/GDD 完整度审查，不要求完整世界观、完整系统设计、商业化设计、长期路线图或正式架构。它只回答一个问题：这份信息是否足够让小团队开始做一个短周期、可玩的 Godot 原型。
+这不是 PRD/GDD 完整度审查，不要求完整世界观、完整系统设计、长期路线图或正式架构。它分成两层：
 
-评分总分 100 分，5 个维度，每项 20 分：
+1. 硬评分：判断这份文件是否足够支撑顶层路由编排器继续推进 Day 1 到 Day 5。
+2. AI 软评分：基于文件内容，对市场潜力和商业化成本做保守判断。
 
-- `fantasy_clarity`：核心玩家幻想是否清楚，玩家第一分钟应该感受到什么是否明确。
-- `loop_clarity`：最小可玩循环是否具体，是否能指导 Day 2 到 Day 5 的实现和验证。
-- `scope_discipline`：范围是否足够小，是否明确哪些先不做，避免原型膨胀。
-- `validation_readiness`：是否有可观察的成功标准、证据路径或 promote 信号。
-- `execution_readiness`：是否有下一步、promote / archive / discard 退出信号，适合小团队快速决策。
+默认只跑硬评分，不调用大模型。
 
-默认只跑确定性评分：
+#### 0.6.1 硬评分（deterministic，50 分）
+
+硬评分只回答一个问题：这份信息是否足够让小团队开始做一个短周期、可玩的 Godot 原型。
+
+共 2 个维度，每项 25 分：
+
+- `prototype_feasibility`：这份文件是否足够具体，能让顶层路由编排器推进 prototype lane，而不是在 Day 2 到 Day 5 期间持续卡在模糊描述上。
+- `content_completeness`：这份文件是否把假设、核心玩家幻想、最小可玩循环、成功标准、退出信号和下一步写到了足够支撑原型验证的程度。
+
+默认只跑这部分：
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md
 ```
 
-如果你希望在确定性评分之外，让 Codex 从独立游戏原型视角给一次软审查，可以显式开启：
+#### 0.6.2 AI 软评分（codex，50 分）
+
+如果你希望在硬评分之外，让 Codex 基于文件内容给一次更偏产品判断的软审查，可以显式开启：
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md --score-engine codex
 ```
 
-或者同时保留确定性评分，并附加 Codex second opinion：
+AI 软评分只评 2 个维度，每项 25 分：
+
+- `market_potential`：仅根据文件里写出来的内容，判断这个想法是否呈现出明确受众、差异化卖点、继续游玩的吸引力。
+- `commercialization_cost`：仅根据文件里写出来的内容，判断这个 prototype 如果后续进入商业化，当前范围控制、内容规模和实现负担是否仍然现实。
+
+或者同时保留硬评分，并附加 Codex second opinion：
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md --score-engine hybrid
@@ -140,9 +153,10 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/pro
 
 建议：
 
-- 日常默认用 `deterministic`，速度快、稳定、无模型成本。
-- 对玩法方向不确定、表达模糊、或你想让模型挑战原型假设时，再用 `codex` 或 `hybrid`。
-- Codex 评分是软建议，不替代确定性评分，也不要求你补成 PRD/GDD。
+- 日常默认用 `deterministic`，只看“能否推进 prototype 流程”，速度快、稳定、无模型成本。
+- 当你希望脚本额外告诉用户“这个想法看起来有没有市场潜力、商业化成本是否偏高”时，再用 `codex`。
+- `hybrid` 适合在一个摘要里同时看到“流程可行性硬分”和“市场/商业化软分”。
+- Codex 评分是软建议，不替代硬评分，也不要求你把 prototype 文档补成 PRD/GDD。
 - 用户确认评分摘要后，才继续加 `--confirm` 进入 Day 1 到 Day 5。
 
 ## 1. 适用前提
