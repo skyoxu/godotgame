@@ -165,27 +165,135 @@ py -3 scripts/python/dev_cli.py project-health-scan --serve
 - `llm_generate_tests_from_acceptance_refs.py` 没有 deterministic `--self-check`，只适合在前面的 backend 自检已经稳定后再做 spot check
 - 如果 checklist 里的自检还没干净，不要把 `openai-api` 接进正式 CI 或日常默认命令
 
-## 3. Phase 1：任务三联（Task Triplet）初始化
+## 3. Phase 1: Task Triplet Initialization
 
-### 3.1 准备 planning inputs
+### 3.0 Choose The Chapter 3 Route First
 
-准备项目需要的 PRD、GDD，以及任何 traceability / rules supporting docs。
+Do not treat `tasks.json` as a file that must be authored directly by Taskmaster MCP.
+The default route is now:
 
-### 3.2 构建 authoritative triplet
+- `tasks_back.json` and `tasks_gameplay.json` are the reviewable business task views.
+- `tasks.json` is a Taskmaster-compatible compiled view.
+- An LLM may generate or refine task candidates, but it must not directly write the final `tasks.json`.
+- Requirement coverage must be audited through a coverage matrix before triplet compilation.
 
-真实项目的标准形态：
+Choose one route before running scripts:
+
+1. `init`: new project initialization without a trusted task triplet baseline.
+2. `add`: added-task refresh for an existing task triplet.
+
+### 3.1 Prepare Planning Inputs
+
+Prepare PRD, GDD, traceability docs, and rules-supporting docs required by the project.
+
+Typical source inputs:
+
+- `docs/prd/**/*.md`
+- `docs/gdd/**/*.md`
+- `docs/architecture/overlays/**/*.md`
+- `docs/adr/**/*.md`
+
+### 3.2 Extract Requirement Anchors
+
+Extract stable requirement anchors before generating any task:
+
+```powershell
+py -3 scripts/python/extract_requirement_anchors.py --mode init
+```
+
+For added tasks, scope extraction to changed sources when possible:
+
+```powershell
+py -3 scripts/python/extract_requirement_anchors.py --mode add --source-glob <changed-doc-or-glob>
+```
+
+Default output:
+
+- `logs/ci/task-generation/requirements.index.json`
+
+### 3.3 Generate Task Candidates
+
+Generate normalized task candidates from requirement anchors:
+
+```powershell
+py -3 scripts/python/generate_task_candidates_from_sources.py --mode init --id-prefix GEN
+```
+
+For added tasks, prefer an explicit business prefix:
+
+```powershell
+py -3 scripts/python/generate_task_candidates_from_sources.py --mode add --id-prefix <SG|NG|GM|GEN>
+```
+
+Default output:
+
+- `logs/ci/task-generation/task-candidates.normalized.json`
+
+Rules:
+
+- LLM assistance is allowed only if the result is converted back into the normalized schema.
+- Do not let an LLM write `.taskmaster/tasks/tasks.json` directly.
+- Do not skip `requirement_ids` or `source_refs`.
+
+### 3.4 Audit The Coverage Matrix
+
+Audit requirement coverage before compiling task views:
+
+```powershell
+py -3 scripts/python/audit_task_candidate_coverage.py
+```
+
+Default output:
+
+- `logs/ci/task-generation/coverage-report.json`
+
+Hard rules:
+
+- Missing `P0/P1` requirement coverage blocks triplet compilation.
+- Every candidate task must trace back to `requirement_ids` and `source_refs`.
+- Added tasks must be checked against the coverage matrix, not only by title similarity.
+
+### 3.5 Compile A Task Triplet Patch
+
+Generate a patch first; do not write task files by default:
+
+```powershell
+py -3 scripts/python/compile_task_triplet.py --mode init
+```
+
+For added tasks:
+
+```powershell
+py -3 scripts/python/compile_task_triplet.py --mode add
+```
+
+Default output:
+
+- `logs/ci/task-generation/task-triplet.patch.json`
+
+Write only after reviewing the patch:
+
+```powershell
+py -3 scripts/python/compile_task_triplet.py --mode <init|add> --write
+```
+
+### 3.6 Build The Authoritative Triplet
+
+Real business repositories use this standard shape:
 
 - `.taskmaster/tasks/tasks.json`
 - `.taskmaster/tasks/tasks_back.json`
 - `.taskmaster/tasks/tasks_gameplay.json`
 
-如果 `tasks_back.json` / `tasks_gameplay.json` 已存在，而你需要重建 `tasks.json`，执行：
+If `tasks_back.json` and `tasks_gameplay.json` exist and you need to rebuild `tasks.json`, run:
 
 ```powershell
 py -3 scripts/python/build_taskmaster_tasks.py
 ```
 
-### 3.3 校验 triplet baseline
+For added tasks, write or patch `tasks_back.json` / `tasks_gameplay.json` first, then rebuild `tasks.json`.
+
+### 3.7 Validate The Triplet Baseline
 
 ```powershell
 py -3 scripts/python/task_links_validate.py
@@ -193,16 +301,28 @@ py -3 scripts/python/check_tasks_all_refs.py
 py -3 scripts/python/validate_task_master_triplet.py
 ```
 
-### 3.4 提前标准化 semantic review tier
+After adding tasks, rerun at least this section before Chapter 4 overlay work or Chapter 6 task execution.
 
-推荐默认值：
+### 3.8 Standardize Semantic Review Tier Early
+
+Recommended default:
 
 ```powershell
 py -3 scripts/python/backfill_semantic_review_tier.py --mode conservative --write
 py -3 scripts/python/validate_semantic_review_tier.py --mode conservative
 ```
 
-默认使用 `conservative`。除非你明确要把 profile 的运行时默认值固化进 task views，否则不要提前 materialize。
+Use `conservative` by default. Do not materialize runtime profile defaults into task views unless that is an explicit project decision.
+
+### 3.9 Chapter 3 Stop-Loss
+
+Stop before entering Chapter 4 or Chapter 6 when any of these are true:
+
+- `coverage-report.json` still has P0/P1 missing coverage.
+- A candidate task has no `requirement_ids` or `source_refs`.
+- Added tasks duplicate existing task semantics without an explicit merge or supersede decision.
+- `task_links_validate.py`, `check_tasks_all_refs.py`, or `validate_task_master_triplet.py` fails.
+- `semantic_review_tier` is missing or fails validation.
 
 ## 4. Phase 2：Overlays 与 Contracts 基线
 
