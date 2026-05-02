@@ -195,7 +195,7 @@ Use explicit path parameters when the business repo layout differs:
 - `--gdd-path <dir|file|glob>`
 - `--epics-path <dir|file|glob>`
 - `--stories-path <dir|file|glob>`
-- `--source-glob <glob>` for additional ADR, overlay, or custom planning sources
+- `--source-glob <glob>` for additional custom planning sources; include ADR or overlay sources only when they are intentionally part of the planning input, not as Chapter 4/5-derived evidence
 
 If no explicit paths are provided, the extractor falls back to template defaults:
 
@@ -203,8 +203,7 @@ If no explicit paths are provided, the extractor falls back to template defaults
 - `docs/gdd/**/*.md`
 - `docs/epics/**/*.md`
 - `docs/stories/**/*.md`
-- `docs/architecture/overlays/**/*.md`
-- `docs/adr/**/*.md`
+ADR and overlay files are not default Chapter 3 requirement sources. Chapter 3 may enrich candidates with existing ADR, overlay, contract, test, and task-view evidence later, but it should not optimize task generation toward Chapter 4/5-derived fields.
 
 ### 3.2 Extract Requirement Anchors
 
@@ -230,9 +229,36 @@ Default output:
 
 - `logs/ci/task-generation/requirements.index.json`
 
-### 3.3 Generate Task Candidates
+### 3.3 Normalize Task Intents
 
-Generate normalized task candidates from requirement anchors:
+Normalize raw requirement anchors into implementation-shaped task intents before candidate generation:
+
+```powershell
+py -3 scripts/python/normalize_task_intents.py --mode init --id-prefix INT
+py -3 scripts/python/audit_task_intents_quality.py
+```
+
+For added tasks, prefer an explicit business prefix:
+
+```powershell
+py -3 scripts/python/normalize_task_intents.py --mode add --id-prefix <SG|NG|GM|GEN>
+```
+
+Default output:
+
+- `logs/ci/task-generation/task-intents.normalized.json`
+
+Rules:
+
+- This layer is deterministic and auditable; it is the PRD/GDD-to-task-intent rewrite boundary.
+- Do not let an LLM write `.taskmaster/tasks/tasks.json` directly.
+- Every intent must preserve `requirement_ids` and `source_refs`.
+- Review `logs/ci/task-generation/task-intents.quality.json` when the audit reports duplicate prefixes, generic titles, metadata noise, or oversized intent groups.
+- Keep Chapter 4/5-derived overlay, contract, and semantic tier fields out of Chapter 3 optimization pressure.
+
+### 3.4 Generate Task Candidates
+
+Generate normalized task candidates from task intents. If no intent file exists, the script falls back to requirement-anchor grouping for backward compatibility:
 
 ```powershell
 py -3 scripts/python/generate_task_candidates_from_sources.py --mode init --id-prefix GEN
@@ -254,7 +280,7 @@ Rules:
 - Do not let an LLM write `.taskmaster/tasks/tasks.json` directly.
 - Do not skip `requirement_ids` or `source_refs`.
 
-### 3.4 Enrich Task Candidates
+### 3.5 Enrich Task Candidates
 
 Enrich normalized candidates with repository evidence before coverage audit:
 
@@ -281,7 +307,7 @@ The enrichment layer uses existing ADRs, overlays, contract event constants, tes
 - `evidence_refs`
 - duplicate-candidate signals
 
-### 3.5 Audit The Coverage Matrix
+### 3.6 Audit The Coverage Matrix
 
 Audit requirement coverage before compiling task views:
 
@@ -300,7 +326,7 @@ Hard rules:
 - Added tasks must be checked against the coverage matrix, not only by title similarity.
 - Duplicate candidates must be reviewed before `compile_task_triplet.py --write`.
 
-### 3.6 Compile A Task Triplet Patch
+### 3.7 Compile A Task Triplet Patch
 
 Generate a patch first; do not write task files by default:
 
@@ -324,7 +350,7 @@ Write only after reviewing the patch:
 py -3 scripts/python/compile_task_triplet.py --mode <init|add> --write
 ```
 
-### 3.7 Build The Authoritative Triplet
+### 3.8 Build The Authoritative Triplet
 
 Real business repositories use this standard shape:
 
@@ -340,7 +366,7 @@ py -3 scripts/python/build_taskmaster_tasks.py
 
 For added tasks, write or patch `tasks_back.json` / `tasks_gameplay.json` first, then rebuild `tasks.json`.
 
-### 3.8 Validate The Triplet Baseline
+### 3.9 Validate The Triplet Baseline
 
 ```powershell
 py -3 scripts/python/task_links_validate.py
@@ -350,7 +376,7 @@ py -3 scripts/python/validate_task_master_triplet.py
 
 After adding tasks, rerun at least this section before Chapter 4 overlay work or Chapter 6 task execution.
 
-### 3.9 Standardize Semantic Review Tier Early
+### 3.10 Standardize Semantic Review Tier Early
 
 Recommended default:
 
@@ -361,7 +387,7 @@ py -3 scripts/python/validate_semantic_review_tier.py --mode conservative
 
 Use `conservative` by default. Do not materialize runtime profile defaults into task views unless that is an explicit project decision.
 
-### 3.10 Chapter 3 Stop-Loss
+### 3.11 Chapter 3 Stop-Loss
 
 Stop before entering Chapter 4 or Chapter 6 when any of these are true:
 
@@ -370,6 +396,26 @@ Stop before entering Chapter 4 or Chapter 6 when any of these are true:
 - Added tasks duplicate existing task semantics without an explicit merge or supersede decision.
 - `task_links_validate.py`, `check_tasks_all_refs.py`, or `validate_task_master_triplet.py` fails.
 - `semantic_review_tier` is missing or fails validation.
+
+### 3.12 Optional Regression Check
+
+Use the read-only regression check to validate Chapter 3 generation quality against a business repo without writing task files:
+
+```powershell
+py -3 scripts/python/run_chapter3_regression_check.py <business-repo> --prd-path docs/prd --gdd-path docs/gdd
+```
+
+For custom layouts, repeat input path flags:
+
+```powershell
+py -3 scripts/python/run_chapter3_regression_check.py <business-repo> --prd-path docs/prd --gdd-path docs/gdd --gdd-path _bmad-output/gdd.md --epics-path _bmad-output/epics.md
+```
+
+Default output:
+
+- `logs/analysis/chapter3-regression/<repo>/regression-summary.json`
+
+This check is for regression evidence only. Do not tune Chapter 3 rules to exactly reproduce a mature repo's Chapter 4/5/6/7 task history.
 
 ## 4. Phase 2：Overlays 与 Contracts 基线
 

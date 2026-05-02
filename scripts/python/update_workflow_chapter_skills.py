@@ -590,8 +590,8 @@ def skill_markdown(name: str, cfg: dict[str, Any]) -> str:
     else:
         required_reading = (
             f"1. Read the relevant Chapter {cfg['chapter']} section in the template repo `workflow.md`.\n"
-            "2. Read `references/business-repos/<repo>.md` when the target business repo is known.\n"
-            "3. If that evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo."
+            "2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.\n"
+            "3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo."
         )
     return f"""---
 name: {name}
@@ -615,7 +615,7 @@ Operate Chapter {cfg["chapter"]} from `workflow.md` idempotently for a business 
 
 ## Repository Layout
 
-Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/sanguo`, and `<parent>/newrouge`.
+Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
 
 ## Purpose
 
@@ -651,18 +651,15 @@ Use this skill to {cfg["purpose"]}.
 
 ## Business Evidence References
 
-Generated evidence lives under `references/business-repos/` and may include:
-
-- `references/business-repos/sanguo.md`
-- `references/business-repos/newrouge.md`
+Generated evidence may live under `references/business-repos/<repo>.md`. These files are optional regression evidence from known business repositories; they must not define production generation rules.
 
 ## Maintenance
 
-Refresh evidence after new business-repo logs are generated:
+Refresh optional evidence after new business-repo logs are generated:
 
 ```powershell
-py -3 scripts/python/update_workflow_chapter_skills.py sanguo
-py -3 scripts/python/update_workflow_chapter_skills.py newrouge
+py -3 scripts/python/update_workflow_chapter_skills.py <business-repo>
+py -3 scripts/python/update_workflow_chapter_skills.py <business-repo-a>,<business-repo-b>
 ```
 """
 
@@ -677,7 +674,7 @@ def resolve_repo(template: Path, value: str) -> tuple[str, Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("business_repo", help="Business repo name/path, or a comma-separated list such as sanguo,newrouge.")
+    parser.add_argument("business_repo", help="Business repo name/path, or a comma-separated list such as repo_a,repo_b.")
     parser.add_argument("--template-root", default=".")
     args = parser.parse_args()
     template = Path(args.template_root).resolve()

@@ -20,12 +20,13 @@ DEFAULT_SOURCE_GLOBS = [
     "docs/gdd/**/*.md",
     "docs/epics/**/*.md",
     "docs/stories/**/*.md",
-    "docs/architecture/overlays/**/*.md",
-    "docs/adr/**/*.md",
 ]
 PRIORITY_RE = re.compile(r"\b(P0|P1|P2|P3)\b", re.IGNORECASE)
 REQ_RE = re.compile(r"\b(REQ|AC|GDD|PRD|FR|NFR)[-_ ]?(\d{1,5})\b", re.IGNORECASE)
 REFS_RE = re.compile(r"\bRefs:\s*(.+)$", re.IGNORECASE)
+PATH_ONLY_RE = re.compile(r"^[-*]?\s*`?[\w./\\-]+\.(json|md|cs|gd|yml|yaml|txt|save)`?\s*$", re.IGNORECASE)
+TASK_REF_ONLY_RE = re.compile(r"^[-*]?\s*T\d+\s+`[^`]+`\s*$", re.IGNORECASE)
+REFS_ONLY_RE = re.compile(r"^[-*]?\s*[\w./\\-]+\s+(ADR-Refs|Test-Refs|Refs):\s*$", re.IGNORECASE)
 
 
 def sha12(text: str) -> str:
@@ -84,12 +85,32 @@ def split_blocks(text: str) -> list[tuple[int, str]]:
 
 
 def is_requirement_like(block: str) -> bool:
+    stripped = block.strip()
+    if is_reference_only_block(stripped):
+        return False
     low = block.lower()
     signals = [
         "must ", "shall ", "should ", "acceptance", "refs:", "requirement", "scenario",
         "validate", "gate", "task", "feature", "player", "system", "p0", "p1",
     ]
     return any(signal in low for signal in signals) or bool(REQ_RE.search(block))
+
+
+def is_reference_only_block(block: str) -> bool:
+    """Skip traceability/list noise that does not describe a requirement."""
+    lines = [line.strip() for line in block.splitlines() if line.strip()]
+    if len(lines) != 1:
+        return False
+    line = lines[0]
+    if REFS_ONLY_RE.match(line):
+        return True
+    if PATH_ONLY_RE.match(line):
+        return True
+    if TASK_REF_ONLY_RE.match(line):
+        return True
+    if line.startswith(("- ", "* ")) and re.fullmatch(r"[-*]\s*[\w./\\-]+", line):
+        return True
+    return False
 
 
 def infer_priority(block: str) -> str:
@@ -197,4 +218,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

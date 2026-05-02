@@ -3,9 +3,9 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 1: Task Triplet Initialization
-- Source line span: 168-373
-- Heading count: 12
-- Command-like line count: 16
+- Source line span: 168-397
+- Heading count: 13
+- Command-like line count: 18
 - Artifact/reference line count: 0
 
 ## Headings
@@ -22,12 +22,15 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 - 3.8 Validate the triplet baseline
 - 3.9 Standardize semantic review tier early
 - 3.10 Chapter 3 stop-loss
+- 3.1 Prepare planning inputs
 
 ## Command And Artifact Signals
 
 - `py -3 scripts/python/extract_requirement_anchors.py --mode init --prd-path <prd-dir> --gdd-path <gdd-dir> --epics-path <epics-dir> --stories-path <stories-dir>`
 - `py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path <changed-prd-dir-or-file> --gdd-path <changed-gdd-dir-or-file> --epics-path <changed-epics-dir-or-file> --stories-path <changed-stories-dir-or-fil`
 - `py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path docs/design/prd --gdd-path docs/design/gdd --source-glob docs/planning/**/*.md`
+- `py -3 scripts/python/normalize_task_intents.py --mode init --id-prefix INT`
+- `py -3 scripts/python/normalize_task_intents.py --mode add --id-prefix <SG|NG|GM|GEN>`
 - `py -3 scripts/python/generate_task_candidates_from_sources.py --mode init --id-prefix GEN`
 - `py -3 scripts/python/generate_task_candidates_from_sources.py --mode add --id-prefix <SG|NG|GM|GEN>`
 - `py -3 scripts/python/enrich_task_candidates.py`
