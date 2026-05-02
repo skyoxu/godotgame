@@ -24,19 +24,19 @@ Template and business repositories are siblings under one parent directory, for 
 
 ## Purpose
 
-Use this skill to create or refresh the authoritative task triplet baseline from requirement anchors, task candidates, coverage audit, and triplet compilation before overlays, contracts, and Chapter 6 execution depend on it.
+Use this skill to create or refresh the authoritative task triplet baseline from requirement anchors, enriched task candidates, coverage audit, and triplet compilation before overlays, contracts, and Chapter 6 execution depend on it.
 
 ## Default Lane
 
-For new project initialization, extract requirement anchors, generate task candidates, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.
+For new project initialization, extract requirement anchors, generate normalized task candidates, enrich them with repository evidence, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.
 
 ## Primary Command Or Action
 
-`py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>`
+`py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/enrich_task_candidates.py && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>`
 
 ## Evidence Rule
 
-Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, then generate anchors, audit coverage, and validate the target repo directly.
+Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, enrich candidates from repository ADR/overlay/contract-event/test evidence, then audit coverage and validate the target repo directly.
 
 ## Required Reading
 
@@ -50,12 +50,13 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 2. For new project initialization, prepare PRD, GDD, traceability, and rules-supporting docs before building task files.
 3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults.
 4. Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.
-5. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
-6. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.
-7. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
-8. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
-9. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
-10. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
+5. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
+6. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
+7. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.
+8. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
+9. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
+10. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
+11. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
 
 ## Stop-Loss Signals
 

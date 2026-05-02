@@ -11,11 +11,11 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 ## Headings
 
 - 2. Repository Bootstrap
-- 2. Repository Bootstrap
-- 2. Repository Bootstrap
-- 2. Repository Bootstrap
-- 2. Repository Bootstrap
-- 2. Repository Bootstrap
+- 2.1 Clean name and path residue
+- 2.2 Rebuild entry indexes
+- 2.3 Run repository-level hard checks immediately
+- 2.4 Optional local project-health page service
+- 2.5 Optional OpenAI backend bootstrap
 
 ## Command And Artifact Signals
 

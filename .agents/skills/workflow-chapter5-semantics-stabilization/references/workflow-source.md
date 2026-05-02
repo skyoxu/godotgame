@@ -3,7 +3,7 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 3: Conditional Semantics Stabilization
-- Source line span: 281-469
+- Source line span: 448-636
 - Heading count: 7
 - Command-like line count: 12
 - Artifact/reference line count: 4

@@ -37,15 +37,16 @@ SKILLS = {
         "title": "Workflow Chapter 3 Task Triplet Baseline",
         "desc": "Run the fixed Chapter 3 task triplet generation and baseline workflow from workflow.md. Use when a business repo is initialized with authoritative Taskmaster triplet files, when new tasks are added, when requirements must be converted into task candidates, when coverage must be audited before triplet compilation, when tasks.json must be rebuilt from tasks_back.json and tasks_gameplay.json, or when task links, refs, triplet consistency, or semantic review tier baseline must be validated before Chapter 4 overlays.",
         "chapter": "3",
-        "purpose": "create or refresh the authoritative task triplet baseline from requirement anchors, task candidates, coverage audit, and triplet compilation before overlays, contracts, and Chapter 6 execution depend on it",
-        "default": "For new project initialization, extract requirement anchors, generate task candidates, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.",
-        "command": "py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>",
-        "evidence": "Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, then generate anchors, audit coverage, and validate the target repo directly.",
+        "purpose": "create or refresh the authoritative task triplet baseline from requirement anchors, enriched task candidates, coverage audit, and triplet compilation before overlays, contracts, and Chapter 6 execution depend on it",
+        "default": "For new project initialization, extract requirement anchors, generate normalized task candidates, enrich them with repository evidence, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.",
+        "command": "py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/enrich_task_candidates.py && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>",
+        "evidence": "Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, enrich candidates from repository ADR/overlay/contract-event/test evidence, then audit coverage and validate the target repo directly.",
         "steps": [
             "Resolve whether the run is new project initialization or added-task refresh.",
             "For new project initialization, prepare PRD, GDD, traceability, and rules-supporting docs before building task files.",
             "Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults.",
             "Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.",
+            "Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.",
             "Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.",
             "Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.",
             "Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.",
@@ -372,7 +373,7 @@ def evidence_markdown(repo: Path, repo_name: str) -> str:
         "",
         "- Do not assume the three triplet files have identical item counts; validate their mapping instead.",
         "- For a new project, build or confirm the authoritative triplet before Chapter 4 overlays.",
-        "- For added tasks, rerun the Chapter 3.3 baseline before overlay sync or Chapter 6 execution.",
+        "- For added tasks, rerun the Chapter 3.8 baseline before overlay sync or Chapter 6 execution.",
         "- Backfill and validate semantic review tier after task additions unless the repo already has a clean conservative baseline.",
         "",
         "## Chapter 4 Overlay And Contract Evidence",
@@ -517,12 +518,13 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
         "3.1": "3.1 Prepare planning inputs",
         "3.2": "3.2 Extract requirement anchors",
         "3.3": "3.3 Generate task candidates",
-        "3.4": "3.4 Audit the coverage matrix",
-        "3.5": "3.5 Compile a task triplet patch",
-        "3.6": "3.6 Build the authoritative triplet",
-        "3.7": "3.7 Validate the triplet baseline",
-        "3.8": "3.8 Standardize semantic review tier early",
-        "3.9": "3.9 Chapter 3 stop-loss",
+        "3.4": "3.4 Enrich task candidates",
+        "3.5": "3.5 Audit the coverage matrix",
+        "3.6": "3.6 Compile a task triplet patch",
+        "3.7": "3.7 Build the authoritative triplet",
+        "3.8": "3.8 Validate the triplet baseline",
+        "3.9": "3.9 Standardize semantic review tier early",
+        "3.10": "3.10 Chapter 3 stop-loss",
         "3.": "3. Phase 1: Task Triplet Initialization",
         "4.1": "4.1 Generate overlay skeletons only after the triplet is valid",
         "4.2": "4.2 Freeze overlay refs after apply",
@@ -556,7 +558,7 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
     }
     for heading in headings:
         alias = None
-        for prefix, mapped in heading_aliases.items():
+        for prefix, mapped in sorted(heading_aliases.items(), key=lambda item: len(item[0]), reverse=True):
             if heading.startswith(prefix):
                 alias = mapped
                 break

@@ -45,6 +45,8 @@ def normalize_task(candidate: dict[str, Any], target: str) -> dict[str, Any]:
         "test_refs": list(candidate.get("test_refs") or []),
         "acceptance": list(candidate.get("acceptance") or []),
         "test_strategy": list(candidate.get("test_strategy") or []),
+        "contractRefs": list(candidate.get("contractRefs") or []),
+        "evidence_refs": list(candidate.get("evidence_refs") or []),
         "source_refs": list(candidate.get("source_refs") or []),
         "requirement_ids": list(candidate.get("requirement_ids") or []),
         "taskmaster_exported": False,
@@ -77,7 +79,7 @@ def append_unique(existing: list[dict[str, Any]], new_tasks: list[dict[str, Any]
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compile task candidates into task triplet view files.")
     parser.add_argument("--repo-root", default=".")
-    parser.add_argument("--candidates", default="logs/ci/task-generation/task-candidates.normalized.json")
+    parser.add_argument("--candidates", default="logs/ci/task-generation/task-candidates.enriched.json")
     parser.add_argument("--coverage", default="logs/ci/task-generation/coverage-report.json")
     parser.add_argument("--mode", choices=["init", "add"], default="add")
     parser.add_argument("--write", action="store_true")

@@ -175,6 +175,7 @@ The default route is now:
 - `tasks_back.json` and `tasks_gameplay.json` are the reviewable business task views.
 - `tasks.json` is a Taskmaster-compatible compiled view.
 - An LLM may generate or refine task candidates, but it must not directly write the final `tasks.json`.
+- Normalized candidates must be enriched with repository evidence before coverage audit.
 - Requirement coverage must be audited through a coverage matrix before triplet compilation.
 
 Choose one route before running scripts:
@@ -253,7 +254,34 @@ Rules:
 - Do not let an LLM write `.taskmaster/tasks/tasks.json` directly.
 - Do not skip `requirement_ids` or `source_refs`.
 
-### 3.4 Audit The Coverage Matrix
+### 3.4 Enrich Task Candidates
+
+Enrich normalized candidates with repository evidence before coverage audit:
+
+```powershell
+py -3 scripts/python/enrich_task_candidates.py
+```
+
+Default output:
+
+- `logs/ci/task-generation/task-candidates.enriched.json`
+
+The enrichment layer uses existing ADRs, overlays, contract event constants, tests, and task views to improve:
+
+- `adr_refs`
+- `chapter_refs`
+- `overlay_refs`
+- `contractRefs` as domain event type values, not contract file paths
+- `test_refs`
+- `acceptance`
+- `test_strategy`
+- `owner`
+- `layer`
+- `labels`
+- `evidence_refs`
+- duplicate-candidate signals
+
+### 3.5 Audit The Coverage Matrix
 
 Audit requirement coverage before compiling task views:
 
@@ -270,8 +298,9 @@ Hard rules:
 - Missing `P0/P1` requirement coverage blocks triplet compilation.
 - Every candidate task must trace back to `requirement_ids` and `source_refs`.
 - Added tasks must be checked against the coverage matrix, not only by title similarity.
+- Duplicate candidates must be reviewed before `compile_task_triplet.py --write`.
 
-### 3.5 Compile A Task Triplet Patch
+### 3.6 Compile A Task Triplet Patch
 
 Generate a patch first; do not write task files by default:
 
@@ -295,7 +324,7 @@ Write only after reviewing the patch:
 py -3 scripts/python/compile_task_triplet.py --mode <init|add> --write
 ```
 
-### 3.6 Build The Authoritative Triplet
+### 3.7 Build The Authoritative Triplet
 
 Real business repositories use this standard shape:
 
@@ -311,7 +340,7 @@ py -3 scripts/python/build_taskmaster_tasks.py
 
 For added tasks, write or patch `tasks_back.json` / `tasks_gameplay.json` first, then rebuild `tasks.json`.
 
-### 3.7 Validate The Triplet Baseline
+### 3.8 Validate The Triplet Baseline
 
 ```powershell
 py -3 scripts/python/task_links_validate.py
@@ -321,7 +350,7 @@ py -3 scripts/python/validate_task_master_triplet.py
 
 After adding tasks, rerun at least this section before Chapter 4 overlay work or Chapter 6 task execution.
 
-### 3.8 Standardize Semantic Review Tier Early
+### 3.9 Standardize Semantic Review Tier Early
 
 Recommended default:
 
@@ -332,7 +361,7 @@ py -3 scripts/python/validate_semantic_review_tier.py --mode conservative
 
 Use `conservative` by default. Do not materialize runtime profile defaults into task views unless that is an explicit project decision.
 
-### 3.9 Chapter 3 Stop-Loss
+### 3.10 Chapter 3 Stop-Loss
 
 Stop before entering Chapter 4 or Chapter 6 when any of these are true:
 

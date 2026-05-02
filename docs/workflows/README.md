@@ -99,6 +99,7 @@ Use these scripts when replacing Taskmaster MCP generation with deterministic ta
 
 - `scripts/python/extract_requirement_anchors.py` - extracts requirement anchors from configurable PRD/GDD/epics/stories/overlay/ADR sources using `--prd-path`, `--gdd-path`, `--epics-path`, `--stories-path`, and `--source-glob`.
 - `scripts/python/generate_task_candidates_from_sources.py` - creates normalized task candidates from requirement anchors.
+- `scripts/python/enrich_task_candidates.py` - enriches candidates with repository ADR, overlay, contract-event, test, existing-task, owner/layer, acceptance, evidence-ref, and duplicate-candidate evidence.
 - `scripts/python/audit_task_candidate_coverage.py` - blocks P0/P1 omissions before triplet compilation.
 - `scripts/python/compile_task_triplet.py` - writes a task-triplet patch, or updates task view files with `--write`.
 

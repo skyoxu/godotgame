@@ -91,3 +91,15 @@
 7. `prototype-lane.md` / `prototype-tdd.md` / `prototype-lane-playbook.md`
 8. `template-upgrade-protocol.md` / `business-repo-upgrade-guide.md`
 9. 做 platform evolution 规划时阅读 `cloud-platform-evolution-plan.md` / `cloud-user-telemetry-and-feedback-plan.md` / `hermes-openai-api-and-orchestration-optimization-plan.md`
+
+## 任务三联生成
+
+当需要用确定性的 task triplet generation 替代 Taskmaster MCP 直接生成时，使用这些脚本：
+
+- `scripts/python/extract_requirement_anchors.py` - 使用 `--prd-path`、`--gdd-path`、`--epics-path`、`--stories-path` 与 `--source-glob`，从可配置 PRD/GDD/epics/stories/overlay/ADR sources 提取 requirement anchors。
+- `scripts/python/generate_task_candidates_from_sources.py` - 从 requirement anchors 创建 normalized task candidates。
+- `scripts/python/enrich_task_candidates.py` - 使用 repository ADR、overlay、contract-event、test、existing-task、owner/layer、acceptance、evidence-ref 与 duplicate-candidate evidence 富化 candidates。
+- `scripts/python/audit_task_candidate_coverage.py` - 在 triplet compilation 前阻断 P0/P1 omissions。
+- `scripts/python/compile_task_triplet.py` - 写入 task-triplet patch，或通过 `--write` 更新 task view files。
+
+最终 `tasks.json` 仍然由 `scripts/python/build_taskmaster_tasks.py` 从 `tasks_back.json` 与 `tasks_gameplay.json` 生成。

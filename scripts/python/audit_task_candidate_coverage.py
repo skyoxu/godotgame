@@ -57,7 +57,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Audit task candidate coverage against requirement anchors.")
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--requirements", default="logs/ci/task-generation/requirements.index.json")
-    parser.add_argument("--candidates", default="logs/ci/task-generation/task-candidates.normalized.json")
+    parser.add_argument("--candidates", default="logs/ci/task-generation/task-candidates.enriched.json")
     parser.add_argument("--out", default="logs/ci/task-generation/coverage-report.json")
     parser.add_argument("--allow-missing-p1", action="store_true")
     args = parser.parse_args()

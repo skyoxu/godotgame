@@ -3,7 +3,7 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 4: Single Task Daily Loop
-- Source line span: 470-1135
+- Source line span: 637-1302
 - Heading count: 20
 - Command-like line count: 75
 - Artifact/reference line count: 22
@@ -27,8 +27,8 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 - 6.7 Unified task-level review pipeline
 - 6.8 Clean up Needs Fix
 - 6.9 Repository-level validation before commit
-- 6.1 Recover state first
-- 6.1 Recover state first
+- 6.10 PR incremental quick path
+- 6.11 Fast mode fastest template
 - quick recommendation-only read
 
 ## Command And Artifact Signals
