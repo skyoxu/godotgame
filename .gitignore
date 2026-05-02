@@ -97,6 +97,16 @@ _bmad/
 .agents/*
 !.agents/skills/
 .agents/skills/*
+!.agents/skills/bmad-agent-game-architect/
+!.agents/skills/bmad-agent-game-architect/**
+!.agents/skills/bmad-agent-game-designer/
+!.agents/skills/bmad-agent-game-designer/**
+!.agents/skills/bmad-agent-game-dev/
+!.agents/skills/bmad-agent-game-dev/**
+!.agents/skills/bmad-agent-game-solo-dev/
+!.agents/skills/bmad-agent-game-solo-dev/**
+!.agents/skills/bmad-agent-game-tech-writer/
+!.agents/skills/bmad-agent-game-tech-writer/**
 !.agents/skills/workflow-chapter2-repository-bootstrap/
 !.agents/skills/workflow-chapter2-repository-bootstrap/**
 !.agents/skills/workflow-chapter3-task-triplet-baseline/
