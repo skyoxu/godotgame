@@ -18,6 +18,8 @@ from typing import Any
 DEFAULT_SOURCE_GLOBS = [
     "docs/prd/**/*.md",
     "docs/gdd/**/*.md",
+    "docs/epics/**/*.md",
+    "docs/stories/**/*.md",
     "docs/architecture/overlays/**/*.md",
     "docs/adr/**/*.md",
 ]
@@ -38,9 +40,25 @@ def rel(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+def expand_source_arg(root: Path, value: str) -> list[str]:
+    raw = Path(value)
+    candidate = raw if raw.is_absolute() else root / raw
+    if any(ch in value for ch in "*?[]"):
+        return [value]
+    if candidate.is_dir():
+        rel = candidate.relative_to(root).as_posix() if candidate.is_relative_to(root) else candidate.as_posix()
+        return [f"{rel}/**/*.md"]
+    return [value]
+
+
 def iter_sources(root: Path, patterns: list[str]) -> list[Path]:
     files: list[Path] = []
     for pattern in patterns:
+        direct = Path(pattern)
+        candidate = direct if direct.is_absolute() else root / direct
+        if candidate.is_file():
+            files.append(candidate)
+            continue
         files.extend(p for p in root.glob(pattern) if p.is_file())
     return sorted(set(files))
 
@@ -87,6 +105,10 @@ def infer_kind(path: Path, block: str) -> str:
         return "gdd"
     if "/prd/" in low:
         return "prd"
+    if "/epics/" in low or "epic" in low:
+        return "epic"
+    if "/stories/" in low or "story" in low:
+        return "story"
     if "/overlays/" in low:
         return "overlay"
     if "/adr/" in low:
@@ -146,12 +168,25 @@ def extract(root: Path, patterns: list[str], mode: str) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Extract requirement anchors for task triplet generation.")
     parser.add_argument("--repo-root", default=".")
-    parser.add_argument("--source-glob", action="append", default=[])
+    parser.add_argument("--source-glob", action="append", default=[], help="Explicit source glob or file path. May be repeated.")
+    parser.add_argument("--prd-path", action="append", default=[], help="PRD directory, file, or glob. May be repeated.")
+    parser.add_argument("--gdd-path", action="append", default=[], help="GDD directory, file, or glob. May be repeated.")
+    parser.add_argument("--epics-path", action="append", default=[], help="Epics directory, file, or glob. May be repeated.")
+    parser.add_argument("--stories-path", action="append", default=[], help="Stories directory, file, or glob. May be repeated.")
     parser.add_argument("--mode", choices=["init", "add"], default="init")
     parser.add_argument("--out", default="logs/ci/task-generation/requirements.index.json")
     args = parser.parse_args()
     root = Path(args.repo_root).resolve()
-    patterns = args.source_glob or DEFAULT_SOURCE_GLOBS
+    typed_sources = []
+    for values in [args.prd_path, args.gdd_path, args.epics_path, args.stories_path]:
+        for value in values:
+            typed_sources.extend(expand_source_arg(root, value))
+    explicit_sources = []
+    for value in args.source_glob:
+        explicit_sources.extend(expand_source_arg(root, value))
+    patterns = typed_sources + explicit_sources
+    if not patterns:
+        patterns = DEFAULT_SOURCE_GLOBS
     data = extract(root, patterns, args.mode)
     out = root / args.out
     out.parent.mkdir(parents=True, exist_ok=True)

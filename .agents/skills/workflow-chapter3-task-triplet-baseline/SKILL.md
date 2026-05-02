@@ -32,11 +32,11 @@ For new project initialization, extract requirement anchors, generate task candi
 
 ## Primary Command Or Action
 
-`py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>`
+`py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>`
 
 ## Evidence Rule
 
-Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence but always generate anchors, audit coverage, and validate the target repo directly.
+Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, then generate anchors, audit coverage, and validate the target repo directly.
 
 ## Required Reading
 
@@ -48,7 +48,7 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 
 1. Resolve whether the run is new project initialization or added-task refresh.
 2. For new project initialization, prepare PRD, GDD, traceability, and rules-supporting docs before building task files.
-3. Extract requirement anchors with extract_requirement_anchors.py and keep requirements.index.json as the coverage source.
+3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults.
 4. Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.
 5. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
 6. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.

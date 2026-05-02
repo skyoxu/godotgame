@@ -186,10 +186,22 @@ Choose one route before running scripts:
 
 Prepare PRD, GDD, traceability docs, and rules-supporting docs required by the project.
 
-Typical source inputs:
+Source paths must be configurable per business repo. Do not assume every repo uses the same PRD/GDD/epics/stories directories.
+
+Use explicit path parameters when the business repo layout differs:
+
+- `--prd-path <dir|file|glob>`
+- `--gdd-path <dir|file|glob>`
+- `--epics-path <dir|file|glob>`
+- `--stories-path <dir|file|glob>`
+- `--source-glob <glob>` for additional ADR, overlay, or custom planning sources
+
+If no explicit paths are provided, the extractor falls back to template defaults:
 
 - `docs/prd/**/*.md`
 - `docs/gdd/**/*.md`
+- `docs/epics/**/*.md`
+- `docs/stories/**/*.md`
 - `docs/architecture/overlays/**/*.md`
 - `docs/adr/**/*.md`
 
@@ -198,13 +210,19 @@ Typical source inputs:
 Extract stable requirement anchors before generating any task:
 
 ```powershell
-py -3 scripts/python/extract_requirement_anchors.py --mode init
+py -3 scripts/python/extract_requirement_anchors.py --mode init --prd-path <prd-dir> --gdd-path <gdd-dir> --epics-path <epics-dir> --stories-path <stories-dir>
 ```
 
 For added tasks, scope extraction to changed sources when possible:
 
 ```powershell
-py -3 scripts/python/extract_requirement_anchors.py --mode add --source-glob <changed-doc-or-glob>
+py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path <changed-prd-dir-or-file> --gdd-path <changed-gdd-dir-or-file> --epics-path <changed-epics-dir-or-file> --stories-path <changed-stories-dir-or-file>
+```
+
+For custom layouts, repeat parameters or mix them with `--source-glob`:
+
+```powershell
+py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path docs/design/prd --gdd-path docs/design/gdd --source-glob docs/planning/**/*.md
 ```
 
 Default output:

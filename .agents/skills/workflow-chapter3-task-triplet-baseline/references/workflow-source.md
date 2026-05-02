@@ -3,9 +3,9 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 1: Task Triplet Initialization
-- Source line span: 168-326
+- Source line span: 168-344
 - Heading count: 11
-- Command-like line count: 14
+- Command-like line count: 15
 - Artifact/reference line count: 0
 
 ## Headings
@@ -24,8 +24,9 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 
 ## Command And Artifact Signals
 
-- `py -3 scripts/python/extract_requirement_anchors.py --mode init`
-- `py -3 scripts/python/extract_requirement_anchors.py --mode add --source-glob <changed-doc-or-glob>`
+- `py -3 scripts/python/extract_requirement_anchors.py --mode init --prd-path <prd-dir> --gdd-path <gdd-dir> --epics-path <epics-dir> --stories-path <stories-dir>`
+- `py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path <changed-prd-dir-or-file> --gdd-path <changed-gdd-dir-or-file> --epics-path <changed-epics-dir-or-file> --stories-path <changed-stories-dir-or-fil`
+- `py -3 scripts/python/extract_requirement_anchors.py --mode add --prd-path docs/design/prd --gdd-path docs/design/gdd --source-glob docs/planning/**/*.md`
 - `py -3 scripts/python/generate_task_candidates_from_sources.py --mode init --id-prefix GEN`
 - `py -3 scripts/python/generate_task_candidates_from_sources.py --mode add --id-prefix <SG|NG|GM|GEN>`
 - `py -3 scripts/python/audit_task_candidate_coverage.py`

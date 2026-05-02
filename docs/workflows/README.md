@@ -97,7 +97,7 @@ This file indexes the current `docs/workflows/` root documents and records how t
 
 Use these scripts when replacing Taskmaster MCP generation with deterministic task triplet generation:
 
-- `scripts/python/extract_requirement_anchors.py` - extracts requirement anchors from PRD/GDD/overlay/ADR sources.
+- `scripts/python/extract_requirement_anchors.py` - extracts requirement anchors from configurable PRD/GDD/epics/stories/overlay/ADR sources using `--prd-path`, `--gdd-path`, `--epics-path`, `--stories-path`, and `--source-glob`.
 - `scripts/python/generate_task_candidates_from_sources.py` - creates normalized task candidates from requirement anchors.
 - `scripts/python/audit_task_candidate_coverage.py` - blocks P0/P1 omissions before triplet compilation.
 - `scripts/python/compile_task_triplet.py` - writes a task-triplet patch, or updates task view files with `--write`.
