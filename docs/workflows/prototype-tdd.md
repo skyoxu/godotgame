@@ -63,8 +63,11 @@ This creates a prototype note under `docs/prototypes/` and exits without running
 Recommended record additions for solo-style prototype work:
 - the core player fantasy
 - the minimum playable loop
+- the `## Game Type Specifics` section copied from `docs/prototypes/TEMPLATE.md`
 - what would make the idea worth promoting
 - what would make the idea worth discarding
+
+When `--record-path` points to an existing prototype note, `run-prototype-tdd` reads `## Game Type Specifics` and writes it into `summary.json` as `prototype_intake.game_type_specifics`. This keeps red/green evidence connected to the Step07-lite intake without entering the formal Chapter 6 evidence model.
 
 ### 2. Prototype red
 
@@ -127,6 +130,14 @@ Notes:
   - Run verification only.
 - `--related-task-id`
   - Record future formal task ids when they already exist.
+- `--record-path`
+  - Use an existing `docs/prototypes/*.md` record and consume its `## Game Type Specifics` section.
+- `--game-type-specific-game-type`
+  - Game type id to write when creating a record directly.
+- `--game-type-specific-guide-path`
+  - Extracted BMAD/GDS guide path to write when creating a record directly.
+- `--game-type-specific-section`
+  - Repeatable `Title: answer` entry for Step07-lite sections.
 
 ## Outputs
 
@@ -134,6 +145,8 @@ Notes:
 - Summary: `logs/ci/<date>/prototype-tdd-<slug>-<stage>/summary.json`
 - Human-readable report: `logs/ci/<date>/prototype-tdd-<slug>-<stage>/report.md`
 - Step logs: `logs/ci/<date>/prototype-tdd-<slug>-<stage>/step-*.log`
+
+The summary includes `prototype_intake.game_type_specifics` when the prototype note contains `## Game Type Specifics`.
 
 ## Good Fit
 

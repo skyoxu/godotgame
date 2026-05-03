@@ -42,14 +42,25 @@ def sanitize_slug(value: str) -> str:
     return cleaned or "prototype"
 
 
+def section_id(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", str(value or "").strip().lower())
+    cleaned = re.sub(r"_{2,}", "_", cleaned).strip("_")
+    return cleaned or "section"
+
+
 _LIST_FIELD_ALIASES: dict[str, list[str]] = {
     "status": ["status", "状态"],
     "owner": ["owner", "负责人"],
     "date": ["date", "日期"],
     "related_formal_task_ids": ["related formal task ids", "关联正式任务 id"],
+    "game_name": ["game name", "游戏名称"],
+    "game_type": ["game type", "游戏类型"],
     "hypothesis": ["hypothesis", "假设"],
     "core_player_fantasy": ["core player fantasy", "核心玩家幻想"],
     "minimum_playable_loop": ["minimum playable loop", "最小可玩循环"],
+    "game_feature": ["game feature", "游戏特色"],
+    "core_gameplay_loop": ["core gameplay loop", "核心游戏循环"],
+    "win_fail_conditions": ["win / fail conditions", "win fail conditions", "victory / failure conditions", "胜利/失败条件", "胜利 / 失败条件"],
     "success_criteria": ["success criteria", "成功标准"],
     "promote_signals": ["promote signals", "进入 promote 的信号"],
     "archive_signals": ["archive signals", "进入 archive 的信号"],
@@ -84,6 +95,17 @@ def parse_template_content(content: str) -> dict[str, Any]:
             continue
         if stripped.startswith("- "):
             entry = stripped[2:].strip()
+            if current_section == "game_type_specifics":
+                if ":" in entry or "：" in entry:
+                    key, value = re.split(r"[:：]", entry, maxsplit=1)
+                    normalized_key = _normalize_heading(key)
+                    if normalized_key in {"game type", "游戏类型"}:
+                        section_values.setdefault("game_type", []).append(value.strip())
+                    elif normalized_key in {"guide path", "game type guide path", "类型模板路径", "游戏类型模板路径"}:
+                        section_values.setdefault("game_type_guide_path", []).append(value.strip())
+                    else:
+                        section_values.setdefault("game_type_specific_lines", []).append(f"{key.strip()}: {value.strip()}")
+                continue
             if current_section == "scope":
                 lowered_entry = _normalize_heading(entry)
                 if lowered_entry in {"in", "纳入"}:
@@ -126,6 +148,8 @@ def parse_template_content(content: str) -> dict[str, Any]:
                 current_section = "scope"
             elif heading == "证据" or heading == "evidence":
                 current_section = "evidence"
+            elif heading in {"game type specifics", "游戏类型细节", "游戏类型特定设计"}:
+                current_section = "game_type_specifics"
             continue
         if current_section == "scope":
             lowered = _normalize_heading(stripped)
@@ -148,6 +172,13 @@ def parse_template_content(content: str) -> dict[str, Any]:
             payload["slug"] = sanitize_slug(values[0]) if values else ""
         elif key in {"status", "owner", "date", "decision", "next_step"}:
             payload[key] = values[0] if values else ""
+        elif key == "game_type_specific_lines":
+            sections = []
+            for item in values:
+                title, answer = item.split(":", 1)
+                title = title.strip()
+                sections.append({"id": section_id(title), "title": title, "answer": answer.strip()})
+            payload["game_type_specifics"] = {"selected_sections": sections}
         else:
             payload[key] = [item for item in values if item]
     return payload
@@ -161,9 +192,14 @@ def normalize_prototype_payload(raw: dict[str, Any], *, today: str | None = None
         "owner": str(raw.get("owner") or "operator").strip() or "operator",
         "date": str(raw.get("date") or current_day).strip() or current_day,
         "related_formal_task_ids": list(raw.get("related_formal_task_ids") or ["none yet"]),
+        "game_name": _first(raw.get("game_name")) or "",
+        "game_type": _first(raw.get("game_type")) or "",
         "hypothesis": _first(raw.get("hypothesis")) or "",
         "core_player_fantasy": _first(raw.get("core_player_fantasy")) or "",
         "minimum_playable_loop": _first(raw.get("minimum_playable_loop")) or "",
+        "game_feature": _first(raw.get("game_feature")) or "",
+        "core_gameplay_loop": _first(raw.get("core_gameplay_loop")) or "",
+        "win_fail_conditions": _first(raw.get("win_fail_conditions")) or "",
         "scope_in": list(raw.get("scope_in") or ["TBD"]),
         "scope_out": list(raw.get("scope_out") or ["TBD"]),
         "success_criteria": list(raw.get("success_criteria") or []),
@@ -175,6 +211,14 @@ def normalize_prototype_payload(raw: dict[str, Any], *, today: str | None = None
         "next_step": str(raw.get("next_step") or "Proceed to the next prototype workflow confirmation step.").strip()
         or "Proceed to the next prototype workflow confirmation step.",
     }
+    if raw.get("game_type_guide_path"):
+        normalized["game_type_guide_path"] = _first(raw.get("game_type_guide_path"))
+    if raw.get("game_type_guide_content"):
+        normalized["game_type_guide_content"] = str(raw.get("game_type_guide_content") or "")
+    if isinstance(raw.get("game_type_specifics"), dict):
+        normalized["game_type_specifics"] = dict(raw.get("game_type_specifics") or {})
+    if normalized.get("game_type_guide_content") or normalized.get("game_type_specifics"):
+        normalized["game_type_specifics"] = normalize_game_type_specifics(normalized)
     return normalized
 
 
@@ -186,12 +230,151 @@ def _first(value: Any) -> str:
 
 def required_field_names(payload: dict[str, Any]) -> list[str]:
     missing: list[str] = []
-    required_scalars = ["slug", "hypothesis", "core_player_fantasy", "minimum_playable_loop"]
+    required_scalars = [
+        "slug",
+        "hypothesis",
+        "core_player_fantasy",
+        "minimum_playable_loop",
+        "game_feature",
+        "core_gameplay_loop",
+        "win_fail_conditions",
+    ]
     for key in required_scalars:
         if not str(payload.get(key) or "").strip():
             missing.append(key)
     if not payload.get("success_criteria"):
         missing.append("success_criteria")
+    return missing
+
+
+def parse_game_type_guide(content: str, *, game_type: str, path: str) -> dict[str, Any]:
+    sections: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    body: list[str] = []
+
+    def flush() -> None:
+        nonlocal current, body
+        if current is None:
+            return
+        text = "\n".join(body).strip()
+        placeholders = re.findall(r"\{\{\s*([A-Za-z0-9_ -]+)\s*\}\}", text)
+        bullets = [line.strip()[2:].strip() for line in text.splitlines() if line.strip().startswith("- ")]
+        prompt_source = "; ".join(bullets[:4]) or current["title"]
+        sections.append(
+            {
+                "id": section_id(str(current["title"])),
+                "title": str(current["title"]),
+                "placeholders": [section_id(item) for item in placeholders],
+                "prompt": prompt_source,
+                "body": text,
+                "optional": "optional" in text.lower(),
+                "narrative": "narrative" in text.lower(),
+            }
+        )
+        current = None
+        body = []
+
+    for line in str(content or "").splitlines():
+        if line.startswith("### "):
+            flush()
+            current = {"title": line[4:].strip()}
+            body = []
+        elif current is not None:
+            body.append(line)
+    flush()
+    return {
+        "game_type": sanitize_slug(game_type),
+        "guide_path": str(path or ""),
+        "sections": sections,
+        "needs_narrative": any(bool(item.get("narrative")) for item in sections),
+    }
+
+
+def select_prototype_relevant_sections(parsed: dict[str, Any], *, limit: int = 3) -> list[dict[str, Any]]:
+    priority_terms = (
+        "core",
+        "mechanic",
+        "loop",
+        "progression",
+        "level",
+        "structure",
+        "control",
+        "combat",
+        "system",
+        "objective",
+    )
+    scored: list[tuple[int, int, dict[str, Any]]] = []
+    for index, section in enumerate(list(parsed.get("sections") or [])):
+        if not isinstance(section, dict):
+            continue
+        haystack = f"{section.get('id', '')} {section.get('title', '')} {section.get('prompt', '')}".lower()
+        score = sum(3 for term in priority_terms if term in haystack)
+        if "replay" in haystack or "monet" in haystack or "meta" in haystack:
+            score -= 2
+        scored.append((score, -index, section))
+    selected = [item[2] for item in sorted(scored, reverse=True)[: max(1, int(limit))]]
+    return sorted(selected, key=lambda section: [item.get("id") for item in list(parsed.get("sections") or [])].index(section.get("id")))
+
+
+def _guide_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    content = str(payload.get("game_type_guide_content") or "")
+    if not content:
+        return {}
+    return parse_game_type_guide(
+        content,
+        game_type=str(payload.get("game_type") or ""),
+        path=str(payload.get("game_type_guide_path") or ""),
+    )
+
+
+def normalize_game_type_specifics(payload: dict[str, Any], *, guide: dict[str, Any] | None = None) -> dict[str, Any]:
+    existing = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
+    parsed = guide or _guide_from_payload(payload)
+    selected = select_prototype_relevant_sections(parsed, limit=3) if parsed else list(existing.get("selected_sections") or [])
+    existing_by_id = {
+        str(item.get("id") or "").strip(): item
+        for item in list(existing.get("selected_sections") or [])
+        if isinstance(item, dict) and str(item.get("id") or "").strip()
+    }
+    normalized_sections: list[dict[str, Any]] = []
+    for section in selected:
+        section_id_value = str(section.get("id") or section_id(str(section.get("title") or "")))
+        prior = existing_by_id.get(section_id_value) or {}
+        normalized_sections.append(
+            {
+                "id": section_id_value,
+                "title": str(section.get("title") or prior.get("title") or section_id_value),
+                "prompt": str(section.get("prompt") or prior.get("prompt") or ""),
+                "answer": str(prior.get("answer") or section.get("answer") or "").strip(),
+            }
+        )
+    return {
+        "game_type": sanitize_slug(str(payload.get("game_type") or existing.get("game_type") or (parsed or {}).get("game_type") or "")),
+        "guide_path": str(payload.get("game_type_guide_path") or existing.get("guide_path") or (parsed or {}).get("guide_path") or ""),
+        "selected_sections": normalized_sections,
+        "needs_narrative": bool(existing.get("needs_narrative") or (parsed or {}).get("needs_narrative")),
+    }
+
+
+def enrich_payload_with_game_type_guide(*, root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(payload)
+    guide = load_game_type_guide(root=root, payload=updated)
+    if guide.get("path"):
+        updated["game_type_guide_path"] = guide["path"]
+        updated["game_type_guide_content"] = guide["content"]
+        parsed = parse_game_type_guide(guide["content"], game_type=guide["game_type"], path=guide["path"])
+        updated["game_type_specifics"] = normalize_game_type_specifics(updated, guide=parsed)
+    elif updated.get("game_type_specifics"):
+        updated["game_type_specifics"] = normalize_game_type_specifics(updated)
+    return updated
+
+
+def missing_game_type_specific_question_names(payload: dict[str, Any]) -> list[str]:
+    specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
+    missing = []
+    for section in list(specifics.get("selected_sections") or []):
+        if isinstance(section, dict) and not str(section.get("answer") or "").strip():
+            missing.append(f"game_type_specifics.{section.get('id')}")
     return missing
 
 
@@ -202,9 +385,25 @@ def required_questions_for_missing_payload(payload: dict[str, Any]) -> list[dict
         "hypothesis": "prototype hypothesis",
         "core_player_fantasy": "core player fantasy",
         "minimum_playable_loop": "minimum playable loop",
+        "game_feature": "game feature / gameplay uniqueness",
+        "core_gameplay_loop": "core gameplay loop",
+        "win_fail_conditions": "win / fail conditions",
         "success_criteria": "success criteria (comma-separated if multiple)",
     }
-    return [{"id": key, "prompt": prompts[key]} for key in required_field_names(normalized)]
+    questions = [{"id": key, "prompt": prompts[key]} for key in required_field_names(normalized)]
+    if not questions:
+        specifics = normalized.get("game_type_specifics") if isinstance(normalized.get("game_type_specifics"), dict) else {}
+        by_id = {
+            str(section.get("id") or ""): section
+            for section in list(specifics.get("selected_sections") or [])
+            if isinstance(section, dict)
+        }
+        for key in missing_game_type_specific_question_names(normalized):
+            section = by_id.get(key.split(".", 1)[1]) or {}
+            title = str(section.get("title") or key)
+            prompt = str(section.get("prompt") or "Describe the prototype-relevant game type specifics.")
+            questions.append({"id": key, "prompt": f"{title}: {prompt}"})
+    return questions
 
 
 def active_state_path(*, repo_root: Path, slug: str) -> Path:
@@ -215,6 +414,20 @@ def write_active_state(*, repo_root: Path, slug: str, payload: dict[str, Any]) -
     path = active_state_path(repo_root=repo_root, slug=slug)
     write_json(path, payload)
     return path
+
+
+def load_game_type_guide(*, root: Path, payload: dict[str, Any]) -> dict[str, str]:
+    game_type = sanitize_slug(str(payload.get("game_type") or ""))
+    if not game_type:
+        return {"game_type": "", "path": "", "content": ""}
+    guide = root / "docs" / "game-type-guides" / f"{game_type}.md"
+    if not guide.exists():
+        return {"game_type": game_type, "path": "", "content": ""}
+    return {
+        "game_type": game_type,
+        "path": str(guide.relative_to(root)).replace("\\", "/"),
+        "content": guide.read_text(encoding="utf-8"),
+    }
 
 
 def _score_text(value: Any) -> str:
@@ -408,10 +621,21 @@ def _build_confirmation_message(
         f"Hypothesis: {payload.get('hypothesis') or '(missing)'}",
         f"Core player fantasy: {payload.get('core_player_fantasy') or '(missing)'}",
         f"Minimum playable loop: {payload.get('minimum_playable_loop') or '(missing)'}",
+        f"Game feature: {payload.get('game_feature') or '(missing)'}",
+        f"Core gameplay loop: {payload.get('core_gameplay_loop') or '(missing)'}",
+        f"Win / fail conditions: {payload.get('win_fail_conditions') or '(missing)'}",
         f"Success criteria: {', '.join(payload.get('success_criteria') or []) or '(missing)'}",
         f"Hard intake score: {intake_score['total_score']}/{intake_score['max_score']}",
         f"Hard recommendation: {intake_score['recommendation']}",
     ]
+    specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
+    selected_sections = [item for item in list(specifics.get("selected_sections") or []) if isinstance(item, dict)]
+    if selected_sections:
+        lines.append(f"Game type guide: {specifics.get('guide_path') or '(missing)'}")
+        for section in selected_sections:
+            title = str(section.get("title") or section.get("id") or "Game type section")
+            answer = str(section.get("answer") or "(missing)")
+            lines.append(f"{title}: {answer}")
     for item in intake_score["dimensions"]:
         lines.append(f"{item['label']}: {item['score']}/{item['max_score']}")
     if llm_review and llm_review.get("status") == "ok":
@@ -493,6 +717,12 @@ def _ensure_prototype_record(root: Path, payload: dict[str, Any]) -> tuple[int, 
         str(payload["core_player_fantasy"]),
         "--minimum-playable-loop",
         str(payload["minimum_playable_loop"]),
+        "--game-feature",
+        str(payload["game_feature"]),
+        "--core-gameplay-loop",
+        str(payload["core_gameplay_loop"]),
+        "--win-fail-conditions",
+        str(payload["win_fail_conditions"]),
         "--decision",
         str(payload["decision"]),
         "--next-step",
@@ -514,6 +744,17 @@ def _ensure_prototype_record(root: Path, payload: dict[str, Any]) -> tuple[int, 
         cmd += ["--discard-signal", str(item)]
     for item in payload.get("evidence") or []:
         cmd += ["--evidence", str(item)]
+    specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
+    if specifics.get("game_type"):
+        cmd += ["--game-type-specific-game-type", str(specifics.get("game_type"))]
+    if specifics.get("guide_path"):
+        cmd += ["--game-type-specific-guide-path", str(specifics.get("guide_path"))]
+    for section in list(specifics.get("selected_sections") or []):
+        if isinstance(section, dict):
+            title = str(section.get("title") or section.get("id") or "").strip()
+            answer = str(section.get("answer") or "").strip()
+            if title or answer:
+                cmd += ["--game-type-specific-section", f"{title}: {answer}"]
     return _run(cmd, cwd=root)
 
 
@@ -594,7 +835,21 @@ def _split_csv(value: str) -> list[str]:
 def _apply_answers(payload: dict[str, Any], answers: dict[str, str]) -> dict[str, Any]:
     updated = dict(payload)
     for key, value in answers.items():
-        if key == "slug":
+        if key.startswith("game_type_specifics."):
+            specifics = updated.get("game_type_specifics") if isinstance(updated.get("game_type_specifics"), dict) else {}
+            sections = [dict(item) for item in list(specifics.get("selected_sections") or []) if isinstance(item, dict)]
+            target_id = key.split(".", 1)[1].strip()
+            found = False
+            for section in sections:
+                if str(section.get("id") or "") == target_id:
+                    section["answer"] = value.strip()
+                    found = True
+                    break
+            if not found:
+                sections.append({"id": target_id, "title": target_id.replace("_", " ").title(), "prompt": "", "answer": value.strip()})
+            specifics["selected_sections"] = sections
+            updated["game_type_specifics"] = specifics
+        elif key == "slug":
             updated[key] = sanitize_slug(value)
         elif key == "success_criteria":
             updated[key] = _split_csv(value)
@@ -670,8 +925,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if answers:
         payload = normalize_prototype_payload(_apply_answers(payload, answers))
+    payload = enrich_payload_with_game_type_guide(root=root, payload=payload)
+    if answers:
+        payload = normalize_prototype_payload(_apply_answers(payload, answers))
 
-    missing = required_field_names(payload)
+    missing = required_field_names(payload) + ([] if required_field_names(payload) else missing_game_type_specific_question_names(payload))
     if not prototype_file and not active_payload and not answers:
         questions = required_questions_for_missing_payload(payload)
         state = {
@@ -735,10 +993,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.self_check:
+        guide = load_game_type_guide(root=root, payload=payload)
         state = {
             "status": "self-check",
             "prototype_file": file_label,
             "prototype": payload,
+            "game_type_guide": guide,
             "prototype_intake_score": intake_score,
             "prototype_intake_llm_review": llm_review,
             "planned_days": [step["day"] for step in _day_steps(payload) if int(step["day"]) <= int(args.stop_after_day)],
@@ -746,6 +1006,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(state, ensure_ascii=False, indent=2))
         return 0
 
+    guide = load_game_type_guide(root=root, payload=payload)
+    if guide.get("path"):
+        payload["game_type_guide_path"] = guide["path"]
     record_rc, record_output = _ensure_prototype_record(root, payload)
     if record_rc != 0:
         print(record_output, end="")

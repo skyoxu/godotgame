@@ -21,6 +21,13 @@ This file is the repository map. It routes you to the right source document by t
 8. Newest file in `decision-logs/`
 9. If a local review pipeline already ran, `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json`
 
+
+## Game Project Metadata
+- Game Name: TBD
+- Game Type: TBD
+- Game Type Source: TBD
+- Game Type Guide: TBD
+
 ## Task Navigation
 - New session or resume failed work:
   - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)

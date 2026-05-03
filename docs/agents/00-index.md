@@ -110,3 +110,7 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 - `logs/ci/active-tasks/task-<id>.active.md` is the shortest task-scoped recovery pointer.
 - `py -3 scripts/python/dev_cli.py resume-task --task-id <id>` is the preferred full recovery entry because it summarizes the latest run plus matching `execution-plans/` and `decision-logs/`.
 - `logs/ci/<date>/sc-review-pipeline-task-<task>/latest.json` points to the latest local pipeline artifacts, including `summary.json`, `execution-context.json`, `repair-guide.*`, and `agent-review.*` when generated.
+
+## Prototype And Game Type Guides
+- `docs/game-type-guides/README.md` stores the extracted 24 BMAD/GDS game type guides.
+- `.agents/skills/prototype-7day-playable-godot-zh/SKILL.md` routes the Chinese 7-day playable prototype lane.
