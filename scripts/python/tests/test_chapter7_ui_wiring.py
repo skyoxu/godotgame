@@ -617,6 +617,20 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertEqual(0, rc)
         self.assertEqual([], payload["missing_done_task_refs"])
 
+
+    def test_writer_should_prefer_readme_repository_identity_over_generic_solution_name(self) -> None:
+        writer = _load_module("chapter7_ui_gdd_writer_module_for_repo_identity", "scripts/python/chapter7_ui_gdd_writer.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "GodotGame.sln").write_text("", encoding="utf-8")
+            (root / "README.md").write_text("# samplegame (Godot 4.5.1 + C#)\n", encoding="utf-8")
+
+            display = writer._repo_display_name(root)
+            slug = writer._repo_gdd_slug(root)
+
+        self.assertEqual("Samplegame", display)
+        self.assertEqual("SAMPLEGAME", slug)
+
     def test_writer_and_validator_should_support_custom_ui_gdd_path(self) -> None:
         collector = _load_module("collect_ui_wiring_inputs_module_for_custom_writer", "scripts/python/collect_ui_wiring_inputs.py")
         writer = _load_module("chapter7_ui_gdd_writer_module_for_custom_writer", "scripts/python/chapter7_ui_gdd_writer.py")
