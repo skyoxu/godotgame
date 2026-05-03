@@ -38,13 +38,15 @@ SKILLS = {
         "desc": "Run the fixed Chapter 3 task triplet generation and baseline workflow from workflow.md. Use when a business repo is initialized with authoritative Taskmaster triplet files, when new tasks are added, when requirements must be converted into task candidates, when coverage must be audited before triplet compilation, when tasks.json must be rebuilt from tasks_back.json and tasks_gameplay.json, or when task links, refs, triplet consistency, or semantic review tier baseline must be validated before Chapter 4 overlays.",
         "chapter": "3",
         "purpose": "create or refresh the authoritative task triplet baseline from requirement anchors, enriched task candidates, coverage audit, and triplet compilation before overlays, contracts, and Chapter 6 execution depend on it",
-        "default": "For new project initialization, extract requirement anchors, generate normalized task candidates, enrich them with repository evidence, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.",
-        "command": "py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/enrich_task_candidates.py && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>",
-        "evidence": "Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, enrich candidates from repository ADR/overlay/contract-event/test evidence, then audit coverage and validate the target repo directly.",
+        "default": "For new project initialization, extract requirement anchors, normalize them into implementation-shaped task intents, generate normalized task candidates, enrich them with repository evidence, audit coverage, compile a patch, then build or confirm all three task files and run the full baseline. For added tasks, run the same chain on changed sources and rerun the baseline before Chapter 4 or Chapter 6 uses the changed task set.",
+        "command": "py -3 scripts/python/extract_requirement_anchors.py --mode <init|add> --prd-path <path> --gdd-path <path> --epics-path <path> --stories-path <path> && py -3 scripts/python/normalize_task_intents.py --mode <init|add> && py -3 scripts/python/audit_task_intents_quality.py && py -3 scripts/python/generate_task_candidates_from_sources.py --mode <init|add> && py -3 scripts/python/enrich_task_candidates.py && py -3 scripts/python/audit_task_candidate_coverage.py && py -3 scripts/python/compile_task_triplet.py --mode <init|add>",
+        "evidence": "Chapter 3 depends on real requirements and triplet files. This template repo may not have business tasks, so use business-repo triplet structure as evidence, pass explicit PRD/GDD/epics/stories paths for each business repo, enrich candidates from repository ADR/overlay/contract-event/test evidence, then audit coverage and validate the target repo directly. Do not treat ADR or overlay files as default requirement sources; include them with --source-glob only when they are intentionally part of planning input.",
         "steps": [
             "Resolve whether the run is new project initialization or added-task refresh.",
-            "For new project initialization, prepare PRD, GDD, traceability, and rules-supporting docs before building task files.",
-            "Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults.",
+            "For new project initialization, prepare PRD, GDD, epics, stories, traceability, and rules-supporting docs before building task files.",
+            "Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults. Keep ADR/overlay sources out of default extraction unless explicitly requested.",
+            "Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids and source_refs.",
+            "Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, or oversized intent groups before compiling task views.",
             "Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.",
             "Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.",
             "Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.",
@@ -52,6 +54,7 @@ SKILLS = {
             "Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.",
             "Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.",
             "Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.",
+            "Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.",
             "When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.",
         ],
     },
@@ -60,11 +63,11 @@ SKILLS = {
         "desc": "Run the fixed Chapter 4 overlays and contracts baseline workflow from workflow.md. Use when a business repo needs overlay skeleton generation after a valid triplet baseline, overlay refs freezing, contract skeleton creation or adjustment, contract baseline validation, or idempotent overlay/contract recovery before Chapter 5 and Chapter 6.",
         "chapter": "4",
         "purpose": "establish overlay skeletons, freeze task overlay refs, and validate Game.Core contract baselines after the task triplet is valid",
-        "default": "Enter Chapter 4 only after Chapter 3.3 is clean. Use batch dry-run, batch simulate, outlier single-page repair, then limited apply; never start with full apply.",
+        "default": "Enter Chapter 4 only after the Chapter 3 triplet baseline is clean. Use batch dry-run, batch simulate, outlier single-page repair, then limited apply; never start with full apply.",
         "command": "py -3 scripts/python/sync_task_overlay_refs.py --prd-id <PRD-ID> --write && py -3 scripts/python/validate_overlay_execution.py --prd-id <PRD-ID> --strict-refs",
         "evidence": "Chapter 4 depends on real overlay and contract files. Use business-repo overlays and Game.Core/Contracts as structural evidence, but keep workflow.md as the execution policy source.",
         "steps": [
-            "Confirm Chapter 3.3 triplet baseline is clean before generating overlays.",
+            "Confirm the Chapter 3.9 triplet baseline is clean before generating overlays.",
             "Generate overlay skeletons through batch dry-run, batch simulate, single-page repair for outliers, and limited apply.",
             "Do not perform full apply in the first overlay pass, and do not mix acceptance rewrites into overlay generation.",
             "Freeze overlay refs with sync_task_overlay_refs and validate_overlay_execution, then rerun task refs and triplet validators.",
@@ -384,7 +387,7 @@ def evidence_markdown(repo: Path, repo_name: str) -> str:
         "",
         "### Chapter 4 Operational Conclusions",
         "",
-        "- Do not enter overlay generation unless the Chapter 3.3 triplet baseline is clean.",
+        "- Do not enter overlay generation unless the Chapter 3.9 triplet baseline is clean.",
         "- Use dry-run and simulate before apply; repair outliers before limited apply.",
         "- Freeze overlay refs after apply and rerun refs/triplet validators.",
         "- Keep contracts under Game.Core/Contracts and validate them before Chapter 5 or Chapter 6 depends on them.",
@@ -517,14 +520,16 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
         "3.0": "3.0 Choose the Chapter 3 route first",
         "3.1": "3.1 Prepare planning inputs",
         "3.2": "3.2 Extract requirement anchors",
-        "3.3": "3.3 Generate task candidates",
-        "3.4": "3.4 Enrich task candidates",
-        "3.5": "3.5 Audit the coverage matrix",
-        "3.6": "3.6 Compile a task triplet patch",
-        "3.7": "3.7 Build the authoritative triplet",
-        "3.8": "3.8 Validate the triplet baseline",
-        "3.9": "3.9 Standardize semantic review tier early",
-        "3.10": "3.10 Chapter 3 stop-loss",
+        "3.3": "3.3 Normalize task intents",
+        "3.4": "3.4 Generate task candidates",
+        "3.5": "3.5 Enrich task candidates",
+        "3.6": "3.6 Audit the coverage matrix",
+        "3.7": "3.7 Compile a task triplet patch",
+        "3.8": "3.8 Build the authoritative triplet",
+        "3.9": "3.9 Validate the triplet baseline",
+        "3.10": "3.10 Standardize semantic review tier early",
+        "3.11": "3.11 Chapter 3 stop-loss",
+        "3.12": "3.12 Optional regression check",
         "3.": "3. Phase 1: Task Triplet Initialization",
         "4.1": "4.1 Generate overlay skeletons only after the triplet is valid",
         "4.2": "4.2 Freeze overlay refs after apply",
@@ -567,6 +572,10 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
     seen = set()
     for line in commands + artifacts:
         ascii_line = line.encode("ascii", errors="ignore").decode("ascii").strip()
+        if ascii_line.startswith("- "):
+            ascii_line = ascii_line[2:].strip()
+        if ascii_line.startswith("`") and ascii_line.endswith("`"):
+            ascii_line = ascii_line[1:-1].strip()
         if not ascii_line or ascii_line in seen:
             continue
         seen.add(ascii_line)
