@@ -20,7 +20,7 @@ Operate Chapter 2 from `workflow.md` idempotently for a business repository that
 
 ## Repository Layout
 
-Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/sanguo`, and `<parent>/newrouge`.
+Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
 
 ## Purpose
 
@@ -63,16 +63,13 @@ Chapter 2 is an early bootstrap workflow. Prefer direct repository checks and pr
 
 ## Business Evidence References
 
-Generated evidence lives under `references/business-repos/` and may include:
-
-- `references/business-repos/sanguo.md`
-- `references/business-repos/newrouge.md`
+Generated evidence may live under `references/business-repos/<repo>.md`. These files are optional regression evidence from known business repositories; they must not define production generation rules.
 
 ## Maintenance
 
-Refresh evidence after new business-repo logs are generated:
+Refresh optional evidence after new business-repo logs are generated:
 
 ```powershell
-py -3 scripts/python/update_workflow_chapter_skills.py sanguo
-py -3 scripts/python/update_workflow_chapter_skills.py newrouge
+py -3 scripts/python/update_workflow_chapter_skills.py <business-repo>
+py -3 scripts/python/update_workflow_chapter_skills.py <business-repo-a>,<business-repo-b>
 ```
