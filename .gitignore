@@ -89,3 +89,33 @@ cifix*.*
 docs/workflows/contracts-catalog-prd-*.md
 docs/workflows/generated/
 docs/workflows/generated/**
+
+# Local BMAD installation
+_bmad/
+
+# Local agent skill installation
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/bmad-agent-game-architect/
+!.agents/skills/bmad-agent-game-architect/**
+!.agents/skills/bmad-agent-game-designer/
+!.agents/skills/bmad-agent-game-designer/**
+!.agents/skills/bmad-agent-game-dev/
+!.agents/skills/bmad-agent-game-dev/**
+!.agents/skills/bmad-agent-game-solo-dev/
+!.agents/skills/bmad-agent-game-solo-dev/**
+!.agents/skills/bmad-agent-game-tech-writer/
+!.agents/skills/bmad-agent-game-tech-writer/**
+!.agents/skills/workflow-chapter2-repository-bootstrap/
+!.agents/skills/workflow-chapter2-repository-bootstrap/**
+!.agents/skills/workflow-chapter3-task-triplet-baseline/
+!.agents/skills/workflow-chapter3-task-triplet-baseline/**
+!.agents/skills/workflow-chapter4-overlays-contracts-baseline/
+!.agents/skills/workflow-chapter4-overlays-contracts-baseline/**
+!.agents/skills/workflow-chapter5-semantics-stabilization/
+!.agents/skills/workflow-chapter5-semantics-stabilization/**
+!.agents/skills/workflow-chapter6-single-task-daily-loop/
+!.agents/skills/workflow-chapter6-single-task-daily-loop/**
+!.agents/skills/workflow-chapter7-ui-wiring-closure/
+!.agents/skills/workflow-chapter7-ui-wiring-closure/**

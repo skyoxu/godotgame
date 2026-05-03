@@ -66,6 +66,7 @@ This file is the repository map. It routes you to the right source document by t
 - [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
 - [Chapter 7 UI Wiring GDD](docs/gdd/ui-gdd-flow.md)
+- [Chapter 7 Profile Guide](docs/workflows/chapter7-profile-guide.md)
 - [Prototype Workspace](docs/prototypes/README.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
   - [DELIVERY_PROFILE](DELIVERY_PROFILE.md)
@@ -169,6 +170,7 @@ This file is the repository map. It routes you to the right source document by t
 - If deeper inspection is still needed, run `py -3 scripts/python/dev_cli.py inspect-run --kind pipeline --task-id <id>` or inspect `execution-context.json`, `repair-guide.json`, and `agent-review.json` under the task run directory.
 - Single-task Chapter 6 orchestrator: `py -3 scripts/python/dev_cli.py run-single-task-chapter6 --task-id <id> --godot-bin "$env:GODOT_BIN" --delivery-profile <profile>`
 - Chapter 7 UI wiring orchestrator: `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile <profile>`
+- Chapter 7 profile guide: `docs/workflows/chapter7-profile-guide.md`
 - Prototype-lane TDD entry: `py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage <red|green|refactor> ...`
 - Prototype top-level router: `py -3 scripts/python/dev_cli.py run-prototype-workflow --prototype-file docs/prototypes/<your-file>.md`
 - Agent-to-agent review rebuild: `py -3 scripts/sc/agent_to_agent_review.py --task-id <id>`

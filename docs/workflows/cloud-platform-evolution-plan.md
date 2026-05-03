@@ -476,16 +476,27 @@ Recommended game-specific Phase A additions:
      - what proves the prototype should be promoted, iterated, or killed
    - This belongs in skills/docs, not in a new execution engine.
 
-2. Lightweight game-QA checklist and playtest-plan guidance
-   - The repository already has stronger executable closure than role-only systems in deterministic gating, recovery, rerun stop-loss, and sidecar-driven follow-up.
-   - What it can still absorb is a thin game-specific QA layer for:
-     - gameplay feel
-     - progression and balance sanity
-     - performance hot spots
-     - manual playtest scope
-   - Keep `6.7` / `6.8` as the execution backbone. Add game-specific QA guidance around them rather than replacing them.
+2. Reusable repair protocol layer above repeated failure families
+   - The repository should keep treating repeated repair experience as a first-class asset instead of re-solving the same failure pattern with fresh prompt work every time.
+   - When the same classes of breakage recur, Phase A should prefer script-owned or sidecar-owned protocolization for:
+     - stable failure-family naming
+     - reusable stop-loss and next-action rules
+     - repair checklists or guided narrow-lane reruns
+     - compact recovery summaries that survive context reset
+   - The point is not to remove LLM review. The point is to convert proven repair experience into reusable protocol so later runs become cheaper, faster, and less drift-prone.
+   - Good candidates are repeated `artifact_integrity`, rerun-stop-loss, reviewer-timeout, acceptance-extract, or task-scoped test-fallback families.
 
-3. Scrum-style sprint summary layer above structured task data
+3. Dynamic playability validation before static code correctness expansion
+   - For prototype-facing and early game-facing work, the repository should prefer proving that the thing is playable, understandable, and worth keeping before paying for wider static closure.
+   - Static correctness still matters, but it should follow evidence that the playable loop is real enough to deserve heavier closure.
+   - In practice this means Phase A should expose lightweight runtime evidence surfaces such as:
+     - can the player complete the minimum loop
+     - is the interaction understandable without explanation
+     - do runtime logs, screenshots, clips, or tiny playtest notes confirm the intended feel
+     - does the prototype deserve promotion, iteration, or discard
+   - This fits the current repository shape well because it strengthens prototype lane and game-QA guidance without weakening Chapter 6 deterministic and review gates.
+
+4. Scrum-style sprint summary layer above structured task data
    - Keep `tasks.json`, `tasks_back.json`, `tasks_gameplay.json`, overlays, and sidecars as the machine-readable execution substrate.
    - Do not replace that substrate with a role-style scrum agent.
    - Instead, add a thin summary layer that makes the current slice easier to read:
@@ -496,6 +507,11 @@ Recommended game-specific Phase A additions:
    - This should remain a summary/productivity layer, not a second planner.
 
 Placement rule for these game-specific additions:
+
+Additional absorption rule for Phase A and Prototype work:
+
+- if a lesson comes from repeated repair work, prefer turning it into a named protocol, sidecar field, retry policy, or narrow-lane rule before solving it again with free-form prompting
+- if a decision is still about "is this actually playable / understandable / worth keeping", prefer dynamic playable evidence first and postpone heavier static closure until promotion is justified
 
 - if it changes execution authority, stop-loss, quality gates, or recovery routing, it stays in scripts
 - if it helps a game-focused agent use existing scripts better, it belongs in skills/docs

@@ -7,6 +7,7 @@ import argparse
 import datetime as dt
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -241,75 +242,73 @@ def build_prototype_intake_score(payload: dict[str, Any]) -> dict[str, Any]:
     archive_items = [item for item in payload.get("archive_signals") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
     discard_items = [item for item in payload.get("discard_signals") or [] if _score_text(item) and _score_text(item).upper() != "TBD"]
 
-    fantasy_score = 20 if (
-        len(hypothesis_text) >= 8
-        and len(fantasy_text) >= 12
-    ) else 8
-    loop_score = 20 if (
-        len(loop_text) >= 16
-        and len(success_items) >= 1
-    ) else 8
-    scope_score = 20 if (
-        len(scope_in_items) >= 1
-        and len(scope_out_items) >= 1
-    ) else 8
-    validation_score = 20 if (
-        len(success_items) >= 1
-        and (
-            len(evidence_items) >= 1
-            or len(promote_items) >= 1
-        )
-    ) else 8
-    execution_score = 20 if (
-        len(promote_items) >= 1
-        and len(archive_items) >= 1
-        and len(discard_items) >= 1
-        and next_step_text
-        and next_step_text != "Proceed to the next prototype workflow confirmation step."
-    ) else 8
+    feasibility_score = 0
+    if len(hypothesis_text) >= 20 and len(loop_text) >= 40:
+        feasibility_score += 8
+    elif len(hypothesis_text) >= 10 and len(loop_text) >= 20:
+        feasibility_score += 4
+    if len(success_items) >= 2:
+        feasibility_score += 6
+    elif len(success_items) == 1:
+        feasibility_score += 3
+    if len(scope_in_items) >= 2 and len(scope_out_items) >= 2:
+        feasibility_score += 6
+    elif len(scope_in_items) >= 1 and len(scope_out_items) >= 1:
+        feasibility_score += 3
+    if next_step_text and next_step_text != "Proceed to the next prototype workflow confirmation step.":
+        feasibility_score += 5 if len(next_step_text) >= 12 else 2
+    feasibility_score = min(feasibility_score, 25)
+
+    completeness_score = 0
+    if len(hypothesis_text) >= 20:
+        completeness_score += 5
+    elif hypothesis_text:
+        completeness_score += 2
+    if len(fantasy_text) >= 30:
+        completeness_score += 5
+    elif fantasy_text:
+        completeness_score += 2
+    if len(loop_text) >= 40:
+        completeness_score += 5
+    elif loop_text:
+        completeness_score += 2
+    if len(success_items) >= 2:
+        completeness_score += 4
+    elif len(success_items) == 1:
+        completeness_score += 2
+    if len(promote_items) >= 1 and len(archive_items) >= 1 and len(discard_items) >= 1:
+        completeness_score += 3
+    elif len(promote_items) >= 1:
+        completeness_score += 1
+    if len(evidence_items) >= 1:
+        completeness_score += 3
+    completeness_score = min(completeness_score, 25)
 
     dimensions = [
         {
-            "id": "fantasy_clarity",
-            "label": "Fantasy clarity",
-            "score": fantasy_score,
-            "max_score": 20,
-            "focus": "Hypothesis and core player fantasy are specific enough for an indie prototype.",
+            "id": "prototype_feasibility",
+            "label": "Prototype feasibility",
+            "score": feasibility_score,
+            "max_score": 25,
+            "focus": "The file is concrete enough for the top-level prototype router to drive Day 1 to Day 5 with low ambiguity.",
         },
         {
-            "id": "loop_clarity",
-            "label": "Loop clarity",
-            "score": loop_score,
-            "max_score": 20,
-            "focus": "Minimum playable loop and success criteria describe a concrete playable slice.",
-        },
-        {
-            "id": "scope_discipline",
-            "label": "Scope discipline",
-            "score": scope_score,
-            "max_score": 20,
-            "focus": "The prototype keeps a small indie-friendly boundary with explicit in and out scope.",
-        },
-        {
-            "id": "validation_readiness",
-            "label": "Validation readiness",
-            "score": validation_score,
-            "max_score": 20,
-            "focus": "The prototype already defines observable validation signals or evidence paths.",
-        },
-        {
-            "id": "execution_readiness",
-            "label": "Execution readiness",
-            "score": execution_score,
-            "max_score": 20,
-            "focus": "The prototype already frames next-step and exit decisions for a small team.",
+            "id": "content_completeness",
+            "label": "Content completeness",
+            "score": completeness_score,
+            "max_score": 25,
+            "focus": "The prototype file contains enough structured information to avoid relying on hidden assumptions.",
         },
     ]
     total_score = sum(int(item["score"]) for item in dimensions)
-    recommendation = "ready-for-tdd" if total_score >= 80 else "refine-before-tdd"
+    recommendation = (
+        "ready-for-tdd"
+        if total_score >= 36 and feasibility_score >= 18 and completeness_score >= 14
+        else "refine-before-tdd"
+    )
     return {
         "total_score": total_score,
-        "max_score": 100,
+        "max_score": 50,
         "recommendation": recommendation,
         "dimensions": dimensions,
     }
@@ -342,13 +341,21 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 def _build_llm_review_prompt(payload: dict[str, Any]) -> str:
     return (
         "You are reviewing an indie game prototype intake, not a full PRD/GDD.\n"
-        "Score only whether the prototype information is clear enough for a small studio to enter a short TDD prototype loop.\n"
-        "Use exactly five dimensions, 20 points each: fantasy_clarity, loop_clarity, scope_discipline, validation_readiness, execution_readiness.\n"
+        "Score only the market and commercialization aspects that cannot be hard-scored reliably with deterministic rules.\n"
+        "Use exactly two dimensions, 25 points each: market_potential, commercialization_cost.\n"
+        "Be conservative. Do not hand out high scores just because required fields are filled.\n"
+        "Market potential and commercialization cost must be judged only from statements present in the file, not from outside knowledge.\n"
         "Do not require a complete PRD, GDD, lore bible, production roadmap, economy design, or full architecture.\n"
         "Return JSON only with keys: total_score, max_score, recommendation, dimensions, top_gaps.\n"
-        "recommendation must be ready-for-tdd or refine-before-tdd.\n\n"
+        "recommendation must be one of: market-strong, market-cautious, commercialization-risky.\n\n"
         f"Prototype intake:\n{_json_block(payload)}\n"
     )
+
+
+def _resolve_codex_command() -> str:
+    if sys.platform.startswith("win"):
+        return shutil.which("codex.cmd") or shutil.which("codex") or "codex"
+    return shutil.which("codex") or "codex"
 
 
 def build_prototype_intake_llm_review(
@@ -367,7 +374,7 @@ def build_prototype_intake_llm_review(
     out_path = root / "logs" / "ci" / "active-prototypes" / f"{sanitize_slug(payload.get('slug') or 'prototype')}.llm-intake-review.md"
     prompt = _build_llm_review_prompt(payload)
     cmd = [
-        "codex",
+        _resolve_codex_command(),
         "exec",
         "-s",
         "read-only",
@@ -402,20 +409,32 @@ def _build_confirmation_message(
         f"Core player fantasy: {payload.get('core_player_fantasy') or '(missing)'}",
         f"Minimum playable loop: {payload.get('minimum_playable_loop') or '(missing)'}",
         f"Success criteria: {', '.join(payload.get('success_criteria') or []) or '(missing)'}",
-        f"Prototype intake score: {intake_score['total_score']}/{intake_score['max_score']}",
-        f"Recommendation: {intake_score['recommendation']}",
+        f"Hard intake score: {intake_score['total_score']}/{intake_score['max_score']}",
+        f"Hard recommendation: {intake_score['recommendation']}",
     ]
     for item in intake_score["dimensions"]:
         lines.append(f"{item['label']}: {item['score']}/{item['max_score']}")
     if llm_review and llm_review.get("status") == "ok":
         review = dict(llm_review.get("review") or {})
-        lines.append(f"LLM intake score: {review.get('total_score', 'unknown')}/{review.get('max_score', 100)}")
-        lines.append(f"LLM recommendation: {review.get('recommendation', 'unknown')}")
+        lines.append(f"AI market/commercial score: {review.get('total_score', 'unknown')}/{review.get('max_score', 50)}")
+        lines.append(f"AI market/commercial recommendation: {review.get('recommendation', 'unknown')}")
+        for item in list(review.get("dimensions") or []):
+            if isinstance(item, dict):
+                label = str(item.get("label") or item.get("id") or "AI dimension")
+                score = item.get("score", "unknown")
+                max_score = item.get("max_score", 25)
+                lines.append(f"{label}: {score}/{max_score}")
+            else:
+                text = str(item).strip()
+                if text:
+                    lines.append(text)
         top_gaps = [str(item) for item in list(review.get("top_gaps") or []) if str(item).strip()]
         if top_gaps:
-            lines.append(f"LLM top gaps: {'; '.join(top_gaps[:3])}")
+            lines.append(f"AI top gaps: {'; '.join(top_gaps[:3])}")
+    elif llm_review and llm_review.get("status") == "skipped":
+        lines.append("AI market/commercial review: not run")
     elif llm_review and llm_review.get("status") not in {"skipped", ""}:
-        lines.append(f"LLM intake review: {llm_review.get('status')} ({llm_review.get('reason') or llm_review.get('error') or 'see active state'})")
+        lines.append(f"AI market/commercial review: {llm_review.get('status')} ({llm_review.get('reason') or llm_review.get('error') or 'see active state'})")
     return "\n".join(lines)
 
 

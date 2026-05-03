@@ -209,26 +209,14 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
         cmd += ["--related-task-id", item]
     if args.hypothesis:
         cmd += ["--hypothesis", args.hypothesis]
-    if getattr(args, "core_player_fantasy", ""):
-        cmd += ["--core-player-fantasy", args.core_player_fantasy]
-    if getattr(args, "minimum_playable_loop", ""):
-        cmd += ["--minimum-playable-loop", args.minimum_playable_loop]
     for item in args.scope_in:
         cmd += ["--scope-in", item]
     for item in args.scope_out:
         cmd += ["--scope-out", item]
     for item in args.success_criteria:
         cmd += ["--success-criteria", item]
-    for item in getattr(args, "promote_signal", []):
-        cmd += ["--promote-signal", item]
-    for item in getattr(args, "archive_signal", []):
-        cmd += ["--archive-signal", item]
-    for item in getattr(args, "discard_signal", []):
-        cmd += ["--discard-signal", item]
     for item in args.evidence:
         cmd += ["--evidence", item]
-    if getattr(args, "decision", ""):
-        cmd += ["--decision", args.decision]
     if args.next_step:
         cmd += ["--next-step", args.next_step]
     if args.create_record_only:
@@ -251,46 +239,38 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
 
 
 def build_run_prototype_workflow_cmd(args) -> list[str]:
-    cmd = [
-        "py",
-        "-3",
-        "scripts/python/run_prototype_workflow.py",
-    ]
-    if getattr(args, "prototype_file", ""):
+    cmd = ["py", "-3", "scripts/python/run_prototype_workflow.py"]
+    if args.prototype_file:
         cmd += ["--prototype-file", args.prototype_file]
-    if getattr(args, "confirm", False):
-        cmd.append("--confirm")
-    for item in getattr(args, "set", []) or []:
+    for item in args.set:
         cmd += ["--set", item]
-    if getattr(args, "godot_bin", ""):
-        cmd += ["--godot-bin", args.godot_bin]
-    if int(getattr(args, "stop_after_day", 5) or 5) != 5:
-        cmd += ["--stop-after-day", str(args.stop_after_day)]
-    if getattr(args, "resume_active", ""):
-        cmd += ["--resume-active", args.resume_active]
-    if getattr(args, "score_engine", "deterministic") != "deterministic":
+    if args.assume_yes:
+        cmd.append("--assume-yes")
+    if args.force:
+        cmd.append("--force")
+    if args.dry_run:
+        cmd.append("--dry-run")
+    if args.score_engine:
         cmd += ["--score-engine", args.score_engine]
-    if int(getattr(args, "score_timeout_sec", 180) or 180) != 180:
+    if args.score_timeout_sec is not None:
         cmd += ["--score-timeout-sec", str(args.score_timeout_sec)]
-    if getattr(args, "self_check", False):
-        cmd.append("--self-check")
     return cmd
 
 
-def build_create_prototype_scene_cmd(args) -> list[str]:
+def build_apply_chapter7_status_patch_cmd(args) -> list[str]:
     cmd = [
         "py",
         "-3",
-        "scripts/python/create_prototype_scene.py",
-        "--slug",
-        args.slug,
+        "scripts/python/apply_chapter7_status_patch.py",
+        "--patch",
+        args.patch,
     ]
-    if args.prototype_root:
-        cmd += ["--prototype-root", args.prototype_root]
-    if args.scene_root:
-        cmd += ["--scene-root", args.scene_root]
-    if getattr(args, "force", False):
-        cmd.append("--force")
+    if args.dry_run:
+        cmd.append("--dry-run")
+    if args.out_json:
+        cmd += ["--out-json", args.out_json]
+    if args.self_check:
+        cmd.append("--self-check")
     return cmd
 
 
@@ -481,15 +461,68 @@ def build_run_chapter7_ui_wiring_cmd(args) -> list[str]:
         "-3",
         "scripts/python/run_chapter7_ui_wiring.py",
     ]
-    if getattr(args, "repo_root", ""):
+    if getattr(args, 'repo_root', ''):
         cmd += ["--repo-root", args.repo_root]
-    if getattr(args, "delivery_profile", ""):
+    if getattr(args, 'delivery_profile', ''):
         cmd += ["--delivery-profile", args.delivery_profile]
-    if getattr(args, "write_doc", False):
+    if getattr(args, 'tasks_json_path', ''):
+        cmd += ["--tasks-json-path", args.tasks_json_path]
+    if getattr(args, 'tasks_back_path', ''):
+        cmd += ["--tasks-back-path", args.tasks_back_path]
+    if getattr(args, 'tasks_gameplay_path', ''):
+        cmd += ["--tasks-gameplay-path", args.tasks_gameplay_path]
+    if getattr(args, 'overlay_root_path', ''):
+        cmd += ["--overlay-root-path", args.overlay_root_path]
+    if getattr(args, 'ui_gdd_flow_path', ''):
+        cmd += ["--ui-gdd-flow-path", args.ui_gdd_flow_path]
+    if getattr(args, 'alignment_audit_path', ''):
+        cmd += ["--alignment-audit-path", args.alignment_audit_path]
+    if getattr(args, 'wiring_audit_path', ''):
+        cmd += ["--wiring-audit-path", args.wiring_audit_path]
+    if getattr(args, 'chapter7_profile_path', ''):
+        cmd += ["--chapter7-profile-path", args.chapter7_profile_path]
+    if getattr(args, 'repo_label', ''):
+        cmd += ["--repo-label", args.repo_label]
+    if getattr(args, 'back_story_id', ''):
+        cmd += ["--back-story-id", args.back_story_id]
+    if getattr(args, 'gameplay_story_id', ''):
+        cmd += ["--gameplay-story-id", args.gameplay_story_id]
+    if getattr(args, 'write_doc', False):
         cmd.append("--write-doc")
-    if getattr(args, "out_json", ""):
+    if getattr(args, 'create_tasks', False):
+        cmd.append("--create-tasks")
+    if getattr(args, 'out_json', ''):
         cmd += ["--out-json", args.out_json]
-    if getattr(args, "self_check", False):
+    if getattr(args, 'self_check', False):
+        cmd.append("--self-check")
+    return cmd
+
+
+def build_run_chapter7_backlog_gap_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/run_chapter7_backlog_gap.py",
+    ]
+    if getattr(args, 'repo_root', ''):
+        cmd += ["--repo-root", args.repo_root]
+    if getattr(args, 'delivery_profile', ''):
+        cmd += ["--delivery-profile", args.delivery_profile]
+    if getattr(args, 'tasks_json_path', ''):
+        cmd += ["--tasks-json-path", args.tasks_json_path]
+    if getattr(args, 'tasks_back_path', ''):
+        cmd += ["--tasks-back-path", args.tasks_back_path]
+    if getattr(args, 'tasks_gameplay_path', ''):
+        cmd += ["--tasks-gameplay-path", args.tasks_gameplay_path]
+    if getattr(args, 'design_doc_path', ''):
+        cmd += ["--design-doc-path", args.design_doc_path]
+    if getattr(args, 'epics_doc_path', ''):
+        cmd += ["--epics-doc-path", args.epics_doc_path]
+    if getattr(args, 'duplicate_audit_path', ''):
+        cmd += ["--duplicate-audit-path", args.duplicate_audit_path]
+    if getattr(args, 'out_json', ''):
+        cmd += ["--out-json", args.out_json]
+    if getattr(args, 'self_check', False):
         cmd.append("--self-check")
     return cmd
 
