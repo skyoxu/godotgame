@@ -27,6 +27,7 @@ from dev_cli_builders import (
     build_new_execution_plan_cmd,
     build_inspect_run_cmd,
     build_chapter6_route_cmd,
+    build_create_prototype_scene_cmd,
     build_apply_chapter7_status_patch_cmd,
     build_run_chapter7_backlog_gap_cmd,
     build_preflight_cmd,
@@ -278,6 +279,12 @@ def cmd_run_prototype_workflow(args: argparse.Namespace) -> int:
     """Run the top-level prototype workflow router."""
 
     return run(build_run_prototype_workflow_cmd(args))
+
+
+def cmd_create_prototype_scene(args: argparse.Namespace) -> int:
+    """Create a minimal Godot prototype scene scaffold."""
+
+    return run(build_create_prototype_scene_cmd(args))
 
 
 def cmd_detect_project_stage(args: argparse.Namespace) -> int:
@@ -562,6 +569,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--owner", default="operator")
     p_proto.add_argument("--related-task-id", action="append", default=[])
     p_proto.add_argument("--hypothesis", default="TODO: describe the prototype hypothesis.")
+    p_proto.add_argument("--core-player-fantasy", default="TODO: describe what the player should feel or understand in the first minute.")
+    p_proto.add_argument("--minimum-playable-loop", default="TODO: describe the smallest end-to-end loop the player must complete.")
+    p_proto.add_argument("--game-feature", default="TODO: describe the gameplay uniqueness.")
+    p_proto.add_argument("--core-gameplay-loop", default="TODO: describe the repeated gameplay loop.")
+    p_proto.add_argument("--win-fail-conditions", default="TODO: define win and fail conditions.")
+    p_proto.add_argument("--game-type-specific-game-type", default="")
+    p_proto.add_argument("--game-type-specific-guide-path", default="")
+    p_proto.add_argument("--game-type-specific-section", action="append", default=[])
     p_proto.add_argument("--scope-in", action="append", default=[])
     p_proto.add_argument("--scope-out", action="append", default=[])
     p_proto.add_argument("--success-criteria", action="append", default=[])
@@ -577,6 +592,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto.add_argument("--out-dir", default="")
     p_proto.set_defaults(func=cmd_run_prototype_tdd)
 
+    # create-prototype-scene
+    p_proto_scene = sub.add_parser(
+        "create-prototype-scene",
+        help="create a minimal Godot prototype scene scaffold under Game.Godot/Prototypes",
+    )
+    p_proto_scene.add_argument("--slug", required=True)
+    p_proto_scene.add_argument("--scene-root", default="Node2D")
+    p_proto_scene.add_argument("--prototype-root", default="Game.Godot/Prototypes")
+    p_proto_scene.set_defaults(func=cmd_create_prototype_scene)
+
     # run-prototype-workflow
     p_proto_workflow = sub.add_parser(
         "run-prototype-workflow",
@@ -584,11 +609,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_proto_workflow.add_argument("--prototype-file", default="")
     p_proto_workflow.add_argument("--set", action="append", default=[])
-    p_proto_workflow.add_argument("--assume-yes", action="store_true")
-    p_proto_workflow.add_argument("--force", action="store_true")
-    p_proto_workflow.add_argument("--dry-run", action="store_true")
-    p_proto_workflow.add_argument("--score-engine", default="none", choices=["none", "codex"])
-    p_proto_workflow.add_argument("--score-timeout-sec", type=int, default=90)
+    p_proto_workflow.add_argument("--confirm", action="store_true")
+    p_proto_workflow.add_argument("--godot-bin", default="")
+    p_proto_workflow.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5])
+    p_proto_workflow.add_argument("--resume-active", default="")
+    p_proto_workflow.add_argument("--score-engine", default="deterministic", choices=["deterministic", "codex", "hybrid"])
+    p_proto_workflow.add_argument("--score-timeout-sec", type=int, default=180)
+    p_proto_workflow.add_argument("--self-check", action="store_true")
     p_proto_workflow.set_defaults(func=cmd_run_prototype_workflow)
 
     # detect-project-stage

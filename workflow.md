@@ -113,6 +113,25 @@ py -3 scripts/python/dev_cli.py run-prototype-tdd --slug <slug> --stage red --do
 - `docs/PROJECT_DOCUMENTATION_INDEX.md`
 - `docs/agents/00-index.md`
 
+### 2.2a Game Project Metadata Initialization
+
+After name/path cleanup and entry-index repair, create game-document directories and project metadata without entering Chapter 3 through Chapter 7.
+
+Required actions:
+
+- Create `docs/prd/`, `docs/gdd/`, and `docs/prototypes/` as the primary PRD, GDD, and prototype document directories.
+- Ask the player in two separate steps:
+  1. Game name.
+  2. Game type or reference game name.
+- Classify the second answer with `codex exec` into exactly one of the 24 canonical game type ids in `docs/game-type-guides/game-types.csv`.
+- Write the result to `AGENTS.md` and `README.md` under `## Game Project Metadata`:
+  - `Game Name: <player input>`
+  - `Game Type: <canonical id>`
+  - `Game Type Source: <player input>`
+  - `Game Type Guide: docs/game-type-guides/<canonical id>.md`
+
+This step only feeds project-health, GDD/PRD/prototype routing, and prototype lane. It must not create task triplets, overlay refs, acceptance refs, or Chapter 3-7 work.
+
 ### 2.3 立刻运行仓库级硬检查
 
 不要等到 commit 前再跑。

@@ -36,6 +36,9 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --set slug=combat-loop --
 - `core_player_fantasy`
 - `minimum_playable_loop`
 - `success_criteria`
+- `game_feature`
+- `core_gameplay_loop`
+- `win_fail_conditions`
 
 以下字段如果没填，会自动使用系统默认值，不要求你第一次就补齐：
 
@@ -54,6 +57,25 @@ py -3 scripts/python/dev_cli.py run-prototype-workflow --set slug=combat-loop --
 
 建议口径是：先把必填项写准，再逐步细化默认值字段，而不是在玩法尚未证明前把文档写得过重。
 
+### 0.2.1 BMAD/GDS Game Type Guide Integration
+
+The top-level router absorbs the useful parts of BMAD/GDS `gds-create-gdd` Step 2 and Step 7, but only for prototype lane intake. It does not enter the full 14-step GDD workflow.
+
+- Step 2 reuse: load the matching game type guide from known `Game Type` metadata and use it to capture the core game concept.
+- Step 7 reuse: each game type has different design focus areas; prototype lane only uses the parts relevant to the minimum playable loop.
+- Template source: `.agents/skills/gds-create-gdd/game-types/`, extracted into `docs/game-type-guides/`.
+- Index source: `docs/game-type-guides/game-types.csv`, with 24 canonical game type ids.
+
+When `AGENTS.md` or `README.md` contains `## Game Project Metadata`, load `docs/game-type-guides/<canonical-id>.md` as question and scoring context. Do not copy the full guide into the prototype record.
+
+Step 7 is consumed as `Step07-lite`:
+
+- Parse the matching guide by `###` sections and `{{placeholder}}` markers.
+- Select at most three sections relevant to the smallest playable loop.
+- Ask only for `game_type_specifics.<section_id>` answers, not the full GDD Step 7 chapter.
+- Persist answers under `## Game Type Specifics` in the prototype record.
+- Surface the captured guide path, section titles, and answers in `project-health` after the next scan.
+
 ### 0.3 暂停与确认机制
 
 这个入口不是“拿到信息就一路跑到底”。它在以下场景会主动暂停：
@@ -70,6 +92,16 @@ logs/ci/active-prototypes/<slug>.active.json
 ```
 
 这份 active state 只记录 prototype 路由所需的最小信息，用来防止上下文压缩后你又得重新整理原型目标，但不会做成正式 Chapter 6 那种重 sidecar。
+
+### 0.3.1 Core Gameplay Triple Pause
+
+After the base prototype fields are complete, the router must pause in sequence for three player-provided core gameplay fields:
+
+1. `game_feature`: define core gameplay - game feature
+2. `core_gameplay_loop`: define core gameplay - core gameplay loop
+3. `win_fail_conditions`: define core gameplay - win/fail conditions
+
+These pauses are one-way data capture, not approval forks. Any non-empty user input can continue to the next route step. The router saves the original input for `docs/prototypes/<date>-<slug>.md`, `logs/ci/active-prototypes/<slug>.active.json`, and the project-health page.
 
 ### 0.4 推荐执行节奏
 

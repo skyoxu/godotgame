@@ -221,3 +221,9 @@ When you copy this template to create a new project, enable task-scoped gates af
   - `application/file_description`（文件描述），`application/*_version`（版本）
   - 图标：`application/icon`（推荐 ICO：`res://icon.ico`；当前为 `res://icon.svg`）
 - 修改后，运行 `Windows Export Slim` 或 `Windows Release (Manual)` 验证导出产物。
+## Game Project Metadata
+- Game Name: TBD
+- Game Type: TBD
+- Game Type Source: TBD
+- Game Type Guide: TBD
+
