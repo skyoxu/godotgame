@@ -34,7 +34,7 @@ public partial class SqliteDataStore : Node, ISqlDatabase
         _dbPath = Globalize(dbPath);
         EnsureParentDir(_dbPath!);
         var isNew = !System.IO.File.Exists(_dbPath!);
-        var prefer = (System.Environment.GetEnvironmentVariable("GODOT_DB_BACKEND") ?? string.Empty).ToLowerInvariant(); var forcePlugin = prefer == "plugin"; var forceManaged = prefer == "managed"; if (!forceManaged && TryOpenPlugin(_dbPath!))
+        var prefer = (System.Environment.GetEnvironmentVariable("GODOT_DB_BACKEND") ?? string.Empty).ToLowerInvariant(); var forcePlugin = prefer == "plugin"; var forceManaged = prefer == "managed"; if (forcePlugin && TryOpenPlugin(_dbPath!))
         {
             _backend = Backend.Plugin;
             if (isNew) TryInitSchema();
@@ -241,6 +241,8 @@ public partial class SqliteDataStore : Node, ISqlDatabase
     {
         try
         {
+            if (!ClassDB.ClassExists("SQLite"))
+                return false;
             var v = ClassDB.Instantiate("SQLite");
             if (v.VariantType != Variant.Type.Object) return false;
             var obj = v.As<GodotObject>();
