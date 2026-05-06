@@ -1,9 +1,8 @@
-﻿extends Control
+extends Control
 
 @onready var _label: Label = $VBox/Output
 var _score: int = 0
 var _hp: int = 100
-
 func _ready() -> void:
     print("[TEMPLATE_SMOKE_READY] Main scene initialized")
     var db = get_node_or_null("/root/SqlDb")
@@ -13,13 +12,6 @@ func _ready() -> void:
             print("[DB] open failed: ", str(db.LastError))
         else:
             print("[DB] opened at user://data/game.db")
-    $VBox/PublishBtn.pressed.connect(_on_publish)
-    $VBox/SaveLoadBtn.pressed.connect(_on_save_load)
-    $VBox/LogBtn.pressed.connect(_on_log)
-    if has_node("VBox/AddScoreBtn"):
-        $VBox/AddScoreBtn.pressed.connect(_on_add_score)
-    if has_node("VBox/LoseHpBtn"):
-        $VBox/LoseHpBtn.pressed.connect(_on_lose_hp)
     # Listen to UI menu events to start/quit game
     var bus = get_node_or_null("/root/EventBus")
     if bus != null:
@@ -36,29 +28,29 @@ func _exit_tree() -> void:
 func _on_publish() -> void:
     var bus = get_node_or_null("/root/EventBus")
     if bus == null:
-        _label.text = "EventBus not found"
+        _label.text = "事件总线不可用"
         return
     bus.PublishSimple("demo.event", "ui", "{\"msg\":\"hello\"}")
-    _label.text = "Published demo.event"
+    _label.text = "已发布 demo.event"
 
 func _on_save_load() -> void:
     var ds = get_node_or_null("/root/DataStore")
     if ds == null:
-        _label.text = "DataStore not found"
+        _label.text = "数据存储不可用"
         return
     var key = "demo_save"
     var json = "{\"ts\":" + str(Time.get_unix_time_from_system()) + "}"
     ds.SaveSync(key, json)
     var loaded = ds.LoadSync(key)
-    _label.text = "Loaded: " + str(loaded)
+    _label.text = "已读取：" + str(loaded)
 
 func _on_log() -> void:
     var logger = get_node_or_null("/root/Logger")
     if logger == null:
-        _label.text = "Logger not found"
+        _label.text = "日志器不可用"
         return
     logger.Info("Hello from Main.gd")
-    _label.text = "Logged to console"
+    _label.text = "已写入日志"
 
 func _bus():
     return get_node_or_null("/root/EventBus")
@@ -72,7 +64,7 @@ func _on_add_score() -> void:
         var bus = _bus()
         if bus != null:
             bus.PublishSimple("core.score.updated", "ui", "{\"value\":%d}" % _score)
-    _label.text = "Score = %d" % _score
+    _label.text = "分数 = %d" % _score
 
 func _on_lose_hp() -> void:
     _hp = max(0, _hp - 5)
@@ -83,9 +75,9 @@ func _on_lose_hp() -> void:
         var bus = _bus()
         if bus != null:
             bus.PublishSimple("core.health.updated", "ui", "{\"value\":%d}" % _hp)
-    _label.text = "HP = %d" % _hp
+    _label.text = "生命 = %d" % _hp
 
-func _on_domain_event(type: String, source: String, data_json: String, id: String, spec: String, ct: String, ts: String) -> void:
+func _on_domain_event(type: String, _source: String, _data_json: String, _id: String, _spec: String, _ct: String, _ts: String) -> void:
     if type == "ui.menu.start":
         var demo = get_node_or_null("/root/Main/EngineDemo")
         if demo != null and demo.has_method("StartGame"):
@@ -104,6 +96,15 @@ func _on_domain_event(type: String, source: String, data_json: String, id: Strin
                     return
             if ResourceLoader.exists("res://Game.Godot/Scenes/Screens/StartScreen.tscn"):
                 nav.SwitchTo("res://Game.Godot/Scenes/Screens/StartScreen.tscn")
+    elif type == "ui.menu.prototype":
+        var navp = get_node_or_null("/root/Main/ScreenNavigator")
+        if navp != null and navp.has_method("SwitchTo"):
+            var scene_path := ""
+            var parsed = JSON.parse_string(_data_json)
+            if typeof(parsed) == TYPE_DICTIONARY:
+                scene_path = str(parsed.get("scene_path", ""))
+            if scene_path != "" and ResourceLoader.exists(scene_path):
+                navp.SwitchTo(scene_path)
     elif type == "ui.menu.settings":
         var sp = get_node_or_null("/root/Main/SettingsPanel")
         if sp != null and sp.has_method("ShowPanel"):

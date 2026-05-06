@@ -1,0 +1,523 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Game.Godot/Prototypes/DefaultRpgTemplate/Scripts/DefaultRpgPrototype.cs" id="1"]
+[ext_resource type="PackedScene" path="res://Game.Godot/Prototypes/DefaultRpgTemplate/MapScene.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://Game.Godot/Prototypes/DefaultRpgTemplate/BattleScene.tscn" id="3"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.113725, 0.12549, 0.176471, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.760784, 0.717647, 0.498039, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.176471, 0.188235, 0.25098, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.843137, 0.745098, 0.454902, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="3"]
+bg_color = Color(0.137255, 0.152941, 0.203922, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.811765, 0.74902, 0.478431, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 8
+
+[sub_resource type="StyleBoxFlat" id="4"]
+bg_color = Color(0.196078, 0.215686, 0.290196, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.886275, 0.8, 0.505882, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="5"]
+bg_color = Color(0.192157, 0.203922, 0.27451, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.721569, 0.678431, 0.458824, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="6"]
+bg_color = Color(0.282353, 0.227451, 0.121569, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.988235, 0.878431, 0.458824, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="7"]
+bg_color = Color(0.388235, 0.290196, 0.113725, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.94902, 0.6, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="8"]
+bg_color = Color(0.235294, 0.262745, 0.360784, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.929412, 0.85098, 0.529412, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="9"]
+bg_color = Color(0.0823529, 0.0980392, 0.152941, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.686275, 0.709804, 0.803922, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="DefaultRpgPrototype" type="Node2D"]
+script = ExtResource("1")
+
+[node name="PrototypeLoop" type="Node2D" parent="."]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="UIRoot" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="CanvasLayer/UIRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0588235, 0.0666667, 0.0901961, 1)
+
+[node name="BackdropGlow" type="ColorRect" parent="CanvasLayer/UIRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.121569, 0.145098, 0.203922, 0.35)
+
+[node name="TransitionFlash" type="ColorRect" parent="CanvasLayer/UIRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.980392, 0.960784, 0.882353, 0.9)
+
+[node name="TopPanel" type="PanelContainer" parent="CanvasLayer/UIRoot"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+offset_left = 20.0
+offset_top = 18.0
+offset_right = -20.0
+offset_bottom = 96.0
+theme_override_styles/panel = SubResource("1")
+
+[node name="TopMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/TopPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="TopVBox" type="VBoxContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TopTitle" type="Label" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "魔王将至  Prototype"
+
+[node name="TopInfo" type="HBoxContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StatusPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("2")
+
+[node name="StatusMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo/StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="StatusLabel" type="Label" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo/StatusPanel/StatusMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "状态"
+
+[node name="ProgressPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="ProgressMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo/ProgressPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="ProgressLabel" type="Label" parent="CanvasLayer/UIRoot/TopPanel/TopMargin/TopVBox/TopInfo/ProgressPanel/ProgressMargin"]
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 16
+text = "遭遇 1/15"
+
+[node name="Content" type="HBoxContainer" parent="CanvasLayer/UIRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = 20.0
+offset_top = 118.0
+offset_right = -20.0
+offset_bottom = -190.0
+theme_override_constants/separation = 20
+
+[node name="Sidebar" type="PanelContainer" parent="CanvasLayer/UIRoot/Content"]
+custom_minimum_size = Vector2(290, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("1")
+
+[node name="SidebarMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="SidebarVBox" type="VBoxContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeroPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="HeroMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/HeroPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="HeroTitle" type="Label" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/HeroPanel/HeroMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "我方状态"
+
+[node name="PlayerStatsPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="PlayerStatsMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/PlayerStatsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="PlayerStats" type="Label" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/PlayerStatsPanel/PlayerStatsMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "生命 0"
+
+[node name="PlayerSkillsPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="PlayerSkillsMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/PlayerSkillsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="PlayerSkills" type="Label" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/PlayerSkillsPanel/PlayerSkillsMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "被动"
+
+[node name="BuildDirectionPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="BuildDirectionMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/BuildDirectionPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="BuildDirection" type="Label" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/BuildDirectionPanel/BuildDirectionMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "流派\n均衡路线"
+
+[node name="BuildHistoryPanel" type="PanelContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("2")
+
+[node name="BuildHistoryMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/BuildHistoryPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="BuildHistory" type="Label" parent="CanvasLayer/UIRoot/Content/Sidebar/SidebarMargin/SidebarVBox/BuildHistoryPanel/BuildHistoryMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 15
+text = "历史\n---"
+
+[node name="SceneViewport" type="Control" parent="CanvasLayer/UIRoot/Content"]
+custom_minimum_size = Vector2(640, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MapScene" parent="CanvasLayer/UIRoot/Content/SceneViewport" instance=ExtResource("2")]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="BattleScene" parent="CanvasLayer/UIRoot/Content/SceneViewport" instance=ExtResource("3")]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RewardPanel" type="PanelContainer" parent="CanvasLayer/UIRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -176.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("3")
+
+[node name="RewardMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/RewardPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RewardLabel" type="Label" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "选择一项奖励"
+
+[node name="Rewards" type="HBoxContainer" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RewardOption1" type="Button" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox/Rewards"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.972549, 0.94902, 0.862745, 1)
+theme_override_colors/font_focus_color = Color(1, 0.976471, 0.878431, 1)
+theme_override_colors/font_hover_color = Color(1, 0.988235, 0.917647, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("5")
+theme_override_styles/hover = SubResource("6")
+theme_override_styles/pressed = SubResource("7")
+theme_override_styles/focus = SubResource("8")
+clip_text = true
+text_overrun_behavior = 3
+text = "奖励 1"
+
+[node name="RewardOption2" type="Button" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox/Rewards"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.972549, 0.94902, 0.862745, 1)
+theme_override_colors/font_focus_color = Color(1, 0.976471, 0.878431, 1)
+theme_override_colors/font_hover_color = Color(1, 0.988235, 0.917647, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("5")
+theme_override_styles/hover = SubResource("6")
+theme_override_styles/pressed = SubResource("7")
+theme_override_styles/focus = SubResource("8")
+clip_text = true
+text_overrun_behavior = 3
+text = "奖励 2"
+
+[node name="RewardOption3" type="Button" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox/Rewards"]
+custom_minimum_size = Vector2(0, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.972549, 0.94902, 0.862745, 1)
+theme_override_colors/font_focus_color = Color(1, 0.976471, 0.878431, 1)
+theme_override_colors/font_hover_color = Color(1, 0.988235, 0.917647, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("5")
+theme_override_styles/hover = SubResource("6")
+theme_override_styles/pressed = SubResource("7")
+theme_override_styles/focus = SubResource("8")
+clip_text = true
+text_overrun_behavior = 3
+text = "奖励 3"
+
+[node name="ResultPanel" type="PanelContainer" parent="CanvasLayer/UIRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 1.0
+grow_horizontal = 0
+offset_left = -440.0
+offset_top = 126.0
+offset_right = -20.0
+offset_bottom = 234.0
+theme_override_styles/panel = SubResource("3")
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UIRoot/ResultPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ResultTitle" type="Label" parent="CanvasLayer/UIRoot/ResultPanel/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+text = "结果"
+
+[node name="ResultSummary" type="Label" parent="CanvasLayer/UIRoot/ResultPanel/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+text = "概要"
+
+[node name="CursorHint" type="PanelContainer" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("9")
+
+[node name="CursorHintMargin" type="MarginContainer" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox/CursorHint"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="CursorHintLabel" type="Label" parent="CanvasLayer/UIRoot/RewardPanel/RewardMargin/VBox/CursorHint/CursorHintMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "高亮金框表示当前选项，点击后立刻结算。"

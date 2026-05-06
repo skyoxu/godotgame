@@ -20,13 +20,16 @@ offset_bottom = 240.0
 
 [node name="BtnPlay" type="Button" parent="VBox"]
 layout_mode = 2
-text = "Play"
+text = "开始"
+
+[node name="BtnPrototype" type="Button" parent="VBox"]
+layout_mode = 2
+text = "原型"
 
 [node name="BtnSettings" type="Button" parent="VBox"]
 layout_mode = 2
-text = "Settings"
+text = "设置"
 
 [node name="BtnQuit" type="Button" parent="VBox"]
 layout_mode = 2
-text = "Quit"
-
+text = "退出"

@@ -1,0 +1,24 @@
+{
+  "cmd": "local-hard-checks",
+  "task_id": "repo",
+  "run_id": "local-demo-run",
+  "status": "fail",
+  "failed_step": "run-dotnet",
+  "artifacts": {
+    "summary_json": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/summary.json",
+    "execution_context_json": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/execution-context.json"
+  },
+  "next_actions": [
+    "Open summary.json and inspect the first failing step.",
+    "Open the failing step log and then inspect the referenced artifact directory.",
+    "Re-run the command after fixing the first failing step."
+  ],
+  "rerun_command": [
+    "py",
+    "-3",
+    "scripts/python/dev_cli.py",
+    "run-local-hard-checks",
+    "--run-id",
+    "local-demo-run"
+  ]
+}

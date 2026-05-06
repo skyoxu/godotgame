@@ -24,6 +24,7 @@ Operate the top-level prototype lane router for Chinese Godot prototype work wit
 - Speak to the user in Chinese.
 - Keep logs and generated command output in English.
 - Use Python with UTF-8 for document reads and writes.
+- All user-facing interaction text emitted by the prototype top-level router must be Chinese (questions, missing-field prompts, confirmation summaries, resume hints).
 - Do not create formal task refs, acceptance refs, overlay refs, or Chapter 6 evidence from prototype-lane output.
 - Treat `docs/game-type-guides/` as extracted BMAD/GDS guide material. Use it to ask better prototype questions; do not copy a full GDD workflow into the prototype record.
 - Treat `docs/prototype-type-kits/` as prototype-only default flow/UI material for 1-2 scene playable loops. Use it to confirm or adjust the default route; do not expand it into full GDD, balance, economy, progression, or boundary design.
@@ -131,6 +132,11 @@ The canonical record shape is the `## Prototype Type Kit` section in `docs/proto
 ```
 
 Do not treat Prototype Type Kit answers as formal Chapter 6 evidence. They are prototype intake context only.
+
+## Encoding Rule
+
+- When writing Chinese content into `docs/prototypes/*.md`, `docs/prototype-type-kits/*.md`, or related skills/workflow docs, use Python and explicit UTF-8 encoding.
+- Avoid relying on PowerShell default encoding for Chinese writes.
 
 ## Completion Boundary
 

@@ -1,0 +1,270 @@
+[gd_scene format=3]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.113725, 0.12549, 0.176471, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.760784, 0.717647, 0.498039, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.176471, 0.188235, 0.25098, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.843137, 0.745098, 0.454902, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="BattleScene" type="PanelContainer"]
+custom_minimum_size = Vector2(700, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("1")
+
+[node name="BattleMargin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="BattleVBox" type="VBoxContainer" parent="BattleMargin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BattleTitlePanel" type="PanelContainer" parent="BattleMargin/BattleVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="BattleTitleMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleTitlePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="BattleTitle" type="Label" parent="BattleMargin/BattleVBox/BattleTitlePanel/BattleTitleMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "战斗演算  我方先手"
+
+[node name="EncounterTypePanel" type="PanelContainer" parent="BattleMargin/BattleVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="EncounterTypeMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/EncounterTypePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="EncounterTypeLabel" type="Label" parent="BattleMargin/BattleVBox/EncounterTypePanel/EncounterTypeMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "行军途中"
+
+[node name="BattleActorsFrame" type="PanelContainer" parent="BattleMargin/BattleVBox"]
+layout_mode = 2
+clip_contents = true
+theme_override_styles/panel = SubResource("2")
+
+[node name="BattleActorsMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame"]
+layout_mode = 2
+clip_contents = true
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="BattleBackdropBand" type="Control" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = 0.0
+offset_top = -56.0
+offset_right = 0.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+clip_contents = true
+mouse_filter = 2
+
+[node name="BattleBackdrop" type="Control" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleBackdropBand"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+clip_contents = true
+mouse_filter = 2
+
+[node name="BattleBackdropTexture" type="TextureRect" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleBackdropBand/BattleBackdrop"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch_mode = 6
+modulate = Color(1, 1, 1, 0.52)
+
+[node name="BattleActors" type="HBoxContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PlayerActor" type="ColorRect" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors"]
+custom_minimum_size = Vector2(140, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.262745, 0.537255, 0.45098, 1)
+
+[node name="PlayerActorMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/PlayerActor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="PlayerActorVBox" type="VBoxContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/PlayerActor/PlayerActorMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerActorTitle" type="Label" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/PlayerActor/PlayerActorMargin/PlayerActorVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "我方"
+
+[node name="PlayerActorHpBar" type="ProgressBar" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/PlayerActor/PlayerActorMargin/PlayerActorVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+show_percentage = false
+max_value = 100.0
+value = 78.0
+theme_override_styles/background = SubResource("2")
+
+[node name="PlayerActorGlyph" type="Label" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/PlayerActor/PlayerActorMargin/PlayerActorVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 44
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "勇"
+
+[node name="EnemyActor" type="ColorRect" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors"]
+custom_minimum_size = Vector2(140, 140)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.596078, 0.25098, 0.25098, 1)
+
+[node name="EnemyActorMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/EnemyActor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="EnemyActorVBox" type="VBoxContainer" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/EnemyActor/EnemyActorMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EnemyActorTitle" type="Label" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/EnemyActor/EnemyActorMargin/EnemyActorVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "敌方"
+
+[node name="EnemyActorHpBar" type="ProgressBar" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/EnemyActor/EnemyActorMargin/EnemyActorVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+show_percentage = false
+max_value = 100.0
+value = 72.0
+theme_override_styles/background = SubResource("2")
+
+[node name="EnemyActorGlyph" type="Label" parent="BattleMargin/BattleVBox/BattleActorsFrame/BattleActorsMargin/BattleActors/EnemyActor/EnemyActorMargin/EnemyActorVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 44
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "魔"
+
+[node name="BattleInfoFrame" type="PanelContainer" parent="BattleMargin/BattleVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="BattleInfoMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleInfoFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="BattleInfo" type="HBoxContainer" parent="BattleMargin/BattleVBox/BattleInfoFrame/BattleInfoMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="EnemyStats" type="Label" parent="BattleMargin/BattleVBox/BattleInfoFrame/BattleInfoMargin/BattleInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 17
+text = "敌方"
+
+[node name="EnemySkills" type="Label" parent="BattleMargin/BattleVBox/BattleInfoFrame/BattleInfoMargin/BattleInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 17
+text = "敌方被动"
+
+[node name="BattleLogFrame" type="PanelContainer" parent="BattleMargin/BattleVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("2")
+
+[node name="BattleLogMargin" type="MarginContainer" parent="BattleMargin/BattleVBox/BattleLogFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="BattleLog" type="RichTextLabel" parent="BattleMargin/BattleVBox/BattleLogFrame/BattleLogMargin"]
+custom_minimum_size = Vector2(0, 230)
+layout_mode = 2
+bbcode_enabled = false
+fit_content = true
+scroll_active = false
+scroll_following = true
+selection_enabled = true
+theme_override_font_sizes/normal_font_size = 16
+text = "战斗日志"

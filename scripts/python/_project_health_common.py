@@ -1466,6 +1466,9 @@ def dashboard_html(
     overview_documents = project_overview.get("documents") if isinstance(project_overview.get("documents"), dict) else {}
     overview_core = project_overview.get("prototype_core") if isinstance(project_overview.get("prototype_core"), dict) else {}
     overview_specifics = project_overview.get("game_type_specifics") if isinstance(project_overview.get("game_type_specifics"), dict) else {}
+    overview_type_kit = project_overview.get("prototype_type_kit") if isinstance(project_overview.get("prototype_type_kit"), dict) else {}
+    overview_type_kit_manifest = overview_type_kit.get("manifest") if isinstance(overview_type_kit.get("manifest"), dict) else {}
+    overview_type_kit_manifest_paths = overview_type_kit_manifest.get("paths") if isinstance(overview_type_kit_manifest.get("paths"), dict) else {}
     overview_rows = [
         ("Game name", str(project_overview.get("game_name") or "unknown")),
         ("Game type", str(project_overview.get("game_type") or "unknown")),
@@ -1477,6 +1480,10 @@ def dashboard_html(
         ("Win / fail conditions", str(overview_core.get("win_fail_conditions") or "unknown")),
         ("Step07-lite game type", str(overview_specifics.get("game_type") or "unknown")),
         ("Step07-lite guide", str(overview_specifics.get("guide_path") or "unknown")),
+        ("Prototype type kit path", str(overview_type_kit.get("kit_path") or "unknown")),
+        ("Prototype manifest path", str(overview_type_kit.get("manifest_path") or "unknown")),
+        ("Prototype manifest slug", str(overview_type_kit_manifest.get("slug") or "unknown")),
+        ("Prototype manifest default scene", str(overview_type_kit_manifest_paths.get("default_scene") or "unknown")),
     ]
     for section in list(overview_specifics.get("selected_sections") or []):
         if isinstance(section, dict):
@@ -1949,6 +1956,45 @@ def _extract_game_type_specifics(root: Path, prototype_docs: list[str]) -> dict[
     return result
 
 
+def _extract_prototype_type_kit(root: Path, prototype_docs: list[str]) -> dict[str, Any]:
+    result: dict[str, Any] = {"game_type": "", "kit_path": "", "manifest_path": "", "manifest": {}}
+    if not prototype_docs:
+        return result
+    newest = max((root / rel for rel in prototype_docs), key=lambda p: p.stat().st_mtime if p.exists() else 0)
+    lines = _read_text_soft(newest).splitlines()
+    in_section = False
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            in_section = _normalize_doc_heading(stripped[3:]) in {"prototype type kit", "原型类型模板", "prototype 类型模板"}
+            continue
+        if not in_section or not stripped.startswith("- "):
+            continue
+        entry = stripped[2:].strip()
+        if ":" not in entry and "：" not in entry:
+            continue
+        key, value = re.split(r"[:：]", entry, maxsplit=1)
+        normalized_key = _normalize_doc_heading(key)
+        value = value.strip()
+        if normalized_key in {"game type", "游戏类型"}:
+            result["game_type"] = value if value.upper() != "TBD" else ""
+        elif normalized_key in {"kit path", "prototype type kit path", "模板路径", "原型类型模板路径"}:
+            result["kit_path"] = value if value.upper() != "TBD" else ""
+        elif normalized_key in {"manifest path", "template manifest", "manifest"}:
+            result["manifest_path"] = value if value.upper() != "TBD" else ""
+    manifest_path = str(result.get("manifest_path") or "").strip()
+    if manifest_path:
+        manifest_file = (root / manifest_path).resolve()
+        if manifest_file.exists():
+            try:
+                manifest_payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                manifest_payload = {}
+            if isinstance(manifest_payload, dict):
+                result["manifest"] = manifest_payload
+    return result
+
+
 def build_project_overview(root: Path) -> dict[str, Any]:
     documents = {
         "prd": _list_markdown_docs(root, "docs/prd"),
@@ -1962,6 +2008,7 @@ def build_project_overview(root: Path) -> dict[str, Any]:
         "documents": documents,
         "prototype_core": _extract_prototype_core(root, documents["prototype"]),
         "game_type_specifics": _extract_game_type_specifics(root, documents["prototype"]),
+        "prototype_type_kit": _extract_prototype_type_kit(root, documents["prototype"]),
     }
 
 

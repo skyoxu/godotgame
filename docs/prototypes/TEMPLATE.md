@@ -6,33 +6,39 @@
 - Related formal task ids: none yet | <id list>
 
 ## Hypothesis
-- <what you are trying to prove>
+- <你想验证什么>
 
 ## Core Player Fantasy
-- <what the player should feel or understand within the first minute>
+- <玩家在第一分钟内应该感受到什么，或看懂什么>
 
 ## Minimum Playable Loop
-- <the smallest end-to-end loop the player must be able to complete>
+- <玩家必须能够完整走通的最小闭环>
 
 ## Game Feature
-- <what makes this prototype distinctive>
+- <这个 prototype 最有辨识度的玩法特色>
 
 ## Core Gameplay Loop
-- <the repeated player action loop>
+- <重复发生的核心游戏循环>
 
 ## Win / Fail Conditions
-- <how the player wins and how the player fails>
+- <玩家如何获胜，如何失败>
 
 ## Game Type Specifics
-- Game Type: <canonical id from docs/game-type-guides, for example puzzle>
+- Game Type: <docs/game-type-guides 中的 canonical id，例如 rpg>
 - Guide Path: docs/game-type-guides/<game-type>.md
-- <Step07-lite section title 1>: <player answer for the prototype-relevant question>
-- <Step07-lite section title 2>: <player answer for the prototype-relevant question>
-- <Step07-lite section title 3>: <player answer for the prototype-relevant question>
+- <Step07-lite 原型 1>: <玩家对该小节的回答>
+- <Step07-lite 原型 2>: <玩家对该小节的回答>
+- <Step07-lite 原型 3>: <玩家对该小节的回答>
+
+## Implementation Skill
+- Name: <仓内 prototype skill 名称，例如 prototype-rpg-godot-zh>
+- Path: .agents/skills/<skill-name>/SKILL.md
+- Contract Path: .agents/skills/<skill-name>/references/<contract-file>.md
 
 ## Prototype Type Kit
-- Game Type: <canonical id from docs/prototype-type-kits, for example rpg>
+- Game Type: <docs/prototype-type-kits 中的 canonical id，例如 rpg>
 - Kit Path: docs/prototype-type-kits/<game-type>.md
+- Manifest Path: docs/prototype-type-kits/default-rpg-template.manifest.json
 
 ### Gameplay Flow / GDD Route
 - 使用随机遇怪、地图撞怪，还是二者都支持？ <player answer>
@@ -46,22 +52,22 @@
 
 ## Scope
 - In:
-  - <item>
+  - <包含内容>
 - Out:
-  - <item>
+  - <排除内容>
 
 ## Success Criteria
-- <observable check 1>
-- <observable check 2>
+- <可观察的成功判断 1>
+- <可观察的成功判断 2>
 
 ## Promote Signals
-- <what evidence means this should become a formal task>
+- <什么证据说明它值得进入正式任务>
 
 ## Archive Signals
-- <what evidence means the idea has signal but is not ready for formal delivery>
+- <什么证据说明它有信号，但暂时不适合正式交付>
 
 ## Discard Signals
-- <what evidence means the idea should stop here>
+- <什么证据说明它应该停在 prototype 阶段>
 
 ## Evidence
 - Code paths:
@@ -73,4 +79,4 @@
 - discard | archive | promote
 
 ## Next Step
-- <if promote, describe the formal task / overlay / test follow-up>
+- <如果 promote，下一步进入什么正式任务 / overlay / test>

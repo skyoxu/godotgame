@@ -1,5 +1,13 @@
 # RPG Prototype Type Kit
 
+## Router Binding
+
+- Default repo-local implementation skill: `.agents/skills/prototype-rpg-godot-zh/SKILL.md`
+- Default contract reference: `.agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md`
+- Default template manifest: `docs/prototype-type-kits/default-rpg-template.manifest.json`
+- The top-level prototype router should attach this metadata when `game_type` is `rpg`.
+- Store these paths as repo-relative metadata only. Do not hardcode absolute paths or assume the Godot project sits directly under the repo root.
+
 ## 用途
 
 本文件用于 RPG 类型的 prototype lane。它不是完整 GDD，也不处理数值平衡、长期成长、装备经济、任务系统或边界情况。它只定义 1-2 个场景内可以完成的最小核心游玩闭环，让玩家能从地图移动进入战斗，并在胜利或失败后得到明确反馈。

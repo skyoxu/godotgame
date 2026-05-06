@@ -139,6 +139,44 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
         self.assertIn("3", cmd)
         self.assertIn("--self-check", cmd)
 
+    def test_generate_image_should_forward_aiartmirror_arguments(self) -> None:
+        with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
+            rc = dev_cli.main(
+                [
+                    "generate-image",
+                    "--prompt",
+                    "retro jrpg hero",
+                    "--out",
+                    "output/imagegen/hero.png",
+                    "--manifest-out",
+                    "output/imagegen/hero.json",
+                    "--model",
+                    "gpt-image-2",
+                    "--group",
+                    "gpt-image-2",
+                    "--size",
+                    "1024x1024",
+                    "--quality",
+                    "high",
+                    "--dry-run",
+                ]
+            )
+
+        self.assertEqual(0, rc)
+        cmd = run_mock.call_args[0][0]
+        self.assertEqual(["py", "-3", "scripts/python/aiartmirror_image_cli.py"], cmd[:3])
+        self.assertIn("--prompt", cmd)
+        self.assertIn("retro jrpg hero", cmd)
+        self.assertIn("--out", cmd)
+        self.assertIn("output/imagegen/hero.png", cmd)
+        self.assertIn("--manifest-out", cmd)
+        self.assertIn("output/imagegen/hero.json", cmd)
+        self.assertIn("--model", cmd)
+        self.assertIn("gpt-image-2", cmd)
+        self.assertIn("--group", cmd)
+        self.assertIn("gpt-image-2", cmd)
+        self.assertIn("--dry-run", cmd)
+
 
 if __name__ == "__main__":
     unittest.main()

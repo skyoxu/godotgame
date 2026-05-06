@@ -189,7 +189,7 @@ class RunPrototypeWorkflowBmadIntakeTests(unittest.TestCase):
             self.assertEqual("Gravity flip rooms", state["prototype"]["game_feature"])
             self.assertEqual("Read room, flip gravity, move, dodge, exit", state["prototype"]["core_gameplay_loop"])
             self.assertEqual("Win on exit, fail on spikes or timeout", state["prototype"]["win_fail_conditions"])
-            self.assertIn("Game feature: Gravity flip rooms", state["confirmation_summary"])
+            self.assertIn("游戏特色：Gravity flip rooms", state["confirmation_summary"])
 
     def test_game_type_guide_should_be_loaded_when_game_type_is_known(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

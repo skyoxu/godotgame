@@ -8,7 +8,7 @@ Use this directory when the question is still whether a mechanic, UI flow, archi
 - `TEMPLATE.md`
   - English template for a prototype record.
 - `TEMPLATE.zh-CN.md`
-  - 中文原型记录模板，可被 `run-prototype-workflow` 读取。
+  - ä¸­æååè®°å½æ¨¡æ¿ï¼å¯è¢« `run-prototype-workflow` è¯»åã
 - `<date>-<slug>.md`
   - One prototype record per exploration topic.
 

@@ -623,3 +623,43 @@ def build_serve_project_health_cmd(args) -> list[str]:
     if port > 0:
         cmd += ["--port", str(port)]
     return cmd
+
+
+def build_generate_image_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/aiartmirror_image_cli.py",
+        "--out",
+        args.out,
+    ]
+    if getattr(args, "prompt", ""):
+        cmd += ["--prompt", args.prompt]
+    if getattr(args, "prompt_file", ""):
+        cmd += ["--prompt-file", args.prompt_file]
+    if getattr(args, "manifest_out", ""):
+        cmd += ["--manifest-out", args.manifest_out]
+    if getattr(args, "model", ""):
+        cmd += ["--model", args.model]
+    if getattr(args, "group", ""):
+        cmd += ["--group", args.group]
+    if getattr(args, "size", ""):
+        cmd += ["--size", args.size]
+    if getattr(args, "quality", ""):
+        cmd += ["--quality", args.quality]
+    if getattr(args, "output_format", ""):
+        cmd += ["--output-format", args.output_format]
+    if getattr(args, "response_format", ""):
+        cmd += ["--response-format", args.response_format]
+    if getattr(args, "background", ""):
+        cmd += ["--background", args.background]
+    if getattr(args, "api_key_env", ""):
+        cmd += ["--api-key-env", args.api_key_env]
+    if getattr(args, "base_url", ""):
+        cmd += ["--base-url", args.base_url]
+    timeout = getattr(args, "timeout", None)
+    if timeout is not None:
+        cmd += ["--timeout", str(timeout)]
+    if getattr(args, "dry_run", False):
+        cmd.append("--dry-run")
+    return cmd

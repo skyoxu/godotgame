@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "cmd": "sc-review-pipeline",
+  "date": "2026-03-22",
+  "task_id": "7",
+  "requested_run_id": "11111111111111111111111111111111",
+  "run_id": "11111111111111111111111111111111",
+  "status": "ok",
+  "delivery_profile": "fast-ship",
+  "security_profile": "host-safe",
+  "failed_step": "",
+  "paths": {
+    "repo_root": ".",
+    "out_dir": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111",
+    "summary_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/summary.json",
+    "marathon_state_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/marathon-state.json",
+    "repair_guide_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/repair-guide.json",
+    "repair_guide_md": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/repair-guide.md",
+    "approval_request_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/approval-request.json",
+    "approval_response_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/approval-response.json",
+    "execution_plans_dir": "execution-plans",
+    "decision_logs_dir": "decision-logs",
+    "latest_execution_plan": "",
+    "latest_decision_log": "",
+    "agents_index": "docs/agents/00-index.md",
+    "agents_recovery": "docs/agents/01-session-recovery.md"
+  },
+  "git": {
+    "branch": "main",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "recent_log": [],
+    "status_short": [],
+    "dirty": false
+  },
+  "recovery": {
+    "resume_command": "py -3 scripts/sc/run_review_pipeline.py --task-id 7 --resume",
+    "abort_command": "py -3 scripts/sc/run_review_pipeline.py --task-id 7 --abort",
+    "fork_command": "py -3 scripts/sc/run_review_pipeline.py --task-id 7 --fork"
+  },
+  "marathon": {
+    "status": "ok",
+    "next_step_name": "",
+    "stop_reason": "",
+    "resume_count": 0,
+    "max_step_retries": 0,
+    "max_wall_time_sec": 0,
+    "context_refresh_needed": false,
+    "context_refresh_reasons": [],
+    "forked_from_run_id": "",
+    "diff_baseline_total_lines": 0,
+    "diff_current_total_lines": 0,
+    "diff_growth_total_lines": 0,
+    "diff_current_categories": [],
+    "diff_current_axes": [],
+    "diff_growth_new_categories": [],
+    "diff_growth_new_axes": []
+  },
+  "agent_review": {
+    "review_verdict": "",
+    "recommended_action": "",
+    "recommended_refresh_reasons": []
+  },
+  "approval": {
+    "soft_gate": false,
+    "required_action": "",
+    "status": "not-needed",
+    "decision": "",
+    "reason": "",
+    "request_id": "",
+    "request_path": "",
+    "response_path": ""
+  }
+}

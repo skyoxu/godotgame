@@ -169,6 +169,11 @@ py -3 scripts/python/dev_cli.py project-health-scan --serve
 - 同仓存在活跃服务时会复用
 - 选中的 URL 和 PID 会写入 `logs/ci/project-health/server.json`
 
+Chapter 2 任务完毕时，必须向用户展示 project-health 的访问信息（至少包含以下两项）：
+
+- 访问 URL：优先读取 `logs/ci/project-health/server.json` 的 `url` 字段；若不存在则提示先执行 `py -3 scripts/python/dev_cli.py serve-project-health` 或 `py -3 scripts/python/dev_cli.py project-health-scan --serve`。
+- 静态页面文件：`logs/ci/project-health/latest.html`
+
 ### 2.5 可选：OpenAI backend bootstrap
 
 只有当仓库明确要试点 `openai-api`，并且你希望把部分 LLM 脚本从 `codex-cli` 切到 API transport 时，才进入这一步。

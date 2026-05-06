@@ -106,6 +106,17 @@ def parse_template_content(content: str) -> dict[str, Any]:
                     else:
                         section_values.setdefault("game_type_specific_lines", []).append(f"{key.strip()}: {value.strip()}")
                 continue
+            if current_section == "prototype_type_kit":
+                if ":" in entry or "：" in entry:
+                    key, value = re.split(r"[:：]", entry, maxsplit=1)
+                    normalized_key = _normalize_heading(key)
+                    if normalized_key in {"game type", "游戏类型"}:
+                        section_values.setdefault("prototype_type_kit_game_type", []).append(value.strip())
+                    elif normalized_key in {"kit path", "prototype type kit path", "模板路径", "原型类型模板路径"}:
+                        section_values.setdefault("prototype_type_kit_path", []).append(value.strip())
+                    elif normalized_key in {"manifest path", "template manifest", "manifest"}:
+                        section_values.setdefault("prototype_type_kit_manifest_path", []).append(value.strip())
+                continue
             if current_section == "scope":
                 lowered_entry = _normalize_heading(entry)
                 if lowered_entry in {"in", "纳入"}:
@@ -150,6 +161,8 @@ def parse_template_content(content: str) -> dict[str, Any]:
                 current_section = "evidence"
             elif heading in {"game type specifics", "游戏类型细节", "游戏类型特定设计"}:
                 current_section = "game_type_specifics"
+            elif heading in {"prototype type kit", "原型类型模板", "prototype 类型模板"}:
+                current_section = "prototype_type_kit"
             continue
         if current_section == "scope":
             lowered = _normalize_heading(stripped)
@@ -179,6 +192,15 @@ def parse_template_content(content: str) -> dict[str, Any]:
                 title = title.strip()
                 sections.append({"id": section_id(title), "title": title, "answer": answer.strip()})
             payload["game_type_specifics"] = {"selected_sections": sections}
+        elif key == "prototype_type_kit_game_type":
+            payload.setdefault("prototype_type_kit", {})
+            payload["prototype_type_kit"]["game_type"] = values[0] if values else ""
+        elif key == "prototype_type_kit_path":
+            payload.setdefault("prototype_type_kit", {})
+            payload["prototype_type_kit"]["kit_path"] = values[0] if values else ""
+        elif key == "prototype_type_kit_manifest_path":
+            payload.setdefault("prototype_type_kit", {})
+            payload["prototype_type_kit"]["manifest_path"] = values[0] if values else ""
         else:
             payload[key] = [item for item in values if item]
     return payload
@@ -217,9 +239,41 @@ def normalize_prototype_payload(raw: dict[str, Any], *, today: str | None = None
         normalized["game_type_guide_content"] = str(raw.get("game_type_guide_content") or "")
     if isinstance(raw.get("game_type_specifics"), dict):
         normalized["game_type_specifics"] = dict(raw.get("game_type_specifics") or {})
+    if isinstance(raw.get("prototype_type_kit"), dict):
+        normalized["prototype_type_kit"] = dict(raw.get("prototype_type_kit") or {})
+    if isinstance(raw.get("implementation_skill"), dict):
+        normalized["implementation_skill"] = dict(raw.get("implementation_skill") or {})
     if normalized.get("game_type_guide_content") or normalized.get("game_type_specifics"):
         normalized["game_type_specifics"] = normalize_game_type_specifics(normalized)
     return normalized
+
+
+def enrich_payload_with_prototype_manifest(*, root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(payload)
+    type_kit = dict(updated.get("prototype_type_kit") or {}) if isinstance(updated.get("prototype_type_kit"), dict) else {}
+    manifest_path = str(type_kit.get("manifest_path") or "").strip()
+    if not manifest_path and sanitize_slug(str(updated.get("game_type") or "")) == "rpg":
+        default_manifest = root / "docs" / "prototype-type-kits" / "default-rpg-template.manifest.json"
+        if default_manifest.exists():
+            manifest_path = str(default_manifest.relative_to(root)).replace("\\", "/")
+    if not manifest_path:
+        if type_kit:
+            updated["prototype_type_kit"] = type_kit
+        return updated
+    resolved = (root / manifest_path).resolve()
+    if not resolved.exists():
+        type_kit["manifest_path"] = manifest_path
+        updated["prototype_type_kit"] = type_kit
+        return updated
+    try:
+        manifest_payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        manifest_payload = {}
+    type_kit["manifest_path"] = manifest_path
+    if isinstance(manifest_payload, dict):
+        type_kit["manifest"] = manifest_payload
+    updated["prototype_type_kit"] = type_kit
+    return updated
 
 
 def _first(value: Any) -> str:
@@ -369,6 +423,33 @@ def enrich_payload_with_game_type_guide(*, root: Path, payload: dict[str, Any]) 
     return updated
 
 
+def _repo_relative_posix(root: Path, path: Path) -> str:
+    return str(path.relative_to(root)).replace("\\", "/")
+
+
+def enrich_payload_with_repo_local_skill(*, root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(payload)
+    game_type = sanitize_slug(str(updated.get("game_type") or ""))
+    if game_type != "rpg":
+        updated.pop("implementation_skill", None)
+        return updated
+
+    skill_file = root / ".agents" / "skills" / "prototype-rpg-godot-zh" / "SKILL.md"
+    if not skill_file.exists():
+        updated.pop("implementation_skill", None)
+        return updated
+
+    metadata: dict[str, Any] = {
+        "name": "prototype-rpg-godot-zh",
+        "path": _repo_relative_posix(root, skill_file),
+    }
+    contract_file = skill_file.parent / "references" / "rpg-prototype-contract.md"
+    if contract_file.exists():
+        metadata["contract_path"] = _repo_relative_posix(root, contract_file)
+    updated["implementation_skill"] = metadata
+    return updated
+
+
 def missing_game_type_specific_question_names(payload: dict[str, Any]) -> list[str]:
     specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
     missing = []
@@ -381,14 +462,14 @@ def missing_game_type_specific_question_names(payload: dict[str, Any]) -> list[s
 def required_questions_for_missing_payload(payload: dict[str, Any]) -> list[dict[str, str]]:
     normalized = normalize_prototype_payload(payload)
     prompts = {
-        "slug": "prototype slug",
-        "hypothesis": "prototype hypothesis",
-        "core_player_fantasy": "core player fantasy",
-        "minimum_playable_loop": "minimum playable loop",
-        "game_feature": "game feature / gameplay uniqueness",
-        "core_gameplay_loop": "core gameplay loop",
-        "win_fail_conditions": "win / fail conditions",
-        "success_criteria": "success criteria (comma-separated if multiple)",
+        "slug": "原型标识 slug",
+        "hypothesis": "原型假设",
+        "core_player_fantasy": "核心玩家幻想",
+        "minimum_playable_loop": "最小可玩循环",
+        "game_feature": "游戏特色 / 玩法独特性",
+        "core_gameplay_loop": "核心游戏循环",
+        "win_fail_conditions": "胜利 / 失败条件",
+        "success_criteria": "成功标准（多个用逗号分隔）",
     }
     questions = [{"id": key, "prompt": prompts[key]} for key in required_field_names(normalized)]
     if not questions:
@@ -401,7 +482,7 @@ def required_questions_for_missing_payload(payload: dict[str, Any]) -> list[dict
         for key in missing_game_type_specific_question_names(normalized):
             section = by_id.get(key.split(".", 1)[1]) or {}
             title = str(section.get("title") or key)
-            prompt = str(section.get("prompt") or "Describe the prototype-relevant game type specifics.")
+            prompt = str(section.get("prompt") or "请描述与该原型最相关的游戏类型细节。")
             questions.append({"id": key, "prompt": f"{title}: {prompt}"})
     return questions
 
@@ -615,27 +696,31 @@ def _build_confirmation_message(
     llm_review: dict[str, Any] | None = None,
 ) -> str:
     lines = [
-        "Prototype workflow paused for confirmation.",
-        f"Prototype file: {file_path or 'not provided'}",
-        f"Slug: {payload.get('slug') or '(missing)'}",
-        f"Hypothesis: {payload.get('hypothesis') or '(missing)'}",
-        f"Core player fantasy: {payload.get('core_player_fantasy') or '(missing)'}",
-        f"Minimum playable loop: {payload.get('minimum_playable_loop') or '(missing)'}",
-        f"Game feature: {payload.get('game_feature') or '(missing)'}",
-        f"Core gameplay loop: {payload.get('core_gameplay_loop') or '(missing)'}",
-        f"Win / fail conditions: {payload.get('win_fail_conditions') or '(missing)'}",
-        f"Success criteria: {', '.join(payload.get('success_criteria') or []) or '(missing)'}",
-        f"Hard intake score: {intake_score['total_score']}/{intake_score['max_score']}",
-        f"Hard recommendation: {intake_score['recommendation']}",
+        "原型工作流已暂停，等待确认。",
+        f"原型文件：{file_path or '未提供'}",
+        f"Slug：{payload.get('slug') or '（缺失）'}",
+        f"假设：{payload.get('hypothesis') or '（缺失）'}",
+        f"核心玩家幻想：{payload.get('core_player_fantasy') or '（缺失）'}",
+        f"最小可玩循环：{payload.get('minimum_playable_loop') or '（缺失）'}",
+        f"游戏特色：{payload.get('game_feature') or '（缺失）'}",
+        f"核心游戏循环：{payload.get('core_gameplay_loop') or '（缺失）'}",
+        f"胜利 / 失败条件：{payload.get('win_fail_conditions') or '（缺失）'}",
+        f"成功标准：{', '.join(payload.get('success_criteria') or []) or '（缺失）'}",
+        f"硬评分：{intake_score['total_score']}/{intake_score['max_score']}",
+        f"硬评分建议：{intake_score['recommendation']}",
     ]
     specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
     selected_sections = [item for item in list(specifics.get("selected_sections") or []) if isinstance(item, dict)]
     if selected_sections:
-        lines.append(f"Game type guide: {specifics.get('guide_path') or '(missing)'}")
+        lines.append(f"游戏类型指南：{specifics.get('guide_path') or '（缺失）'}")
         for section in selected_sections:
             title = str(section.get("title") or section.get("id") or "Game type section")
             answer = str(section.get("answer") or "(missing)")
             lines.append(f"{title}: {answer}")
+    implementation_skill = payload.get("implementation_skill") if isinstance(payload.get("implementation_skill"), dict) else {}
+    if implementation_skill:
+        lines.append(f"Prototype implementation skill: {implementation_skill.get('name') or 'unknown'}")
+        lines.append(f"Prototype implementation skill path: {implementation_skill.get('path') or 'missing'}")
     for item in intake_score["dimensions"]:
         lines.append(f"{item['label']}: {item['score']}/{item['max_score']}")
     if llm_review and llm_review.get("status") == "ok":
@@ -656,7 +741,7 @@ def _build_confirmation_message(
         if top_gaps:
             lines.append(f"AI top gaps: {'; '.join(top_gaps[:3])}")
     elif llm_review and llm_review.get("status") == "skipped":
-        lines.append("AI market/commercial review: not run")
+        lines.append("AI 市场/商业化评估：未运行")
     elif llm_review and llm_review.get("status") not in {"skipped", ""}:
         lines.append(f"AI market/commercial review: {llm_review.get('status')} ({llm_review.get('reason') or llm_review.get('error') or 'see active state'})")
     return "\n".join(lines)
@@ -755,6 +840,13 @@ def _ensure_prototype_record(root: Path, payload: dict[str, Any]) -> tuple[int, 
             answer = str(section.get("answer") or "").strip()
             if title or answer:
                 cmd += ["--game-type-specific-section", f"{title}: {answer}"]
+    implementation_skill = payload.get("implementation_skill") if isinstance(payload.get("implementation_skill"), dict) else {}
+    if implementation_skill.get("name"):
+        cmd += ["--implementation-skill-name", str(implementation_skill.get("name"))]
+    if implementation_skill.get("path"):
+        cmd += ["--implementation-skill-path", str(implementation_skill.get("path"))]
+    if implementation_skill.get("contract_path"):
+        cmd += ["--implementation-skill-contract-path", str(implementation_skill.get("contract_path"))]
     return _run(cmd, cwd=root)
 
 
@@ -765,17 +857,17 @@ def _day_steps(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {
             "day": 1,
-            "title": "Create prototype record",
+            "title": "创建原型记录",
             "cmd": None,
         },
         {
             "day": 2,
-            "title": "Create minimum prototype scene scaffold",
+            "title": "创建最小原型场景脚手架",
             "cmd": ["py", "-3", "scripts/python/dev_cli.py", "create-prototype-scene", "--slug", slug],
         },
         {
             "day": 3,
-            "title": "Run prototype red",
+            "title": "执行 prototype red",
             "cmd": [
                 "py",
                 "-3",
@@ -793,7 +885,7 @@ def _day_steps(payload: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "day": 4,
-            "title": "Run prototype green",
+            "title": "执行 prototype green",
             "cmd": [
                 "py",
                 "-3",
@@ -811,7 +903,7 @@ def _day_steps(payload: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "day": 5,
-            "title": "Run Godot-side prototype verification",
+            "title": "执行 Godot 侧原型验证",
             "cmd": [
                 "py",
                 "-3",
@@ -861,16 +953,16 @@ def _apply_answers(payload: dict[str, Any], answers: dict[str, str]) -> dict[str
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description="Run the prototype 7-day top-level workflow router through Day 5.")
-    ap.add_argument("--prototype-file", default="", help="Path to a prototype record filled from TEMPLATE.md / TEMPLATE.zh-CN.md.")
-    ap.add_argument("--confirm", action="store_true", help="Continue after reading and confirming the prototype summary.")
-    ap.add_argument("--set", action="append", default=[], help="Provide required answers in key=value form when the router asks for missing fields.")
-    ap.add_argument("--godot-bin", default="", help="Required before running Day 5 Godot-side verification.")
-    ap.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5], help="Stop after the selected day.")
-    ap.add_argument("--resume-active", default="", help="Resume from an active prototype slug if no file is re-supplied.")
-    ap.add_argument("--score-engine", default="deterministic", choices=["deterministic", "codex", "hybrid"], help="Optional prototype intake score engine. Codex is a soft second opinion, not the hard gate.")
-    ap.add_argument("--score-timeout-sec", type=int, default=180, help="Timeout for optional codex intake review.")
-    ap.add_argument("--self-check", action="store_true", help="Print planned behavior without executing steps.")
+    ap = argparse.ArgumentParser(description="运行 prototype 7 天顶层编排路由（默认到 Day 5）。")
+    ap.add_argument("--prototype-file", default="", help="按 TEMPLATE.md / TEMPLATE.zh-CN.md 填写后的原型记录文件路径。")
+    ap.add_argument("--confirm", action="store_true", help="阅读并确认原型摘要后继续执行。")
+    ap.add_argument("--set", action="append", default=[], help="当路由器提示缺失字段时，用 key=value 提供答案（可重复）。")
+    ap.add_argument("--godot-bin", default="", help="进入 Day 5 的 Godot 侧验证前必填。")
+    ap.add_argument("--stop-after-day", type=int, default=5, choices=[1, 2, 3, 4, 5], help="在指定天数后停止。")
+    ap.add_argument("--resume-active", default="", help="当未重新提供文件时，从活动原型 slug 恢复。")
+    ap.add_argument("--score-engine", default="deterministic", choices=["deterministic", "codex", "hybrid"], help="可选原型 intake 评分引擎。Codex 仅作软建议，不替代硬门禁。")
+    ap.add_argument("--score-timeout-sec", type=int, default=180, help="可选 codex intake 评估的超时秒数。")
+    ap.add_argument("--self-check", action="store_true", help="只打印计划行为，不实际执行步骤。")
     return ap
 
 
@@ -926,8 +1018,11 @@ def main(argv: list[str] | None = None) -> int:
     if answers:
         payload = normalize_prototype_payload(_apply_answers(payload, answers))
     payload = enrich_payload_with_game_type_guide(root=root, payload=payload)
+    payload = enrich_payload_with_prototype_manifest(root=root, payload=payload)
+    payload = enrich_payload_with_repo_local_skill(root=root, payload=payload)
     if answers:
         payload = normalize_prototype_payload(_apply_answers(payload, answers))
+        payload = enrich_payload_with_repo_local_skill(root=root, payload=payload)
 
     missing = required_field_names(payload) + ([] if required_field_names(payload) else missing_game_type_specific_question_names(payload))
     if not prototype_file and not active_payload and not answers:
@@ -942,10 +1037,10 @@ def main(argv: list[str] | None = None) -> int:
         }
         slug = payload.get("slug") or "prototype"
         path = write_active_state(repo_root=root, slug=str(slug), payload=state)
-        print("PROTOTYPE_WORKFLOW status=needs-input")
-        print(f"Active state: {path.relative_to(root).as_posix()}")
+        print("PROTOTYPE_WORKFLOW 状态=需要输入")
+        print(f"活动状态文件：{path.relative_to(root).as_posix()}")
         for item in questions:
-            print(f" - required {item['id']}: {item['prompt']}")
+            print(f" - 必填 {item['id']}：{item['prompt']}")
         return 0
 
     if missing:
@@ -955,12 +1050,12 @@ def main(argv: list[str] | None = None) -> int:
             "prototype": payload,
             "missing_required_fields": missing,
             "questions": required_questions_for_missing_payload(payload),
-            "resume_hint": "Re-run with --set key=value for each missing required field.",
+            "resume_hint": "请使用 --set key=value 补全每个缺失必填项后重新运行。",
         }
         path = write_active_state(repo_root=root, slug=str(payload.get("slug") or "prototype"), payload=state)
-        print("PROTOTYPE_WORKFLOW status=needs-input")
-        print(f"Active state: {path.relative_to(root).as_posix()}")
-        print(f"Missing required fields: {', '.join(missing)}")
+        print("PROTOTYPE_WORKFLOW 状态=需要输入")
+        print(f"活动状态文件：{path.relative_to(root).as_posix()}")
+        print(f"缺失必填字段：{', '.join(missing)}")
         return 0
 
     intake_score = build_prototype_intake_score(payload)
@@ -987,15 +1082,15 @@ def main(argv: list[str] | None = None) -> int:
             "resume_hint": f"py -3 scripts/python/dev_cli.py run-prototype-workflow {'--prototype-file ' + file_label if file_label else '--resume-active ' + str(payload['slug'])} --confirm",
         }
         path = write_active_state(repo_root=root, slug=str(payload["slug"]), payload=state)
-        print("PROTOTYPE_WORKFLOW status=needs-confirmation")
-        print(f"Active state: {path.relative_to(root).as_posix()}")
+        print("PROTOTYPE_WORKFLOW 状态=需要确认")
+        print(f"活动状态文件：{path.relative_to(root).as_posix()}")
         print(state["confirmation_summary"])
         return 0
 
     if args.self_check:
         guide = load_game_type_guide(root=root, payload=payload)
         state = {
-            "status": "self-check",
+            "status": "自检",
             "prototype_file": file_label,
             "prototype": payload,
             "game_type_guide": guide,
@@ -1028,13 +1123,13 @@ def main(argv: list[str] | None = None) -> int:
                         "prototype_file": file_label,
                         "prototype": payload,
                         "missing_required_fields": ["godot_bin"],
-                        "questions": [{"id": "godot_bin", "prompt": "godot binary path required before Day 5"}],
+                        "questions": [{"id": "godot_bin", "prompt": "进入第 5 天前需要提供 Godot 可执行文件路径"}],
                         "steps_run": steps_run,
                     }
                     path = write_active_state(repo_root=root, slug=str(payload["slug"]), payload=state)
-                    print("PROTOTYPE_WORKFLOW status=needs-input")
-                    print(f"Active state: {path.relative_to(root).as_posix()}")
-                    print("Missing required fields: godot_bin")
+                    print("PROTOTYPE_WORKFLOW 状态=需要输入")
+                    print(f"活动状态文件：{path.relative_to(root).as_posix()}")
+                    print("缺失必填字段：godot_bin")
                     return 0
                 cmd += ["--godot-bin", str(args.godot_bin)]
             rc, output = _run(cmd, cwd=root)
@@ -1055,7 +1150,7 @@ def main(argv: list[str] | None = None) -> int:
         "steps_run": steps_run,
     }
     path = write_active_state(repo_root=root, slug=str(payload["slug"]), payload=state)
-    print(f"PROTOTYPE_WORKFLOW status=ok day={args.stop_after_day} active_state={path.relative_to(root).as_posix()}")
+    print(f"PROTOTYPE_WORKFLOW 状态=完成 day={args.stop_after_day} 活动状态={path.relative_to(root).as_posix()}")
     return 0
 
 
