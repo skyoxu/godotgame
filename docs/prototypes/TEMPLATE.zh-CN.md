@@ -1,82 +1,82 @@
-# ååï¼<slug>
+# 原型：<slug>
 
-- ç¶æï¼active | promoted | archived | discarded
-- è´è´£äººï¼<name or agent>
-- æ¥æï¼<YYYY-MM-DD>
-- å³èæ­£å¼ä»»å¡ idï¼none yet | <id list>
+- 状态：active | promoted | archived | discarded
+- 负责人：<name or agent>
+- 日期：<YYYY-MM-DD>
+- 关联正式任务 id：none yet | <id list>
 
-## åè®¾
-- <ä½ æ³éªè¯ä»ä¹>
+## 假设
+- <你想验证什么>
 
-## æ ¸å¿ç©å®¶å¹»æ³
-- <ç©å®¶å¨ç¬¬ä¸åéååºè¯¥æåå°ä»ä¹ï¼æçæä»ä¹>
+## 核心玩家幻想
+- <玩家在第一分钟内应该感受到什么，或看懂什么>
 
-## æå°å¯ç©å¾ªç¯
-- <ç©å®¶å¿é¡»è½å¤å®æ´èµ°éçæå°é­ç¯>
+## 最小可玩循环
+- <玩家必须能够完整走通的最小闭环>
 
-## æ¸¸æç¹è²
-- <è¿ä¸ª prototype ææè¾¨è¯åº¦çç©æ³ç¹è²>
+## 游戏特色
+- <这个 prototype 最有辨识度的玩法特色>
 
-## æ ¸å¿æ¸¸æå¾ªç¯
-- <éå¤åççæ ¸å¿æ¸¸æå¾ªç¯>
+## 核心游戏循环
+- <重复发生的核心游戏循环>
 
-## èå© / å¤±è´¥æ¡ä»¶
-- <ç©å®¶å¦ä½è·èï¼å¦ä½å¤±è´¥>
+## 胜利 / 失败条件
+- <玩家如何获胜，如何失败>
 
-## æ¸¸æç±»åç»è
-- Game Type: <docs/game-type-guides ä¸­ç canonical idï¼ä¾å¦ rpg>
+## 游戏类型细节
+- Game Type: <docs/game-type-guides 中的 canonical id，例如 rpg>
 - Guide Path: docs/game-type-guides/<game-type>.md
-- <Step07-lite å°èæ é¢ 1>ï¼<ç©å®¶å¯¹è¯¥å°èçåç­>
-- <Step07-lite å°èæ é¢ 2>ï¼<ç©å®¶å¯¹è¯¥å°èçåç­>
-- <Step07-lite å°èæ é¢ 3>ï¼<ç©å®¶å¯¹è¯¥å°èçåç­>
+- <Step07-lite 原型 1>：<玩家对该小节的回答>
+- <Step07-lite 原型 2>：<玩家对该小节的回答>
+- <Step07-lite 原型 3>：<玩家对该小节的回答>
 
-## å®ç° Skill
-- Nameï¼<ä»å prototype skill åç§°ï¼ä¾å¦ prototype-rpg-godot-zh>
-- Pathï¼.agents/skills/<skill-name>/SKILL.md
-- Contract Pathï¼.agents/skills/<skill-name>/references/<contract-file>.md
+## 实现 Skill
+- Name: <仓内 prototype skill 名称，例如 prototype-rpg-godot-zh>
+- Path: .agents/skills/<skill-name>/SKILL.md
+- Contract Path: .agents/skills/<skill-name>/references/<contract-file>.md
 
-## ååç±»åæ¨¡æ¿
-- Game Type: <docs/prototype-type-kits ä¸­ç canonical idï¼ä¾å¦ rpg>
+## 原型类型模板
+- Game Type: <docs/prototype-type-kits 中的 canonical id，例如 rpg>
 - Kit Path: docs/prototype-type-kits/<game-type>.md
 - Manifest Path: docs/prototype-type-kits/default-rpg-template.manifest.json
 
 ### Gameplay Flow / GDD Route
-- ä½¿ç¨éæºéæªãå°å¾ææªï¼è¿æ¯äºèé½æ¯æï¼ <player answer>
-- æææ¯ååå¶æä»¤ï¼è¿æ¯å³æ¶ç¢°æ/èªå¨ææï¼ <player answer>
-- èå©ååå°å°å¾ï¼è¿æ¯è¿å¥ç»ç®åç»æ prototypeï¼ <player answer>
+- 使用随机遇怪、地图撞怪，还是二者都支持？ <player answer>
+- 战斗是回合制指令，还是即时碰撞/自动战斗？ <player answer>
+- 胜利后回到地图，还是进入结算后结束 prototype？ <player answer>
 
 ### Prototype Scene UI
-- ææåºæ¯éè¦åªäº UIï¼HPãæä»¤æé®ãæææ¥å¿ãæè½æ ï¼ <player answer>
-- å°å¾åºæ¯éè¦åªäº UIï¼HPãä»»å¡æç¤ºãå°å°å¾ãéæªæç¤ºï¼ <player answer>
-- å¤±è´¥åæ¯ç´æ¥ Game Overï¼è¿æ¯åè®¸ Retryï¼ <player answer>
+- 战斗场景需要哪些 UI：HP、指令按钮、战斗日志、技能栏？ <player answer>
+- 地图场景需要哪些 UI：HP、任务提示、小地图、遇怪提示？ <player answer>
+- 失败后是直接 Game Over，还是允许 Retry？ <player answer>
 
-## èå´
+## 范围
 - In:
-  - <åå«åå®¹>
+  - <包含内容>
 - Out:
-  - <æé¤åå®¹>
+  - <排除内容>
 
-## æåæ å
-- <å¯è§å¯çæåå¤æ­ 1>
-- <å¯è§å¯çæåå¤æ­ 2>
+## 成功标准
+- <可观察的成功判断 1>
+- <可观察的成功判断 2>
 
-## Promote ä¿¡å·
-- <ä»ä¹è¯æ®è¯´æå®å¼å¾è¿å¥æ­£å¼ä»»å¡>
+## Promote 信号
+- <什么证据说明它值得进入正式任务>
 
-## Archive ä¿¡å·
-- <ä»ä¹è¯æ®è¯´æå®æä¿¡å·ï¼ä½ææ¶ä¸éåæ­£å¼äº¤ä»>
+## Archive 信号
+- <什么证据说明它有信号，但暂时不适合正式交付>
 
-## Discard ä¿¡å·
-- <ä»ä¹è¯æ®è¯´æå®åºè¯¥åå¨ prototype é¶æ®µ>
+## Discard 信号
+- <什么证据说明它应该停在 prototype 阶段>
 
-## è¯æ®
+## 证据
 - Code paths:
   - <path>
 - Logs / media / notes:
   - <path or note>
 
-## ç»è®º
+## 结论
 - discard | archive | promote
 
-## ä¸ä¸æ­¥
-- <å¦æ promoteï¼ä¸ä¸æ­¥è¿å¥ä»ä¹æ­£å¼ä»»å¡ / overlay / test>
+## 下一步
+- <如果 promote，下一步进入什么正式任务 / overlay / test>
