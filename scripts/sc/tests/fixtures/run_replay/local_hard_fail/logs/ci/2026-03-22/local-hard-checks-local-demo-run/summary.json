@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0.0",
+  "protocol_version": "1.0.0",
+  "cmd": "local-hard-checks",
+  "task_id": "repo",
+  "requested_run_id": "local-demo-run",
+  "run_id": "local-demo-run",
+  "delivery_profile": "fast-ship",
+  "security_profile": "host-safe",
+  "status": "fail",
+  "failed_step": "run-dotnet",
+  "started_at": "2026-03-22T01:00:00Z",
+  "finished_at": "2026-03-22T01:05:00Z",
+  "out_dir": "logs/ci/2026-03-22/local-hard-checks-local-demo-run",
+  "steps": [
+    {
+      "name": "gate-bundle-hard",
+      "cmd": [
+        "py",
+        "-3",
+        "scripts/python/run_gate_bundle.py",
+        "--mode",
+        "hard"
+      ],
+      "rc": 0,
+      "status": "ok",
+      "log": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/gate-bundle-hard.log",
+      "reported_out_dir": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/hard",
+      "summary_file": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/hard/summary.json"
+    },
+    {
+      "name": "run-dotnet",
+      "cmd": [
+        "py",
+        "-3",
+        "scripts/python/run_dotnet.py",
+        "--solution",
+        "Game.sln",
+        "--configuration",
+        "Debug"
+      ],
+      "rc": 1,
+      "status": "fail",
+      "log": "logs/ci/2026-03-22/local-hard-checks-local-demo-run/run-dotnet.log",
+      "reported_out_dir": "logs/unit/2026-03-22",
+      "summary_file": "logs/unit/2026-03-22/summary.json"
+    }
+  ]
+}

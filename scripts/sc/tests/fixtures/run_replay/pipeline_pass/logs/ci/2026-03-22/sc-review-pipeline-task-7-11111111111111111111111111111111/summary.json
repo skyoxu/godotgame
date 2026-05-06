@@ -1,0 +1,56 @@
+{
+  "cmd": "sc-review-pipeline",
+  "task_id": "7",
+  "requested_run_id": "11111111111111111111111111111111",
+  "run_id": "11111111111111111111111111111111",
+  "allow_overwrite": false,
+  "force_new_run_id": false,
+  "status": "ok",
+  "steps": [
+    {
+      "name": "sc-test",
+      "cmd": [
+        "py",
+        "-3",
+        "scripts/sc/test.py",
+        "--task-id",
+        "7"
+      ],
+      "rc": 0,
+      "status": "ok",
+      "log": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/sc-test.log",
+      "reported_out_dir": "logs/ci/2026-03-22/sc-test",
+      "summary_file": "logs/ci/2026-03-22/sc-test/summary.json"
+    },
+    {
+      "name": "sc-acceptance-check",
+      "cmd": [
+        "py",
+        "-3",
+        "scripts/sc/acceptance_check.py",
+        "--task-id",
+        "7"
+      ],
+      "rc": 0,
+      "status": "ok",
+      "log": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/sc-acceptance-check.log",
+      "reported_out_dir": "logs/ci/2026-03-22/sc-acceptance-check-task-7",
+      "summary_file": "logs/ci/2026-03-22/sc-acceptance-check-task-7/summary.json"
+    },
+    {
+      "name": "sc-llm-review",
+      "cmd": [
+        "py",
+        "-3",
+        "scripts/sc/llm_review.py",
+        "--task-id",
+        "7"
+      ],
+      "rc": 0,
+      "status": "ok",
+      "log": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/sc-llm-review.log",
+      "reported_out_dir": "logs/ci/2026-03-22/sc-llm-review-task-7",
+      "summary_file": "logs/ci/2026-03-22/sc-llm-review-task-7/summary.json"
+    }
+  ]
+}

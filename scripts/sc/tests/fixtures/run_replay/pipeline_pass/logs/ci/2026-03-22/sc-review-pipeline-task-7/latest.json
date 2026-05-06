@@ -1,0 +1,14 @@
+{
+  "task_id": "7",
+  "run_id": "11111111111111111111111111111111",
+  "status": "ok",
+  "date": "2026-03-22",
+  "latest_out_dir": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111",
+  "summary_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/summary.json",
+  "execution_context_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/execution-context.json",
+  "repair_guide_json_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/repair-guide.json",
+  "repair_guide_md_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/repair-guide.md",
+  "marathon_state_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/marathon-state.json",
+  "run_events_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/run-events.jsonl",
+  "harness_capabilities_path": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/harness-capabilities.json"
+}

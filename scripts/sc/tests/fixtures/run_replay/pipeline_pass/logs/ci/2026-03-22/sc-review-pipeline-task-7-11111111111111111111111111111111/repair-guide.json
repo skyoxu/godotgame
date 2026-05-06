@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "status": "not-needed",
+  "task_id": "7",
+  "summary_status": "ok",
+  "failed_step": "",
+  "approval": {
+    "soft_gate": false,
+    "required_action": "",
+    "status": "not-needed",
+    "decision": "",
+    "reason": "",
+    "request_id": "",
+    "request_path": "",
+    "response_path": ""
+  },
+  "recommendations": [],
+  "generated_from": {
+    "summary_json": "logs/ci/2026-03-22/sc-review-pipeline-task-7-11111111111111111111111111111111/summary.json"
+  }
+}
