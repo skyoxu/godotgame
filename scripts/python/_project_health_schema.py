@@ -171,6 +171,15 @@ def _validate_project_health_dashboard_fallback(payload: dict[str, Any]) -> list
                         continue
                     for key in ("id", "title", "answer"):
                         _require_string(section, key, errors, allow_empty=True)
+        prototype_type_kit = project_overview.get("prototype_type_kit")
+        if not isinstance(prototype_type_kit, dict):
+            errors.append("$.project_overview.prototype_type_kit: expected object")
+        else:
+            for key in ("game_type", "kit_path", "manifest_path"):
+                _require_string(prototype_type_kit, key, errors, allow_empty=True)
+            manifest = prototype_type_kit.get("manifest")
+            if not isinstance(manifest, dict):
+                errors.append("$.project_overview.prototype_type_kit.manifest: expected object")
     return errors
 
 

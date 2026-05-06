@@ -6,62 +6,68 @@
 - Related formal task ids: none yet | <id list>
 
 ## Hypothesis
-- <what you are trying to prove>
+- <ä½ æ³éªè¯ä»ä¹>
 
 ## Core Player Fantasy
-- <what the player should feel or understand within the first minute>
+- <ç©å®¶å¨ç¬¬ä¸åéååºè¯¥æåå°ä»ä¹ï¼æçæä»ä¹>
 
 ## Minimum Playable Loop
-- <the smallest end-to-end loop the player must be able to complete>
+- <ç©å®¶å¿é¡»è½å¤å®æ´èµ°éçæå°é­ç¯>
 
 ## Game Feature
-- <what makes this prototype distinctive>
+- <è¿ä¸ª prototype ææè¾¨è¯åº¦çç©æ³ç¹è²>
 
 ## Core Gameplay Loop
-- <the repeated player action loop>
+- <éå¤åççæ ¸å¿æ¸¸æå¾ªç¯>
 
 ## Win / Fail Conditions
-- <how the player wins and how the player fails>
+- <ç©å®¶å¦ä½è·èï¼å¦ä½å¤±è´¥>
 
 ## Game Type Specifics
-- Game Type: <canonical id from docs/game-type-guides, for example puzzle>
+- Game Type: <docs/game-type-guides ä¸­ç canonical idï¼ä¾å¦ rpg>
 - Guide Path: docs/game-type-guides/<game-type>.md
-- <Step07-lite section title 1>: <player answer for the prototype-relevant question>
-- <Step07-lite section title 2>: <player answer for the prototype-relevant question>
-- <Step07-lite section title 3>: <player answer for the prototype-relevant question>
+- <Step07-lite å°èæ é¢ 1>: <ç©å®¶å¯¹è¯¥å°èçåç­>
+- <Step07-lite å°èæ é¢ 2>: <ç©å®¶å¯¹è¯¥å°èçåç­>
+- <Step07-lite å°èæ é¢ 3>: <ç©å®¶å¯¹è¯¥å°èçåç­>
+
+## Implementation Skill
+- Name: <ä»å prototype skill åç§°ï¼ä¾å¦ prototype-rpg-godot-zh>
+- Path: .agents/skills/<skill-name>/SKILL.md
+- Contract Path: .agents/skills/<skill-name>/references/<contract-file>.md
 
 ## Prototype Type Kit
-- Game Type: <canonical id from docs/prototype-type-kits, for example rpg>
+- Game Type: <docs/prototype-type-kits ä¸­ç canonical idï¼ä¾å¦ rpg>
 - Kit Path: docs/prototype-type-kits/<game-type>.md
+- Manifest Path: docs/prototype-type-kits/default-rpg-template.manifest.json
 
 ### Gameplay Flow / GDD Route
-- 使用随机遇怪、地图撞怪，还是二者都支持？ <player answer>
-- 战斗是回合制指令，还是即时碰撞/自动战斗？ <player answer>
-- 胜利后回到地图，还是进入结算后结束 prototype？ <player answer>
+- ä½¿ç¨éæºéæªãå°å¾ææªï¼è¿æ¯äºèé½æ¯æï¼ <player answer>
+- æææ¯ååå¶æä»¤ï¼è¿æ¯å³æ¶ç¢°æ/èªå¨ææï¼ <player answer>
+- èå©ååå°å°å¾ï¼è¿æ¯è¿å¥ç»ç®åç»æ prototypeï¼ <player answer>
 
 ### Prototype Scene UI
-- 战斗场景需要哪些 UI：HP、指令按钮、战斗日志、技能栏？ <player answer>
-- 地图场景需要哪些 UI：HP、任务提示、小地图、遇怪提示？ <player answer>
-- 失败后是直接 Game Over，还是允许 Retry？ <player answer>
+- ææåºæ¯éè¦åªäº UIï¼HPãæä»¤æé®ãæææ¥å¿ãæè½æ ï¼ <player answer>
+- å°å¾åºæ¯éè¦åªäº UIï¼HPãä»»å¡æç¤ºãå°å°å¾ãéæªæç¤ºï¼ <player answer>
+- å¤±è´¥åæ¯ç´æ¥ Game Overï¼è¿æ¯åè®¸ Retryï¼ <player answer>
 
 ## Scope
 - In:
-  - <item>
+  - <åå«åå®¹>
 - Out:
-  - <item>
+  - <æé¤åå®¹>
 
 ## Success Criteria
-- <observable check 1>
-- <observable check 2>
+- <å¯è§å¯çæåå¤æ­ 1>
+- <å¯è§å¯çæåå¤æ­ 2>
 
 ## Promote Signals
-- <what evidence means this should become a formal task>
+- <ä»ä¹è¯æ®è¯´æå®å¼å¾è¿å¥æ­£å¼ä»»å¡>
 
 ## Archive Signals
-- <what evidence means the idea has signal but is not ready for formal delivery>
+- <ä»ä¹è¯æ®è¯´æå®æä¿¡å·ï¼ä½ææ¶ä¸éåæ­£å¼äº¤ä»>
 
 ## Discard Signals
-- <what evidence means the idea should stop here>
+- <ä»ä¹è¯æ®è¯´æå®åºè¯¥åå¨ prototype é¶æ®µ>
 
 ## Evidence
 - Code paths:
@@ -73,4 +79,4 @@
 - discard | archive | promote
 
 ## Next Step
-- <if promote, describe the formal task / overlay / test follow-up>
+- <å¦æ promoteï¼ä¸ä¸æ­¥è¿å¥ä»ä¹æ­£å¼ä»»å¡ / overlay / test>

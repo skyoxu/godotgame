@@ -126,6 +126,11 @@ class RunPrototypeTddTests(unittest.TestCase):
                 "- Core Puzzle Mechanics: Flip gravity changes the valid path through one constrained room.\n",
                 encoding="utf-8",
             )
+            (root / "docs" / "prototype-type-kits").mkdir(parents=True, exist_ok=True)
+            (root / "docs" / "prototype-type-kits" / "default-rpg-template.manifest.json").write_text(
+                '{"schema_version":1,"slug":"default-rpg-template","paths":{"default_scene":"Game.Godot/Prototypes/DefaultRpgTemplate/DefaultRpgPrototype.tscn"}}\n',
+                encoding="utf-8",
+            )
 
             with mock.patch.object(prototype_tdd, "repo_root", return_value=root), \
                 mock.patch.object(prototype_tdd, "today_str", return_value="2026-04-09"), \
@@ -164,6 +169,7 @@ class RunPrototypeTddTests(unittest.TestCase):
                 "## Prototype Type Kit\n"
                 "- Game Type: rpg\n"
                 "- Kit Path: docs/prototype-type-kits/rpg.md\n"
+                "- Manifest Path: docs/prototype-type-kits/default-rpg-template.manifest.json\n"
                 "### Gameplay Flow / GDD Route\n"
                 "- 使用随机遇怪、地图撞怪，还是二者都支持？ 地图撞怪。\n"
                 "- 战斗是回合制指令，还是即时碰撞/自动战斗？ 回合制指令。\n"
@@ -200,6 +206,50 @@ class RunPrototypeTddTests(unittest.TestCase):
             self.assertEqual("docs/prototype-type-kits/rpg.md", kit["kit_path"])
             self.assertIn("地图撞怪", kit["gameplay_flow"][0]["answer"])
             self.assertIn("Battle Log", kit["prototype_scene_ui"][0]["answer"])
+
+
+    def test_should_consume_repo_local_implementation_skill_from_existing_record(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "2026-04-09" / "prototype-tdd-rpg-skill-red"
+            record = root / "docs" / "prototypes" / "rpg-skill.md"
+            record.parent.mkdir(parents=True)
+            record.write_text(
+                "# Prototype: rpg-skill\n\n"
+                "## Implementation Skill\n"
+                "- Name: prototype-rpg-godot-zh\n"
+                "- Path: .agents/skills/prototype-rpg-godot-zh/SKILL.md\n"
+                "- Contract Path: .agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md\n",
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(prototype_tdd, "repo_root", return_value=root), \
+                mock.patch.object(prototype_tdd, "today_str", return_value="2026-04-09"), \
+                mock.patch.object(prototype_tdd, "run_cmd", return_value=(1, "expected red failure\n")):
+                rc = prototype_tdd.main(
+                    [
+                        "--slug",
+                        "rpg-skill",
+                        "--stage",
+                        "red",
+                        "--record-path",
+                        "docs/prototypes/rpg-skill.md",
+                        "--dotnet-target",
+                        "Game.Core.Tests/Game.Core.Tests.csproj",
+                        "--out-dir",
+                        str(out_dir),
+                    ]
+                )
+
+            self.assertEqual(0, rc)
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            skill = summary["prototype_intake"]["implementation_skill"]
+            self.assertEqual("prototype-rpg-godot-zh", skill["name"])
+            self.assertEqual(".agents/skills/prototype-rpg-godot-zh/SKILL.md", skill["path"])
+            self.assertEqual(
+                ".agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md",
+                skill["contract_path"],
+            )
 
 
 if __name__ == "__main__":

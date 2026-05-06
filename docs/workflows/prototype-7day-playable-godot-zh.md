@@ -76,6 +76,16 @@ Step 7 is consumed as `Step07-lite`:
 - Persist answers under `## Game Type Specifics` in the prototype record.
 - Surface the captured guide path, section titles, and answers in `project-health` after the next scan.
 
+### 0.2.2 RPG Repo-Local Skill Routing
+
+When `game_type` resolves to `rpg`, the top-level router should attach the repo-local implementation skill metadata:
+
+- Skill path: `.agents/skills/prototype-rpg-godot-zh/SKILL.md`
+- Contract path: `.agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md`
+- Default RPG template manifest: `docs/prototype-type-kits/default-rpg-template.manifest.json`
+
+This metadata must remain repo-relative. Do not hardcode absolute project paths, asset paths, or assume the Godot project layout beyond the current repository root.
+
 ### 0.3 暂停与确认机制
 
 这个入口不是“拿到信息就一路跑到底”。它在以下场景会主动暂停：

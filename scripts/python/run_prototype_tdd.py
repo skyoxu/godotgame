@@ -85,6 +85,9 @@ def _render_record(
     game_type_specific_game_type: str,
     game_type_specific_guide_path: str,
     game_type_specific_sections: list[str],
+    implementation_skill_name: str,
+    implementation_skill_path: str,
+    implementation_skill_contract_path: str,
     scope_in: list[str],
     scope_out: list[str],
     success_criteria: list[str],
@@ -107,6 +110,12 @@ def _render_record(
     ]
     for item in game_type_specific_sections or []:
         game_type_specific_lines.append(f"- {item}")
+    implementation_skill_lines = [
+        "## Implementation Skill",
+        f"- Name: {implementation_skill_name or 'TBD'}",
+        f"- Path: {implementation_skill_path or 'TBD'}",
+        f"- Contract Path: {implementation_skill_contract_path or 'TBD'}",
+    ]
     lines = [
         f"# Prototype: {slug}",
         "",
@@ -134,6 +143,8 @@ def _render_record(
         f"- {win_fail_conditions}",
         "",
         *game_type_specific_lines,
+        "",
+        *implementation_skill_lines,
         "",
         "## Scope",
         "- In:",
@@ -187,6 +198,9 @@ def _ensure_record(
     game_type_specific_game_type: str,
     game_type_specific_guide_path: str,
     game_type_specific_sections: list[str],
+    implementation_skill_name: str,
+    implementation_skill_path: str,
+    implementation_skill_contract_path: str,
     scope_in: list[str],
     scope_out: list[str],
     success_criteria: list[str],
@@ -216,6 +230,9 @@ def _ensure_record(
                 game_type_specific_game_type=game_type_specific_game_type,
                 game_type_specific_guide_path=game_type_specific_guide_path,
                 game_type_specific_sections=game_type_specific_sections,
+                implementation_skill_name=implementation_skill_name,
+                implementation_skill_path=implementation_skill_path,
+                implementation_skill_contract_path=implementation_skill_contract_path,
                 scope_in=scope_in,
                 scope_out=scope_out,
                 success_criteria=success_criteria,
@@ -287,7 +304,8 @@ def _parse_prototype_type_kit_from_record(path: Path) -> dict[str, object]:
     if not path.exists():
         return {}
     text = path.read_text(encoding="utf-8")
-    result: dict[str, object] = {"game_type": "", "kit_path": "", "gameplay_flow": [], "prototype_scene_ui": []}
+    root = repo_root()
+    result: dict[str, object] = {"game_type": "", "kit_path": "", "manifest_path": "", "gameplay_flow": [], "prototype_scene_ui": []}
     in_kit = False
     subsection = ""
     gameplay_flow: list[dict[str, str]] = []
@@ -321,6 +339,9 @@ def _parse_prototype_type_kit_from_record(path: Path) -> dict[str, object]:
             if normalized_key in {"kit path", "prototype type kit path", "模板路径", "原型类型模板路径"}:
                 result["kit_path"] = value.strip() if value.strip().upper() != "TBD" else ""
                 continue
+            if normalized_key in {"manifest path", "template manifest", "manifest"}:
+                result["manifest_path"] = value.strip() if value.strip().upper() != "TBD" else ""
+                continue
         question, answer = _split_question_answer(entry)
         item = {"id": _section_id(question), "question": question, "answer": answer}
         if subsection == "gameplay_flow":
@@ -329,7 +350,48 @@ def _parse_prototype_type_kit_from_record(path: Path) -> dict[str, object]:
             prototype_scene_ui.append(item)
     result["gameplay_flow"] = gameplay_flow
     result["prototype_scene_ui"] = prototype_scene_ui
-    if not result["game_type"] and not result["kit_path"] and not gameplay_flow and not prototype_scene_ui:
+    manifest_path = str(result.get("manifest_path") or "").strip()
+    if manifest_path:
+        manifest_file = (root / manifest_path).resolve()
+        if manifest_file.exists():
+            try:
+                manifest_payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                manifest_payload = {}
+            if isinstance(manifest_payload, dict):
+                result["manifest"] = manifest_payload
+    if not result["game_type"] and not result["kit_path"] and not result["manifest_path"] and not gameplay_flow and not prototype_scene_ui:
+        return {}
+    return result
+
+
+def _parse_implementation_skill_from_record(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    in_section = False
+    result: dict[str, object] = {"name": "", "path": "", "contract_path": ""}
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            in_section = _normalize_heading(stripped[3:]) in {"implementation skill", "prototype implementation skill"}
+            continue
+        if not in_section or not stripped.startswith("- "):
+            continue
+        entry = stripped[2:].strip()
+        if ":" not in entry and "：" not in entry:
+            continue
+        key, value = re.split(r"[:：]", entry, maxsplit=1)
+        normalized_key = _normalize_heading(key)
+        value = value.strip()
+        if normalized_key == "name":
+            result["name"] = "" if value.upper() == "TBD" else value
+        elif normalized_key == "path":
+            result["path"] = "" if value.upper() == "TBD" else value
+        elif normalized_key in {"contract path", "contract_path"}:
+            result["contract_path"] = "" if value.upper() == "TBD" else value
+    if not result["name"] and not result["path"] and not result["contract_path"]:
         return {}
     return result
 
@@ -342,11 +404,14 @@ def _load_prototype_intake(*, root: Path, prototype_record: str) -> dict[str, ob
         record = (root / prototype_record).resolve()
     specifics = _parse_game_type_specifics_from_record(record)
     type_kit = _parse_prototype_type_kit_from_record(record)
+    implementation_skill = _parse_implementation_skill_from_record(record)
     intake: dict[str, object] = {}
     if specifics:
         intake["game_type_specifics"] = specifics
     if type_kit:
         intake["prototype_type_kit"] = type_kit
+    if implementation_skill:
+        intake["implementation_skill"] = implementation_skill
     return intake
 
 
@@ -450,6 +515,9 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--game-type-specific-game-type", default="")
     ap.add_argument("--game-type-specific-guide-path", default="")
     ap.add_argument("--game-type-specific-section", action="append", default=[])
+    ap.add_argument("--implementation-skill-name", default="")
+    ap.add_argument("--implementation-skill-path", default="")
+    ap.add_argument("--implementation-skill-contract-path", default="")
     ap.add_argument("--scope-in", action="append", default=[])
     ap.add_argument("--scope-out", action="append", default=[])
     ap.add_argument("--success-criteria", action="append", default=[])
@@ -494,6 +562,9 @@ def main(argv: list[str] | None = None) -> int:
         game_type_specific_game_type=str(args.game_type_specific_game_type),
         game_type_specific_guide_path=str(args.game_type_specific_guide_path),
         game_type_specific_sections=[str(item) for item in args.game_type_specific_section],
+        implementation_skill_name=str(args.implementation_skill_name),
+        implementation_skill_path=str(args.implementation_skill_path),
+        implementation_skill_contract_path=str(args.implementation_skill_contract_path),
         scope_in=[str(item) for item in args.scope_in],
         scope_out=[str(item) for item in args.scope_out],
         success_criteria=[str(item) for item in args.success_criteria],

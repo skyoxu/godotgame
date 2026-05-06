@@ -74,7 +74,7 @@
     "project_overview": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["game_name", "game_type", "documents", "prototype_core", "game_type_specifics"],
+      "required": ["game_name", "game_type", "documents", "prototype_core", "game_type_specifics", "prototype_type_kit"],
       "properties": {
         "game_name": { "type": "string" },
         "game_type": { "type": "string" },
@@ -117,6 +117,19 @@
                   "answer": { "type": "string" }
                 }
               }
+            }
+          }
+        },
+        "prototype_type_kit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["game_type", "kit_path", "manifest_path", "manifest"],
+          "properties": {
+            "game_type": { "type": "string" },
+            "kit_path": { "type": "string" },
+            "manifest_path": { "type": "string" },
+            "manifest": {
+              "type": "object"
             }
           }
         }

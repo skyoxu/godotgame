@@ -412,7 +412,27 @@ class ProjectHealthSupportTests(unittest.TestCase):
                 "## Game Type Specifics\n"
                 "- Game Type: puzzle\n"
                 "- Guide Path: docs/game-type-guides/puzzle.md\n"
-                "- Core Puzzle Mechanics: Flip gravity changes the valid path through one constrained room.\n",
+                "- Core Puzzle Mechanics: Flip gravity changes the valid path through one constrained room.\n\n"
+                "## Prototype Type Kit\n"
+                "- Game Type: puzzle\n"
+                "- Kit Path: docs/prototype-type-kits/puzzle.md\n"
+                "- Manifest Path: docs/prototype-type-kits/default-rpg-template.manifest.json\n",
+            )
+            _write(
+                root / "docs" / "prototype-type-kits" / "default-rpg-template.manifest.json",
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "slug": "default-rpg-template",
+                        "paths": {
+                            "asset_pack_root": "Game.Godot/Prototypes/DefaultRpgTemplate/Assets/",
+                            "default_scene": "Game.Godot/Prototypes/DefaultRpgTemplate/DefaultRpgPrototype.tscn",
+                        },
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
             )
             _write(root / "examples" / "taskmaster" / "tasks.json", "{}\n")
             _write(root / "examples" / "taskmaster" / "tasks_back.json", "{}\n")
@@ -444,11 +464,21 @@ class ProjectHealthSupportTests(unittest.TestCase):
                 "Flip gravity changes the valid path through one constrained room.",
                 latest_index["project_overview"]["game_type_specifics"]["selected_sections"][0]["answer"],
             )
+            self.assertEqual(
+                "docs/prototype-type-kits/default-rpg-template.manifest.json",
+                latest_index["project_overview"]["prototype_type_kit"]["manifest_path"],
+            )
+            self.assertEqual(
+                "default-rpg-template",
+                latest_index["project_overview"]["prototype_type_kit"]["manifest"]["slug"],
+            )
             self.assertIn("Gravity Rooms", dashboard_html)
             self.assertIn("docs/prd/overview.md", dashboard_html)
             self.assertIn("Gravity flip rooms", dashboard_html)
             self.assertIn("Core Puzzle Mechanics", dashboard_html)
             self.assertIn("Flip gravity changes the valid path", dashboard_html)
+            self.assertIn("default-rpg-template.manifest.json", dashboard_html)
+            self.assertIn("default-rpg-template", dashboard_html)
             self.assertEqual(payload, latest_scan)
 
     def test_detect_project_stage_should_flag_examples_only_triplet(self) -> None:

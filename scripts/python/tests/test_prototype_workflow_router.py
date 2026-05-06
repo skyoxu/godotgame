@@ -163,6 +163,15 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
 ## 最小可玩循环
 - 进入场景，接近敌人，攻击一次，看到受击反馈，然后可以立即重试。
 
+## 游戏特色
+- 快速反馈战斗。
+
+## 核心游戏循环
+- 接近敌人，攻击，观察反馈，继续下一轮。
+
+## 胜利/失败条件
+- 击败敌人胜利；HP 归零失败。
+
 ## 范围
 - 纳入：
   - 移动
@@ -207,10 +216,10 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
         self.assertEqual(0, rc)
         self.assertEqual("needs-confirmation", active_state["status"])
         self.assertLess(active_state["prototype_intake_score"]["total_score"], 50)
-        self.assertIn("Hard intake score:", active_state["confirmation_summary"])
+        self.assertIn("硬评分：", active_state["confirmation_summary"])
         self.assertIn("Prototype feasibility:", active_state["confirmation_summary"])
-        self.assertIn("AI market/commercial review: not run", active_state["confirmation_summary"])
-        self.assertIn("PROTOTYPE_WORKFLOW status=needs-confirmation", stdout.getvalue())
+        self.assertIn("AI 市场/商业化评估：未运行", active_state["confirmation_summary"])
+        self.assertIn("PROTOTYPE_WORKFLOW 状态=需要确认", stdout.getvalue())
 
     def test_codex_score_engine_should_add_optional_llm_review_without_replacing_hard_score(self) -> None:
         module = _load_module("prototype_workflow_router_codex_score", "scripts/python/run_prototype_workflow.py")
@@ -344,6 +353,122 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
         self.assertEqual(state["status"], loaded["status"])
         self.assertEqual("combat-loop", loaded["prototype"]["slug"])
 
+    def test_rpg_payload_should_attach_repo_local_implementation_skill(self) -> None:
+        module = _load_module("prototype_workflow_router_rpg_skill_payload", "scripts/python/run_prototype_workflow.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            skill_path = root / ".agents" / "skills" / "prototype-rpg-godot-zh" / "SKILL.md"
+            skill_path.parent.mkdir(parents=True, exist_ok=True)
+            skill_path.write_text("# skill\n", encoding="utf-8")
+            contract_path = skill_path.parent / "references" / "rpg-prototype-contract.md"
+            contract_path.parent.mkdir(parents=True, exist_ok=True)
+            contract_path.write_text("# contract\n", encoding="utf-8")
+
+            payload = module.normalize_prototype_payload(
+                {
+                    "slug": "default-rpg-template",
+                    "game_type": "rpg",
+                    "hypothesis": "test",
+                    "core_player_fantasy": "test",
+                    "minimum_playable_loop": "test",
+                    "game_feature": "test",
+                    "core_gameplay_loop": "test",
+                    "win_fail_conditions": "test",
+                    "success_criteria": ["test"],
+                },
+                today="2026-05-05",
+            )
+            enriched = module.enrich_payload_with_repo_local_skill(root=root, payload=payload)
+
+        self.assertEqual("prototype-rpg-godot-zh", enriched["implementation_skill"]["name"])
+        self.assertEqual(".agents/skills/prototype-rpg-godot-zh/SKILL.md", enriched["implementation_skill"]["path"])
+        self.assertEqual(
+            ".agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md",
+            enriched["implementation_skill"]["contract_path"],
+        )
+
+    def test_non_rpg_payload_should_not_attach_repo_local_implementation_skill(self) -> None:
+        module = _load_module("prototype_workflow_router_non_rpg_skill_payload", "scripts/python/run_prototype_workflow.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            payload = module.normalize_prototype_payload(
+                {
+                    "slug": "gravity-room",
+                    "game_type": "puzzle",
+                    "hypothesis": "test",
+                    "core_player_fantasy": "test",
+                    "minimum_playable_loop": "test",
+                    "game_feature": "test",
+                    "core_gameplay_loop": "test",
+                    "win_fail_conditions": "test",
+                    "success_criteria": ["test"],
+                },
+                today="2026-05-05",
+            )
+            enriched = module.enrich_payload_with_repo_local_skill(root=root, payload=payload)
+
+        self.assertNotIn("implementation_skill", enriched)
+
+    def test_confirm_pause_should_persist_rpg_skill_metadata_in_active_state(self) -> None:
+        module = _load_module("prototype_workflow_router_rpg_skill_state", "scripts/python/run_prototype_workflow.py")
+        template = """# Prototype: default-rpg-template
+
+## Hypothesis
+- test hypothesis
+
+## Core Player Fantasy
+- test fantasy
+
+## Minimum Playable Loop
+- test loop
+
+## Game Type
+- rpg
+
+## Game Feature
+- test feature
+
+## Core Gameplay Loop
+- test gameplay loop
+
+## Win / Fail Conditions
+- test win fail
+
+## Success Criteria
+- test criteria
+"""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            skill_path = root / ".agents" / "skills" / "prototype-rpg-godot-zh" / "SKILL.md"
+            skill_path.parent.mkdir(parents=True, exist_ok=True)
+            skill_path.write_text("# skill\n", encoding="utf-8")
+            contract_path = skill_path.parent / "references" / "rpg-prototype-contract.md"
+            contract_path.parent.mkdir(parents=True, exist_ok=True)
+            contract_path.write_text("# contract\n", encoding="utf-8")
+            manifest_path = root / "docs" / "prototype-type-kits" / "default-rpg-template.manifest.json"
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text('{"schema_version":1,"slug":"default-rpg-template","paths":{"default_scene":"Game.Godot/Prototypes/DefaultRpgTemplate/DefaultRpgPrototype.tscn"}}\n', encoding="utf-8")
+            prototype_file = root / "docs" / "prototypes" / "default-rpg-template.md"
+            prototype_file.parent.mkdir(parents=True, exist_ok=True)
+            prototype_file.write_text(template, encoding="utf-8")
+            module.repo_root = lambda: root
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                rc = module.main(["--prototype-file", str(prototype_file)])
+            active_path = root / "logs" / "ci" / "active-prototypes" / "default-rpg-template.active.json"
+            active_state = json.loads(active_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(0, rc)
+        self.assertEqual(
+            ".agents/skills/prototype-rpg-godot-zh/SKILL.md",
+            active_state["prototype"]["implementation_skill"]["path"],
+        )
+        self.assertEqual(
+            "docs/prototype-type-kits/default-rpg-template.manifest.json",
+            active_state["prototype"]["prototype_type_kit"]["manifest_path"],
+        )
+        self.assertIn("prototype-rpg-godot-zh", active_state["confirmation_summary"])
+
     def test_record_render_should_include_template_fields(self) -> None:
         module = _load_module("prototype_workflow_router_record", "scripts/python/run_prototype_tdd.py")
         rendered = module._render_record(
@@ -353,6 +478,15 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
             hypothesis="验证战斗循环是否值得继续",
             core_player_fantasy="第一分钟内感受到战斗节奏",
             minimum_playable_loop="进入战斗，攻击一次，看到受击反馈",
+            game_feature="快速反馈战斗",
+            core_gameplay_loop="接近敌人，攻击，反馈，继续",
+            win_fail_conditions="击败敌人胜利；HP 归零失败",
+            game_type_specific_game_type="",
+            game_type_specific_guide_path="",
+            game_type_specific_sections=[],
+            implementation_skill_name="prototype-rpg-godot-zh",
+            implementation_skill_path=".agents/skills/prototype-rpg-godot-zh/SKILL.md",
+            implementation_skill_contract_path=".agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md",
             scope_in=["移动", "攻击"],
             scope_out=["正式任务"],
             success_criteria=["玩家能完成一次最小循环"],
@@ -366,6 +500,7 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
 
         self.assertIn("## Core Player Fantasy", rendered)
         self.assertIn("## Minimum Playable Loop", rendered)
+        self.assertIn("## Implementation Skill", rendered)
         self.assertIn("## Promote Signals", rendered)
         self.assertIn("## Archive Signals", rendered)
         self.assertIn("## Discard Signals", rendered)

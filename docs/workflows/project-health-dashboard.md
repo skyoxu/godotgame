@@ -59,6 +59,7 @@ Each latest JSON record also has a companion `*.latest.md` summary generated fro
 Open `logs/ci/project-health/latest.html` in a browser or VS Code preview.
 The dashboard now aggregates report-style JSON files under `logs/ci/**` and shows them in a collapsible table.
 The page does not auto-refresh. Use the manual refresh button after rerunning health commands.
+The project overview card also exposes prototype routing metadata: `Prototype type kit path`, `Prototype manifest path`, `Prototype manifest slug`, and `Prototype manifest default scene`.
 It keeps the same compatibility note in page output: `Auto-refresh is disabled`.
 It is still a static local file: the content only changes when one of the commands writes a new latest record.
 When a batch workflow summary exposes high-value fields such as `extract_family_recommended_actions`, `family_hotspots`, or `quarantine_ranges`, the page also renders a compact diagnostics excerpt above the full JSON table.

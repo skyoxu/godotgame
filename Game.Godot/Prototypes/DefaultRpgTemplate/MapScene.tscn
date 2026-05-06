@@ -1,0 +1,250 @@
+[gd_scene format=3]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.113725, 0.12549, 0.176471, 0.96)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.760784, 0.717647, 0.498039, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="2"]
+bg_color = Color(0.176471, 0.188235, 0.25098, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.843137, 0.745098, 0.454902, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="3"]
+bg_color = Color(0.0862745, 0.0941176, 0.113725, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.607843, 0.639216, 0.745098, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 4
+
+[node name="MapScene" type="PanelContainer"]
+custom_minimum_size = Vector2(700, 686)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("1")
+
+[node name="MapMargin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="MapVBox" type="VBoxContainer" parent="MapMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MapInfo" type="HBoxContainer" parent="MapMargin/MapVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TimerPanel" type="PanelContainer" parent="MapMargin/MapVBox/MapInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("2")
+
+[node name="TimerMargin" type="MarginContainer" parent="MapMargin/MapVBox/MapInfo/TimerPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="TimerLabel" type="Label" parent="MapMargin/MapVBox/MapInfo/TimerPanel/TimerMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "已移动 0格，当前遇敌率 0%，10格必遇敌。"
+
+[node name="ChestPanel" type="PanelContainer" parent="MapMargin/MapVBox/MapInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("2")
+
+[node name="ChestMargin" type="MarginContainer" parent="MapMargin/MapVBox/MapInfo/ChestPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="ChestLabel" type="Label" parent="MapMargin/MapVBox/MapInfo/ChestPanel/ChestMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "地图宝箱 1 个。"
+
+[node name="TrackFrame" type="PanelContainer" parent="MapMargin/MapVBox"]
+custom_minimum_size = Vector2(612, 612)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("3")
+
+[node name="TrackMargin" type="MarginContainer" parent="MapMargin/MapVBox/TrackFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="Track" type="CenterContainer" parent="MapMargin/MapVBox/TrackFrame/TrackMargin"]
+custom_minimum_size = Vector2(600, 600)
+layout_mode = 2
+clip_contents = true
+
+[node name="TrackRoot" type="Control" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track"]
+custom_minimum_size = Vector2(600, 600)
+layout_mode = 1
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 600.0
+clip_contents = true
+
+[node name="MapBackground" type="TextureRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+visible = false
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 600.0
+mouse_filter = 2
+stretch_mode = 6
+
+[node name="Road" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 600.0
+color = Color(0, 0, 0, 1)
+
+[node name="MapEdgeTop" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.937255, 0.831373, 0.501961, 0.78)
+
+[node name="MapEdgeBottom" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 596.0
+offset_right = 600.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.937255, 0.831373, 0.501961, 0.78)
+
+[node name="MapEdgeLeft" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 4.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.937255, 0.831373, 0.501961, 0.78)
+
+[node name="MapEdgeRight" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 596.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.937255, 0.831373, 0.501961, 0.94)
+
+[node name="MapEdgeRightShade" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 576.0
+offset_top = 0.0
+offset_right = 600.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.18)
+
+[node name="PlayerToken" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 40.0
+offset_bottom = 40.0
+color = Color(1, 1, 0, 1)
+
+[node name="PlayerGlyph" type="Label" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot/PlayerToken"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "勇"
+
+[node name="RewardChest" type="ColorRect" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 58.0
+offset_right = 92.0
+offset_bottom = 92.0
+color = Color(0, 0, 1, 1)
+
+[node name="ChestGlyph" type="Label" parent="MapMargin/MapVBox/TrackFrame/TrackMargin/Track/TrackRoot/RewardChest"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "宝"
+
+[node name="LegendPanel" type="PanelContainer" parent="MapMargin/MapVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("2")
+
+[node name="LegendMargin" type="MarginContainer" parent="MapMargin/MapVBox/LegendPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="Legend" type="Label" parent="MapMargin/MapVBox/LegendPanel/LegendMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "图例  黄:我方  蓝:宝箱  白:障碍  黑:道路"
+
+[node name="EncounterProgress" type="ProgressBar" parent="MapMargin/MapVBox"]
+layout_mode = 2
+max_value = 15.0
+value = 1.0
+show_percentage = false
+custom_minimum_size = Vector2(0, 14)

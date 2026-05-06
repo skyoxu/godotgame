@@ -18,6 +18,7 @@ from pathlib import Path
 
 from dev_cli_builders import (
     DEFAULT_GATE_BUNDLE_TASK_FILES,
+    build_generate_image_cmd,
     build_check_directory_boundaries_cmd,
     build_detect_project_stage_cmd,
     build_doctor_project_cmd,
@@ -317,6 +318,12 @@ def cmd_serve_project_health(args: argparse.Namespace) -> int:
     return run(build_serve_project_health_cmd(args))
 
 
+def cmd_generate_image(args: argparse.Namespace) -> int:
+    """Generate an image through the repo-local aiartmirror/OpenAI-compatible wrapper."""
+
+    return run(build_generate_image_cmd(args))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Dev CLI for Godot+C# template (AI-friendly entrypoint)",
@@ -355,7 +362,7 @@ def build_parser() -> argparse.ArgumentParser:
     # run-local-hard-checks
     p_lh = sub.add_parser(
         "run-local-hard-checks",
-        help="run gate bundle hard + run_dotnet, and append gdunit/smoke when --godot-bin is provided",
+        help="运行 gate bundle hard + run_dotnet；提供 --godot-bin 时追加 gdunit/smoke",
     )
     p_lh.add_argument("--solution", default="auto")
     p_lh.add_argument("--configuration", default="Debug")
@@ -370,7 +377,7 @@ def build_parser() -> argparse.ArgumentParser:
     # run-local-hard-checks-preflight
     p_lhp = sub.add_parser(
         "run-local-hard-checks-preflight",
-        help="run only gate bundle hard + run_dotnet before the full local-hard-checks harness",
+        help="在完整 local-hard-checks 前，仅运行 gate bundle hard + run_dotnet 预检",
     )
     p_lhp.add_argument("--solution", default="auto")
     p_lhp.add_argument("--configuration", default="Debug")
@@ -411,6 +418,28 @@ def build_parser() -> argparse.ArgumentParser:
     p_sm.add_argument("--godot-bin", required=True)
     p_sm.add_argument("--timeout-sec", type=int, default=5)
     p_sm.set_defaults(func=cmd_run_smoke_strict)
+
+    # generate-image
+    p_img = sub.add_parser(
+        "generate-image",
+        help="generate one image via the repo-local aiartmirror OpenAI-compatible Python wrapper",
+    )
+    p_img.add_argument("--prompt", default="")
+    p_img.add_argument("--prompt-file", default="")
+    p_img.add_argument("--out", required=True)
+    p_img.add_argument("--manifest-out", default="")
+    p_img.add_argument("--model", default="")
+    p_img.add_argument("--group", default="")
+    p_img.add_argument("--size", default="1024x1024")
+    p_img.add_argument("--quality", default="high")
+    p_img.add_argument("--output-format", default="png", choices=["png", "jpeg", "webp"])
+    p_img.add_argument("--response-format", default="b64_json", choices=["b64_json", "url"])
+    p_img.add_argument("--background", default="", choices=["", "transparent", "opaque", "auto"])
+    p_img.add_argument("--api-key-env", default="AIARTMIRROR_API_KEY")
+    p_img.add_argument("--base-url", default="")
+    p_img.add_argument("--timeout", type=float, default=120.0)
+    p_img.add_argument("--dry-run", action="store_true")
+    p_img.set_defaults(func=cmd_generate_image)
 
     # new-execution-plan
     p_ep = sub.add_parser("new-execution-plan", help="create an execution plan scaffold")
@@ -619,32 +648,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto_workflow.set_defaults(func=cmd_run_prototype_workflow)
 
     # detect-project-stage
-    p_stage = sub.add_parser("detect-project-stage", help="detect repo stage and refresh project-health artifacts")
+    p_stage = sub.add_parser("detect-project-stage", help="检测仓库阶段并刷新 project-health 产物")
     p_stage.add_argument("--repo-root", default=".")
     p_stage.set_defaults(func=cmd_detect_project_stage)
 
     # doctor-project
-    p_doctor = sub.add_parser("doctor-project", help="run repo doctor checks and refresh project-health artifacts")
+    p_doctor = sub.add_parser("doctor-project", help="运行仓库 doctor 检查并刷新 project-health 产物")
     p_doctor.add_argument("--repo-root", default=".")
     p_doctor.set_defaults(func=cmd_doctor_project)
 
     # check-directory-boundaries
     p_boundaries = sub.add_parser(
         "check-directory-boundaries",
-        help="run deterministic directory responsibility checks and refresh project-health artifacts",
+        help="运行目录职责边界确定性检查并刷新 project-health 产物",
     )
     p_boundaries.add_argument("--repo-root", default=".")
     p_boundaries.set_defaults(func=cmd_check_directory_boundaries)
 
     # project-health-scan
-    p_scan = sub.add_parser("project-health-scan", help="run all project-health checks and refresh the dashboard")
+    p_scan = sub.add_parser("project-health-scan", help="运行全部 project-health 检查并刷新仪表盘")
     p_scan.add_argument("--repo-root", default=".")
     p_scan.add_argument("--serve", action="store_true")
     p_scan.add_argument("--port", type=int, default=0)
     p_scan.set_defaults(func=cmd_project_health_scan)
 
     # serve-project-health
-    p_srv = sub.add_parser("serve-project-health", help="serve the local project-health dashboard on 127.0.0.1")
+    p_srv = sub.add_parser("serve-project-health", help="在 127.0.0.1 启动本地 project-health 仪表盘服务")
     p_srv.add_argument("--repo-root", default=".")
     p_srv.add_argument("--port", type=int, default=0)
     p_srv.set_defaults(func=cmd_serve_project_health)

@@ -61,6 +61,11 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 13. Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.
 14. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
 
+## 用户交互文案要求
+
+- Chapter 3 面向用户的说明、分步确认与阻断提示使用中文。
+- 任务文件与文档中若写入中文，必须通过 Python 并显式 `encoding=\"utf-8\"` 写入，避免终端编码导致乱码。
+
 ## Stop-Loss Signals
 
 - Existing `forbidden_commands` blocks the command about to be run.
