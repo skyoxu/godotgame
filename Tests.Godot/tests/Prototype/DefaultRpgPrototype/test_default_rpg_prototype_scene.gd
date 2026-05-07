@@ -124,20 +124,36 @@ func test_default_rpg_prototype_scene_exposes_grid_map_state() -> void:
     assert_int(scene.GetChestCountForTest()).is_greater_equal(1)
     assert_int(scene.GetObstacleCountForTest()).is_equal(0)
 
-func test_default_rpg_prototype_scene_allows_showcase_map_movement_to_right_edge() -> void:
+func test_default_rpg_prototype_scene_uses_continuous_wasd_style_map_movement() -> void:
     var scene = await _spawn_scene()
-    var start: Vector2i = scene.GetPlayerGridPositionForTest()
+    var start_grid: Vector2i = scene.GetPlayerGridPositionForTest()
+    var start_world: Vector2 = scene.GetPlayerWorldPositionForTest()
+    var direction := Vector2.RIGHT if start_grid.x < 11 else Vector2.LEFT
 
-    for _i in range(12):
-        var move_event := InputEventKey.new()
-        move_event.pressed = true
-        move_event.keycode = KEY_D
-        Input.parse_input_event(move_event)
-        await get_tree().process_frame
+    scene.MovePlayerContinuouslyForTest(direction.x, direction.y, 0.10)
+    await get_tree().process_frame
 
-    var finish: Vector2i = scene.GetPlayerGridPositionForTest()
-    assert_that(finish.y).is_equal(start.y)
-    assert_that(finish.x).is_equal(11)
+    var nudged_world: Vector2 = scene.GetPlayerWorldPositionForTest()
+    assert_bool(nudged_world != start_world).is_true()
+    assert_that(scene.GetPlayerGridPositionForTest()).is_equal(start_grid)
+
+    scene.MovePlayerContinuouslyForTest(direction.x, direction.y, 0.30)
+    await get_tree().process_frame
+
+    var finish_grid: Vector2i = scene.GetPlayerGridPositionForTest()
+    assert_that(finish_grid.y).is_equal(start_grid.y)
+    assert_bool(finish_grid.x != start_grid.x).is_true()
+
+func test_default_rpg_prototype_scene_clamps_continuous_map_movement_to_bounds() -> void:
+    var scene = await _spawn_scene()
+
+    scene.MovePlayerContinuouslyForTest(-1.0, 0.0, 20.0)
+    await get_tree().process_frame
+    assert_that(scene.GetPlayerGridPositionForTest().x).is_equal(0)
+
+    scene.MovePlayerContinuouslyForTest(1.0, 0.0, 20.0)
+    await get_tree().process_frame
+    assert_that(scene.GetPlayerGridPositionForTest().x).is_equal(11)
 
 func test_default_rpg_prototype_scene_idle_does_not_increase_encounter_progress() -> void:
     var scene = await _spawn_scene()

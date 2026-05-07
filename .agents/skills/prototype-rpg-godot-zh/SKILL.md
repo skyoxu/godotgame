@@ -20,6 +20,11 @@ Provide the default repo-local implementation lane for RPG prototypes inside the
 
 ## Operating Rules
 
+## Highest Encoding Rule
+
+- 中文文档读写必须使用 Python UTF-8。
+- 不得用 PowerShell 或 Windows 原生文本工具读写中文。
+
 - Speak to the user in Chinese.
 - Keep file writes UTF-8.
 - Do not hardcode absolute project paths, Godot project paths, or asset paths.

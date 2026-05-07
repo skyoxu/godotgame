@@ -19,7 +19,11 @@
     },
     "status": {
       "type": "string",
-      "enum": ["ok", "warn", "fail"]
+      "enum": [
+        "ok",
+        "warn",
+        "fail"
+      ]
     },
     "generated_at": {
       "type": "string",
@@ -30,42 +34,101 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind", "status", "summary", "stage", "latest_json", "history_json"],
+        "required": [
+          "kind",
+          "status",
+          "summary",
+          "stage",
+          "latest_json",
+          "history_json"
+        ],
         "properties": {
-          "kind": { "type": "string", "minLength": 1 },
-          "status": { "type": "string", "minLength": 1 },
-          "summary": { "type": "string" },
-          "stage": { "type": "string" },
-          "latest_json": { "type": "string", "minLength": 1 },
-          "history_json": { "type": "string", "minLength": 1 }
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "latest_json": {
+            "type": "string",
+            "minLength": 1
+          },
+          "history_json": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "report_catalog_summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["total_json", "invalid_json", "catalog_json"],
+      "required": [
+        "total_json",
+        "invalid_json",
+        "catalog_json"
+      ],
       "properties": {
-        "total_json": { "type": "integer", "minimum": 0 },
-        "invalid_json": { "type": "integer", "minimum": 0 },
-        "catalog_json": { "type": "string", "minLength": 1 }
+        "total_json": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalid_json": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "catalog_json": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "active_task_summary": {
       "type": "object",
-      "required": ["total", "clean", "top_records"],
+      "required": [
+        "total",
+        "clean",
+        "top_records"
+      ],
       "properties": {
-        "total": { "type": "integer", "minimum": 0 },
-        "clean": { "type": "integer", "minimum": 0 },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clean": {
+          "type": "integer",
+          "minimum": 0
+        },
         "top_records": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["task_id", "status", "recommended_action"],
+            "required": [
+              "task_id",
+              "status",
+              "recommended_action"
+            ],
             "properties": {
-              "task_id": { "type": "string", "minLength": 1 },
-              "status": { "type": "string", "minLength": 1 },
-              "recommended_action": { "type": "string", "minLength": 1 }
+              "task_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recommended_action": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -74,47 +137,117 @@
     "project_overview": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["game_name", "game_type", "documents", "prototype_core", "game_type_specifics", "prototype_type_kit"],
+      "required": [
+        "game_name",
+        "game_type",
+        "documents",
+        "prototype_core",
+        "game_type_specifics",
+        "prototype_type_kit",
+        "prototype_blueprint"
+      ],
       "properties": {
-        "game_name": { "type": "string" },
-        "game_type": { "type": "string" },
+        "game_name": {
+          "type": "string"
+        },
+        "game_type": {
+          "type": "string"
+        },
         "documents": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["prd", "gdd", "prototype"],
+          "required": [
+            "prd",
+            "gdd",
+            "prototype",
+            "prototype_spec"
+          ],
           "properties": {
-            "prd": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-            "gdd": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-            "prototype": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            "prd": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "gdd": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "prototype": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "prototype_spec": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         },
         "prototype_core": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["game_feature", "core_gameplay_loop", "win_fail_conditions"],
+          "required": [
+            "game_feature",
+            "core_gameplay_loop",
+            "win_fail_conditions"
+          ],
           "properties": {
-            "game_feature": { "type": "string" },
-            "core_gameplay_loop": { "type": "string" },
-            "win_fail_conditions": { "type": "string" }
+            "game_feature": {
+              "type": "string"
+            },
+            "core_gameplay_loop": {
+              "type": "string"
+            },
+            "win_fail_conditions": {
+              "type": "string"
+            }
           }
         },
         "game_type_specifics": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["game_type", "guide_path", "selected_sections"],
+          "required": [
+            "game_type",
+            "guide_path",
+            "selected_sections"
+          ],
           "properties": {
-            "game_type": { "type": "string" },
-            "guide_path": { "type": "string" },
+            "game_type": {
+              "type": "string"
+            },
+            "guide_path": {
+              "type": "string"
+            },
             "selected_sections": {
               "type": "array",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["id", "title", "answer"],
+                "required": [
+                  "id",
+                  "title",
+                  "answer"
+                ],
                 "properties": {
-                  "id": { "type": "string" },
-                  "title": { "type": "string" },
-                  "answer": { "type": "string" }
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -122,14 +255,78 @@
         },
         "prototype_type_kit": {
           "type": "object",
-          "additionalProperties": false,
-          "required": ["game_type", "kit_path", "manifest_path", "manifest"],
+          "additionalProperties": true,
+          "required": [
+            "game_type",
+            "kit_path",
+            "manifest_path",
+            "manifest"
+          ],
           "properties": {
-            "game_type": { "type": "string" },
-            "kit_path": { "type": "string" },
-            "manifest_path": { "type": "string" },
+            "game_type": {
+              "type": "string"
+            },
+            "kit_path": {
+              "type": "string"
+            },
+            "manifest_path": {
+              "type": "string"
+            },
             "manifest": {
               "type": "object"
+            }
+          }
+        },
+        "prototype_blueprint": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "prototype_spec",
+            "prototype_file",
+            "game_feature",
+            "core_gameplay_loop",
+            "win_fail_conditions",
+            "minimum_playable_loop",
+            "gameplay_flow",
+            "prototype_scene_ui",
+            "tdd"
+          ],
+          "properties": {
+            "prototype_spec": {
+              "type": "string"
+            },
+            "prototype_file": {
+              "type": "string"
+            },
+            "game_feature": {
+              "type": "string"
+            },
+            "core_gameplay_loop": {
+              "type": "string"
+            },
+            "win_fail_conditions": {
+              "type": "string"
+            },
+            "minimum_playable_loop": {
+              "type": "string"
+            },
+            "gameplay_flow": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "prototype_scene_ui": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "tdd": {
+              "type": "object",
+              "additionalProperties": true
             }
           }
         }

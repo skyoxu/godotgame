@@ -225,6 +225,22 @@ def build_run_prototype_tdd_cmd(args) -> list[str]:
         cmd += ["--game-type-specific-guide-path", args.game_type_specific_guide_path]
     for item in args.game_type_specific_section:
         cmd += ["--game-type-specific-section", item]
+    if getattr(args, "prototype_type_kit_game_type", ""):
+        cmd += ["--prototype-type-kit-game-type", args.prototype_type_kit_game_type]
+    if getattr(args, "prototype_type_kit_path", ""):
+        cmd += ["--prototype-type-kit-path", args.prototype_type_kit_path]
+    if getattr(args, "prototype_type_kit_manifest_path", ""):
+        cmd += ["--prototype-type-kit-manifest-path", args.prototype_type_kit_manifest_path]
+    for item in getattr(args, "prototype_type_kit_gameplay_flow", []):
+        cmd += ["--prototype-type-kit-gameplay-flow", item]
+    for item in getattr(args, "prototype_type_kit_scene_ui", []):
+        cmd += ["--prototype-type-kit-scene-ui", item]
+    if getattr(args, "implementation_skill_name", ""):
+        cmd += ["--implementation-skill-name", args.implementation_skill_name]
+    if getattr(args, "implementation_skill_path", ""):
+        cmd += ["--implementation-skill-path", args.implementation_skill_path]
+    if getattr(args, "implementation_skill_contract_path", ""):
+        cmd += ["--implementation-skill-contract-path", args.implementation_skill_contract_path]
     for item in args.scope_in:
         cmd += ["--scope-in", item]
     for item in args.scope_out:

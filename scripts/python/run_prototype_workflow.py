@@ -80,6 +80,7 @@ def parse_template_content(content: str) -> dict[str, Any]:
     current_section: str | None = None
     scope_mode: str | None = None
     evidence_mode: str | None = None
+    prototype_type_kit_subsection: str | None = None
     section_values: dict[str, list[str]] = {}
     for raw_line in lines:
         line = raw_line.rstrip()
@@ -146,11 +147,21 @@ def parse_template_content(content: str) -> dict[str, Any]:
             if current_section:
                 section_values.setdefault(current_section, []).append(entry)
             continue
+        if stripped.startswith("### ") and current_section == "prototype_type_kit":
+            heading = _normalize_heading(stripped[4:])
+            if heading in {"gameplay flow / gdd route", "gameplay flow", "gdd route", "玩法动线", "玩法动线"}:
+                prototype_type_kit_subsection = "gameplay_flow"
+            elif heading in {"prototype scene ui", "scene ui", "原型场景 ui", "场景 ui"}:
+                prototype_type_kit_subsection = "prototype_scene_ui"
+            else:
+                prototype_type_kit_subsection = None
+            continue
         if stripped.startswith("## "):
             heading = _normalize_heading(stripped[3:])
             current_section = None
             scope_mode = None
             evidence_mode = None
+            prototype_type_kit_subsection = None
             for canonical, aliases in _LIST_FIELD_ALIASES.items():
                 if heading in [_normalize_heading(item) for item in aliases]:
                     current_section = canonical
@@ -201,6 +212,14 @@ def parse_template_content(content: str) -> dict[str, Any]:
         elif key == "prototype_type_kit_manifest_path":
             payload.setdefault("prototype_type_kit", {})
             payload["prototype_type_kit"]["manifest_path"] = values[0] if values else ""
+        elif key in {"prototype_type_kit_gameplay_flow", "prototype_type_kit_prototype_scene_ui"}:
+            payload.setdefault("prototype_type_kit", {})
+            target_key = key.replace("prototype_type_kit_", "")
+            payload["prototype_type_kit"][target_key] = [
+                {"id": section_id(_split_question_answer_for_router(item)[0]), "question": _split_question_answer_for_router(item)[0], "answer": _split_question_answer_for_router(item)[1]}
+                for item in values
+                if str(item).strip()
+            ]
         else:
             payload[key] = [item for item in values if item]
     return payload
@@ -274,6 +293,170 @@ def enrich_payload_with_prototype_manifest(*, root: Path, payload: dict[str, Any
         type_kit["manifest"] = manifest_payload
     updated["prototype_type_kit"] = type_kit
     return updated
+
+
+def parse_prototype_type_kit(content: str, *, game_type: str, path: str) -> dict[str, Any]:
+    gameplay_questions: list[dict[str, str]] = []
+    ui_questions: list[dict[str, str]] = []
+    default_route: list[str] = []
+    default_ui: list[str] = []
+    current_section = ""
+    current_round = ""
+    for raw_line in str(content or "").splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith("## "):
+            heading = _normalize_heading(stripped[3:])
+            current_section = heading
+            current_round = ""
+            continue
+        if stripped.startswith("### "):
+            heading = _normalize_heading(stripped[4:])
+            if "round 1" in heading or "gameplay flow" in heading or "玩法" in heading:
+                current_round = "gameplay_flow"
+            elif "round 2" in heading or "scene ui" in heading or "场景 ui" in heading:
+                current_round = "prototype_scene_ui"
+            else:
+                current_round = ""
+            continue
+        numbered = re.match(r"^\d+[\.?]\s*(.+)$", stripped)
+        if numbered and current_round in {"gameplay_flow", "prototype_scene_ui"}:
+            question = numbered.group(1).strip()
+            if current_round == "gameplay_flow":
+                item = {"id": f"gameplay_flow_{len(gameplay_questions) + 1}", "question": question, "answer": ""}
+                gameplay_questions.append(item)
+            else:
+                item = {"id": f"prototype_scene_ui_{len(ui_questions) + 1}", "question": question, "answer": ""}
+                ui_questions.append(item)
+            continue
+        if stripped.startswith("- "):
+            bullet = stripped[2:].strip()
+            if current_section in {"gameplay flow / gdd route", "gameplay flow", "玩法动线"}:
+                default_route.append(bullet)
+            elif current_section in {"prototype scene ui", "scene ui", "原型场景 ui"}:
+                default_ui.append(bullet)
+    return {
+        "game_type": sanitize_slug(game_type),
+        "kit_path": path,
+        "gameplay_flow": gameplay_questions,
+        "prototype_scene_ui": ui_questions,
+        "default_route": default_route[:12],
+        "default_ui": default_ui[:16],
+    }
+
+
+def _merge_type_kit_items(defaults: list[dict[str, str]], existing: list[Any]) -> list[dict[str, str]]:
+    by_id: dict[str, dict[str, str]] = {}
+    for item in existing:
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question") or item.get("title") or item.get("id") or "").strip()
+        item_id = str(item.get("id") or section_id(question)).strip()
+        if item_id:
+            by_id[item_id] = {
+                "id": item_id,
+                "question": question or item_id,
+                "answer": str(item.get("answer") or "").strip(),
+            }
+    merged: list[dict[str, str]] = []
+    for item in defaults:
+        item_id = str(item.get("id") or "").strip()
+        prior = by_id.pop(item_id, {})
+        merged.append(
+            {
+                "id": item_id,
+                "question": str(item.get("question") or prior.get("question") or item_id),
+                "answer": str(prior.get("answer") or item.get("answer") or "").strip(),
+            }
+        )
+    merged.extend(by_id.values())
+    return merged
+
+
+def enrich_payload_with_prototype_type_kit(*, root: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(payload)
+    game_type = sanitize_slug(str(updated.get("game_type") or ""))
+    existing = updated.get("prototype_type_kit") if isinstance(updated.get("prototype_type_kit"), dict) else {}
+    if not game_type:
+        game_type = sanitize_slug(str(existing.get("game_type") or ""))
+    if not game_type:
+        return updated
+    kit_path = str(existing.get("kit_path") or f"docs/prototype-type-kits/{game_type}.md").strip()
+    kit_file = (root / kit_path).resolve()
+    type_kit = dict(existing)
+    type_kit["game_type"] = game_type
+    type_kit["kit_path"] = kit_path
+    if kit_file.exists():
+        parsed = parse_prototype_type_kit(kit_file.read_text(encoding="utf-8"), game_type=game_type, path=kit_path)
+        type_kit["gameplay_flow"] = _merge_type_kit_items(list(parsed.get("gameplay_flow") or []), list(existing.get("gameplay_flow") or []))
+        type_kit["prototype_scene_ui"] = _merge_type_kit_items(list(parsed.get("prototype_scene_ui") or []), list(existing.get("prototype_scene_ui") or []))
+        type_kit["default_route"] = list(parsed.get("default_route") or [])
+        type_kit["default_ui"] = list(parsed.get("default_ui") or [])
+    updated["prototype_type_kit"] = type_kit
+    return updated
+
+
+def missing_prototype_type_kit_question_names(payload: dict[str, Any]) -> list[str]:
+    type_kit = payload.get("prototype_type_kit") if isinstance(payload.get("prototype_type_kit"), dict) else {}
+    missing: list[str] = []
+    for section_name in ("gameplay_flow", "prototype_scene_ui"):
+        for item in list(type_kit.get(section_name) or []):
+            if isinstance(item, dict) and str(item.get("question") or "").strip() and not str(item.get("answer") or "").strip():
+                missing.append(f"prototype_type_kit.{section_name}.{item.get('id')}")
+    return missing
+
+
+def prototype_spec_path(*, root: Path, slug: str) -> Path:
+    return root / "docs" / "prototypes" / f"{sanitize_slug(slug)}.prototype.json"
+
+
+def build_prototype_spec_sidecar(*, root: Path, payload: dict[str, Any], prototype_file: str = "", tdd: dict[str, Any] | None = None) -> dict[str, Any]:
+    type_kit = payload.get("prototype_type_kit") if isinstance(payload.get("prototype_type_kit"), dict) else {}
+    specifics = payload.get("game_type_specifics") if isinstance(payload.get("game_type_specifics"), dict) else {}
+    implementation_skill = payload.get("implementation_skill") if isinstance(payload.get("implementation_skill"), dict) else {}
+    spec_path = prototype_spec_path(root=root, slug=str(payload.get("slug") or "prototype"))
+    existing_tdd: dict[str, Any] = {"red": "pending", "green": "pending", "refactor": "pending"}
+    if spec_path.exists():
+        try:
+            existing_payload = json.loads(spec_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing_payload = {}
+        if isinstance(existing_payload, dict) and isinstance(existing_payload.get("tdd"), dict):
+            existing_tdd.update(dict(existing_payload.get("tdd") or {}))
+    if tdd:
+        existing_tdd.update(tdd)
+    return {
+        "schema_version": 1,
+        "kind": "prototype-spec",
+        "slug": str(payload.get("slug") or ""),
+        "status": str(payload.get("status") or "active"),
+        "date": str(payload.get("date") or today_str()),
+        "game_name": str(payload.get("game_name") or ""),
+        "game_type": str(payload.get("game_type") or type_kit.get("game_type") or specifics.get("game_type") or ""),
+        "game_type_source": str(payload.get("game_type_source") or ""),
+        "game_type_guide": str(specifics.get("guide_path") or payload.get("game_type_guide_path") or ""),
+        "game_type_specifics": specifics,
+        "prototype_file": prototype_file,
+        "prototype_spec": str(spec_path.relative_to(root)).replace("\\", "/") if spec_path.is_relative_to(root) else str(spec_path),
+        "prototype_type_kit": type_kit,
+        "implementation_skill": implementation_skill,
+        "prototype_core": {
+            "hypothesis": str(payload.get("hypothesis") or ""),
+            "core_player_fantasy": str(payload.get("core_player_fantasy") or ""),
+            "minimum_playable_loop": str(payload.get("minimum_playable_loop") or ""),
+            "game_feature": str(payload.get("game_feature") or ""),
+            "core_gameplay_loop": str(payload.get("core_gameplay_loop") or ""),
+            "win_fail_conditions": str(payload.get("win_fail_conditions") or ""),
+            "success_criteria": list(payload.get("success_criteria") or []),
+        },
+        "tdd": existing_tdd,
+    }
+
+
+def write_prototype_spec_sidecar(*, root: Path, payload: dict[str, Any], prototype_file: str = "", tdd: dict[str, Any] | None = None) -> str:
+    path = prototype_spec_path(root=root, slug=str(payload.get("slug") or "prototype"))
+    spec = build_prototype_spec_sidecar(root=root, payload=payload, prototype_file=prototype_file, tdd=tdd)
+    write_json(path, spec)
+    return str(path.relative_to(root)).replace("\\", "/") if path.is_relative_to(root) else str(path)
 
 
 def _first(value: Any) -> str:
@@ -717,6 +900,13 @@ def _build_confirmation_message(
             title = str(section.get("title") or section.get("id") or "Game type section")
             answer = str(section.get("answer") or "(missing)")
             lines.append(f"{title}: {answer}")
+    type_kit = payload.get("prototype_type_kit") if isinstance(payload.get("prototype_type_kit"), dict) else {}
+    if type_kit:
+        lines.append(f"Prototype type kit: {type_kit.get('kit_path') or 'missing'}")
+        for section_name, label in (("gameplay_flow", "Gameplay Flow / GDD Route"), ("prototype_scene_ui", "Prototype Scene UI")):
+            answered = [str(item.get("answer") or "").strip() for item in list(type_kit.get(section_name) or []) if isinstance(item, dict) and str(item.get("answer") or "").strip()]
+            if answered:
+                lines.append(f"{label}: {'; '.join(answered[:3])}")
     implementation_skill = payload.get("implementation_skill") if isinstance(payload.get("implementation_skill"), dict) else {}
     if implementation_skill:
         lines.append(f"Prototype implementation skill: {implementation_skill.get('name') or 'unknown'}")
@@ -840,6 +1030,19 @@ def _ensure_prototype_record(root: Path, payload: dict[str, Any]) -> tuple[int, 
             answer = str(section.get("answer") or "").strip()
             if title or answer:
                 cmd += ["--game-type-specific-section", f"{title}: {answer}"]
+    type_kit = payload.get("prototype_type_kit") if isinstance(payload.get("prototype_type_kit"), dict) else {}
+    if type_kit.get("game_type"):
+        cmd += ["--prototype-type-kit-game-type", str(type_kit.get("game_type"))]
+    if type_kit.get("kit_path"):
+        cmd += ["--prototype-type-kit-path", str(type_kit.get("kit_path"))]
+    if type_kit.get("manifest_path"):
+        cmd += ["--prototype-type-kit-manifest-path", str(type_kit.get("manifest_path"))]
+    for item in list(type_kit.get("gameplay_flow") or []):
+        if isinstance(item, dict):
+            cmd += ["--prototype-type-kit-gameplay-flow", f"{item.get('question') or item.get('id') or ''} {item.get('answer') or ''}".strip()]
+    for item in list(type_kit.get("prototype_scene_ui") or []):
+        if isinstance(item, dict):
+            cmd += ["--prototype-type-kit-scene-ui", f"{item.get('question') or item.get('id') or ''} {item.get('answer') or ''}".strip()]
     implementation_skill = payload.get("implementation_skill") if isinstance(payload.get("implementation_skill"), dict) else {}
     if implementation_skill.get("name"):
         cmd += ["--implementation-skill-name", str(implementation_skill.get("name"))]
@@ -941,6 +1144,23 @@ def _apply_answers(payload: dict[str, Any], answers: dict[str, str]) -> dict[str
                 sections.append({"id": target_id, "title": target_id.replace("_", " ").title(), "prompt": "", "answer": value.strip()})
             specifics["selected_sections"] = sections
             updated["game_type_specifics"] = specifics
+        elif key.startswith("prototype_type_kit."):
+            parts = key.split(".")
+            if len(parts) >= 3:
+                section_name = parts[1]
+                target_id = parts[2]
+                type_kit = updated.get("prototype_type_kit") if isinstance(updated.get("prototype_type_kit"), dict) else {}
+                items = [dict(item) for item in list(type_kit.get(section_name) or []) if isinstance(item, dict)]
+                found = False
+                for item in items:
+                    if str(item.get("id") or "") == target_id:
+                        item["answer"] = value.strip()
+                        found = True
+                        break
+                if not found:
+                    items.append({"id": target_id, "question": target_id.replace("_", " "), "answer": value.strip()})
+                type_kit[section_name] = items
+                updated["prototype_type_kit"] = type_kit
         elif key == "slug":
             updated[key] = sanitize_slug(value)
         elif key == "success_criteria":
@@ -1018,13 +1238,20 @@ def main(argv: list[str] | None = None) -> int:
     if answers:
         payload = normalize_prototype_payload(_apply_answers(payload, answers))
     payload = enrich_payload_with_game_type_guide(root=root, payload=payload)
+    payload = enrich_payload_with_prototype_type_kit(root=root, payload=payload)
     payload = enrich_payload_with_prototype_manifest(root=root, payload=payload)
     payload = enrich_payload_with_repo_local_skill(root=root, payload=payload)
     if answers:
         payload = normalize_prototype_payload(_apply_answers(payload, answers))
+        payload = enrich_payload_with_game_type_guide(root=root, payload=payload)
+        payload = enrich_payload_with_prototype_type_kit(root=root, payload=payload)
+        payload = enrich_payload_with_prototype_manifest(root=root, payload=payload)
         payload = enrich_payload_with_repo_local_skill(root=root, payload=payload)
 
-    missing = required_field_names(payload) + ([] if required_field_names(payload) else missing_game_type_specific_question_names(payload))
+    core_missing = required_field_names(payload)
+    missing = core_missing + ([] if core_missing else missing_game_type_specific_question_names(payload))
+    if not missing and not core_missing:
+        missing = missing_prototype_type_kit_question_names(payload)
     if not prototype_file and not active_payload and not answers:
         questions = required_questions_for_missing_payload(payload)
         state = {
@@ -1066,6 +1293,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout_sec=int(args.score_timeout_sec),
     )
     if not args.confirm:
+        prototype_spec = write_prototype_spec_sidecar(root=root, payload=payload, prototype_file=file_label)
         state = {
             "status": "needs-confirmation",
             "prototype_file": file_label,
@@ -1073,6 +1301,7 @@ def main(argv: list[str] | None = None) -> int:
             "missing_required_fields": [],
             "prototype_intake_score": intake_score,
             "prototype_intake_llm_review": llm_review,
+            "prototype_spec": prototype_spec,
             "confirmation_summary": _build_confirmation_message(
                 payload,
                 file_path=file_label,
@@ -1109,11 +1338,14 @@ def main(argv: list[str] | None = None) -> int:
         print(record_output, end="")
         return record_rc
 
+    record_file = str(_prototype_record_path(root=root, slug=str(payload["slug"])).relative_to(root)).replace("\\", "/")
+    prototype_spec = write_prototype_spec_sidecar(root=root, payload=payload, prototype_file=record_file)
+
     steps_run: list[dict[str, Any]] = []
     for step in _day_steps(payload):
         day = int(step["day"])
         if day == 1:
-            steps_run.append({"day": day, "title": step["title"], "status": "ok", "record": str(_prototype_record_path(root=root, slug=str(payload["slug"])).relative_to(root)).replace("\\", "/")})
+            steps_run.append({"day": day, "title": step["title"], "status": "ok", "record": record_file, "prototype_spec": prototype_spec})
         else:
             cmd = [str(item) for item in (step["cmd"] or [])]
             if day == 5:
@@ -1146,6 +1378,7 @@ def main(argv: list[str] | None = None) -> int:
         "prototype": payload,
         "prototype_intake_score": intake_score,
         "prototype_intake_llm_review": llm_review,
+        "prototype_spec": prototype_spec,
         "completed_through_day": int(args.stop_after_day),
         "steps_run": steps_run,
     }

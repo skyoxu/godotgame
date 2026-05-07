@@ -21,6 +21,12 @@ Operate the top-level prototype lane router for Chinese Godot prototype work wit
 
 ## Operating Rules
 
+## Highest Encoding Rule
+
+- 所有中文文档读写必须通过 Python 并显式 `encoding="utf-8"`。
+- 严禁使用 PowerShell、`Get-Content`、`Set-Content`、`Out-File`、`Add-Content`、`type`、`echo` 或 Windows 原生文本工具读写中文。
+- 如果命令脚本必须包含中文，使用 ASCII-only Python source + Unicode escapes，再用 UTF-8 写入目标文件。
+
 - Speak to the user in Chinese.
 - Keep logs and generated command output in English.
 - Use Python with UTF-8 for document reads and writes.
@@ -141,3 +147,10 @@ Do not treat Prototype Type Kit answers as formal Chapter 6 evidence. They are p
 ## Completion Boundary
 
 Run only through Day 5 unless the user explicitly asks for manual Day 6/Day 7 planning. Day 6 playtest judgment and Day 7 `discard | archive | promote` remain human decision points.
+
+## Prototype Spec Sidecar
+
+- 顶层路由在确认阶段必须生成 `docs/prototypes/<slug>.prototype.json`。
+- Markdown prototype 记录面向人类阅读；sidecar JSON 是 prototype TDD 和 project-health 的稳定脚本契约。
+- TDD 必须优先消费 sidecar，只在 sidecar 不存在时回退解析 Markdown。
+- project-health 必须展示 prototype blueprint：游戏特色、核心游戏循环、胜利/失败条件、Gameplay Flow、Prototype Scene UI 和 TDD 状态。

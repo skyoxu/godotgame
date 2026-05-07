@@ -50,6 +50,18 @@
 - 地图场景需要哪些 UI：HP、任务提示、小地图、遇怪提示？ <player answer>
 - 失败后是直接 Game Over，还是允许 Retry？ <player answer>
 
+## Prototype Spec Sidecar
+- Spec Path: docs/prototypes/<slug>.prototype.json
+- Consumer: project-health and prototype TDD
+- Rule: Markdown is for humans; the sidecar JSON is the stable script contract.
+- Required JSON fields:
+  - prototype_core.game_feature
+  - prototype_core.core_gameplay_loop
+  - prototype_core.win_fail_conditions
+  - prototype_type_kit.gameplay_flow
+  - prototype_type_kit.prototype_scene_ui
+  - tdd.red / tdd.green / tdd.refactor
+
 ## Scope
 - In:
   - <包含内容>
