@@ -4,6 +4,7 @@
 
 - Default repo-local implementation skill: `.agents/skills/prototype-rpg-godot-zh/SKILL.md`
 - Default contract reference: `.agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md`
+- Default template manifest: `docs/prototype-type-kits/default-rpg-template.manifest.json`
 - The top-level prototype router must attach this metadata when `game_type` is `rpg`.
 - Store these paths as repo-relative metadata only. Do not hardcode absolute paths or assume the Godot project sits directly under the repo root.
 
