@@ -80,6 +80,8 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
                     "Node2D",
                     "--prototype-root",
                     "Game.Godot/Prototypes",
+                    "--template-manifest",
+                    "docs/prototype-type-kits/default-rpg-template.manifest.json",
                     "--force",
                 ]
             )
@@ -93,6 +95,8 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
         self.assertIn("Node2D", cmd)
         self.assertIn("--prototype-root", cmd)
         self.assertIn("Game.Godot/Prototypes", cmd)
+        self.assertIn("--template-manifest", cmd)
+        self.assertIn("docs/prototype-type-kits/default-rpg-template.manifest.json", cmd)
         self.assertIn("--force", cmd)
 
     def test_run_prototype_workflow_should_forward_router_pause_arguments(self) -> None:

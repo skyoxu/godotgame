@@ -36,6 +36,14 @@ Operate the top-level prototype lane router for Chinese Godot prototype work wit
 - Treat `docs/prototype-type-kits/` as prototype-only default flow/UI material for 1-2 scene playable loops. Use it to confirm or adjust the default route; do not expand it into full GDD, balance, economy, progression, or boundary design.
 - Stop for user input when required prototype fields are missing. Do not invent gameplay content.
 
+## Game-Type Implementation Routing
+
+- 当 `game_type` 为 `rpg` 时，必须同时使用本 skill 和 `prototype-rpg-godot-zh`。
+- RPG 的 Day 2 场景生成不得使用空白通用 scaffold；必须优先使用 `docs/prototype-type-kits/default-rpg-template.manifest.json` 中的 `DefaultRpgTemplate`。
+- RPG 默认素材必须来自 `Game.Godot/Prototypes/DefaultRpgTemplate/Assets/`，包括地图主角、障碍物、宝箱、战斗角色和背景素材。
+- RPG 默认场景结构必须保留 `MapScene` / `BattleScene` / `RewardPanel` / `ResultPanel` 的双场景最小闭环结构，除非用户明确要求重做视觉方向。
+- 如果 router 只生成了 `PrototypeHint` 或空白 `PrototypeLoop`，应视为错误路径，必须改用 `create-prototype-scene --template-manifest docs/prototype-type-kits/default-rpg-template.manifest.json --force`。
+
 ## Default Command
 
 ```powershell
