@@ -80,6 +80,7 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
                     "Node2D",
                     "--prototype-root",
                     "Game.Godot/Prototypes",
+                    "--force",
                 ]
             )
 
@@ -92,6 +93,7 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
         self.assertIn("Node2D", cmd)
         self.assertIn("--prototype-root", cmd)
         self.assertIn("Game.Godot/Prototypes", cmd)
+        self.assertIn("--force", cmd)
 
     def test_run_prototype_workflow_should_forward_router_pause_arguments(self) -> None:
         with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
