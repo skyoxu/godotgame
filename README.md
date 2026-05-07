@@ -4,6 +4,13 @@
 
 即开即用，可复制的 Godot 4 + .NET（Windows-only）项目模板。
 
+## Highest Encoding Rule
+- All Chinese text reads and writes must use Python with explicit UTF-8, for example `Path(path).read_text(encoding="utf-8")` and `Path(path).write_text(text, encoding="utf-8", newline="\n")`.
+- Do not use PowerShell, `Get-Content`, `Set-Content`, `Out-File`, `Add-Content`, `type`, `echo`, `copy con`, or other Windows-native text tools to read or write Chinese text.
+- If a command script must contain Chinese literals, write it as a Python file or use ASCII-only Python source with Unicode escapes, then write the target file as UTF-8.
+- This rule applies to `AGENTS.md`, `README.md`, `workflow.md`, `docs/**/*.md`, `.agents/skills/**/SKILL.md`, prototype records, and project-health documentation.
+- Code, tests, logs, and machine output remain English unless the file is explicitly user-facing documentation.
+
 ## About This Template
 
 Production-ready Godot 4.5 + C# game template with enterprise-grade tooling.

@@ -85,6 +85,11 @@ def _render_record(
     game_type_specific_game_type: str,
     game_type_specific_guide_path: str,
     game_type_specific_sections: list[str],
+    prototype_type_kit_game_type: str = "",
+    prototype_type_kit_path: str = "",
+    prototype_type_kit_manifest_path: str = "",
+    prototype_type_kit_gameplay_flow: list[str] | None = None,
+    prototype_type_kit_scene_ui: list[str] | None = None,
     implementation_skill_name: str,
     implementation_skill_path: str,
     implementation_skill_contract_path: str,
@@ -110,6 +115,17 @@ def _render_record(
     ]
     for item in game_type_specific_sections or []:
         game_type_specific_lines.append(f"- {item}")
+    prototype_type_kit_lines = [
+        "## Prototype Type Kit",
+        f"- Game Type: {prototype_type_kit_game_type or 'TBD'}",
+        f"- Kit Path: {prototype_type_kit_path or 'TBD'}",
+        f"- Manifest Path: {prototype_type_kit_manifest_path or 'TBD'}",
+        "",
+        "### Gameplay Flow / GDD Route",
+    ]
+    prototype_type_kit_lines.extend(f"- {item}" for item in (prototype_type_kit_gameplay_flow or ["TBD"]))
+    prototype_type_kit_lines.extend(["", "### Prototype Scene UI"])
+    prototype_type_kit_lines.extend(f"- {item}" for item in (prototype_type_kit_scene_ui or ["TBD"]))
     implementation_skill_lines = [
         "## Implementation Skill",
         f"- Name: {implementation_skill_name or 'TBD'}",
@@ -143,6 +159,8 @@ def _render_record(
         f"- {win_fail_conditions}",
         "",
         *game_type_specific_lines,
+        "",
+        *prototype_type_kit_lines,
         "",
         *implementation_skill_lines,
         "",
@@ -198,6 +216,11 @@ def _ensure_record(
     game_type_specific_game_type: str,
     game_type_specific_guide_path: str,
     game_type_specific_sections: list[str],
+    prototype_type_kit_game_type: str,
+    prototype_type_kit_path: str,
+    prototype_type_kit_manifest_path: str,
+    prototype_type_kit_gameplay_flow: list[str],
+    prototype_type_kit_scene_ui: list[str],
     implementation_skill_name: str,
     implementation_skill_path: str,
     implementation_skill_contract_path: str,
@@ -230,6 +253,11 @@ def _ensure_record(
                 game_type_specific_game_type=game_type_specific_game_type,
                 game_type_specific_guide_path=game_type_specific_guide_path,
                 game_type_specific_sections=game_type_specific_sections,
+                prototype_type_kit_game_type=prototype_type_kit_game_type,
+                prototype_type_kit_path=prototype_type_kit_path,
+                prototype_type_kit_manifest_path=prototype_type_kit_manifest_path,
+                prototype_type_kit_gameplay_flow=prototype_type_kit_gameplay_flow,
+                prototype_type_kit_scene_ui=prototype_type_kit_scene_ui,
                 implementation_skill_name=implementation_skill_name,
                 implementation_skill_path=implementation_skill_path,
                 implementation_skill_contract_path=implementation_skill_contract_path,
@@ -396,7 +424,70 @@ def _parse_implementation_skill_from_record(path: Path) -> dict[str, object]:
     return result
 
 
-def _load_prototype_intake(*, root: Path, prototype_record: str) -> dict[str, object]:
+def _prototype_spec_path(*, root: Path, slug: str, prototype_record: str = "") -> Path:
+    if prototype_record:
+        record = Path(prototype_record)
+        if not record.is_absolute():
+            record = root / prototype_record
+        candidate = record.with_suffix(".prototype.json")
+        if candidate.exists():
+            return candidate.resolve()
+    return root / "docs" / "prototypes" / f"{_sanitize_slug(slug)}.prototype.json"
+
+
+def _load_prototype_spec(*, root: Path, slug: str, prototype_record: str = "") -> dict[str, object]:
+    path = _prototype_spec_path(root=root, slug=slug, prototype_record=prototype_record)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_prototype_spec_tdd_status(*, root: Path, slug: str, prototype_record: str, stage: str, status: str, summary_path: str) -> str:
+    path = _prototype_spec_path(root=root, slug=slug, prototype_record=prototype_record)
+    payload = _load_prototype_spec(root=root, slug=slug, prototype_record=prototype_record)
+    if not payload:
+        payload = {
+            "schema_version": 1,
+            "kind": "prototype-spec",
+            "slug": slug,
+            "prototype_file": prototype_record,
+            "prototype_spec": str(path.relative_to(root)).replace("\\", "/") if path.is_relative_to(root) else str(path),
+            "prototype_core": {},
+            "game_type_specifics": {},
+            "prototype_type_kit": {},
+            "implementation_skill": {},
+            "tdd": {"red": "pending", "green": "pending", "refactor": "pending"},
+        }
+    tdd = payload.get("tdd") if isinstance(payload.get("tdd"), dict) else {}
+    tdd.setdefault("red", "pending")
+    tdd.setdefault("green", "pending")
+    tdd.setdefault("refactor", "pending")
+    tdd[stage] = status
+    tdd[f"{stage}_summary"] = summary_path
+    payload["tdd"] = tdd
+    payload.setdefault("prototype_file", prototype_record)
+    payload["prototype_spec"] = str(path.relative_to(root)).replace("\\", "/") if path.is_relative_to(root) else str(path)
+    write_json(path, payload)
+    return str(path.relative_to(root)).replace("\\", "/") if path.is_relative_to(root) else str(path)
+
+
+def _load_prototype_intake(*, root: Path, prototype_record: str, slug: str = "") -> dict[str, object]:
+    sidecar = _load_prototype_spec(root=root, slug=slug or "prototype", prototype_record=prototype_record)
+    if sidecar:
+        intake: dict[str, object] = {}
+        if isinstance(sidecar.get("game_type_specifics"), dict):
+            intake["game_type_specifics"] = sidecar["game_type_specifics"]
+        if isinstance(sidecar.get("prototype_type_kit"), dict):
+            intake["prototype_type_kit"] = sidecar["prototype_type_kit"]
+        if isinstance(sidecar.get("implementation_skill"), dict):
+            intake["implementation_skill"] = sidecar["implementation_skill"]
+        intake["prototype_spec"] = sidecar.get("prototype_spec") or str(_prototype_spec_path(root=root, slug=slug or "prototype", prototype_record=prototype_record))
+        if intake:
+            return intake
     if not prototype_record:
         return {}
     record = Path(prototype_record)
@@ -515,6 +606,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--game-type-specific-game-type", default="")
     ap.add_argument("--game-type-specific-guide-path", default="")
     ap.add_argument("--game-type-specific-section", action="append", default=[])
+    ap.add_argument("--prototype-type-kit-game-type", default="")
+    ap.add_argument("--prototype-type-kit-path", default="")
+    ap.add_argument("--prototype-type-kit-manifest-path", default="")
+    ap.add_argument("--prototype-type-kit-gameplay-flow", action="append", default=[])
+    ap.add_argument("--prototype-type-kit-scene-ui", action="append", default=[])
     ap.add_argument("--implementation-skill-name", default="")
     ap.add_argument("--implementation-skill-path", default="")
     ap.add_argument("--implementation-skill-contract-path", default="")
@@ -562,6 +658,11 @@ def main(argv: list[str] | None = None) -> int:
         game_type_specific_game_type=str(args.game_type_specific_game_type),
         game_type_specific_guide_path=str(args.game_type_specific_guide_path),
         game_type_specific_sections=[str(item) for item in args.game_type_specific_section],
+        prototype_type_kit_game_type=str(args.prototype_type_kit_game_type),
+        prototype_type_kit_path=str(args.prototype_type_kit_path),
+        prototype_type_kit_manifest_path=str(args.prototype_type_kit_manifest_path),
+        prototype_type_kit_gameplay_flow=[str(item) for item in args.prototype_type_kit_gameplay_flow],
+        prototype_type_kit_scene_ui=[str(item) for item in args.prototype_type_kit_scene_ui],
         implementation_skill_name=str(args.implementation_skill_name),
         implementation_skill_path=str(args.implementation_skill_path),
         implementation_skill_contract_path=str(args.implementation_skill_contract_path),
@@ -622,7 +723,9 @@ def main(argv: list[str] | None = None) -> int:
         "steps": steps,
         "create_record_only": bool(args.create_record_only),
     }
-    payload["prototype_intake"] = _load_prototype_intake(root=root, prototype_record=prototype_record)
+    payload["prototype_intake"] = _load_prototype_intake(root=root, prototype_record=prototype_record, slug=slug)
+    summary_rel = str((out_dir / "summary.json").relative_to(root)).replace("\\", "/") if (out_dir / "summary.json").is_relative_to(root) else str(out_dir / "summary.json")
+    payload["prototype_spec"] = _write_prototype_spec_tdd_status(root=root, slug=slug, prototype_record=prototype_record, stage=str(args.stage), status=status, summary_path=summary_rel)
     write_json(out_dir / "summary.json", payload)
     write_text(out_dir / "report.md", _build_report(payload=payload))
     print(f"PROTOTYPE_TDD status={status} stage={args.stage} expected={expected} out={out_dir}")

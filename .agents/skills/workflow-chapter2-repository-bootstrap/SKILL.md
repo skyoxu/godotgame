@@ -11,6 +11,12 @@ Operate Chapter 2 from `workflow.md` idempotently for a business repository that
 
 ## Operating Contract
 
+## Highest Encoding Rule
+
+- 所有中文文档读写必须通过 Python 并显式 `encoding="utf-8"`。
+- 严禁使用 PowerShell 或 Windows 原生文本工具读写中文文件。
+- 临时 Python 脚本如果需要写中文，使用 ASCII-only source + Unicode escapes 避免 Windows 终端转码。
+
 - Treat `workflow.md` as the normative workflow source.
 - Treat business-repo logs as empirical evidence, not policy overrides.
 - Use Python with UTF-8 for documentation reads and writes.
@@ -62,9 +68,10 @@ Chapter 2 is an early bootstrap workflow. Prefer direct repository checks and pr
 8. Run repository-level hard checks immediately after cleanup and index repair.
 9. Optionally start the local project-health service when browser-based health inspection is useful; keep it bound to 127.0.0.1.
 10. Use OpenAI backend bootstrap only when the repo explicitly opts into openai-api transport, and keep it out of default CI until checklist self-checks are clean.
-11. Chapter 2 ????????????? project-health ?????
+11. Chapter 2 任务完成后必须显示 project-health 访问链接：
     - URL: read `logs/ci/project-health/server.json` -> `url` when available.
     - HTML: `logs/ci/project-health/latest.html`.
+    - 如果启动了本地服务，向用户显示 URL；否则显示 HTML 路径。
 
 ## Game Type Classification Prompt
 

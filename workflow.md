@@ -1,3 +1,12 @@
+### 1.0 最高级编码规则
+
+- 所有中文文本读取和写入必须使用 Python 并显式指定 UTF-8：`Path(path).read_text(encoding="utf-8")` / `Path(path).write_text(text, encoding="utf-8", newline="\n")`。
+- 严禁使用 PowerShell、`Get-Content`、`Set-Content`、`Out-File`、`Add-Content`、`type`、`echo`、`copy con` 或其他 Windows 原生文本工具读取或写入中文。
+- 如果命令脚本必须包含中文，优先写成 Python 文件；临时脚本必须使用 ASCII-only Python source + Unicode escapes，再用 UTF-8 写入目标文件。
+- 本规则适用于 `AGENTS.md`、`README.md`、`workflow.md`、`docs/**/*.md`、`.agents/skills/**/SKILL.md`、prototype 记录和 project-health 文档。
+- 代码、测试、日志和机器输出继续保持英文，除非该文件明确是面向用户的中文文档。
+
+
 # workflow.md
 
 ## 0. 适用范围

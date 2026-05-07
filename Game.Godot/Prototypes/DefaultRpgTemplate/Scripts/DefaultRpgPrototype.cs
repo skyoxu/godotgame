@@ -25,7 +25,6 @@ public partial class DefaultRpgPrototype : Node2D
     private const double BattleLogStepDurationSec = 1.0;
     private const double SceneFadeDurationSec = 0.20;
     private const double RewardPanelFadeDurationSec = 0.18;
-    private const double MapMoveTweenDurationSec = 0.12;
     private const double EncounterFlashDurationSec = 0.16;
     private const double EncounterPunchDurationSec = 0.08;
     private const double HpBarTweenDurationSec = 0.32;
@@ -43,6 +42,9 @@ public partial class DefaultRpgPrototype : Node2D
     private const float MapPlayerTokenBaseScale = 1.18f;
     private const float MapPlayerTokenPulseScale = 0.12f;
     private const double MapPlayerPulseCycleSec = 1.2;
+    private const float MapPlayerMoveSpeed = 180.0f;
+    private const float MapPlayerTokenOffset = 10.0f;
+
 
     private readonly DefaultRpgPrototypeLoop _loop = new();
     private readonly Random _random = new(20260504);
@@ -119,7 +121,6 @@ public partial class DefaultRpgPrototype : Node2D
     private double _mapPlayerPulseSec;
     private int _layoutDebugFramesRemaining = 3;
     private Vector2 _contentRootBasePosition = Vector2.Zero;
-    private Tween? _playerMoveTween;
     private Tween? _sceneFadeTween;
     private Tween? _rewardPanelTween;
     private Tween? _transitionFlashTween;
@@ -132,6 +133,7 @@ public partial class DefaultRpgPrototype : Node2D
     private readonly HashSet<GridPoint> _obstacles = [];
     private readonly List<GridPoint> _chests = [];
     private GridPoint _playerPosition = new(0, 0);
+    private Vector2 _playerWorldPosition = GridToWorld(new GridPoint(0, 0));
 
     public override void _Ready()
     {
@@ -254,6 +256,11 @@ public partial class DefaultRpgPrototype : Node2D
             return;
         }
 
+        if (_scenePhase == ScenePhaseMap && !_state.IsGameOver && !_state.IsVictory)
+        {
+            HandleMapMovement(delta);
+        }
+
         if (_scenePhase == ScenePhaseBattle && !_state.IsGameOver && !_state.IsVictory)
         {
             if (!_useManualBattlePresentationForTest)
@@ -268,40 +275,6 @@ public partial class DefaultRpgPrototype : Node2D
             }
         }
 
-    }
-
-    public override void _UnhandledInput(InputEvent @event)
-    {
-        if (!AreUiNodesAlive())
-        {
-            return;
-        }
-
-        if (_scenePhase != ScenePhaseMap || _state.IsGameOver || _state.IsVictory)
-        {
-            return;
-        }
-
-        if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
-        {
-            return;
-        }
-
-        GridPoint? target = keyEvent.Keycode switch
-        {
-            Key.W => new GridPoint(_playerPosition.X, _playerPosition.Y - 1),
-            Key.S => new GridPoint(_playerPosition.X, _playerPosition.Y + 1),
-            Key.A => new GridPoint(_playerPosition.X - 1, _playerPosition.Y),
-            Key.D => new GridPoint(_playerPosition.X + 1, _playerPosition.Y),
-            _ => null
-        };
-
-        if (target is null)
-        {
-            return;
-        }
-
-        TryMovePlayer(target);
     }
 
     public void AdvanceMapTime(double seconds)
@@ -501,6 +474,7 @@ public partial class DefaultRpgPrototype : Node2D
             Phase = "complete"
         };
         _scenePhase = ScenePhaseComplete;
+        _lastEncounter ??= _loop.ResolveEncounter(_state);
         RefreshView();
     }
 
@@ -513,6 +487,7 @@ public partial class DefaultRpgPrototype : Node2D
             Phase = "complete"
         };
         _scenePhase = ScenePhaseComplete;
+        _lastEncounter ??= _loop.ResolveEncounter(_state);
         RefreshView();
     }
 
@@ -566,6 +541,16 @@ public partial class DefaultRpgPrototype : Node2D
         return new Vector2I(_playerPosition.X, _playerPosition.Y);
     }
 
+    public Vector2 GetPlayerWorldPositionForTest()
+    {
+        return _playerWorldPosition;
+    }
+
+    public void MovePlayerContinuouslyForTest(float x, float y, double seconds)
+    {
+        TryMovePlayerContinuously(new Vector2(x, y), seconds);
+    }
+
     public void MovePlayerToChestForTest()
     {
         if (_chests.Count == 0)
@@ -574,6 +559,7 @@ public partial class DefaultRpgPrototype : Node2D
         }
 
         _playerPosition = _chests[0];
+        _playerWorldPosition = GridToWorld(_playerPosition);
         CollectChestAtPlayerPosition();
         RefreshView();
     }
@@ -965,30 +951,116 @@ public partial class DefaultRpgPrototype : Node2D
         };
     }
 
-    private void TryMovePlayer(GridPoint target)
+    private void HandleMapMovement(double delta)
     {
-        if (!IsInside(target) || _obstacles.Contains(target))
+        var direction = Vector2.Zero;
+        if (Input.IsKeyPressed(Key.W))
+        {
+            direction.Y -= 1.0f;
+        }
+
+        if (Input.IsKeyPressed(Key.S))
+        {
+            direction.Y += 1.0f;
+        }
+
+        if (Input.IsKeyPressed(Key.A))
+        {
+            direction.X -= 1.0f;
+        }
+
+        if (Input.IsKeyPressed(Key.D))
+        {
+            direction.X += 1.0f;
+        }
+
+        TryMovePlayerContinuously(direction, delta);
+    }
+
+    private void TryMovePlayerContinuously(Vector2 direction, double seconds)
+    {
+        if (direction == Vector2.Zero || seconds <= 0.0 || _scenePhase != ScenePhaseMap || _state.IsGameOver || _state.IsVictory)
         {
             return;
         }
 
-        _playerPosition = target;
-        AnimatePlayerTokenToCurrentCell();
+        var normalizedDirection = direction.Normalized();
+        var distance = MapPlayerMoveSpeed * (float)seconds;
+        var previousCell = _playerPosition;
+        var nextWorldPosition = _playerWorldPosition + (normalizedDirection * distance);
+        var moved = TryApplyPlayerWorldPosition(nextWorldPosition);
 
-        if (CollectChestAtPlayerPosition())
+        if (!moved && normalizedDirection.X != 0.0f && normalizedDirection.Y != 0.0f)
         {
-            RefreshView();
+            var movedX = TryApplyPlayerWorldPosition(_playerWorldPosition + new Vector2(normalizedDirection.X * distance, 0.0f));
+            var movedY = TryApplyPlayerWorldPosition(_playerWorldPosition + new Vector2(0.0f, normalizedDirection.Y * distance));
+            moved = movedX || movedY;
+        }
+
+        if (!moved)
+        {
             return;
         }
 
-        RegisterEncounterStep();
+        _playerToken.Position = _playerWorldPosition;
 
-        if (_scenePhase == ScenePhaseBattle)
+        if (_playerPosition != previousCell)
         {
-            return;
+            if (CollectChestAtPlayerPosition())
+            {
+                RefreshView();
+                return;
+            }
+
+            RegisterEncounterStep();
+            if (_scenePhase == ScenePhaseBattle)
+            {
+                return;
+            }
         }
 
         RefreshView();
+    }
+
+    private bool TryApplyPlayerWorldPosition(Vector2 requestedPosition)
+    {
+        var clampedPosition = ClampPlayerWorldPosition(requestedPosition);
+        var targetCell = WorldToGrid(clampedPosition);
+        if (!IsInside(targetCell) || _obstacles.Contains(targetCell))
+        {
+            return false;
+        }
+
+        if (clampedPosition == _playerWorldPosition)
+        {
+            return false;
+        }
+
+        _playerWorldPosition = clampedPosition;
+        _playerPosition = targetCell;
+        return true;
+    }
+
+    private static Vector2 ClampPlayerWorldPosition(Vector2 position)
+    {
+        var max = ((MapGridSize - 1) * MapCellSize) + MapPlayerTokenOffset;
+        return new Vector2(
+            Mathf.Clamp(position.X, MapPlayerTokenOffset, max),
+            Mathf.Clamp(position.Y, MapPlayerTokenOffset, max));
+    }
+
+    private static Vector2 GridToWorld(GridPoint point)
+    {
+        return new Vector2(
+            (point.X * MapCellSize) + MapPlayerTokenOffset,
+            (point.Y * MapCellSize) + MapPlayerTokenOffset);
+    }
+
+    private static GridPoint WorldToGrid(Vector2 position)
+    {
+        return new GridPoint(
+            Math.Clamp((int)((position.X - MapPlayerTokenOffset) / MapCellSize), 0, MapGridSize - 1),
+            Math.Clamp((int)((position.Y - MapPlayerTokenOffset) / MapCellSize), 0, MapGridSize - 1));
     }
 
     private void RegisterEncounterStep()
@@ -1123,6 +1195,7 @@ public partial class DefaultRpgPrototype : Node2D
         UpdateBattlePanel();
         UpdateRewardPanel();
         UpdateResultPanel();
+        ResetContentTransformWhenSettled();
 
         if (_scenePhase == ScenePhaseMap && _mapSceneRoot.Visible && _mapSceneRoot.Modulate.A < 1.0f)
         {
@@ -1219,6 +1292,7 @@ public partial class DefaultRpgPrototype : Node2D
         UpdateBattlePanel();
         UpdateRewardPanel();
         UpdateResultPanel();
+        ResetContentTransformWhenSettled();
         if (_mapSceneRoot.Visible && _mapSceneRoot.Modulate.A < 1.0f)
         {
             PlaySceneFade(_mapSceneRoot);
@@ -1315,10 +1389,7 @@ public partial class DefaultRpgPrototype : Node2D
             }
         }
 
-        if (_playerMoveTween is null)
-        {
-            _playerToken.Position = new Vector2((_playerPosition.X * MapCellSize) + 10, (_playerPosition.Y * MapCellSize) + 10);
-        }
+        _playerToken.Position = _playerWorldPosition;
         _playerToken.Color = new Color(1, 1, 1, 0.0f);
         UpdateMapPlayerPresentation();
 
@@ -1719,6 +1790,49 @@ public partial class DefaultRpgPrototype : Node2D
         _resultSummaryLabel.Text = "概要";
     }
 
+    private void PositionResultPanelAwayFromBattleLog()
+    {
+        var root = _resultPanel.GetParent() as Control;
+        var rootSize = root?.Size ?? new Vector2(1280.0f, 720.0f);
+        var panelSize = new Vector2(420.0f, 108.0f);
+        var margin = 20.0f;
+        var targetX = Mathf.Clamp(rootSize.X - panelSize.X - margin, margin, Math.Max(margin, rootSize.X - panelSize.X - margin));
+        var targetY = margin;
+        var candidate = new Rect2(new Vector2(targetX, targetY), panelSize);
+        var logRect = _battleLogLabel.GetGlobalRect();
+
+        if (candidate.Intersects(logRect))
+        {
+            targetY = Math.Max(margin, logRect.Position.Y - panelSize.Y - margin);
+        }
+
+        _resultPanel.AnchorLeft = 0.0f;
+        _resultPanel.AnchorTop = 0.0f;
+        _resultPanel.AnchorRight = 0.0f;
+        _resultPanel.AnchorBottom = 0.0f;
+        _resultPanel.OffsetLeft = 0.0f;
+        _resultPanel.OffsetTop = 0.0f;
+        _resultPanel.OffsetRight = 0.0f;
+        _resultPanel.OffsetBottom = 0.0f;
+        _resultPanel.Position = new Vector2(targetX, targetY);
+        _resultPanel.Size = panelSize;
+        _resultPanel.CustomMinimumSize = panelSize;
+    }
+
+    private void ResetContentTransformWhenSettled()
+    {
+        if (_encounterPunchTween is not null)
+        {
+            return;
+        }
+
+        if (_scenePhase == ScenePhaseBattle || _scenePhase == ScenePhaseComplete || _scenePhase == ScenePhaseReward)
+        {
+            _contentRoot.Scale = Vector2.One;
+            _contentRoot.Position = Vector2.Zero;
+        }
+    }
+
     private string BuildBuildDirectionText()
     {
         var build = GetBuildArchetypeByName(_currentBuildArchetype);
@@ -1743,6 +1857,7 @@ public partial class DefaultRpgPrototype : Node2D
         if (_showcaseMapTexture is not null)
         {
             _playerPosition = RandomPoint();
+            _playerWorldPosition = GridToWorld(_playerPosition);
             _chests.Add(RandomPoint(exclude: [_playerPosition]));
             while (_chests.Count < chestCount)
             {
@@ -1758,6 +1873,7 @@ public partial class DefaultRpgPrototype : Node2D
         while (true)
         {
             _playerPosition = RandomPoint();
+            _playerWorldPosition = GridToWorld(_playerPosition);
             var firstChest = RandomPoint(exclude: [_playerPosition]);
             var proposedObstacles = BuildObstacleLayout(_playerPosition, firstChest);
             if (proposedObstacles is null)
@@ -1976,18 +2092,6 @@ public partial class DefaultRpgPrototype : Node2D
         }
     }
 
-    private void AnimatePlayerTokenToCurrentCell()
-    {
-        _playerMoveTween?.Kill();
-        _playerMoveTween = CreateTween();
-        _playerMoveTween.TweenProperty(
-            _playerToken,
-            "position",
-            new Vector2((_playerPosition.X * MapCellSize) + 10, (_playerPosition.Y * MapCellSize) + 10),
-            MapMoveTweenDurationSec);
-        _playerMoveTween.Finished += () => _playerMoveTween = null;
-    }
-
     private void PlaySceneFade(CanvasItem target)
     {
         _sceneFadeTween?.Kill();
@@ -2044,7 +2148,7 @@ public partial class DefaultRpgPrototype : Node2D
         _encounterPunchTween.Finished += () =>
         {
             _contentRoot.Scale = Vector2.One;
-            _contentRoot.Position = _contentRootBasePosition;
+            _contentRoot.Position = Vector2.Zero;
             _encounterPunchTween = null;
         };
     }

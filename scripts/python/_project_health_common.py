@@ -1301,9 +1301,10 @@ def dashboard_html(
     project_overview = project_overview or {
         "game_name": "",
         "game_type": "",
-        "documents": {"prd": [], "gdd": [], "prototype": []},
+        "documents": {"prd": [], "gdd": [], "prototype": [], "prototype_spec": []},
         "prototype_core": {"game_feature": "", "core_gameplay_loop": "", "win_fail_conditions": ""},
         "game_type_specifics": {"game_type": "", "guide_path": "", "selected_sections": []},
+        "prototype_blueprint": {"prototype_spec": "", "prototype_file": "", "game_feature": "", "core_gameplay_loop": "", "win_fail_conditions": "", "minimum_playable_loop": "", "gameplay_flow": [], "prototype_scene_ui": [], "tdd": {"red": "pending", "green": "pending", "refactor": "pending"}},
     }
     overall = "ok"
     if any(item.get("status") == "fail" for item in records):
@@ -1469,12 +1470,17 @@ def dashboard_html(
     overview_type_kit = project_overview.get("prototype_type_kit") if isinstance(project_overview.get("prototype_type_kit"), dict) else {}
     overview_type_kit_manifest = overview_type_kit.get("manifest") if isinstance(overview_type_kit.get("manifest"), dict) else {}
     overview_type_kit_manifest_paths = overview_type_kit_manifest.get("paths") if isinstance(overview_type_kit_manifest.get("paths"), dict) else {}
+    overview_blueprint = project_overview.get("prototype_blueprint") if isinstance(project_overview.get("prototype_blueprint"), dict) else {}
+    overview_tdd = overview_blueprint.get("tdd") if isinstance(overview_blueprint.get("tdd"), dict) else {}
     overview_rows = [
         ("Game name", str(project_overview.get("game_name") or "unknown")),
         ("Game type", str(project_overview.get("game_type") or "unknown")),
         ("PRD docs", ", ".join(str(item) for item in list(overview_documents.get("prd") or [])) or "none"),
         ("GDD docs", ", ".join(str(item) for item in list(overview_documents.get("gdd") or [])) or "none"),
         ("Prototype docs", ", ".join(str(item) for item in list(overview_documents.get("prototype") or [])) or "none"),
+        ("Prototype spec sidecars", ", ".join(str(item) for item in list(overview_documents.get("prototype_spec") or [])) or "none"),
+        ("Current prototype spec", str(overview_blueprint.get("prototype_spec") or "unknown")),
+        ("Current prototype file", str(overview_blueprint.get("prototype_file") or "unknown")),
         ("Game feature", str(overview_core.get("game_feature") or "unknown")),
         ("Core gameplay loop", str(overview_core.get("core_gameplay_loop") or "unknown")),
         ("Win / fail conditions", str(overview_core.get("win_fail_conditions") or "unknown")),
@@ -1484,6 +1490,10 @@ def dashboard_html(
         ("Prototype manifest path", str(overview_type_kit.get("manifest_path") or "unknown")),
         ("Prototype manifest slug", str(overview_type_kit_manifest.get("slug") or "unknown")),
         ("Prototype manifest default scene", str(overview_type_kit_manifest_paths.get("default_scene") or "unknown")),
+        ("Prototype minimum playable loop", str(overview_blueprint.get("minimum_playable_loop") or "unknown")),
+        ("Prototype TDD red", str(overview_tdd.get("red") or "pending")),
+        ("Prototype TDD green", str(overview_tdd.get("green") or "pending")),
+        ("Prototype TDD refactor", str(overview_tdd.get("refactor") or "pending")),
     ]
     for section in list(overview_specifics.get("selected_sections") or []):
         if isinstance(section, dict):
@@ -1493,6 +1503,12 @@ def dashboard_html(
                     str(section.get("answer") or "unknown"),
                 )
             )
+    for item in list(overview_blueprint.get("gameplay_flow") or []):
+        if isinstance(item, dict):
+            overview_rows.append((f"Gameplay Flow: {str(item.get('question') or item.get('id') or 'item')}", str(item.get("answer") or "unknown")))
+    for item in list(overview_blueprint.get("prototype_scene_ui") or []):
+        if isinstance(item, dict):
+            overview_rows.append((f"Prototype Scene UI: {str(item.get('question') or item.get('id') or 'item')}", str(item.get("answer") or "unknown")))
     overview_items = "\n".join(
         f"<div class=\"meta\"><strong>{html.escape(label)}:</strong> {html.escape(value)}</div>"
         for label, value in overview_rows
@@ -1995,20 +2011,91 @@ def _extract_prototype_type_kit(root: Path, prototype_docs: list[str]) -> dict[s
     return result
 
 
+def _list_prototype_specs(root: Path) -> list[str]:
+    base = root / "docs" / "prototypes"
+    if not base.exists():
+        return []
+    return [repo_rel(path, root=root) for path in sorted(base.glob("*.prototype.json")) if path.is_file()]
+
+
+def _load_latest_prototype_spec(root: Path) -> dict[str, Any]:
+    spec_paths = [root / rel for rel in _list_prototype_specs(root)]
+    if not spec_paths:
+        return {}
+    newest = max(spec_paths, key=lambda p: p.stat().st_mtime if p.exists() else 0)
+    try:
+        payload = json.loads(newest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    payload.setdefault("prototype_spec", repo_rel(newest, root=root))
+    return payload
+
+
+def _prototype_blueprint_from_spec(spec: dict[str, Any]) -> dict[str, Any]:
+    core = spec.get("prototype_core") if isinstance(spec.get("prototype_core"), dict) else {}
+    type_kit = spec.get("prototype_type_kit") if isinstance(spec.get("prototype_type_kit"), dict) else {}
+    def _answers(section_name: str) -> list[dict[str, str]]:
+        result: list[dict[str, str]] = []
+        for item in list(type_kit.get(section_name) or []):
+            if not isinstance(item, dict):
+                continue
+            result.append(
+                {
+                    "id": str(item.get("id") or ""),
+                    "question": str(item.get("question") or ""),
+                    "answer": str(item.get("answer") or ""),
+                }
+            )
+        return result
+    return {
+        "prototype_spec": str(spec.get("prototype_spec") or ""),
+        "prototype_file": str(spec.get("prototype_file") or ""),
+        "game_feature": str(core.get("game_feature") or ""),
+        "core_gameplay_loop": str(core.get("core_gameplay_loop") or ""),
+        "win_fail_conditions": str(core.get("win_fail_conditions") or ""),
+        "minimum_playable_loop": str(core.get("minimum_playable_loop") or ""),
+        "gameplay_flow": _answers("gameplay_flow"),
+        "prototype_scene_ui": _answers("prototype_scene_ui"),
+        "tdd": spec.get("tdd") if isinstance(spec.get("tdd"), dict) else {"red": "pending", "green": "pending", "refactor": "pending"},
+    }
+
+
 def build_project_overview(root: Path) -> dict[str, Any]:
     documents = {
         "prd": _list_markdown_docs(root, "docs/prd"),
         "gdd": _list_markdown_docs(root, "docs/gdd"),
         "prototype": _list_markdown_docs(root, "docs/prototypes"),
+        "prototype_spec": _list_prototype_specs(root),
     }
     metadata = _extract_project_metadata(root)
+    latest_spec = _load_latest_prototype_spec(root)
+    spec_core = latest_spec.get("prototype_core") if isinstance(latest_spec.get("prototype_core"), dict) else {}
+    spec_specifics = latest_spec.get("game_type_specifics") if isinstance(latest_spec.get("game_type_specifics"), dict) else {}
+    spec_type_kit = latest_spec.get("prototype_type_kit") if isinstance(latest_spec.get("prototype_type_kit"), dict) else {}
     return {
-        "game_name": metadata["game_name"],
-        "game_type": metadata["game_type"],
+        "game_name": metadata["game_name"] or str(latest_spec.get("game_name") or ""),
+        "game_type": metadata["game_type"] or str(latest_spec.get("game_type") or ""),
         "documents": documents,
-        "prototype_core": _extract_prototype_core(root, documents["prototype"]),
-        "game_type_specifics": _extract_game_type_specifics(root, documents["prototype"]),
-        "prototype_type_kit": _extract_prototype_type_kit(root, documents["prototype"]),
+        "prototype_core": {
+            "game_feature": str(spec_core.get("game_feature") or _extract_prototype_core(root, documents["prototype"]).get("game_feature") or ""),
+            "core_gameplay_loop": str(spec_core.get("core_gameplay_loop") or _extract_prototype_core(root, documents["prototype"]).get("core_gameplay_loop") or ""),
+            "win_fail_conditions": str(spec_core.get("win_fail_conditions") or _extract_prototype_core(root, documents["prototype"]).get("win_fail_conditions") or ""),
+        },
+        "game_type_specifics": spec_specifics or _extract_game_type_specifics(root, documents["prototype"]),
+        "prototype_type_kit": spec_type_kit or _extract_prototype_type_kit(root, documents["prototype"]),
+        "prototype_blueprint": _prototype_blueprint_from_spec(latest_spec) if latest_spec else {
+            "prototype_spec": "",
+            "prototype_file": "",
+            "game_feature": "",
+            "core_gameplay_loop": "",
+            "win_fail_conditions": "",
+            "minimum_playable_loop": "",
+            "gameplay_flow": [],
+            "prototype_scene_ui": [],
+            "tdd": {"red": "pending", "green": "pending", "refactor": "pending"},
+        },
     }
 
 
