@@ -52,14 +52,16 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 4. Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids and source_refs.
 5. Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, or oversized intent groups before compiling task views.
 6. Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.
-7. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
-8. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
-9. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.
-10. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
-11. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
-12. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
-13. Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.
-14. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
+7. In add mode, scan existing tasks_back.json, tasks_gameplay.json, and tasks.json before append; new candidate ids must continue after the existing maximum id for the selected prefix.
+8. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
+9. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
+10. Before writing triplet files in add mode, require renumbered candidates to be sequential and require a blocking conflict check against existing task ids.
+11. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch and confirming no new candidate id collides with any existing triplet id.
+12. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
+13. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
+14. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
+15. Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.
+16. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
 
 ## 用户交互文案要求
 

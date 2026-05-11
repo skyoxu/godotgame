@@ -352,6 +352,138 @@ class Chapter3TaskGenerationTests(unittest.TestCase):
         self.assertEqual("INT-0001", payload["candidates"][0]["id"])
         self.assertEqual(["REQ-NEW-0001", "REQ-NEW-0002"], payload["candidates"][0]["requirement_ids"])
 
+    def test_candidate_generation_add_should_continue_after_existing_max_task_id(self) -> None:
+        mod = _load_module("generate_task_candidates_for_add_id_test", "scripts/python/generate_task_candidates_from_sources.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "task-generation"
+            task_dir = root / ".taskmaster" / "tasks"
+            out_dir.mkdir(parents=True)
+            task_dir.mkdir(parents=True)
+            (task_dir / "tasks_back.json").write_text(
+                json.dumps([{"id": "SG-0007", "title": "Existing back task"}]) + "\n",
+                encoding="utf-8",
+            )
+            (task_dir / "tasks_gameplay.json").write_text(
+                json.dumps([{"id": "SG-0010", "title": "Existing gameplay task"}]) + "\n",
+                encoding="utf-8",
+            )
+            (out_dir / "requirements.index.json").write_text(
+                json.dumps(
+                    {
+                        "schema": "task-generation.requirements-index.v1",
+                        "anchors": [
+                            {
+                                "requirement_id": "REQ-ADD-0001",
+                                "source_path": "docs/gdd/a.md",
+                                "line": 1,
+                                "kind": "gdd",
+                                "priority": "P1",
+                                "text": "New combat loop must be implemented.",
+                                "refs": [],
+                            },
+                            {
+                                "requirement_id": "REQ-ADD-0002",
+                                "source_path": "docs/prd/b.md",
+                                "line": 2,
+                                "kind": "prd",
+                                "priority": "P2",
+                                "text": "New onboarding must be implemented.",
+                                "refs": [],
+                            },
+                        ],
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            rc = mod.main(["--repo-root", str(root), "--mode", "add", "--id-prefix", "SG"])
+            payload = json.loads((out_dir / "task-candidates.normalized.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(0, rc)
+        self.assertEqual(["SG-0011", "SG-0012"], [candidate["id"] for candidate in payload["candidates"]])
+
+    def test_compile_triplet_add_should_renumber_before_write_and_preserve_existing_tasks(self) -> None:
+        mod = _load_module("compile_task_triplet_for_add_id_test", "scripts/python/compile_task_triplet.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "task-generation"
+            task_dir = root / ".taskmaster" / "tasks"
+            out_dir.mkdir(parents=True)
+            task_dir.mkdir(parents=True)
+            (task_dir / "tasks_back.json").write_text(
+                json.dumps([{"id": "SG-0001", "title": "Keep existing back"}]) + "\n",
+                encoding="utf-8",
+            )
+            (task_dir / "tasks_gameplay.json").write_text(
+                json.dumps([{"id": "SG-0003", "title": "Keep existing gameplay"}]) + "\n",
+                encoding="utf-8",
+            )
+            (out_dir / "coverage-report.json").write_text(json.dumps({"status": "ok"}) + "\n", encoding="utf-8")
+            (out_dir / "task-candidates.enriched.json").write_text(
+                json.dumps(
+                    {
+                        "candidates": [
+                            {
+                                "id": "SG-0001",
+                                "title": "Added architecture task",
+                                "owner": "architecture",
+                                "labels": [],
+                                "depends_on": [],
+                            },
+                            {
+                                "id": "SG-0002",
+                                "title": "Added gameplay task",
+                                "owner": "gameplay",
+                                "labels": ["gdd"],
+                                "depends_on": ["SG-0001"],
+                            },
+                        ]
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            rc = mod.main(["--repo-root", str(root), "--mode", "add", "--write"])
+            back = json.loads((task_dir / "tasks_back.json").read_text(encoding="utf-8"))
+            gameplay = json.loads((task_dir / "tasks_gameplay.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(0, rc)
+        self.assertEqual(["SG-0001", "SG-0004"], [task["id"] for task in back])
+        self.assertEqual(["SG-0003", "SG-0005"], [task["id"] for task in gameplay])
+        self.assertEqual(["SG-0004"], gameplay[-1]["depends_on"])
+        self.assertEqual("Keep existing back", back[0]["title"])
+        self.assertEqual("Keep existing gameplay", gameplay[0]["title"])
+
+    def test_compile_triplet_should_block_duplicate_candidate_ids(self) -> None:
+        mod = _load_module("compile_task_triplet_for_duplicate_id_test", "scripts/python/compile_task_triplet.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_dir = root / "logs" / "ci" / "task-generation"
+            out_dir.mkdir(parents=True)
+            (out_dir / "coverage-report.json").write_text(json.dumps({"status": "ok"}) + "\n", encoding="utf-8")
+            (out_dir / "task-candidates.enriched.json").write_text(
+                json.dumps(
+                    {
+                        "candidates": [
+                            {"id": "SG-0001", "title": "First", "owner": "architecture"},
+                            {"id": "SG-0001", "title": "Second", "owner": "architecture"},
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(SystemExit) as raised:
+                mod.main(["--repo-root", str(root), "--mode", "init"])
+
+        self.assertIn("duplicate_candidate_ids", str(raised.exception))
+
     def test_task_intent_quality_audit_should_report_generic_and_noisy_titles(self) -> None:
         mod = _load_module("audit_task_intents_quality_test", "scripts/python/audit_task_intents_quality.py")
         result = mod.audit(
