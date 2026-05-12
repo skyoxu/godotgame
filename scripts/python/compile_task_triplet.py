@@ -27,6 +27,100 @@ def write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def iter_task_records(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        master = payload.get("master")
+        if isinstance(master, dict):
+            tasks = master.get("tasks")
+            if isinstance(tasks, list):
+                return [item for item in tasks if isinstance(item, dict)]
+    return []
+
+
+def existing_task_ids(root: Path) -> set[str]:
+    ids: set[str] = set()
+    for name in ("tasks_back.json", "tasks_gameplay.json", "tasks.json"):
+        for task in iter_task_records(load_json(root / TASKS_DIR / name, [])):
+            value = task.get("id")
+            if value is not None:
+                ids.add(str(value))
+    return ids
+
+
+def split_task_number(task_id: str) -> tuple[str, int] | None:
+    head, sep, tail = task_id.rpartition("-")
+    if not sep or not tail.isdigit():
+        return None
+    return head, int(tail)
+
+
+def dominant_id_prefix(candidates: list[dict[str, Any]]) -> str:
+    for candidate in candidates:
+        parsed = split_task_number(str(candidate.get("id") or ""))
+        if parsed:
+            return parsed[0]
+    return "GEN"
+
+
+def max_task_number(ids: set[str], prefix: str) -> int:
+    max_seen = 0
+    for tid in ids:
+        parsed = split_task_number(tid)
+        if parsed and parsed[0] == prefix:
+            max_seen = max(max_seen, parsed[1])
+    return max_seen
+
+
+def renumber_candidates_for_add(candidates: list[dict[str, Any]], existing_ids: set[str]) -> list[dict[str, Any]]:
+    prefix = dominant_id_prefix(candidates)
+    next_number = max_task_number(existing_ids, prefix) + 1
+    used = set(existing_ids)
+    remap: dict[str, str] = {}
+    renumbered: list[dict[str, Any]] = []
+    for candidate in candidates:
+        old_id = str(candidate.get("id") or "")
+        new_id = f"{prefix}-{next_number:04d}"
+        while new_id in used:
+            next_number += 1
+            new_id = f"{prefix}-{next_number:04d}"
+        updated = dict(candidate)
+        updated["id"] = new_id
+        updated["previous_candidate_id"] = old_id
+        used.add(new_id)
+        remap[old_id] = new_id
+        renumbered.append(updated)
+        next_number += 1
+    for candidate in renumbered:
+        candidate["depends_on"] = [remap.get(str(dep), str(dep)) for dep in candidate.get("depends_on", [])]
+    return renumbered
+
+
+def assert_no_candidate_conflicts(
+    candidates: list[dict[str, Any]], existing_ids: set[str] | None = None, *, check_existing: bool = False
+) -> None:
+    existing = existing_ids or set()
+    seen: set[str] = set()
+    duplicate_ids: set[str] = set()
+    conflicting_ids: set[str] = set()
+    for candidate in candidates:
+        tid = str(candidate.get("id") or "")
+        if not tid:
+            continue
+        if tid in seen:
+            duplicate_ids.add(tid)
+        if check_existing and tid in existing:
+            conflicting_ids.add(tid)
+        seen.add(tid)
+    if duplicate_ids or conflicting_ids:
+        detail = {
+            "duplicate_candidate_ids": sorted(duplicate_ids),
+            "conflicting_existing_task_ids": sorted(conflicting_ids),
+        }
+        raise SystemExit("candidate id conflict before triplet write: " + json.dumps(detail, ensure_ascii=False))
+
+
 def normalize_task(candidate: dict[str, Any], target: str) -> dict[str, Any]:
     task = {
         "id": str(candidate.get("id")),
@@ -76,7 +170,7 @@ def append_unique(existing: list[dict[str, Any]], new_tasks: list[dict[str, Any]
     return existing, added
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compile task candidates into task triplet view files.")
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--candidates", default="logs/ci/task-generation/task-candidates.enriched.json")
@@ -84,12 +178,16 @@ def main() -> int:
     parser.add_argument("--mode", choices=["init", "add"], default="add")
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--out", default="logs/ci/task-generation/task-triplet.patch.json")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     root = Path(args.repo_root).resolve()
     candidates = load_json(root / args.candidates, {}).get("candidates", [])
     coverage = load_json(root / args.coverage, {"status": "unknown"})
     if coverage.get("status") != "ok":
         raise SystemExit("coverage report is not ok; refusing to compile triplet")
+    ids = existing_task_ids(root)
+    if args.mode == "add":
+        candidates = renumber_candidates_for_add(candidates, ids)
+    assert_no_candidate_conflicts(candidates, ids, check_existing=args.mode == "add")
     back_new: list[dict[str, Any]] = []
     gameplay_new: list[dict[str, Any]] = []
     for candidate in candidates:
@@ -124,6 +222,7 @@ def main() -> int:
         gameplay_existing = load_json(gameplay_path, [])
         if not isinstance(back_existing, list) or not isinstance(gameplay_existing, list):
             raise SystemExit("task view files must be JSON lists")
+        assert_no_candidate_conflicts(back_new + gameplay_new, existing_task_ids(root), check_existing=args.mode == "add")
         back_updated, back_added = append_unique(back_existing, back_new)
         gameplay_updated, gameplay_added = append_unique(gameplay_existing, gameplay_new)
         write_json(back_path, back_updated)

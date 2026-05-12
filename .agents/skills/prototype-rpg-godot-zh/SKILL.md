@@ -43,6 +43,16 @@ When `game_type` is `rpg`, this skill is the default implementation route for:
 - RPG prototype assets and UI visuals
 - repo-local asset generation or replacement work
 
+## Required Scene Generation Route
+
+For `game_type=rpg`, the top-level prototype router must generate scenes through the default RPG template manifest before any generic scaffold is considered:
+
+```powershell
+py -3 scripts/python/dev_cli.py create-prototype-scene --slug <slug> --template-manifest docs/prototype-type-kits/default-rpg-template.manifest.json --force
+```
+
+This route copies the repo-local `DefaultRpgTemplate` scene structure and bundled assets. A blank `PrototypeHint` or empty `PrototypeLoop` scaffold is not acceptable for the default RPG lane.
+
 ## Default Template Assets
 
 Use the bundled RPG prototype asset pack as the default visual seed when the user does not provide stronger art direction:

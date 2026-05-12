@@ -77,6 +77,30 @@ class TaskmasterDefaultPathsTests(unittest.TestCase):
         self.assertEqual(["back"], list((triplet.back or {}).get("acceptance") or []))
         self.assertEqual(["gameplay"], list((triplet.gameplay or {}).get("acceptance") or []))
 
+    def test_should_honor_explicit_triplet_env_overrides(self) -> None:
+        import os
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            staged = self._write_triplet(root / "tmp-triplet")
+            previous = {
+                "SC_TASKMASTER_TASKS_JSON_PATH": os.environ.get("SC_TASKMASTER_TASKS_JSON_PATH"),
+                "SC_TASKMASTER_TASKS_BACK_PATH": os.environ.get("SC_TASKMASTER_TASKS_BACK_PATH"),
+                "SC_TASKMASTER_TASKS_GAMEPLAY_PATH": os.environ.get("SC_TASKMASTER_TASKS_GAMEPLAY_PATH"),
+            }
+            try:
+                os.environ["SC_TASKMASTER_TASKS_JSON_PATH"] = str(staged[0])
+                os.environ["SC_TASKMASTER_TASKS_BACK_PATH"] = str(staged[1])
+                os.environ["SC_TASKMASTER_TASKS_GAMEPLAY_PATH"] = str(staged[2])
+                actual = resolve_default_task_triplet_paths(root)
+            finally:
+                for key, value in previous.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
+        self.assertEqual(staged, actual)
+
 
 if __name__ == "__main__":
     unittest.main()

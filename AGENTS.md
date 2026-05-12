@@ -58,6 +58,7 @@ This file is the repository map. It routes you to the right source document by t
   - [Testing Framework](docs/testing-framework.md)
   - [Closed-Loop Testing](docs/agents/04-closed-loop-testing.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+  - [Taskmaster Test Isolation](docs/agents/17-taskmaster-test-isolation.md)
   - `scripts/sc/README.md`
 - Run or repair the local harness and reviews:
   - [Persistent Harness](docs/agents/03-persistent-harness.md)
@@ -67,6 +68,7 @@ This file is the repository map. It routes you to the right source document by t
   - `scripts/sc/README.md`
 - Tighten release or CI posture:
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
+- [Taskmaster Test Isolation](docs/agents/17-taskmaster-test-isolation.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)
 - [Workflow Rule Feedback Protocol](docs/workflows/workflow-rule-feedback-protocol.md)
 - [Prototype Lane](docs/workflows/prototype-lane.md)
@@ -106,6 +108,7 @@ This file is the repository map. It routes you to the right source document by t
 - Need tests, logs, artifacts, Test-Refs, or DoD:
   - [Testing Framework](docs/testing-framework.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
+  - [Taskmaster Test Isolation](docs/agents/17-taskmaster-test-isolation.md)
 - Need RAG source discipline, overlay source selection, or session source SSoT:
   - [RAG Sources And Session SSoT](docs/agents/13-rag-sources-and-session-ssot.md)
 - Need delivery strictness or profile behavior:

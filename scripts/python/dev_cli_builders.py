@@ -305,6 +305,10 @@ def build_create_prototype_scene_cmd(args) -> list[str]:
         cmd += ["--scene-root", args.scene_root]
     if getattr(args, "prototype_root", ""):
         cmd += ["--prototype-root", args.prototype_root]
+    if getattr(args, "template_manifest", ""):
+        cmd += ["--template-manifest", args.template_manifest]
+    if getattr(args, "force", False):
+        cmd.append("--force")
     return cmd
 
 

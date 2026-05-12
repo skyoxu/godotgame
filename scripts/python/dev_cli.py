@@ -637,6 +637,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto_scene.add_argument("--slug", required=True)
     p_proto_scene.add_argument("--scene-root", default="Node2D")
     p_proto_scene.add_argument("--prototype-root", default="Game.Godot/Prototypes")
+    p_proto_scene.add_argument("--template-manifest", default="")
+    p_proto_scene.add_argument("--force", action="store_true")
     p_proto_scene.set_defaults(func=cmd_create_prototype_scene)
 
     # run-prototype-workflow
