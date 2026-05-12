@@ -123,6 +123,36 @@ class ScTestOrchestrationTests(unittest.TestCase):
             self.assertEqual("fail", summary["status"])
             self.assertEqual(["unit"], [item["name"] for item in summary["steps"]])
 
+    def test_main_should_fail_fast_when_task_scoped_unit_refs_are_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "sc-test"
+            argv = ["test.py", "--type", "unit", "--run-id", "2" * 32, "--task-id", "181"]
+            unit_step = {
+                "name": "unit",
+                "cmd": ["py", "-3", "scripts/python/run_dotnet.py"],
+                "rc": 2,
+                "log": str(out_dir / "unit.log"),
+                "artifacts_dir": str(out_dir / "unit-artifacts"),
+                "status": "fail",
+                "error": "missing_task_scoped_cs_refs",
+            }
+            with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(sc_test, "ci_dir", return_value=out_dir), \
+                mock.patch.object(sc_test, "run_unit", return_value=unit_step) as run_unit_mock, \
+                mock.patch.object(sc_test, "run_csharp_test_conventions") as conventions_mock, \
+                mock.patch.object(sc_test, "run_coverage_report") as coverage_mock:
+                rc = sc_test.main()
+
+            self.assertEqual(1, rc)
+            run_unit_mock.assert_called_once()
+            conventions_mock.assert_not_called()
+            coverage_mock.assert_not_called()
+            summary = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("fail", summary["status"])
+            self.assertEqual("181", summary["task_id"])
+            self.assertEqual(["unit"], [item["name"] for item in summary["steps"]])
+            self.assertEqual("missing_task_scoped_cs_refs", summary["steps"][0]["error"])
+
     def test_main_should_fail_when_csharp_test_conventions_gate_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "sc-test"

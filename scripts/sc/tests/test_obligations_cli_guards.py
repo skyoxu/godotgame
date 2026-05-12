@@ -29,8 +29,13 @@ class ObligationsCliGuardTests(unittest.TestCase):
         return Path(match.group(1).strip())
 
     def _pick_task_id(self) -> str:
-        tasks_path = REPO_ROOT / ".taskmaster" / "tasks" / "tasks.json"
-        obj = json.loads(tasks_path.read_text(encoding="utf-8"))
+        sc_dir = REPO_ROOT / "scripts" / "sc"
+        if str(sc_dir) not in sys.path:
+            sys.path.insert(0, str(sc_dir))
+        from _taskmaster import default_paths
+
+        tasks_path, _, _ = default_paths()
+        obj = json.loads(Path(tasks_path).read_text(encoding="utf-8"))
         tasks = ((obj.get("master") or {}).get("tasks") or [])
         for task in tasks:
             if isinstance(task, dict) and str(task.get("id") or "").strip():

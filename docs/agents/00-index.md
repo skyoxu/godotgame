@@ -87,6 +87,7 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
   - [15-security-release-health-and-runtime-ops.md](15-security-release-health-and-runtime-ops.md)
   - [04-closed-loop-testing.md](04-closed-loop-testing.md)
   - [09-quality-gates-and-done.md](09-quality-gates-and-done.md)
+  - [17-taskmaster-test-isolation.md](17-taskmaster-test-isolation.md)
   - [../testing-framework.md](../testing-framework.md)
 - Architecture, ADRs, and template rules:
   - [05-architecture-guardrails.md](05-architecture-guardrails.md)
