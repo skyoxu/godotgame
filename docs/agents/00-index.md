@@ -72,6 +72,7 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 
 ## By Topic
 - Project overview, startup, stack, and legacy AGENTS background sections:
+  - [../workflows/chapter3-7-component-routing.md](../workflows/chapter3-7-component-routing.md)
   - [14-startup-stack-and-template-structure.md](14-startup-stack-and-template-structure.md)
   - [08-project-basics.md](08-project-basics.md)
   - [../../README.md](../../README.md)

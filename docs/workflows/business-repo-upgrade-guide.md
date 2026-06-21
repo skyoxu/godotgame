@@ -364,8 +364,9 @@ When upgrading a business repo that already uses Chapter 7 UI wiring, migrate th
 
 1. Copy the script changes for `run_chapter7_ui_wiring.py`, `chapter7_ui_gdd_writer.py`, `create_chapter7_tasks_from_ui_candidates.py`, `validate_chapter7_ui_wiring.py`, `_chapter7_profile.py`, `dev_cli.py`, and `dev_cli_builders.py`.
 2. Copy `docs/workflows/chapter7-profile.json`, `docs/workflows/chapter7-profile-guide.md`, and the two profile seed files under `docs/workflows/templates/`.
-3. Update `workflow.md`, `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`, `stable-public-entrypoints.md`, and `script-entrypoints-index.md` so operators discover the new `--chapter7-profile-path` behavior.
-4. Keep business-specific task ids, labels, owners, ADR refs, chapter refs, section headings, and surface aliases in the repo-local profile instead of forking the scripts.
+3. Copy `docs/workflows/chapter3-7-component-routing.md` when generated Chapter 7 wording or formal Chapter 3-7 component boundary behavior changes.
+4. Update `workflow.md`, `README.md`, `AGENTS.md`, `docs/PROJECT_DOCUMENTATION_INDEX.md`, `stable-public-entrypoints.md`, and `script-entrypoints-index.md` so operators discover the new `--chapter7-profile-path` behavior and the formal component routing preference.
+5. Keep business-specific task ids, labels, owners, ADR refs, chapter refs, section headings, and surface aliases in the repo-local profile instead of forking the scripts.
 
 ## Workflow Impact
 

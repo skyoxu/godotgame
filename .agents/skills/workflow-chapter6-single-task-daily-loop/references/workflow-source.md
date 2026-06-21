@@ -3,7 +3,7 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 4: Single Task Daily Loop
-- Source line span: 683-1348
+- Source line span: 718-1385
 - Heading count: 20
 - Command-like line count: 75
 - Artifact/reference line count: 22
@@ -14,12 +14,7 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 - 6.0 Choose the Chapter 6 entrypoint first
 - 6.1 Recover state first
 - quick recommendation-only read
-- quick recommendation-only read
 - 6.2 Create recovery documents only when useful
-- 6.3 TDD preflight decision
-- 6.3 TDD preflight decision
-- 6.3 TDD preflight decision
-- 6.3 TDD preflight decision
 - 6.3 TDD preflight decision
 - 6.4 Red stage
 - 6.5 Green stage
@@ -29,7 +24,6 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 - 6.9 Repository-level validation before commit
 - 6.10 PR incremental quick path
 - 6.11 Fast mode fastest template
-- quick recommendation-only read
 
 ## Command And Artifact Signals
 

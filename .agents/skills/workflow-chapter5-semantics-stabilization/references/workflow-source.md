@@ -3,7 +3,7 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 3: Conditional Semantics Stabilization
-- Source line span: 494-682
+- Source line span: 529-717
 - Heading count: 7
 - Command-like line count: 12
 - Artifact/reference line count: 4
@@ -11,10 +11,6 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 ## Headings
 
 - 5. Phase 3: Conditional Semantics Stabilization
-- 5.1 Single-task lightweight lane
-- 5.1 Single-task lightweight lane
-- 5.1 Single-task lightweight lane
-- 5.1 Single-task lightweight lane
 - 5.1 Single-task lightweight lane
 - 5.2 Batch instability lane
 

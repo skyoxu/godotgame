@@ -27,10 +27,38 @@ SKILLS = {
         "steps": [
             "Resolve the target business repo as a sibling of the template repo.",
             "Clean copied template names, paths, workflow names, release names, project paths, and PRD ids.",
+            "Ensure `docs/prd`, `docs/gdd`, and `docs/prototypes` exist as the primary PRD, GDD, and prototype document directories.",
+            "\u521d\u59cb\u5316\u5b8c\u6210\u540e\uff0c\u5206\u4e24\u6b65\u5411\u73a9\u5bb6\u63d0\u95ee\uff1a\n   - \u7b2c 1 \u6b65\uff1a\u6e38\u620f\u540d\u79f0\u3002\n   - \u7b2c 2 \u6b65\uff1a\u6e38\u620f\u7c7b\u578b\u6216\u53c2\u8003\u6e38\u620f\u540d\u79f0\u3002",
+            "Classify the Step 2 answer with `codex exec` against exactly one of the 24 ids in `docs/game-type-guides/game-types.csv`; never leave it unclassified or outside the canonical set.",
+            "\u5c06\u7ed3\u679c\u5199\u5165 `AGENTS.md` \u4e0e `README.md` \u7684 `## Game Project Metadata` \u6bb5\uff1a\n   - `Game Name: <player input>`\n   - `Game Type: <canonical id>`\n   - `Game Type Source: <player input>`\n   - `Game Type Guide: docs/game-type-guides/<canonical id>.md`",
             "Rebuild entry indexes in README.md, AGENTS.md, docs/PROJECT_DOCUMENTATION_INDEX.md, and docs/agents/00-index.md.",
             "Run repository-level hard checks immediately after cleanup and index repair.",
             "Optionally start the local project-health service when browser-based health inspection is useful; keep it bound to 127.0.0.1.",
             "Use OpenAI backend bootstrap only when the repo explicitly opts into openai-api transport, and keep it out of default CI until checklist self-checks are clean.",
+            "Chapter 2 \u4efb\u52a1\u5b8c\u6210\u540e\u5fc5\u987b\u663e\u793a project-health \u8bbf\u95ee\u94fe\u63a5\uff1a\n    - URL: read `logs/ci/project-health/server.json` -> `url` when available.\n    - HTML: `logs/ci/project-health/latest.html`.\n    - \u5982\u679c\u542f\u52a8\u4e86\u672c\u5730\u670d\u52a1\uff0c\u5411\u7528\u6237\u663e\u793a URL\uff1b\u5426\u5219\u663e\u793a HTML \u8def\u5f84\u3002",
+        ],
+        "operating_contract_sections": [
+            {
+                "heading": "Highest Encoding Rule",
+                "body": (
+                    "- \u6240\u6709\u4e2d\u6587\u6587\u6863\u8bfb\u5199\u5fc5\u987b\u901a\u8fc7 Python \u5e76\u663e\u5f0f `encoding=\"utf-8\"`\u3002\n"
+                    "- \u4e25\u7981\u4f7f\u7528 PowerShell \u6216 Windows \u539f\u751f\u6587\u672c\u5de5\u5177\u8bfb\u5199\u4e2d\u6587\u6587\u4ef6\u3002\n"
+                    "- \u4e34\u65f6 Python \u811a\u672c\u5982\u679c\u9700\u8981\u5199\u4e2d\u6587\uff0c\u4f7f\u7528 ASCII-only source + Unicode escapes \u907f\u514d Windows \u7ec8\u7aef\u8f6c\u7801\u3002"
+                ),
+            }
+        ],
+        "extra_sections": [
+            {
+                "heading": "Game Type Classification Prompt",
+                "body": "Use `codex exec` in read-only mode from the target repo. Provide the player answer, the game name when available, and the canonical CSV rows from `docs/game-type-guides/game-types.csv`. Require JSON with one `game_type` id and a short reason. If the answer names a reference game, classify by gameplay fit rather than title similarity.",
+            },
+            {
+                "heading": "\u7528\u6237\u4ea4\u4e92\u6587\u6848\u8981\u6c42",
+                "body": (
+                    "- Chapter 2 \u9762\u5411\u7528\u6237\u7684\u63d0\u95ee\u3001\u786e\u8ba4\u3001\u7f3a\u5931\u9879\u63d0\u793a\u5fc5\u987b\u4f7f\u7528\u4e2d\u6587\u3002\n"
+                    "- \u6d89\u53ca\u4e2d\u6587\u5199\u5165\u7684\u6587\u4ef6\u66f4\u65b0\u5fc5\u987b\u901a\u8fc7 Python \u4e14\u663e\u5f0f `encoding=\\\"utf-8\\\"` \u6267\u884c\uff0c\u907f\u514d PowerShell \u7f16\u7801\u5e72\u6270\u5bfc\u81f4\u4e71\u7801\u3002"
+                ),
+            },
         ],
     },
     "workflow-chapter3-task-triplet-baseline": {
@@ -58,6 +86,16 @@ SKILLS = {
             "Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.",
             "Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.",
             "When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.",
+        ],
+        "extra_sections": [
+            {
+                "heading": "\u7528\u6237\u4ea4\u4e92\u6587\u6848\u8981\u6c42",
+                "body": (
+                    "- \u9762\u5411\u7528\u6237\u7684\u63d0\u95ee\u5fc5\u987b\u4f7f\u7528\u4e2d\u6587\uff0c\u4e14\u8981\u76f4\u63a5\u8bf4\u660e\u5f53\u524d Chapter 3 \u9636\u6bb5\u9700\u8981\u7528\u6237\u786e\u8ba4\u4ec0\u4e48\u3002\n"
+                    "- \u6280\u672f\u547d\u4ee4\u3001\u6587\u4ef6\u8def\u5f84\u3001\u811a\u672c\u540d\u4fdd\u6301\u82f1\u6587\u539f\u6587\u3002\n"
+                    "- \u53ea\u6709\u5728\u7f3a\u5c11 PRD\u3001GDD\u3001epics\u3001stories \u7b49\u5fc5\u8981\u8f93\u5165\u4e14\u65e0\u6cd5\u4ece\u4ed3\u5e93\u5b9a\u4f4d\u65f6\uff0c\u624d\u5411\u7528\u6237\u63d0\u95ee\u3002"
+                ),
+            }
         ],
     },
     "workflow-chapter4-overlays-contracts-baseline": {
@@ -129,6 +167,8 @@ SKILLS = {
         ],
     },
 }
+
+FORMAL_COMPONENT_ROUTING_DOC = "docs/workflows/chapter3-7-component-routing.md"
 
 KEYWORDS = {
     "chapter2": ["repository bootstrap", "project-health", "run-local-hard-checks", "serve-project-health", "openai-api", "template-bootstrap"],
@@ -563,13 +603,18 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
         "7.6": "7.6 Task generation rules",
         "7.7": "7.7 Stop and inspect",
     }
+    emitted_headings: set[str] = set()
     for heading in headings:
         alias = None
         for prefix, mapped in sorted(heading_aliases.items(), key=lambda item: len(item[0]), reverse=True):
             if heading.startswith(prefix):
                 alias = mapped
                 break
-        out.append(f"- {alias or heading.encode('ascii', errors='ignore').decode('ascii').strip() or 'Non-English source heading'}")
+        heading_line = alias or heading.encode('ascii', errors='ignore').decode('ascii').strip() or 'Non-English source heading'
+        if heading_line in emitted_headings:
+            continue
+        emitted_headings.add(heading_line)
+        out.append(f"- {heading_line}")
     out += ["", "## Command And Artifact Signals", ""]
     seen = set()
     for line in commands + artifacts:
@@ -587,11 +632,34 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
     if not seen:
         out.append("- None observed.")
     out.append("")
+    if chapter == "2":
+        out += [
+            "## Repository-Specific Extension",
+            "",
+            "After Chapter 2 initialization, create `docs/prd`, `docs/gdd`, and `docs/prototypes`.",
+            "",
+            "Then ask the player in two separate prompts:",
+            "",
+            "1. Game name.",
+            "2. Game type or reference game name.",
+            "",
+            "Classify the second answer with `codex exec` against the 24 canonical ids in `docs/game-type-guides/game-types.csv`. Persist the resulting metadata in both `AGENTS.md` and `README.md` under `## Game Project Metadata`.",
+            "",
+        ]
     return "\n".join(out)
 
 
 def skill_markdown(name: str, cfg: dict[str, Any]) -> str:
     steps = "\n".join(f"{i}. {step}" for i, step in enumerate(cfg["steps"], 1))
+    operating_contract_sections = "".join(
+        f"## {section['heading']}\n\n{section['body']}\n\n"
+        for section in cfg.get("operating_contract_sections", [])
+    )
+    extra_sections = "".join(
+        f"\n## {section['heading']}\n\n{section['body']}\n"
+        for section in cfg.get("extra_sections", [])
+    )
+    applies_formal_component_routing = cfg["chapter"] in {"3", "4", "5", "6", "7"}
     if cfg["chapter"] == "2":
         required_reading = (
             "1. Read the relevant Chapter 2 section in the template repo `workflow.md`.\n"
@@ -601,10 +669,18 @@ def skill_markdown(name: str, cfg: dict[str, Any]) -> str:
     else:
         required_reading = (
             f"1. Read the relevant Chapter {cfg['chapter']} section in the template repo `workflow.md`.\n"
-            "2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.\n"
-            "3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo."
+            f"2. Read `{FORMAL_COMPONENT_ROUTING_DOC}` for the formal Chapter 3-7 soft routing preferences.\n"
+            "3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.\n"
+            "4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo."
         )
-    return f"""---
+    component_contract = ""
+    if applies_formal_component_routing:
+        component_contract = f"""
+- Apply `{FORMAL_COMPONENT_ROUTING_DOC}` as a soft generation and repair preference for Chapter 3-7 only.
+- Treat `Component` as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
+"""
+    rendered = f"""---
 name: {name}
 description: {cfg["desc"]}
 ---
@@ -617,12 +693,13 @@ Operate Chapter {cfg["chapter"]} from `workflow.md` idempotently for a business 
 
 ## Operating Contract
 
-- Treat `workflow.md` as the normative workflow source.
+{operating_contract_sections}- Treat `workflow.md` as the normative workflow source.
 - Treat business-repo logs as empirical evidence, not policy overrides.
 - Use Python with UTF-8 for documentation reads and writes.
 - Keep generated code, scripts, tests, comments, and log messages in English.
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
+{component_contract}
 
 ## Repository Layout
 
@@ -651,6 +728,7 @@ Use this skill to {cfg["purpose"]}.
 ## Idempotent Procedure
 
 {steps}
+{extra_sections}
 
 ## Stop-Loss Signals
 
@@ -673,6 +751,7 @@ py -3 scripts/python/update_workflow_chapter_skills.py <business-repo>
 py -3 scripts/python/update_workflow_chapter_skills.py <business-repo-a>,<business-repo-b>
 ```
 """
+    return "\n".join(line.rstrip() for line in rendered.splitlines()).rstrip() + "\n"
 
 
 def resolve_repo(template: Path, value: str) -> tuple[str, Path]:

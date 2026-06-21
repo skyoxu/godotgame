@@ -5,6 +5,8 @@
 `docs/workflows/chapter7-profile.json` is the repo-local override file for the Chapter 7 UI wiring toolchain.
 Use it when a business repo needs different bucket mapping, closure task ids, task identity templates, labels, refs, headings, or surface defaults without forking the Python scripts.
 
+Chapter 7 generated wording also follows `docs/workflows/chapter3-7-component-routing.md` for Godot Node/Scene Component scope, Core/Godot boundaries, NodePath preference, and EventBus routing.
+
 ## Load Order
 
 1. Built-in defaults in `scripts/python/_chapter7_profile.py`

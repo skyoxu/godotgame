@@ -611,7 +611,8 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertIn("GDD-ID:", text)
         self.assertIn("## 1. Design Goals", text)
         self.assertIn("## 8. Screen State Matrix", text)
-        self.assertIn("## 9. Scope And Non-Goals", text)
+        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("### 9.1 Scope And Non-Goals", text)
         self.assertIn("## 12. Copy And Accessibility", text)
         self.assertIn("## 14. Task Alignment", text)
         self.assertEqual(0, rc)
@@ -749,6 +750,23 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertIn("| Screen Group | Entry State | Interaction State | Failure State | Recovery / Exit |", text)
         self.assertIn("| MainMenu And Boot Flow |", text)
         self.assertIn("| Config Audit And Migration Surfaces |", text)
+
+    def test_write_doc_should_include_formal_component_routing_preferences(self) -> None:
+        collector = _load_module("collect_ui_wiring_inputs_module_for_component_routing", "scripts/python/collect_ui_wiring_inputs.py")
+        writer = _load_module("chapter7_ui_gdd_writer_module_for_component_routing", "scripts/python/chapter7_ui_gdd_writer.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write_rich_sample_repo(root)
+            summary = collector.build_summary(repo_root=root)
+            out = writer.write_ui_gdd_flow(repo_root=root, summary=summary)
+            text = out.read_text(encoding="utf-8")
+
+        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("Godot Node/Scene Component", text)
+        self.assertIn("not ECS components", text)
+        self.assertIn("Game.Core", text)
+        self.assertIn("[Export] public NodePath", text)
+        self.assertIn("EventBus", text)
 
     def test_write_doc_should_include_recovery_and_exit_language_in_state_matrix(self) -> None:
         collector = _load_module("collect_ui_wiring_inputs_module_for_recovery_matrix", "scripts/python/collect_ui_wiring_inputs.py")
@@ -911,6 +929,10 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertIn(9, tasks[-1]["dependencies"])
         self.assertIn("keeps deterministic domain state behind existing contracts", tasks[-1]["details"])
         self.assertIn("adds no unrelated gameplay behavior", tasks[-1]["details"])
+        self.assertIn("docs/workflows/chapter3-7-component-routing.md", tasks[-2]["details"])
+        self.assertIn("Godot Node/Scene Components", tasks[-1]["details"])
+        self.assertNotIn("docs/workflows/chapter3-7-component-routing.md", " ".join(back[-2]["acceptance"]))
+        self.assertNotIn("Godot Node/Scene Components", " ".join(gameplay[-1]["acceptance"]))
         self.assertEqual("NG-0004", back[-2]["id"])
         self.assertEqual(4, back[-2]["taskmaster_id"])
         self.assertEqual("GM-0104", gameplay[-2]["id"])
@@ -1569,6 +1591,16 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertTrue(contract["ui_candidates_path"].endswith("/docs/gdd/ui-gdd-flow.candidates.json"))
         self.assertTrue(contract["alignment_audit_path"].endswith("/docs/gdd/bmad-epic-task-alignment.md"))
         self.assertTrue(contract["wiring_audit_path"].endswith("/docs/gdd/t1-t46-m1-wiring-audit.md"))
+
+
+    def test_template_gdd_should_match_generated_component_routing_section_numbers(self) -> None:
+        text = (REPO_ROOT / "docs" / "gdd" / "ui-gdd-flow.md").read_text(encoding="utf-8")
+
+        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("## 10. Unwired UI Feature List", text)
+        self.assertIn("## 11. Next UI Wiring Task Candidates", text)
+        self.assertLess(text.index("## 9. Chapter 3-7 Component Routing Preferences"), text.index("## 10. Unwired UI Feature List"))
+        self.assertLess(text.index("## 10. Unwired UI Feature List"), text.index("## 11. Next UI Wiring Task Candidates"))
 
     def test_orchestrator_self_check_should_include_parameterized_task_creation_identity(self) -> None:
         run_module = _load_module("run_chapter7_ui_wiring_module_for_identity_self_check", "scripts/python/run_chapter7_ui_wiring.py")

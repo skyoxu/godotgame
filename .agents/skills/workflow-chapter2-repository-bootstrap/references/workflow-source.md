@@ -3,9 +3,9 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Repository Bootstrap
-- Source line span: 86-167
-- Heading count: 6
-- Command-like line count: 4
+- Source line span: 95-200
+- Heading count: 7
+- Command-like line count: 5
 - Artifact/reference line count: 0
 
 ## Headings
@@ -23,6 +23,7 @@ Generated from the template repo `workflow.md` by `scripts/python/update_workflo
 - `py -3 scripts/python/dev_cli.py inspect-run --kind local-hard-checks`
 - `py -3 scripts/python/dev_cli.py serve-project-health`
 - `py -3 scripts/python/dev_cli.py project-health-scan --serve`
+- `URL `logs/ci/project-health/server.json`  `url`  `py -3 scripts/python/dev_cli.py serve-project-health`  `py -3 scripts/python/dev_cli.py project-health-scan --serve``
 
 ## Repository-Specific Extension
 

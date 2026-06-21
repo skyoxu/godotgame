@@ -36,6 +36,7 @@ This file is the top-level navigation for project docs.
 - Example bootstrap workflow: `workflow.example.md`
 - Chapter 6 optimization guide: `docs/workflows/chapter-6-t56-optimization-guide.md`
 - Chapter 7 UI wiring GDD: `docs/gdd/ui-gdd-flow.md`
+- Chapter 3-7 component routing preferences: `docs/workflows/chapter3-7-component-routing.md`
 - Chapter 7 profile guide: `docs/workflows/chapter7-profile-guide.md`
 - Chapter 7 orchestrator: `py -3 scripts/python/dev_cli.py run-chapter7-ui-wiring --delivery-profile fast-ship`
 - Chapter 7 backlog-gap route: `py -3 scripts/python/dev_cli.py run-chapter7-backlog-gap --design-doc-path <doc> --epics-doc-path <doc> --duplicate-audit-path <doc>`

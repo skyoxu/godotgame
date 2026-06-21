@@ -18,6 +18,11 @@ Operate Chapter 6 from `workflow.md` idempotently for a business repository that
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
 
+- Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
+- Treat `Component` as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
+
+
 ## Repository Layout
 
 Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
@@ -41,8 +46,9 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 ## Required Reading
 
 1. Read the relevant Chapter 6 section in the template repo `workflow.md`.
-2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
@@ -52,6 +58,7 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 4. Run 6.7 only when deterministic evidence is stale or required by changed implementation, tests, contracts, scripts, or runtime assets.
 5. Run 6.8 only when route evidence says Needs Fix cleanup is the right lane.
 6. Run 6.9 repository validation before commit or PR closure.
+
 
 ## Stop-Loss Signals
 

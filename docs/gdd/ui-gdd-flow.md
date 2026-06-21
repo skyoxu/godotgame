@@ -26,6 +26,8 @@ Chapter 7 does not rewrite PRD, GDD, or architecture overlays. It converts compl
 
 Use this document after the relevant backlog slice has completed Chapter 6 and no unrecorded P0/P1 Needs Fix remains.
 
+Formal Chapter 7 UI wiring follows `docs/workflows/chapter3-7-component-routing.md`: components are Godot Node/Scene Components, not ECS components; Godot scripts own lifecycle/presentation/input/wiring while `Game.Core` owns rules, state mutation, and simulation.
+
 ## 2. Player Loop Backbone
 
 Describe the playable loop from the player's point of view.
@@ -112,7 +114,18 @@ List UI wiring risks that should stop Chapter 7.
 - Player-visible text bypasses localization rules when the project has i18n requirements.
 - UI actions mutate deterministic state during preview, hover, refresh, or open-panel behavior.
 
-## 9. Unwired UI Feature List
+## 9. Chapter 3-7 Component Routing Preferences
+
+Apply `docs/workflows/chapter3-7-component-routing.md` as a soft preference for formal Chapter 7 UI wiring. This is not a hard gate and does not apply to prototype-lane work.
+
+- Treat Component as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring.
+- Keep gameplay rules, state mutation, and simulation logic in `Game.Core` unless the task or ADR explicitly scopes otherwise.
+- Prefer exported `NodePath` wiring over deep hardcoded paths when the UI surface depends on child nodes.
+- Prefer direct calls, Godot signals, or C# events inside one UI wiring slice; use EventBus only for global services or formal feature boundaries.
+- If a UI wiring slice treats Component as ECS or moves gameplay rules/state mutation from `Game.Core` into Godot scripts without explicit task or ADR scope, treat it as a repair preference rather than a Chapter 7 hard gate by default.
+
+## 10. Unwired UI Feature List
 
 List completed features that are not wired to UI yet, or explicitly mark them as no-UI-needed.
 
@@ -120,7 +133,7 @@ List completed features that are not wired to UI yet, or explicitly mark them as
 | --- | --- | --- | --- | --- |
 | T0 | Example completed feature | Main surface | Template placeholder | Replace in business repo |
 
-## 10. Next UI Wiring Task Candidates
+## 11. Next UI Wiring Task Candidates
 
 Generate follow-up tasks from this section only after the matrix and unwired list are current.
 

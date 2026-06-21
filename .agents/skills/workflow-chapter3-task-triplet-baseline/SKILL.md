@@ -18,6 +18,11 @@ Operate Chapter 3 from `workflow.md` idempotently for a business repository that
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
 
+- Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
+- Treat `Component` as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
+
+
 ## Repository Layout
 
 Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
@@ -41,8 +46,9 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 ## Required Reading
 
 1. Read the relevant Chapter 3 section in the template repo `workflow.md`.
-2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
@@ -65,8 +71,10 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 
 ## 用户交互文案要求
 
-- Chapter 3 面向用户的说明、分步确认与阻断提示使用中文。
-- 任务文件与文档中若写入中文，必须通过 Python 并显式 `encoding=\"utf-8\"` 写入，避免终端编码导致乱码。
+- 面向用户的提问必须使用中文，且要直接说明当前 Chapter 3 阶段需要用户确认什么。
+- 技术命令、文件路径、脚本名保持英文原文。
+- 只有在缺少 PRD、GDD、epics、stories 等必要输入且无法从仓库定位时，才向用户提问。
+
 
 ## Stop-Loss Signals
 

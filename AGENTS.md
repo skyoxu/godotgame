@@ -75,6 +75,7 @@ This file is the repository map. It routes you to the right source document by t
 - [Prototype Lane Playbook](docs/workflows/prototype-lane-playbook.md)
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
 - [Chapter 7 UI Wiring GDD](docs/gdd/ui-gdd-flow.md)
+- [Chapter 3-7 Component Routing](docs/workflows/chapter3-7-component-routing.md)
 - [Chapter 7 Profile Guide](docs/workflows/chapter7-profile-guide.md)
 - [Prototype Workspace](docs/prototypes/README.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)

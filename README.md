@@ -68,6 +68,7 @@ One‑liner（已在 Editor 安装 Export Templates 后）：
 - Bootstrap Workflow Example: `workflow.example.md`
 - Chapter 6 T56 Optimization Guide: `docs/workflows/chapter-6-t56-optimization-guide.md`
 - Chapter 7 UI Wiring GDD: `docs/gdd/ui-gdd-flow.md`
+- Chapter 3-7 Component Routing: `docs/workflows/chapter3-7-component-routing.md`
 - Chapter 7 Profile: `docs/workflows/chapter7-profile.json` (minimal seed: `docs/workflows/templates/chapter7-profile.minimal.example.json`)
 - Chapter 7 Profile Guide: `docs/workflows/chapter7-profile-guide.md`
 - Stable Public Entrypoints: `docs/workflows/stable-public-entrypoints.md`

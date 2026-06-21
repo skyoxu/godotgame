@@ -200,6 +200,8 @@ Chapter 2 任务完毕时，必须向用户展示 project-health 的访问信息
 
 ## 3. Phase 1: Task Triplet Initialization
 
+Formal Chapter 3-7 component routing preference: `docs/workflows/chapter3-7-component-routing.md` defines the soft Godot Node/Scene Component boundary used by task generation, overlays, semantics, implementation repair, and UI wiring. It is not an ECS policy and is not a hard gate by default.
+
 ### 3.0 Choose The Chapter 3 Route First
 
 Do not treat `tasks.json` as a file that must be authored directly by Taskmaster MCP.
@@ -716,6 +718,8 @@ py -3 scripts/python/run_obligations_freeze_pipeline.py --skip-jitter --raw logs
 ## 6. Phase 4: Single Task Daily Loop
 
 This chapter is the main daily loop for a single task: recovery inspection, TDD, review pipeline, Needs Fix convergence, and pre-commit hard checks.
+
+Apply `docs/workflows/chapter3-7-component-routing.md` as a soft implementation and repair preference: Godot scripts own lifecycle, presentation, input, and wiring; `Game.Core` owns rules, state mutation, and simulation logic. Prefer exported `NodePath` or node references for new/repaired scene wiring, and keep EventBus for cross-scene, Autoload-level, audit/observability, or formal domain events.
 
 If you want the background for the T56-based optimization and stop-loss rules, read `docs/workflows/chapter-6-t56-optimization-guide.md` first.
 
@@ -1383,6 +1387,8 @@ Inspect these first after a failure:
 
 Chapter 7 runs after the formal task backlog has been completed through Chapter 6. Its purpose is to convert completed domain and gameplay capabilities into player-facing UI wiring based on `docs/gdd/ui-gdd-flow.md`.
 
+Chapter 7 follows `docs/workflows/chapter3-7-component-routing.md`: UI wiring targets Godot Node/Scene Components such as views, panels, and surfaces; it does not imply ECS components or moving gameplay rules out of `Game.Core`.
+
 ### 7.1 Entry Conditions
 
 Enter Chapter 7 only when all of the following are true:
@@ -1479,6 +1485,7 @@ Do not infer done-state from the two view files.
 6. Automated or manual validation for each flow.
 7. A `Feature -> UI Surface -> Player Action -> System Response -> Test Refs` wiring matrix.
 8. Candidate follow-up UI tasks in `docs/gdd/ui-gdd-flow.candidates.json`, grouped by screen or surface rather than by raw task order.
+9. Chapter 3-7 component routing preferences from `docs/workflows/chapter3-7-component-routing.md`, including Godot Node/Scene Component scope, Core/Godot boundaries, NodePath preference, and EventBus routing.
 
 The design may use a genre reference, but it must document this project's own scenes, contracts, tests, acceptance evidence, overlay requirement IDs, and artifact targets.
 
