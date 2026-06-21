@@ -26,6 +26,7 @@ This file indexes the current `docs/workflows/` root documents and records how t
 | `build_taskmaster_tasks.md` | `2025-12-20 01:00:55` | `2025-12-20 19:24:44` | Taskmaster task construction, dependency closure, and tag handling. | No explicit unfinished work. |
 | `business-repo-upgrade-guide.md` | `2026-03-22 21:37:48` | `2026-05-01 13:53:30` | Business-repo migration guide for recovery, gates, workflow scripts, docs, dependencies, and Chapter 7 profile migration. | Ongoing maintenance required. |
 | `chapter-6-t56-optimization-guide.md` | `2026-03-31 22:43:27` | `2026-04-13 00:38:16` | Chapter 6 T56 optimization notes, real log signals, upgrade method, and execution posture. | No explicit unfinished work. |
+| `chapter2-5-technical-preflight.md` | `2026-06-21 18:49:00` | `2026-06-21 18:49:00` | Chapter 2.5 technical preflight for engine/backend/platform feasibility before Chapter 3 task generation. | No explicit unfinished work. |
 | `chapter3-7-component-routing.md` | `2026-06-21 15:18:32` | `2026-06-21 17:04:38` | Soft Component routing preferences for formal Chapter 3-7 generation, repair, and UI wiring. | No explicit unfinished work. |
 | `chapter7-profile-guide.md` | `2026-04-30 14:30:26` | `2026-04-30 21:19:28` | Chapter 7 profile load order, field semantics, seed templates, minimal overrides, and validation commands. | Ongoing maintenance required. |
 | `cloud-platform-evolution-plan.md` | `2026-04-15 13:40:38` | `2026-04-25 14:47:28` | Roadmap from local harness to cloud control plane, cloud workspace, and Windows execution plane. | Ongoing maintenance required. |
@@ -89,11 +90,12 @@ This file indexes the current `docs/workflows/` root documents and records how t
 3. `run-protocol.md`
 4. `local-hard-checks.md`
 5. `project-health-dashboard.md`
-6. `chapter3-7-component-routing.md` when working on formal Chapter 3-7 generation, repair, or UI wiring
-7. `chapter7-profile-guide.md` when working on Chapter 7 UI wiring or profile overrides
-8. `prototype-lane.md` / `prototype-tdd.md` / `prototype-lane-playbook.md`
-9. `template-upgrade-protocol.md` / `business-repo-upgrade-guide.md`
-10. `cloud-platform-evolution-plan.md` / `cloud-user-telemetry-and-feedback-plan.md` / `hermes-openai-api-and-orchestration-optimization-plan.md` when planning platform evolution
+6. `chapter2-5-technical-preflight.md` when GDD/prototype/task text may imply engine/backend/platform feasibility work
+7. `chapter3-7-component-routing.md` when working on formal Chapter 3-7 generation, repair, or UI wiring
+8. `chapter7-profile-guide.md` when working on Chapter 7 UI wiring or profile overrides
+9. `prototype-lane.md` / `prototype-tdd.md` / `prototype-lane-playbook.md`
+10. `template-upgrade-protocol.md` / `business-repo-upgrade-guide.md`
+11. `cloud-platform-evolution-plan.md` / `cloud-user-telemetry-and-feedback-plan.md` / `hermes-openai-api-and-orchestration-optimization-plan.md` when planning platform evolution
 
 ## Task Triplet Generation
 

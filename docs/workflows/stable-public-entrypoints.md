@@ -32,6 +32,22 @@ Why this is stable:
 - it writes lightweight active state under `logs/ci/active-prototypes/*.active.json` for resume after context compression
 - it stops at Day 5 and leaves Day 6 / Day 7 evidence review and discard/archive/promote judgment to the operator
 
+### `py -3 scripts/python/dev_cli.py run-technical-preflight --source docs/prototypes/<file>.md --source-kind prototype`
+
+Use when:
+- prototype evidence, GDD text, or task text may imply physics backend, plugin, platform, rendering, networking, save, or performance feasibility work
+- you need a Chapter 2.5 recommendation before formal Chapter 3 task generation
+- you want engine/backend guidance without modifying project files
+
+Prerequisites:
+- a source document path
+- optional Chapter 2 capability snapshot JSON via `--capability-snapshot`
+
+Why this is stable:
+- it is the Chapter 2.5 technical preflight entrypoint
+- it emits `technical-preflight.v1`
+- it only recommends `no_engine_change`, `use_default_backend`, or `engine_spike_required`
+- it never installs plugins, edits `project.godot`, or creates formal tasks
 
 ### `py -3 scripts/python/dev_cli.py run-local-hard-checks`
 

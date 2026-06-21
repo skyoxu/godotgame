@@ -116,3 +116,12 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 ## Prototype And Game Type Guides
 - `docs/game-type-guides/README.md` stores the extracted 24 BMAD/GDS game type guides.
 - `.agents/skills/prototype-7day-playable-godot-zh/SKILL.md` routes the Chinese 7-day playable prototype lane.
+
+## Workflow Chapter Skills
+- `.agents/skills/workflow-chapter2-repository-bootstrap/SKILL.md` routes Chapter 2 repository bootstrap.
+- `.agents/skills/workflow-chapter2-5-technical-preflight/SKILL.md` routes Chapter 2.5 technical preflight before Chapter 3.
+- `.agents/skills/workflow-chapter3-task-triplet-baseline/SKILL.md` routes Chapter 3 task triplet baseline generation.
+- `.agents/skills/workflow-chapter4-overlays-contracts-baseline/SKILL.md` routes Chapter 4 overlays and contracts baseline.
+- `.agents/skills/workflow-chapter5-semantics-stabilization/SKILL.md` routes Chapter 5 semantics stabilization.
+- `.agents/skills/workflow-chapter6-single-task-daily-loop/SKILL.md` routes Chapter 6 single-task daily loop.
+- `.agents/skills/workflow-chapter7-ui-wiring-closure/SKILL.md` routes Chapter 7 UI wiring closure.

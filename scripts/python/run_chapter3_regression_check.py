@@ -141,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--epics-path", action="append", default=[])
     parser.add_argument("--stories-path", action="append", default=[])
     parser.add_argument("--source-glob", action="append", default=[])
+    parser.add_argument("--technical-preflight", default="", help="Explicit Chapter 2.5 technical preflight summary JSON to pass into enrichment.")
     args = parser.parse_args(argv)
 
     template_root = Path(args.template_root).resolve()
@@ -162,6 +163,9 @@ def main(argv: list[str] | None = None) -> int:
     enriched = out_dir / "task-candidates.enriched.json"
     coverage = out_dir / "coverage-report.json"
     patch = out_dir / "task-triplet.patch.json"
+    technical_preflight = Path(args.technical_preflight).resolve() if args.technical_preflight else None
+    if technical_preflight and not technical_preflight.exists():
+        raise SystemExit(f"technical preflight summary not found: {technical_preflight}")
 
     run(
         template_root,
@@ -219,7 +223,10 @@ def main(argv: list[str] | None = None) -> int:
             str(candidates),
         ],
     )
-    run(template_root, ["py", "-3", "scripts/python/enrich_task_candidates.py", "--repo-root", str(repo_root), "--candidates", str(candidates), "--out", str(enriched)])
+    enrich_command = ["py", "-3", "scripts/python/enrich_task_candidates.py", "--repo-root", str(repo_root), "--candidates", str(candidates), "--out", str(enriched)]
+    if technical_preflight:
+        enrich_command.extend(["--technical-preflight", str(technical_preflight)])
+    run(template_root, enrich_command)
     run(template_root, ["py", "-3", "scripts/python/audit_task_candidate_coverage.py", "--repo-root", str(repo_root), "--requirements", str(requirements), "--candidates", str(enriched), "--out", str(coverage)])
     run(template_root, ["py", "-3", "scripts/python/compile_task_triplet.py", "--repo-root", str(repo_root), "--mode", args.mode, "--candidates", str(enriched), "--coverage", str(coverage), "--out", str(patch)])
 

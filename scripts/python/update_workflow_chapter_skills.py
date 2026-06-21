@@ -61,6 +61,45 @@ SKILLS = {
             },
         ],
     },
+    "workflow-chapter2-5-technical-preflight": {
+        "title": "Workflow Chapter 2.5 Technical Preflight",
+        "desc": "Run the fixed Chapter 2.5 technical preflight workflow before Chapter 3 task generation. Use when GDD, prototype, or task text may imply engine/backend/platform feasibility work, physics backend choice, plugin adoption, Web/WASM constraints, deterministic physics, rendering, networking, save, or performance feasibility decisions.",
+        "chapter": "2.5",
+        "purpose": "turn GDD, prototype, task, and optional capability-snapshot signals into a recommendation-only technical route before Chapter 3 creates formal tasks",
+        "default": "Run a recommendation-only technical preflight after Chapter 2 repository bootstrap and before Chapter 3 task generation whenever engine, backend, plugin, platform, or feasibility signals are present. Do not install plugins, edit project.godot, or create final tasks in Chapter 2.5.",
+        "command": "py -3 scripts/python/dev_cli.py run-technical-preflight --source <docs/prototypes-or-gdd-file.md> --source-kind auto --out-json logs/ci/technical-preflight/summary.json",
+        "evidence": "Chapter 2.5 is a read-only feasibility routing pass. Use the source document text, optional capability snapshot, and generated technical-preflight summary as evidence; do not treat old summaries as reusable unless explicitly selected for the current Chapter 3 run.",
+        "steps": [
+            "Identify the current GDD, prototype record, or task source that may contain technical feasibility signals.",
+            "Run run-technical-preflight through dev_cli with --source-kind auto unless the source kind is already known.",
+            "Pass --capability-snapshot only when a current Chapter 2 capability snapshot exists; review capability_snapshot_status when it is missing or invalid.",
+            "Use --recommendation-only for quick triage, and use --out-json logs/ci/technical-preflight/summary.json when Chapter 3 may consume the result.",
+            "Treat no_engine_change as a hard instruction to avoid adding engine tasks.",
+            "Treat use_default_backend as permission to use Godot's default backend without an ADR unless later implementation evidence proves it insufficient.",
+            "Treat engine_spike_required as a request for a spike-shaped task in Chapter 3, not as permission to install plugins or edit project.godot.",
+            "When Chapter 3 should consume the result, pass --technical-preflight <summary.json> explicitly to enrich_task_candidates.py or run_chapter3_regression_check.py.",
+            "Record plugin or global backend changes in Chapter 4 ADR or decision-log only after spike evidence supports the change.",
+        ],
+        "extra_sections": [
+            {
+                "heading": "Output Contract",
+                "body": (
+                    "- Output schema is `technical-preflight.v1`.\n"
+                    "- `source.path` is resolved by the CLI so downstream repo matching can avoid stale summaries.\n"
+                    "- `technical_preflight.engine_route.recommended_action` is one of `no_engine_change`, `use_default_backend`, or `engine_spike_required`.\n"
+                    "- Chapter 2.5 is `recommend_only`; it must not install plugins, modify project.godot, or write final Taskmaster triplets."
+                ),
+            },
+            {
+                "heading": "User Interaction Requirements",
+                "body": (
+                    "- Ask the user in Chinese only when the current source document cannot be identified from the repository.\n"
+                    "- Keep commands, file paths, script names, schema values, and logs in English.\n"
+                    "- If the user asks whether an engine should be used, answer from the current technical-preflight route and clearly separate recommendation from implementation permission."
+                ),
+            },
+        ],
+    },
     "workflow-chapter3-task-triplet-baseline": {
         "title": "Workflow Chapter 3 Task Triplet Baseline",
         "desc": "Run the fixed Chapter 3 task triplet generation and baseline workflow from workflow.md. Use when a business repo is initialized with authoritative Taskmaster triplet files, when new tasks are added, when requirements must be converted into task candidates, when coverage must be audited before triplet compilation, when tasks.json must be rebuilt from tasks_back.json and tasks_gameplay.json, or when task links, refs, triplet consistency, or semantic review tier baseline must be validated before Chapter 4 overlays.",
@@ -649,6 +688,53 @@ def workflow_chapter_summary(template: Path, chapter: str) -> str:
     return "\n".join(out)
 
 
+def workflow_doc_summary(template: Path, rel_path: str, title: str) -> str:
+    path = template / rel_path
+    if not path.exists():
+        return f"# Workflow Source Summary: {title}\n\n- Source: `{rel_path}`\n- Status: missing.\n"
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    headings: list[str] = []
+    commands: list[str] = []
+    artifacts: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            headings.append(stripped.lstrip("#").strip())
+        if "py -3 " in stripped:
+            commands.append(stripped.strip("`"))
+        for token in ["technical-preflight.v1", "summary.json", "--technical-preflight", "engine_spike_required", "recommend_only"]:
+            if token in stripped:
+                artifacts.append(stripped)
+                break
+    out = [
+        f"# Workflow Source Summary: {title}",
+        "",
+        f"Generated from `{rel_path}` by `scripts/python/update_workflow_chapter_skills.py`.",
+        "",
+        f"- Source line span: 1-{len(lines)}",
+        f"- Heading count: {len(headings)}",
+        f"- Command-like line count: {len(commands)}",
+        f"- Artifact/reference line count: {len(artifacts)}",
+        "",
+        "## Headings",
+        "",
+    ]
+    out.extend(f"- {heading}" for heading in headings[:40])
+    out += ["", "## Command And Artifact Signals", ""]
+    seen: set[str] = set()
+    for line in commands + artifacts:
+        if line in seen:
+            continue
+        seen.add(line)
+        out.append(f"- `{line[:220]}`")
+        if len(seen) >= 40:
+            break
+    if not seen:
+        out.append("- None observed.")
+    out.append("")
+    return "\n".join(out)
+
+
 def skill_markdown(name: str, cfg: dict[str, Any]) -> str:
     steps = "\n".join(f"{i}. {step}" for i, step in enumerate(cfg["steps"], 1))
     operating_contract_sections = "".join(
@@ -665,6 +751,13 @@ def skill_markdown(name: str, cfg: dict[str, Any]) -> str:
             "1. Read the relevant Chapter 2 section in the template repo `workflow.md`.\n"
             "2. Inspect the target repository state directly; Chapter 2 does not use historical business-repo evidence.\n"
             "3. Refresh this skill with `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` when `workflow.md` changes."
+        )
+    elif cfg["chapter"] == "2.5":
+        required_reading = (
+            "1. Read `docs/workflows/chapter2-5-technical-preflight.md`.\n"
+            "2. Read the Chapter 2 and Chapter 3 boundary sections in `workflow.md` to preserve the order: bootstrap, technical preflight, then task generation.\n"
+            "3. Read `docs/workflows/chapter3-7-component-routing.md` when Chapter 3 will consume an engine spike hint.\n"
+            "4. Refresh this skill with `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` when the Chapter 2.5 workflow document changes."
         )
     else:
         required_reading = (
@@ -787,7 +880,11 @@ def main() -> int:
         ref.mkdir(parents=True, exist_ok=True)
         (root / "SKILL.md").write_text(skill_markdown(name, cfg), encoding="utf-8", newline="\n")
         (root / "references").mkdir(parents=True, exist_ok=True)
-        (root / "references" / "workflow-source.md").write_text(workflow_chapter_summary(template, cfg["chapter"]), encoding="utf-8", newline="\n")
+        if cfg["chapter"] == "2.5":
+            source = workflow_doc_summary(template, "docs/workflows/chapter2-5-technical-preflight.md", "Chapter 2.5 Technical Preflight")
+        else:
+            source = workflow_chapter_summary(template, cfg["chapter"])
+        (root / "references" / "workflow-source.md").write_text(source, encoding="utf-8", newline="\n")
         if cfg["chapter"] == "2":
             continue
         for repo_name, repo in resolved:

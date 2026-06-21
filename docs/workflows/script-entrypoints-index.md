@@ -43,6 +43,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 - `scripts/python/resume_task.py`
 - `scripts/python/run_single_task_chapter6_lane.py`
 - `scripts/python/run_prototype_workflow.py`
+- `scripts/python/run_technical_preflight.py`
 - `scripts/python/run_chapter7_ui_wiring.py`
 
 ### Repo hard gates
@@ -71,9 +72,10 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 
 ### Task generation and triplet compilation
 
+- `scripts/python/run_technical_preflight.py`: Chapter 2.5 recommendation pass for technical feasibility and engine/backend routing before formal Chapter 3 task generation. Prefer `py -3 scripts/python/dev_cli.py run-technical-preflight`.
 - `scripts/python/extract_requirement_anchors.py`: extracts stable requirement anchors from configurable PRD, GDD, epics, stories, overlays, ADRs, and custom planning globs.
 - `scripts/python/generate_task_candidates_from_sources.py`: converts requirement anchors into normalized task candidates without writing final task files.
-- `scripts/python/enrich_task_candidates.py`: enriches normalized candidates with ADR, chapter, overlay, contract event, test, evidence, owner/layer, acceptance, and duplicate-candidate signals.
+- `scripts/python/enrich_task_candidates.py`: enriches normalized candidates with ADR, chapter, overlay, contract event, test, evidence, owner/layer, acceptance, duplicate-candidate signals, and optional `--technical-preflight` spike candidates.
 - `scripts/python/audit_task_candidate_coverage.py`: audits candidate coverage against requirement anchors and blocks missing P0/P1 coverage.
 - `scripts/python/compile_task_triplet.py`: compiles enriched candidates into a reviewable triplet patch, or writes task view files with `--write`.
 
@@ -938,7 +940,7 @@ Generated from source scan on `2026-03-25`. This document inventories recurring 
 
 - Direct local deps: `scripts/python/dev_cli_builders.py`, `scripts/python/local_hard_checks_harness.py`
 - Transitive local deps: `scripts/python/dev_cli_builders.py`, `scripts/python/local_hard_checks_harness.py`, `scripts/python/local_hard_checks_support.py`
-- Subcommands: `run-ci-basic`, `run-quality-gates`, `run-local-hard-checks`, `run-local-hard-checks-preflight`, `run-gdunit-hard`, `run-gdunit-full`, `run-preflight`, `run-acceptance-preflight`, `run-smoke-strict`, `run-prototype-tdd`, `new-execution-plan`, `new-decision-log`, `resume-task`, `inspect-run`, `chapter6-route`, `run-single-task-chapter6`, `detect-project-stage`, `doctor-project`, `check-directory-boundaries`, `project-health-scan`, `serve-project-health`
+- Subcommands: `run-ci-basic`, `run-quality-gates`, `run-local-hard-checks`, `run-local-hard-checks-preflight`, `run-gdunit-hard`, `run-gdunit-full`, `run-preflight`, `run-acceptance-preflight`, `run-smoke-strict`, `run-prototype-tdd`, `run-technical-preflight`, `new-execution-plan`, `new-decision-log`, `resume-task`, `inspect-run`, `chapter6-route`, `run-single-task-chapter6`, `detect-project-stage`, `doctor-project`, `check-directory-boundaries`, `project-health-scan`, `serve-project-health`
 - Declared args: `--solution`, `--configuration`, `--godot-bin`, `--delivery-profile`, `--security-profile`, `--fix-through`, `--task-file`, `--out-dir`, `--run-id`, `--legacy-preflight`, `--build-solutions`, `--gdunit-hard`, `--smoke`, `--timeout-sec`, `--test-project`, `--slug`, `--expect`, `--prototype-dir`, `--record-path`, `--skip-record`, `--owner`, `--related-task-id`, `--hypothesis`, `--scope-in`, `--scope-out`, `--success-criteria`, `--evidence`, `--next-step`, `--create-record-only`, `--dotnet-target`, `--filter`, `--gdunit-path`, `--title`, `--status`, `--goal`, `--scope`, `--current-step`, `--stop-loss`, `--next-action`, `--exit-criteria`, `--adr`, `--decision-log`, `--task-id`, `--stage`, `--latest-json`, `--output`, `--why-now`, `--context`, `--decision`, `--consequences`, `--recovery-impact`, `--validation`, `--supersedes`, `--superseded-by`, `--execution-plan`, `--repo-root`, `--latest`, `--kind`, `--record-residual`, `--out-json`, `--out-md`, `--recommendation-only`, `--recommendation-format`, `--serve`, `--port`, `--self-check`
 - Parameter prerequisites:
   - Windows PowerShell + `py -3` from repo root.

@@ -4,6 +4,8 @@ Purpose: define the soft architecture preference used by formal Chapter 3-7 task
 
 This document does not apply to prototype lane routing. It is not a hard gate unless a task, ADR, or reviewer explicitly promotes one item into an acceptance criterion.
 
+Technical backend selection is routed by `docs/workflows/chapter2-5-technical-preflight.md`. Chapter 3-7 consumes that output; it should not re-decide physics backends, plugin adoption, platform feasibility, or global engine configuration from scratch.
+
 ## Scope
 
 Applies to:
@@ -13,6 +15,7 @@ Applies to:
 - Chapter 5 semantic stabilization when wording drifts toward the wrong layer.
 - Chapter 6 implementation and Needs Fix repair preferences.
 - Chapter 7 UI wiring GDD, candidate sidecars, and generated UI wiring tasks.
+- Consumption of Chapter 2.5 technical-preflight hints when they exist.
 
 Does not apply to:
 
@@ -106,28 +109,37 @@ Chapter 3:
 
 - Task candidates should describe view/surface work separately from Core rules when both are present.
 - Do not generate generic "Component architecture" tasks that only create reusable components without player-facing or system-facing value.
+- If Chapter 2.5 emits `engine_spike_required`, generate a spike-shaped task before backend installation or scene migration tasks.
+- `scripts/python/enrich_task_candidates.py --technical-preflight <summary.json>` is the deterministic consumption point for adding that spike candidate to the Chapter 3 candidate set.
+- If Chapter 2.5 emits `no_engine_change`, do not add engine tasks.
 
 Chapter 4:
 
 - Overlay and contract text should cite Core contracts and Godot surfaces separately.
 - Feature slices should not copy concrete rules into UI components when the rule belongs in `Game.Core`.
+- Plugin or global backend changes require ADR or decision-log before Chapter 6 implementation.
 
 Chapter 5:
 
 - Semantic stabilization should fix wording that implies ECS or Godot-owned domain state unless the task explicitly asks for that architecture.
 - Acceptance refs should distinguish Core behavior evidence from Godot scene wiring evidence.
+- Do not introduce an engine constraint unless Chapter 2.5 or an accepted ADR marks it required.
+- Do not treat pure deterministic card/deck/RNG/save/replay requirements as physics backend requirements.
+- Do not remove a Chapter 2.5 `engine_spike_required` constraint during semantic stabilization.
 
 Chapter 6:
 
 - During implementation and repair, move rules/state/simulation into `Game.Core` when they appear in Godot scripts without a clear adapter reason.
 - Repair brittle deep `GetNode` paths with exported `NodePath` or references when the change is already touching that scene wiring.
 - Keep EventBus out of simple local UI control flow unless a formal contract boundary is involved.
+- Do not install plugins, edit `project.godot`, or switch global physics backends unless Chapter 2.5 and ADR/decision-log evidence allow it.
 
 Chapter 7:
 
 - UI wiring should describe target slots such as `MapView`, `BattleView`, `HudView`, `RewardView`, `SettingsPanel`, or equivalent business-repo names.
 - Asset, GDD, and task outputs can reference those slots without depending on a component framework.
 - Generated candidates should keep the screen/surface contract separate from Core state transitions and validation rules.
+- Chapter 7 may expose debug or runtime state for a selected backend, but it does not choose the backend.
 
 ## Non-Goals
 

@@ -145,6 +145,38 @@ class DevCliPrototypeCommandsTests(unittest.TestCase):
         self.assertIn("3", cmd)
         self.assertIn("--self-check", cmd)
 
+    def test_run_technical_preflight_should_forward_arguments(self) -> None:
+        with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
+            rc = dev_cli.main(
+                [
+                    "run-technical-preflight",
+                    "--source",
+                    "docs/prototypes/physics-sandbox.md",
+                    "--source-kind",
+                    "prototype",
+                    "--capability-snapshot",
+                    "logs/ci/project-health/engine-capabilities.json",
+                    "--out-json",
+                    "logs/ci/technical-preflight/summary.json",
+                    "--recommendation-only",
+                    "--self-check",
+                ]
+            )
+
+        self.assertEqual(0, rc)
+        cmd = run_mock.call_args[0][0]
+        self.assertEqual(["py", "-3", "scripts/python/run_technical_preflight.py"], cmd[:3])
+        self.assertIn("--source", cmd)
+        self.assertIn("docs/prototypes/physics-sandbox.md", cmd)
+        self.assertIn("--source-kind", cmd)
+        self.assertIn("prototype", cmd)
+        self.assertIn("--capability-snapshot", cmd)
+        self.assertIn("logs/ci/project-health/engine-capabilities.json", cmd)
+        self.assertIn("--out-json", cmd)
+        self.assertIn("logs/ci/technical-preflight/summary.json", cmd)
+        self.assertIn("--recommendation-only", cmd)
+        self.assertIn("--self-check", cmd)
+
     def test_generate_image_should_forward_aiartmirror_arguments(self) -> None:
         with mock.patch.object(dev_cli, "run", return_value=0) as run_mock:
             rc = dev_cli.main(
