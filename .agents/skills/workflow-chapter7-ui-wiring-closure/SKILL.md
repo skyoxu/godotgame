@@ -47,8 +47,9 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 
 1. Read the relevant Chapter 7 section in the template repo `workflow.md`.
 2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+3. Read `docs/workflows/ui-ux-implementation-policy.md`; Chapter 7 consumes Chapter 3 `ui_ux_seed` metadata and turns it into screen contracts, component kit decisions, screenshot acceptance, accessibility checks, and localization checks.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
@@ -57,7 +58,8 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 3. Use a Chapter 7 profile override for policy-level business repo differences instead of forking scripts.
 4. Run self-check before write-doc.
 5. Validate UI GDD, candidates, artifact manifest, and hard gate outputs before task creation.
-6. Stop when backlog-gap evidence says candidate tasks are already covered.
+6. When Chapter 3 generated `ui_ux_seed`, confirm the Chapter 7 UI GDD maps its categories into concrete screen contracts, screenshot acceptance rows, accessibility/localization checks, or explicit waivers.
+7. Stop when backlog-gap evidence says candidate tasks are already covered.
 
 
 ## Stop-Loss Signals

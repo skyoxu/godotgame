@@ -16,6 +16,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from _ui_ux_seed_support import UI_UX_SEED_LABELS, build_ui_ux_seed
+
 OWNER_BY_KIND = {
     "gdd": "gameplay",
     "prd": "product",
@@ -129,12 +131,15 @@ def normalize_candidate(raw: dict[str, Any], fallback_id: str, mode: str) -> dic
     else:
         detail_text = str(details or raw.get("description") or "")
     labels = sorted(set([str(x) for x in raw.get("labels", [])] + ["generated", mode]))
-    return {
+    ui_ux_seed = raw.get("ui_ux_seed") if isinstance(raw.get("ui_ux_seed"), dict) else {}
+    if ui_ux_seed:
+        labels = sorted(set(labels) | UI_UX_SEED_LABELS)
+    candidate = {
         "id": str(raw.get("id") or fallback_id),
         "title": str(raw.get("title") or fallback_id),
         "description": str(raw.get("description") or detail_text)[:700],
         "details": detail_text[:2000],
-        "status": str(raw.get("status") or "pending"),
+        "status": str(raw.get("status") or ("deferred" if ui_ux_seed else "pending")),
         "priority": str(raw.get("priority") or "P2"),
         "layer": str(raw.get("layer") or "feature"),
         "depends_on": list(raw.get("depends_on") or []),
@@ -151,6 +156,9 @@ def normalize_candidate(raw: dict[str, Any], fallback_id: str, mode: str) -> dic
         "covered_anchor_count": int(raw.get("covered_anchor_count") or len(requirement_ids)),
         "generation_mode": mode,
     }
+    if ui_ux_seed:
+        candidate["ui_ux_seed"] = ui_ux_seed
+    return candidate
 
 
 def build_candidates_from_intents(
@@ -189,33 +197,43 @@ def build_candidates(
         refs = sorted({ref for a in anchors for ref in a.get("refs", []) if isinstance(ref, str)})
         source_refs = [f"{a.get('source_path')}:{a.get('line')}" for a in anchors]
         requirement_ids = [str(a.get("requirement_id")) for a in anchors]
-        candidates.append(
-            {
-                "id": task_id(id_prefix, idx),
-                "title": f"Implement {slug_words(title_seed).replace('-', ' ')}",
-                "description": title_seed[:500],
-                "status": "pending",
-                "priority": priority,
-                "layer": LAYER_BY_KIND.get(kind, "feature"),
-                "depends_on": [],
-                "adr_refs": [r for r in refs if r.startswith("ADR-")],
-                "chapter_refs": [],
-                "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
-                "labels": labels,
-                "owner": OWNER_BY_KIND.get(kind, "implementation"),
-                "test_refs": [
-                    r
-                    for r in refs
-                    if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
-                ],
-                "acceptance": [f"Cover requirement {rid}. Source: {src}" for rid, src in zip(requirement_ids[:8], source_refs[:8])],
-                "test_strategy": ["Add or update deterministic tests for the covered requirements before marking the task done."],
-                "source_refs": source_refs,
-                "requirement_ids": requirement_ids,
-                "covered_anchor_count": len(requirement_ids),
-                "generation_mode": mode,
-            }
-        )
+        ui_ux_seed = build_ui_ux_seed(anchors)
+        acceptance = [f"Cover requirement {rid}. Source: {src}" for rid, src in zip(requirement_ids[:8], source_refs[:8])]
+        if ui_ux_seed:
+            labels = sorted(set(labels) | UI_UX_SEED_LABELS)
+            acceptance.append(
+                "UI/UX seed is preserved for Chapter 7 retrofit planning, including categories: "
+                + ", ".join(ui_ux_seed["categories"])
+                + ". Refs: docs/workflows/ui-ux-implementation-policy.md"
+            )
+        candidate = {
+            "id": task_id(id_prefix, idx),
+            "title": f"Implement {slug_words(title_seed).replace('-', ' ')}",
+            "description": title_seed[:500],
+            "status": "deferred" if ui_ux_seed else "pending",
+            "priority": priority,
+            "layer": LAYER_BY_KIND.get(kind, "feature"),
+            "depends_on": [],
+            "adr_refs": [r for r in refs if r.startswith("ADR-")],
+            "chapter_refs": [],
+            "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
+            "labels": labels,
+            "owner": OWNER_BY_KIND.get(kind, "implementation"),
+            "test_refs": [
+                r
+                for r in refs
+                if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
+            ],
+            "acceptance": acceptance,
+            "test_strategy": ["Add or update deterministic tests for the covered requirements before marking the task done."],
+            "source_refs": source_refs,
+            "requirement_ids": requirement_ids,
+            "covered_anchor_count": len(requirement_ids),
+            "generation_mode": mode,
+        }
+        if ui_ux_seed:
+            candidate["ui_ux_seed"] = ui_ux_seed
+        candidates.append(candidate)
     if mode == "add":
         candidates = renumber_candidates_for_add(candidates, existing_ids or set(), id_prefix)
     return {

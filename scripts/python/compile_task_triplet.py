@@ -146,6 +146,8 @@ def normalize_task(candidate: dict[str, Any], target: str) -> dict[str, Any]:
         "taskmaster_exported": False,
         "semantic_review_tier": "targeted",
     }
+    if isinstance(candidate.get("ui_ux_seed"), dict) and candidate["ui_ux_seed"]:
+        task["ui_ux_seed"] = candidate["ui_ux_seed"]
     return task
 
 

@@ -611,10 +611,10 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertIn("GDD-ID:", text)
         self.assertIn("## 1. Design Goals", text)
         self.assertIn("## 8. Screen State Matrix", text)
-        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
-        self.assertIn("### 9.1 Scope And Non-Goals", text)
-        self.assertIn("## 12. Copy And Accessibility", text)
-        self.assertIn("## 14. Task Alignment", text)
+        self.assertIn("## 10. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("### 10.1 Scope And Non-Goals", text)
+        self.assertIn("## 13. Copy And Accessibility", text)
+        self.assertIn("## 15. Task Alignment", text)
         self.assertEqual(0, rc)
         self.assertEqual([], payload["missing_done_task_refs"])
 
@@ -656,6 +656,50 @@ class Chapter7UiWiringTests(unittest.TestCase):
         self.assertIn("## 5. UI Wiring Matrix", text)
         self.assertEqual(0, rc)
         self.assertEqual("docs/gdd/project-ui-flow.md", payload["target"])
+
+    def test_validator_should_accept_legacy_unwired_and_candidate_section_numbers(self) -> None:
+        validator = _load_module("validate_chapter7_ui_wiring_module_for_legacy_sections", "scripts/python/validate_chapter7_ui_wiring.py")
+        gdd = "\n".join(
+            [
+                "# Legacy UI GDD",
+                "",
+                "## 5. UI Wiring Matrix",
+                "",
+                "| Feature | Task IDs |",
+                "| --- | --- |",
+                "| Runtime | T01, T02 |",
+                "",
+                "## 10. Unwired UI Feature List",
+                "",
+                "- T01 wired.",
+                "- T02 wired.",
+                "",
+                "## 11. Next UI Wiring Task Candidates",
+                "",
+                "- None.",
+                "",
+            ]
+        )
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write_sample_repo(root, gdd_text=gdd)
+            rc, payload = validator.validate(repo_root=root)
+
+        self.assertEqual(0, rc)
+        self.assertEqual([], payload["missing_sections"])
+
+    def test_validator_payload_should_expose_required_section_alias_groups(self) -> None:
+        validator = _load_module("validate_chapter7_ui_wiring_module_for_alias_payload", "scripts/python/validate_chapter7_ui_wiring.py")
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write_sample_repo(root, gdd_text="# Missing section sample\n")
+            rc, payload = validator.validate(repo_root=root)
+
+        self.assertEqual(1, rc)
+        self.assertIn("required_section_groups", payload)
+        self.assertIn(["## 11. Unwired UI Feature List", "## 10. Unwired UI Feature List"], payload["required_section_groups"])
+        self.assertIn(["## 12. Next UI Wiring Task Candidates", "## 11. Next UI Wiring Task Candidates"], payload["required_section_groups"])
+        self.assertEqual(validator.REQUIRED_SECTIONS, payload["required_sections"])
 
     def test_write_doc_should_compress_candidates_into_slice_level_backlog(self) -> None:
         collector = _load_module("collect_ui_wiring_inputs_module_for_slice_writer", "scripts/python/collect_ui_wiring_inputs.py")
@@ -761,7 +805,7 @@ class Chapter7UiWiringTests(unittest.TestCase):
             out = writer.write_ui_gdd_flow(repo_root=root, summary=summary)
             text = out.read_text(encoding="utf-8")
 
-        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("## 10. Chapter 3-7 Component Routing Preferences", text)
         self.assertIn("Godot Node/Scene Component", text)
         self.assertIn("not ECS components", text)
         self.assertIn("Game.Core", text)
@@ -805,7 +849,7 @@ class Chapter7UiWiringTests(unittest.TestCase):
             out = writer.write_ui_gdd_flow(repo_root=root, summary=summary)
             text = out.read_text(encoding="utf-8")
 
-        self.assertIn("## 13. Test And Acceptance", text)
+        self.assertIn("## 14. Test And Acceptance", text)
         self.assertIn("RQ-I18N-LANG-SWITCH", text)
         self.assertIn("logs/e2e/<YYYY-MM-DD>/settings/summary.json", text)
         self.assertIn("language_from, language_to, applied, persisted", text)
@@ -1596,11 +1640,11 @@ class Chapter7UiWiringTests(unittest.TestCase):
     def test_template_gdd_should_match_generated_component_routing_section_numbers(self) -> None:
         text = (REPO_ROOT / "docs" / "gdd" / "ui-gdd-flow.md").read_text(encoding="utf-8")
 
-        self.assertIn("## 9. Chapter 3-7 Component Routing Preferences", text)
-        self.assertIn("## 10. Unwired UI Feature List", text)
-        self.assertIn("## 11. Next UI Wiring Task Candidates", text)
-        self.assertLess(text.index("## 9. Chapter 3-7 Component Routing Preferences"), text.index("## 10. Unwired UI Feature List"))
-        self.assertLess(text.index("## 10. Unwired UI Feature List"), text.index("## 11. Next UI Wiring Task Candidates"))
+        self.assertIn("## 10. Chapter 3-7 Component Routing Preferences", text)
+        self.assertIn("## 11. Unwired UI Feature List", text)
+        self.assertIn("## 12. Next UI Wiring Task Candidates", text)
+        self.assertLess(text.index("## 10. Chapter 3-7 Component Routing Preferences"), text.index("## 11. Unwired UI Feature List"))
+        self.assertLess(text.index("## 11. Unwired UI Feature List"), text.index("## 12. Next UI Wiring Task Candidates"))
 
     def test_orchestrator_self_check_should_include_parameterized_task_creation_identity(self) -> None:
         run_module = _load_module("run_chapter7_ui_wiring_module_for_identity_self_check", "scripts/python/run_chapter7_ui_wiring.py")

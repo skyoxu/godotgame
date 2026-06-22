@@ -800,6 +800,229 @@ class RunSingleTaskChapter6LaneTests(unittest.TestCase):
             self.assertEqual("P1", payload["profile_policy"]["fix_through"])
             self.assertEqual("check-tdd-plan", payload["steps"][2]["name"])
 
+    def test_main_should_block_not_chapter6_runnable_planning_metadata_before_external_steps(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            task_dir = root / ".taskmaster" / "tasks"
+            task_dir.mkdir(parents=True)
+            planning_task = {
+                "id": "UI-0001",
+                "taskmaster_id": "15",
+                "title": "Chapter 3 UI UX seed",
+                "status": "deferred",
+                "labels": ["ui-ux-seed", "chapter7-input", "not-chapter6-runnable"],
+            }
+            for name in ("tasks.json", "tasks_back.json", "tasks_gameplay.json"):
+                (task_dir / name).write_text(json.dumps([planning_task]) + "\n", encoding="utf-8")
+            out_dir = root / "logs" / "ci" / "chapter6-not-runnable"
+            argv = [
+                "run_single_task_chapter6_lane.py",
+                "--task-id",
+                "15",
+                "--godot-bin",
+                "C:/Godot/Godot.exe",
+                "--delivery-profile",
+                "fast-ship",
+                "--out-dir",
+                str(out_dir),
+            ]
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(lane, "_repo_root", return_value=root),
+                mock.patch.object(
+                    lane,
+                    "_run_json_step",
+                    return_value=(
+                        {"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                        {"preferred_lane": "continue"},
+                    ),
+                ) as run_json_step,
+                mock.patch.object(
+                    lane,
+                    "_run_plain_step",
+                    return_value={"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                ) as run_plain_step,
+            ):
+                rc = lane.main()
+
+            self.assertEqual(1, rc)
+            run_json_step.assert_not_called()
+            run_plain_step.assert_not_called()
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("blocked", payload["status"])
+            self.assertEqual("not-chapter6-runnable", payload["stop_reason"])
+            self.assertEqual("UI-0001", payload["blocked_task"]["id"])
+
+    def test_main_should_block_not_chapter6_runnable_from_taskmaster_override_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            override_dir = root / "custom-taskmaster"
+            override_dir.mkdir(parents=True)
+            planning_task = {
+                "id": "UI-OVERRIDE",
+                "taskmaster_id": 16,
+                "title": "Override UI UX seed",
+                "status": "deferred",
+                "labels": ["ui-ux-seed", "chapter7-input", "not-chapter6-runnable"],
+            }
+            for name in ("tasks.json", "tasks_back.json", "tasks_gameplay.json"):
+                (override_dir / name).write_text(json.dumps([planning_task]) + "\n", encoding="utf-8")
+            out_dir = root / "logs" / "ci" / "chapter6-not-runnable-override"
+            argv = [
+                "run_single_task_chapter6_lane.py",
+                "--task-id",
+                "16",
+                "--godot-bin",
+                "C:/Godot/Godot.exe",
+                "--delivery-profile",
+                "fast-ship",
+                "--out-dir",
+                str(out_dir),
+            ]
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(lane, "_repo_root", return_value=root),
+                mock.patch.dict(
+                    "os.environ",
+                    {
+                        "SC_TASKMASTER_TASKS_JSON_PATH": str(override_dir / "tasks.json"),
+                        "SC_TASKMASTER_TASKS_BACK_PATH": str(override_dir / "tasks_back.json"),
+                        "SC_TASKMASTER_TASKS_GAMEPLAY_PATH": str(override_dir / "tasks_gameplay.json"),
+                    },
+                    clear=False,
+                ),
+                mock.patch.object(lane, "_run_json_step") as run_json_step,
+                mock.patch.object(lane, "_run_plain_step") as run_plain_step,
+            ):
+                rc = lane.main()
+
+            self.assertEqual(1, rc)
+            run_json_step.assert_not_called()
+            run_plain_step.assert_not_called()
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("blocked", payload["status"])
+            self.assertEqual("not-chapter6-runnable", payload["stop_reason"])
+            self.assertEqual("UI-OVERRIDE", payload["blocked_task"]["id"])
+            self.assertIn("custom-taskmaster/tasks", payload["blocked_task"]["source"])
+
+    def test_main_should_block_not_chapter6_runnable_from_nested_taskmaster_tasks_json(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            task_dir = root / ".taskmaster" / "tasks"
+            task_dir.mkdir(parents=True)
+            planning_task = {
+                "id": "UI-NESTED",
+                "taskmaster_id": 17,
+                "title": "Nested UI UX seed",
+                "status": "deferred",
+                "labels": ["ui-ux-seed", "chapter7-input", "not-chapter6-runnable"],
+            }
+            (task_dir / "tasks.json").write_text(
+                json.dumps({"master": {"tasks": [planning_task]}}) + "\n",
+                encoding="utf-8",
+            )
+            (task_dir / "tasks_back.json").write_text("[]\n", encoding="utf-8")
+            (task_dir / "tasks_gameplay.json").write_text("[]\n", encoding="utf-8")
+            out_dir = root / "logs" / "ci" / "chapter6-not-runnable-nested"
+            argv = [
+                "run_single_task_chapter6_lane.py",
+                "--task-id",
+                "17",
+                "--godot-bin",
+                "C:/Godot/Godot.exe",
+                "--delivery-profile",
+                "fast-ship",
+                "--out-dir",
+                str(out_dir),
+            ]
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(lane, "_repo_root", return_value=root),
+                mock.patch.object(
+                    lane,
+                    "_run_json_step",
+                    return_value=(
+                        {"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                        {"preferred_lane": "continue"},
+                    ),
+                ) as run_json_step,
+                mock.patch.object(
+                    lane,
+                    "_run_plain_step",
+                    return_value={"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                ) as run_plain_step,
+            ):
+                rc = lane.main()
+
+            self.assertEqual(1, rc)
+            run_json_step.assert_not_called()
+            run_plain_step.assert_not_called()
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("blocked", payload["status"])
+            self.assertEqual("not-chapter6-runnable", payload["stop_reason"])
+            self.assertEqual("UI-NESTED", payload["blocked_task"]["id"])
+
+    def test_main_should_block_not_chapter6_runnable_from_nested_tasks_when_top_level_tasks_is_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            task_dir = root / ".taskmaster" / "tasks"
+            task_dir.mkdir(parents=True)
+            planning_task = {
+                "id": "UI-MIXED",
+                "taskmaster_id": 18,
+                "title": "Mixed UI UX seed",
+                "status": "deferred",
+                "labels": ["ui-ux-seed", "chapter7-input", "not-chapter6-runnable"],
+            }
+            (task_dir / "tasks.json").write_text(
+                json.dumps({"tasks": [], "master": {"tasks": [planning_task]}}) + "\n",
+                encoding="utf-8",
+            )
+            (task_dir / "tasks_back.json").write_text("[]\n", encoding="utf-8")
+            (task_dir / "tasks_gameplay.json").write_text("[]\n", encoding="utf-8")
+            out_dir = root / "logs" / "ci" / "chapter6-not-runnable-mixed"
+            argv = [
+                "run_single_task_chapter6_lane.py",
+                "--task-id",
+                "18",
+                "--godot-bin",
+                "C:/Godot/Godot.exe",
+                "--delivery-profile",
+                "fast-ship",
+                "--out-dir",
+                str(out_dir),
+            ]
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(lane, "_repo_root", return_value=root),
+                mock.patch.object(
+                    lane,
+                    "_run_json_step",
+                    return_value=(
+                        {"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                        {"preferred_lane": "continue"},
+                    ),
+                ) as run_json_step,
+                mock.patch.object(
+                    lane,
+                    "_run_plain_step",
+                    return_value={"name": "unexpected", "cmd": [], "rc": 0, "stdout_tail": "", "stderr_tail": ""},
+                ) as run_plain_step,
+            ):
+                rc = lane.main()
+
+            self.assertEqual(1, rc)
+            run_json_step.assert_not_called()
+            run_plain_step.assert_not_called()
+            payload = json.loads((out_dir / "summary.json").read_text(encoding="utf-8"))
+            self.assertEqual("blocked", payload["status"])
+            self.assertEqual("not-chapter6-runnable", payload["stop_reason"])
+            self.assertEqual("UI-MIXED", payload["blocked_task"]["id"])
+
     def test_main_should_stop_before_running_forbidden_review_pipeline_command(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

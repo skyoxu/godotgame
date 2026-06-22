@@ -76,6 +76,7 @@ This file is the repository map. It routes you to the right source document by t
 - [Prototype TDD](docs/workflows/prototype-tdd.md)
 - [Chapter 7 UI Wiring GDD](docs/gdd/ui-gdd-flow.md)
 - [Chapter 3-7 Component Routing](docs/workflows/chapter3-7-component-routing.md)
+- [UI/UX Implementation Policy](docs/workflows/ui-ux-implementation-policy.md)
 - [Chapter 7 Profile Guide](docs/workflows/chapter7-profile-guide.md)
 - [Prototype Workspace](docs/prototypes/README.md)
   - [Quality Gates And DoD](docs/agents/09-quality-gates-and-done.md)
@@ -99,6 +100,10 @@ This file is the repository map. It routes you to the right source document by t
   - [ADR Index](docs/architecture/ADR_INDEX_GODOT.md)
   - [Architecture Guardrails](docs/agents/05-architecture-guardrails.md)
   - [Template Customization](docs/agents/10-template-customization.md)
+- Need UI/UX design routing, Chapter 3 UI intent seed, or Chapter 7 UI retrofit:
+  - [UI/UX Implementation Policy](docs/workflows/ui-ux-implementation-policy.md)
+  - [Chapter 7 UI Wiring GDD](docs/gdd/ui-gdd-flow.md)
+  - [Chapter 3-7 Component Routing](docs/workflows/chapter3-7-component-routing.md)
 - Need security posture, release health, logs, or runtime ops rules:
   - [Security, Release Health, And Runtime Ops Rules](docs/agents/15-security-release-health-and-runtime-ops.md)
 - [Template Upgrade Protocol](docs/workflows/template-upgrade-protocol.md)

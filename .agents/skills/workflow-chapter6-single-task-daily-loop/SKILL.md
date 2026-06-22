@@ -47,17 +47,19 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 
 1. Read the relevant Chapter 6 section in the template repo `workflow.md`.
 2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+3. Read `docs/workflows/ui-ux-implementation-policy.md` when the task carries `ui_ux_seed`; Chapter 6 should preserve stable scene, input, text-key, and state boundaries but should not run a broad visual retrofit.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
 1. Read active-task first when a task id exists.
 2. Run resume-task and chapter6-route recommendation-only before expensive reruns.
 3. Use the TDD order 6.3, 6.4, 6.5, 6.6 before 6.7 unless recovery evidence says otherwise.
-4. Run 6.7 only when deterministic evidence is stale or required by changed implementation, tests, contracts, scripts, or runtime assets.
-5. Run 6.8 only when route evidence says Needs Fix cleanup is the right lane.
-6. Run 6.9 repository validation before commit or PR closure.
+4. When a task includes `ui_ux_seed`, keep the implementation compatible with the seeded screens, input model, localization keys, and accessibility baseline, but defer broad theme/component-kit/screenshot retrofit work to Chapter 7.
+5. Run 6.7 only when deterministic evidence is stale or required by changed implementation, tests, contracts, scripts, or runtime assets.
+6. Run 6.8 only when route evidence says Needs Fix cleanup is the right lane.
+7. Run 6.9 repository validation before commit or PR closure.
 
 
 ## Stop-Loss Signals

@@ -6,8 +6,16 @@ import datetime as dt
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
+
+
+SC_DIR = Path(__file__).resolve().parents[1] / "sc"
+if str(SC_DIR) not in sys.path:
+    sys.path.insert(0, str(SC_DIR))
+
+from _taskmaster_paths import resolve_default_task_triplet_paths
 
 
 def _repo_root() -> Path:
@@ -25,6 +33,68 @@ def _default_out_dir(task_id: str) -> Path:
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+
+def _iter_task_payloads(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        tasks: list[dict[str, Any]] = []
+        for key in ("tasks", "items", "candidates"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                tasks.extend(item for item in value if isinstance(item, dict))
+        for value in payload.values():
+            if not isinstance(value, dict):
+                continue
+            for key in ("tasks", "items", "candidates"):
+                items = value.get(key)
+                if isinstance(items, list):
+                    tasks.extend(item for item in items if isinstance(item, dict))
+        return tasks
+    return []
+
+
+def _task_matches_chapter6_id(task: dict[str, Any], task_id: str) -> bool:
+    wanted = str(task_id).strip()
+    if not wanted:
+        return False
+    values = [
+        task.get("taskmaster_id"),
+        task.get("master_task_id"),
+        task.get("task_id"),
+        task.get("id"),
+    ]
+    return any(str(value).strip() == wanted for value in values if value is not None)
+
+
+def _find_not_chapter6_runnable_task(repo_root: Path, task_id: str) -> dict[str, Any] | None:
+    for path in resolve_default_task_triplet_paths(repo_root):
+        if not path.exists():
+            continue
+        try:
+            tasks = _iter_task_payloads(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for task in tasks:
+            if not _task_matches_chapter6_id(task, task_id):
+                continue
+            labels = {str(label).strip().lower() for label in list(task.get("labels") or []) if str(label).strip()}
+            if "not-chapter6-runnable" not in labels:
+                continue
+            try:
+                source = str(path.relative_to(repo_root)).replace("\\", "/")
+            except ValueError:
+                source = str(path).replace("\\", "/")
+            return {
+                "source": source,
+                "id": str(task.get("id") or ""),
+                "taskmaster_id": str(task.get("taskmaster_id") or task.get("master_task_id") or task.get("task_id") or ""),
+                "status": str(task.get("status") or ""),
+                "labels": sorted(labels),
+                "title": str(task.get("title") or ""),
+            }
+    return None
 
 
 def _load_delivery_profiles() -> dict[str, Any]:
@@ -762,6 +832,21 @@ def main() -> int:
         security_profile=str(args.security_profile),
         fix_through=str(args.fix_through),
     )
+    blocked_task = _find_not_chapter6_runnable_task(_repo_root(), task_id)
+    if blocked_task:
+        payload = {
+            "cmd": "run-single-task-chapter6",
+            "task_id": task_id,
+            "status": "blocked",
+            "profile_policy": profile_policy,
+            "out_dir": str(out_dir).replace("\\", "/"),
+            "steps": [],
+            "stop_reason": "not-chapter6-runnable",
+            "blocked_task": blocked_task,
+        }
+        _write_json(out_dir / "summary.json", payload)
+        print(f"SINGLE_TASK_CHAPTER6 status=blocked task={task_id} stop=not-chapter6-runnable")
+        return 1
 
     if bool(args.self_check):
         placeholder_route = {

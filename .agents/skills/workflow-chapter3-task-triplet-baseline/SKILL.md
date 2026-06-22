@@ -47,17 +47,18 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 
 1. Read the relevant Chapter 3 section in the template repo `workflow.md`.
 2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+3. Read `docs/workflows/ui-ux-implementation-policy.md` before extracting GDD anchors; Chapter 3 must preserve GDD UI/UX fields as structured `ui_ux_seed` metadata for Chapter 7.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
 1. Resolve whether the run is new project initialization or added-task refresh.
 2. For new project initialization, prepare PRD, GDD, epics, stories, traceability, and rules-supporting docs before building task files.
-3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults. Keep ADR/overlay sources out of default extraction unless explicitly requested.
-4. Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids and source_refs.
-5. Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, or oversized intent groups before compiling task views.
-6. Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.
+3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults. Keep ADR/overlay sources out of default extraction unless explicitly requested. GDD UI/UX sections such as UI/UX Direction, Screen Inventory, HUD Priority, Input Model, Localization Seed, and Accessibility Baseline are mandatory seed sources even when they are not written as must/shall requirements.
+4. Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids, source_refs, and any `ui_ux_seed` payload.
+5. Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, oversized intent groups, or missing UI/UX seed coverage before compiling task views.
+6. Generate normalized task candidates with generate_task_candidates_from_sources.py; candidates sourced from GDD UI/UX fields must retain `ui_ux_seed`, `ui-ux-seed`, and `chapter3-ui-intent`. Do not let an LLM write final tasks.json directly.
 7. In add mode, scan existing tasks_back.json, tasks_gameplay.json, and tasks.json before append; new candidate ids must continue after the existing maximum id for the selected prefix.
 8. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
 9. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.

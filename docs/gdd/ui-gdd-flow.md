@@ -3,7 +3,7 @@ GDD-ID: GDD-TEMPLATE-UI-FLOW-V1
 Title: Template UI Wiring Flow GDD
 Status: Template
 Owner: template-owner
-Last Updated: 2026-04-20
+Last Updated: 2026-06-22
 Encoding: UTF-8
 Applies-To:
   - .taskmaster/tasks/tasks.json
@@ -18,15 +18,17 @@ ADR-Refs:
 
 # Template UI Wiring Flow GDD
 
-This file is the Chapter 7 UI wiring SSoT template. Business repositories should replace the placeholder rows with their own player-facing UI flow, scenes, contracts, tests, and acceptance evidence.
+This file is the Chapter 7 UI wiring and UI/UX retrofit SSoT template. Business repositories should replace the placeholder rows with their own player-facing UI flow, scenes, contracts, tests, screenshot evidence, accessibility checks, and localization checks.
 
 ## 1. Scope And Goal
 
-Chapter 7 does not rewrite PRD, GDD, or architecture overlays. It converts completed domain and gameplay capabilities into player-facing UI wiring.
+Chapter 7 does not rewrite PRD, GDD, or architecture overlays. It converts completed domain and gameplay capabilities into player-facing UI wiring and finishes the UI/UX retrofit required for acceptable player-facing delivery.
 
 Use this document after the relevant backlog slice has completed Chapter 6 and no unrecorded P0/P1 Needs Fix remains.
 
 Formal Chapter 7 UI wiring follows `docs/workflows/chapter3-7-component-routing.md`: components are Godot Node/Scene Components, not ECS components; Godot scripts own lifecycle/presentation/input/wiring while `Game.Core` owns rules, state mutation, and simulation.
+
+Formal Chapter 7 UI/UX retrofit follows `docs/workflows/ui-ux-implementation-policy.md`: Chapter 3 provides lightweight UI/UX intent seed, Chapter 7 provides screen contracts, theme tokens, component kit planning, screenshot acceptance, accessibility checks, and localization checks. Do not defer required UI closure to a formal Chapter 8.
 
 ## 2. Player Loop Backbone
 
@@ -75,29 +77,72 @@ Every completed feature that needs a player-facing surface should appear here.
 
 ## 6. Screen Contracts
 
-Define the UI contract for each major surface.
+Define the UI contract for each major surface. A completed `status = done` feature that touches the player should either appear in a screen contract or carry an explicit no-UI rationale.
 
 ### 6.1 Main Menu
 
-Required visible state:
-
-- TODO
-
-Required commands:
-
-- TODO
+- Scene path:
+- Owner script:
+- Entry conditions:
+- Exit paths:
+- Primary player goal:
+- Required visible data:
+- Required commands:
+- Required states:
+- Input actions:
+- Focus order:
+- Localization keys:
+- Accessibility checks:
+- Screenshot baselines:
+- Acceptance criteria:
+- No-UI rationale, if applicable:
 
 ### 6.2 Core Gameplay Screen
 
-Required visible state:
+- Scene path:
+- Owner script:
+- Entry conditions:
+- Exit paths:
+- Primary player goal:
+- Required visible data:
+- Required commands:
+- Required states:
+- Input actions:
+- Focus order:
+- Localization keys:
+- Accessibility checks:
+- Screenshot baselines:
+- Acceptance criteria:
+- No-UI rationale, if applicable:
 
-- TODO
+## 7. Theme Tokens And Component Kit
 
-Required commands:
+Record the visual system and reusable UI/control scenes needed to make Chapter 7 work consistent.
 
-- TODO
+### 7.1 Theme Tokens
 
-## 7. Validation Plan
+| Token Area | Decision | Evidence Or Asset |
+| --- | --- | --- |
+| Colors | TODO | TODO |
+| Typography | TODO | TODO |
+| Spacing | TODO | TODO |
+| Focus style | TODO | TODO |
+| Disabled state | TODO | TODO |
+| Danger/warning/success states | TODO | TODO |
+| HUD styling | TODO | TODO |
+| Modal styling | TODO | TODO |
+
+### 7.2 Component Kit
+
+| Component | Scene Or Script | Public API | Required States | Test Or Screenshot Refs |
+| --- | --- | --- | --- | --- |
+| Button / icon button / toggle | TODO | TODO | default, focus, hover, pressed, disabled | TODO |
+| Panel / modal / tooltip / toast | TODO | TODO | open, close, disabled where relevant | TODO |
+| HUD meter / stat row / resource counter | TODO | TODO | default, warning, critical | TODO |
+| Reward card / inventory slot / list item | TODO | TODO | default, selected, disabled | TODO |
+| Settings row / slider row / keybind row | TODO | TODO | default, focus, editing, disabled | TODO |
+
+## 8. Validation Plan
 
 List automated or manual validation for each flow.
 
@@ -105,7 +150,32 @@ List automated or manual validation for each flow.
 | --- | --- | --- |
 | Main entry | automated or manual | TODO |
 
-## 8. Risks And Stop-Loss
+### 8.1 Screenshot Acceptance
+
+Major screens should include screenshot-backed evidence when a UI change claims visual readiness.
+
+| Screen | Resolution Or State | Evidence Path | Notes |
+| --- | --- | --- | --- |
+| Main menu | `1280x720` | TODO | TODO |
+| Main menu | `1920x1080` | TODO | TODO |
+| Main menu | focus-visible | TODO | TODO |
+| Core gameplay screen | `1280x720` | TODO | TODO |
+| Core gameplay screen | `1920x1080` | TODO | TODO |
+| Core gameplay screen | long-text or pseudolocalization, if relevant | TODO | TODO |
+
+### 8.2 Accessibility And Localization Checks
+
+| Check | Applies To | Evidence |
+| --- | --- | --- |
+| No player-critical information conveyed by color alone | TODO | TODO |
+| Keyboard/controller focus path exists | TODO | TODO |
+| Focus state is visible | TODO | TODO |
+| Player-visible text uses localization keys when localization is in scope | TODO | TODO |
+| Text does not overflow required screenshots | TODO | TODO |
+| Readable text size and line height are suitable for target resolutions | TODO | TODO |
+| Audio, subtitles, motion, screen-shake, hold-toggle, or rebind settings exist when required | TODO | TODO |
+
+## 9. Risks And Stop-Loss
 
 List UI wiring risks that should stop Chapter 7.
 
@@ -113,8 +183,11 @@ List UI wiring risks that should stop Chapter 7.
 - A UI surface bypasses the domain/service boundary.
 - Player-visible text bypasses localization rules when the project has i18n requirements.
 - UI actions mutate deterministic state during preview, hover, refresh, or open-panel behavior.
+- A major screen has no screen contract.
+- A UI readiness claim has no screenshot, scene test, manual evidence, or explicit waiver.
+- A major screen has no keyboard/controller focus path when keyboard/controller input is in scope.
 
-## 9. Chapter 3-7 Component Routing Preferences
+## 10. Chapter 3-7 Component Routing Preferences
 
 Apply `docs/workflows/chapter3-7-component-routing.md` as a soft preference for formal Chapter 7 UI wiring. This is not a hard gate and does not apply to prototype-lane work.
 
@@ -124,8 +197,9 @@ Apply `docs/workflows/chapter3-7-component-routing.md` as a soft preference for 
 - Prefer exported `NodePath` wiring over deep hardcoded paths when the UI surface depends on child nodes.
 - Prefer direct calls, Godot signals, or C# events inside one UI wiring slice; use EventBus only for global services or formal feature boundaries.
 - If a UI wiring slice treats Component as ECS or moves gameplay rules/state mutation from `Game.Core` into Godot scripts without explicit task or ADR scope, treat it as a repair preference rather than a Chapter 7 hard gate by default.
+- Apply `docs/workflows/ui-ux-implementation-policy.md` for UI/UX retrofit, screenshot acceptance, accessibility checks, localization checks, and post-Chapter-7 polish boundaries.
 
-## 10. Unwired UI Feature List
+## 11. Unwired UI Feature List
 
 List completed features that are not wired to UI yet, or explicitly mark them as no-UI-needed.
 
@@ -133,7 +207,7 @@ List completed features that are not wired to UI yet, or explicitly mark them as
 | --- | --- | --- | --- | --- |
 | T0 | Example completed feature | Main surface | Template placeholder | Replace in business repo |
 
-## 11. Next UI Wiring Task Candidates
+## 12. Next UI Wiring Task Candidates
 
 Generate follow-up tasks from this section only after the matrix and unwired list are current.
 

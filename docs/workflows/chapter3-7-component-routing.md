@@ -16,6 +16,7 @@ Applies to:
 - Chapter 6 implementation and Needs Fix repair preferences.
 - Chapter 7 UI wiring GDD, candidate sidecars, and generated UI wiring tasks.
 - Consumption of Chapter 2.5 technical-preflight hints when they exist.
+- UI/UX intent seed and retrofit routing from `docs/workflows/ui-ux-implementation-policy.md`.
 
 Does not apply to:
 
@@ -109,6 +110,8 @@ Chapter 3:
 
 - Task candidates should describe view/surface work separately from Core rules when both are present.
 - Do not generate generic "Component architecture" tasks that only create reusable components without player-facing or system-facing value.
+- For player-facing features, include or reference a lightweight UI/UX intent seed before implementation: screen inventory seed, player flow map, HUD priority, input model, state visibility, localization seed, accessibility baseline, and UI risk notes.
+- Chapter 3 UI/UX seed content prevents throwaway UI architecture; it should not require final theme tokens, complete component kits, high-fidelity mockups, or screenshot evidence.
 - If Chapter 2.5 emits `engine_spike_required`, generate a spike-shaped task before backend installation or scene migration tasks.
 - `scripts/python/enrich_task_candidates.py --technical-preflight <summary.json>` is the deterministic consumption point for adding that spike candidate to the Chapter 3 candidate set.
 - If Chapter 2.5 emits `no_engine_change`, do not add engine tasks.
@@ -132,6 +135,8 @@ Chapter 6:
 - During implementation and repair, move rules/state/simulation into `Game.Core` when they appear in Godot scripts without a clear adapter reason.
 - Repair brittle deep `GetNode` paths with exported `NodePath` or references when the change is already touching that scene wiring.
 - Keep EventBus out of simple local UI control flow unless a formal contract boundary is involved.
+- Keep screen roots, scene paths, state names, and input actions stable enough for Chapter 7 UI/UX retrofit once a feature is accepted.
+- Avoid hardcoded player-facing text when localization is in scope or expected.
 - Do not install plugins, edit `project.godot`, or switch global physics backends unless Chapter 2.5 and ADR/decision-log evidence allow it.
 
 Chapter 7:
@@ -139,6 +144,9 @@ Chapter 7:
 - UI wiring should describe target slots such as `MapView`, `BattleView`, `HudView`, `RewardView`, `SettingsPanel`, or equivalent business-repo names.
 - Asset, GDD, and task outputs can reference those slots without depending on a component framework.
 - Generated candidates should keep the screen/surface contract separate from Core state transitions and validation rules.
+- Chapter 7 owns the full UI/UX retrofit layer: screen contracts, theme tokens, component kit planning, screenshot acceptance, accessibility checks, and localization checks.
+- A completed player-facing feature should appear in a screen contract or carry an explicit no-UI rationale.
+- Do not create a formal Chapter 8 for UI/UX by default; use the post-Chapter-7 polish lane in `docs/workflows/ui-ux-implementation-policy.md` only for release polish after acceptable UI closure.
 - Chapter 7 may expose debug or runtime state for a selected backend, but it does not choose the backend.
 
 ## Non-Goals

@@ -23,12 +23,13 @@ This file indexes the current `docs/workflows/` root documents and records how t
 | --- | --- | --- | --- | --- |
 | `acceptance-check-and-llm-review.md` | `2025-12-20 18:03:39` | `2026-02-22 16:29:51` | Acceptance gate and optional LLM review responsibilities, usage, and stop-loss boundaries. | No explicit unfinished work. |
 | `acceptance-semantics-methodology.md` | `2026-01-07 12:12:59` | `2026-02-22 16:29:51` | Acceptance semantics governance: obligations, refs, anchors, evidence chains, and weak-clause rules. | No explicit unfinished work. |
+| `alterlab-patch-policy.md` | `2026-06-22 15:39:36` | `2026-06-22 16:00:28` | Policy for selectively adapting AlterLab GameForge content as repository-owned localization, balance, game-type, and UX/accessibility patches. | Ongoing maintenance required. |
 | `build_taskmaster_tasks.md` | `2025-12-20 01:00:55` | `2025-12-20 19:24:44` | Taskmaster task construction, dependency closure, and tag handling. | No explicit unfinished work. |
 | `business-repo-upgrade-guide.md` | `2026-03-22 21:37:48` | `2026-05-01 13:53:30` | Business-repo migration guide for recovery, gates, workflow scripts, docs, dependencies, and Chapter 7 profile migration. | Ongoing maintenance required. |
 | `chapter-6-t56-optimization-guide.md` | `2026-03-31 22:43:27` | `2026-04-13 00:38:16` | Chapter 6 T56 optimization notes, real log signals, upgrade method, and execution posture. | No explicit unfinished work. |
 | `chapter2-5-technical-preflight.md` | `2026-06-21 18:49:00` | `2026-06-21 18:49:00` | Chapter 2.5 technical preflight for engine/backend/platform feasibility before Chapter 3 task generation. | No explicit unfinished work. |
-| `chapter3-7-component-routing.md` | `2026-06-21 15:18:32` | `2026-06-21 17:04:38` | Soft Component routing preferences for formal Chapter 3-7 generation, repair, and UI wiring. | No explicit unfinished work. |
-| `chapter7-profile-guide.md` | `2026-04-30 14:30:26` | `2026-04-30 21:19:28` | Chapter 7 profile load order, field semantics, seed templates, minimal overrides, and validation commands. | Ongoing maintenance required. |
+| `chapter3-7-component-routing.md` | `2026-06-21 15:18:32` | `2026-06-22 20:06:10` | Soft Component and UI/UX routing preferences for formal Chapter 3-7 generation, repair, and UI wiring. | No explicit unfinished work. |
+| `chapter7-profile-guide.md` | `2026-04-30 14:30:26` | `2026-06-22 20:07:06` | Chapter 7 profile load order, field semantics, UI/UX retrofit labels, seed templates, minimal overrides, and validation commands. | Ongoing maintenance required. |
 | `cloud-platform-evolution-plan.md` | `2026-04-15 13:40:38` | `2026-04-25 14:47:28` | Roadmap from local harness to cloud control plane, cloud workspace, and Windows execution plane. | Ongoing maintenance required. |
 | `cloud-user-telemetry-and-feedback-plan.md` | `2026-04-20 20:53:50` | `2026-04-20 21:50:04` | Future cloud telemetry plan for workflow optimization, replay, stop-loss, and product evolution. | Ongoing maintenance required. |
 | `contracts-catalog-guide.md` | `2026-01-14 00:43:59` | `2026-01-14 16:27:43` | Contracts catalog generation, artifact rules, and version-control policy. | No explicit unfinished work. |
@@ -57,6 +58,7 @@ This file indexes the current `docs/workflows/` root documents and records how t
 | `task-semantics-gates-evolution.md` | `2025-12-25 15:28:42` | `2026-02-22 16:29:51` | Task semantics gates, test evidence chain, script index, and current governance posture. | Ongoing maintenance required. |
 | `template-bootstrap-checklist.md` | `2026-03-22 21:37:48` | `2026-04-13 00:38:17` | Checklist for turning the template repo into a new project: identity, profiles, security, and task sources. | No explicit unfinished work. |
 | `template-upgrade-protocol.md` | `2026-03-24 14:08:37` | `2026-05-01 13:53:30` | Business-repo template upgrade protocol, including Chapter 7 profile bundle migration rules. | Ongoing maintenance required. |
+| `ui-ux-implementation-policy.md` | `2026-06-22 20:05:48` | `2026-06-22 20:05:48` | Policy for routing lightweight Chapter 3 UI/UX intent seed and Chapter 7 UI/UX retrofit, screenshots, accessibility, and localization checks. | Ongoing maintenance required. |
 | `workflow-rule-feedback-protocol.md` | `2026-04-19 18:13:55` | `2026-04-19 18:39:15` | Protocol for business-repo workflow feedback, promotion rules, and required evidence. | Ongoing maintenance required. |
 
 ## Support Files
