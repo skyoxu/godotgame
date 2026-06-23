@@ -45,6 +45,7 @@ This file is the top-level navigation for project docs.
 - Upgrade guide: `docs/workflows/business-repo-upgrade-guide.md`
 - Template upgrade protocol: `docs/workflows/template-upgrade-protocol.md`
 - AlterLab patch policy: `docs/workflows/alterlab-patch-policy.md`
+- Godogen absorption policy: `docs/workflows/godogen-absorption-policy.md`
 - Cloud platform evolution plan: `docs/workflows/cloud-platform-evolution-plan.md`
 - Project health dashboard: `docs/workflows/project-health-dashboard.md`
 - Local hard checks: `docs/workflows/local-hard-checks.md`
