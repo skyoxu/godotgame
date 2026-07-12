@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/review-evidence.v1.schema.json",
+  "title": "Review Evidence Sidecar v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_version",
+    "mode",
+    "chapter",
+    "review_domain",
+    "reviewer",
+    "task_id",
+    "run_id",
+    "raw_verdict",
+    "derived_verdict",
+    "findings",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "policy_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "legacy-observe",
+        "advisory",
+        "warn",
+        "require"
+      ]
+    },
+    "chapter": {
+      "enum": [3, 4, 5, 6, 7]
+    },
+    "review_domain": {
+      "enum": [
+        "task-planning",
+        "architecture-document",
+        "semantic",
+        "code",
+        "security",
+        "test",
+        "architecture",
+        "performance",
+        "ui"
+      ]
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_verdict": {
+      "enum": [
+        "OK",
+        "Needs Fix",
+        "Unknown",
+        "Unparsed"
+      ]
+    },
+    "derived_verdict": {
+      "enum": [
+        "OK",
+        "Needs Fix",
+        "Unknown"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    }
+  },
+  "$defs": {
+    "severity": {
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "none"
+      ]
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "anchor_type",
+        "path",
+        "start_line",
+        "end_line",
+        "heading",
+        "field_path",
+        "stable_id",
+        "quote",
+        "artifact_hash"
+      ],
+      "properties": {
+        "anchor_type": {
+          "enum": [
+            "code-line",
+            "document-line",
+            "structured-field",
+            "task",
+            "artifact",
+            "screenshot"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "start_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "end_line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "heading": {
+          "type": "string"
+        },
+        "field_path": {
+          "type": "string"
+        },
+        "stable_id": {
+          "type": "string"
+        },
+        "quote": {
+          "type": "string"
+        },
+        "artifact_hash": {
+          "type": "string"
+        }
+      }
+    },
+    "failure_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_or_trigger",
+        "state_or_representation",
+        "bad_result_or_consequence"
+      ],
+      "properties": {
+        "source_or_trigger": {
+          "type": "string"
+        },
+        "state_or_representation": {
+          "type": "string"
+        },
+        "bad_result_or_consequence": {
+          "type": "string"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "reason_codes",
+        "final_severity"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "validated",
+            "demoted",
+            "dropped",
+            "unknown"
+          ]
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+$"
+          },
+          "uniqueItems": true
+        },
+        "final_severity": {
+          "$ref": "#/$defs/severity"
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "title",
+        "message",
+        "original_severity",
+        "normalized_severity",
+        "confidence",
+        "anchors",
+        "quote_or_snippet",
+        "failure_chain",
+        "context_inspected",
+        "existing_safeguard_gap",
+        "severity_rationale",
+        "suggested_change",
+        "fingerprint",
+        "validation"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "original_severity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normalized_severity": {
+          "$ref": "#/$defs/severity"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "anchors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor"
+          }
+        },
+        "quote_or_snippet": {
+          "type": "string"
+        },
+        "failure_chain": {
+          "$ref": "#/$defs/failure_chain"
+        },
+        "context_inspected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "existing_safeguard_gap": {
+          "type": "string"
+        },
+        "severity_rationale": {
+          "type": "string"
+        },
+        "suggested_change": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validation": {
+          "$ref": "#/$defs/validation"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"original_severity": {"enum": ["P0", "CRITICAL"]}},
+            "required": ["original_severity"]
+          },
+          "then": {"properties": {"normalized_severity": {"const": "critical"}}}
+        },
+        {
+          "if": {
+            "properties": {"original_severity": {"enum": ["P1", "HIGH"]}},
+            "required": ["original_severity"]
+          },
+          "then": {"properties": {"normalized_severity": {"const": "high"}}}
+        },
+        {
+          "if": {
+            "properties": {"original_severity": {"enum": ["P2", "MEDIUM"]}},
+            "required": ["original_severity"]
+          },
+          "then": {"properties": {"normalized_severity": {"const": "medium"}}}
+        },
+        {
+          "if": {
+            "properties": {"original_severity": {"enum": ["P3", "LOW"]}},
+            "required": ["original_severity"]
+          },
+          "then": {"properties": {"normalized_severity": {"const": "low"}}}
+        }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_count",
+        "validated_count",
+        "demoted_count",
+        "dropped_count",
+        "unknown_count",
+        "actionable_count",
+        "highest_severity"
+      ],
+      "properties": {
+        "proposed_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validated_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "demoted_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actionable_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "highest_severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Highest validation.final_severity among actionable validated or demoted findings; none when actionable_count is zero."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"actionable_count": {"const": 0}},
+            "required": ["actionable_count"]
+          },
+          "then": {"properties": {"highest_severity": {"const": "none"}}}
+        },
+        {
+          "if": {
+            "properties": {"actionable_count": {"minimum": 1}},
+            "required": ["actionable_count"]
+          },
+          "then": {
+            "properties": {
+              "highest_severity": {"enum": ["critical", "high", "medium", "low"]}
+            }
+          }
+        }
+      ]
+    }
+  }
+}
