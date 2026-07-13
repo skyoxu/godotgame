@@ -22,7 +22,7 @@ Each proposed finding records:
 - validation state and reason codes
 - normalized finding-family fingerprint
 
-The canonical machine shape is defined by `schemas/review-evidence.v1.schema.json`.
+The canonical machine shape is defined by `scripts/sc/schemas/review-evidence.v1.schema.json`; the plan-local schema file is a non-normative pointer used by Whole-directory review.
 
 ## Anchor Types
 

@@ -40,5 +40,6 @@ Status: Primary split implementation plan for evidence-gated Chapter 3-7 review.
 
 ## Required Schemas
 
-- [Review evidence JSON Schema](schemas/review-evidence.v1.schema.json)
+- [Canonical review evidence JSON Schema](../../scripts/sc/schemas/review-evidence.v1.schema.json)
+- [Plan-local non-normative schema pointer](schemas/review-evidence.v1.schema.json)
 - [Review evidence example](schemas/review-evidence.v1.example.json)

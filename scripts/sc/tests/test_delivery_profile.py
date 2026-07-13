@@ -22,6 +22,7 @@ from _delivery_profile import (  # noqa: E402
     profile_build_defaults,
     profile_gate_bundle_defaults,
     profile_needs_fix_fast_defaults,
+    profile_review_evidence_defaults,
     profile_review_pipeline_defaults,
     profile_llm_review_defaults,
     profile_test_defaults,
@@ -89,6 +90,15 @@ class DeliveryProfileTests(unittest.TestCase):
         self.assertEqual(1, profile_review_pipeline_defaults("fast-ship")["max_step_retries"])
         self.assertEqual(0, profile_review_pipeline_defaults("standard")["max_step_retries"])
 
+    def test_review_evidence_defaults_should_be_independent_and_advisory_first(self) -> None:
+        self.assertEqual("legacy-observe", profile_review_evidence_defaults("playable-ea")["mode"])
+        self.assertEqual("advisory", profile_review_evidence_defaults("fast-ship")["mode"])
+        self.assertEqual("advisory", profile_review_evidence_defaults("standard")["mode"])
+        self.assertNotEqual(
+            profile_review_evidence_defaults("standard")["mode"],
+            delivery_profile_payload("standard")["agent_review"]["mode"],
+        )
+
     def test_needs_fix_fast_defaults_should_follow_profile_budget(self) -> None:
         playable = profile_needs_fix_fast_defaults("playable-ea")
         fast_ship = profile_needs_fix_fast_defaults("fast-ship")
@@ -116,6 +126,7 @@ class DeliveryProfileTests(unittest.TestCase):
         self.assertIn("acceptance", payload)
         self.assertIn("llm_review", payload)
         self.assertIn("review_pipeline", payload)
+        self.assertIn("review_evidence", payload)
         self.assertIn("needs_fix_fast", payload)
 
     def test_context_should_describe_playable_ea_stop_loss(self) -> None:

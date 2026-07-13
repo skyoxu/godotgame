@@ -1,24 +1,24 @@
 # Review Evidence Gate Hardening Execution Plan
 
 - Title: review-evidence-gate-hardening
-- Status: paused
+- Status: active
 - Branch: fix/chapter3-add-task-numbering
-- Git Head: 21f7b1edf51f5b4ecf5c336bccfc7f437ecb83bf
+- Git Head: 05b72a0d7ec2503af55d36a1bd6d0b4a76388be9
 - Goal: introduce chapter-aware, evidence-gated LLM review so unsupported findings cannot create trusted Needs Fix state, repeated reruns, or empty residual closure work.
 - Scope: Chapter 3-7 review policy, structured review evidence, Chapter 6 LLM ingestion and residual routing, Chapter 5 semantic findings, Chapter 3/4/7 document profiles, replay metrics, tests, ADR/workflow updates, and compatible sidecars.
-- Current step: split implementation plan authored; implementation is paused pending explicit authorization and ADR ownership.
-- Last completed step: completed ECC fixed-commit research and business-repository evidence audit, then split the implementation design into owner books and control ledgers.
+- Current step: RG-1 task is created and ready-for-dev; RG-1 implementation has not started.
+- Last completed step: RG-0 froze ADR-0032, canonical schema v1, fallback validation, profile configuration, focused plan validation, ownership, retention, compatibility, and rollback policy.
 - Stop-loss: do not change `summary.json`; do not enable a required LLM gate before advisory replay evidence is stable; do not treat reviewer formatting failure as a product defect; do not generate residual records from an empty validated finding set.
-- Next action: approve RG-0, create or update the governing ADR, freeze the evidence schema and reason-code catalog, and assign implementation owner and reviewer.
+- Next action: execute the scoped RG-1 task only when implementation is explicitly started; keep residual routing and later chapter integration outside this task.
 - Recovery command: `py -3 -c "from pathlib import Path; print(Path(r'execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/00-index.md').read_text(encoding='utf-8'))"`
-- Open questions: final ADR ownership; whether the first schema is JSON-only or Markdown plus fenced JSON; initial retention period for compressed evidence metrics; delivery profiles allowed to move from advisory to warn or require.
+- Open questions: none for RG-0; later warn/require promotion remains an RG-5 measurement-backed decision.
 - Exit criteria: all RG phases exit sequentially; every Needs Fix has at least one validated actionable finding; P0/P1 proof is complete; unparseable output is Unknown; zero surviving findings is OK; empty residual creation is impossible; Chapter 3-7 profiles and replay tests are green; durable rules move to ADR/workflow/docs.
-- Related ADRs: `docs/adr/ADR-0005-quality-gates.md`, `docs/adr/ADR-0017-quality-intelligence-dashboard-and-governance.md` (Proposed); a new accepted review-evidence ADR or ADR-0005 addendum is required before enforcement.
-- Related decision logs: pending RG-0 policy decision log.
-- Related task id(s): n/a (phase-wide workflow hardening plan; implementation tasks have not been created).
+- Related ADRs: `docs/adr/ADR-0005-quality-gates.md`, `docs/adr/ADR-0017-quality-intelligence-dashboard-and-governance.md` (Proposed), `docs/adr/ADR-0032-review-evidence-gate.md`.
+- Related decision logs: `decision-logs/2026-07-12-review-evidence-rg-handoff.md`, `decision-logs/2026-07-12-review-evidence-rg0-freeze.md`.
+- Related task id(s): `RG-1`; `_bmad-output/implementation-artifacts/rg-1-chapter6-structured-review-evidence-capture-and-ingestion.md`.
 - Related run id: n/a (planning only).
 - Related latest.json: n/a (planning only).
-- Related pipeline artifacts: `_bmad-output/planning-artifacts/research/technical-ecc-review-anti-hallucination-research-2026-07-12.md`; future evidence under `logs/ci/<date>/review-evidence-*`.
+- Related pipeline artifacts: `_bmad-output/planning-artifacts/research/technical-ecc-review-anti-hallucination-research-2026-07-12.md`; `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/`.
 
 ## Authority
 

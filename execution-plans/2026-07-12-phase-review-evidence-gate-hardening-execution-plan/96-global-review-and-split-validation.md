@@ -119,6 +119,34 @@ Allowed status values are `Open`, `Closed`, and `Superseded`.
 | RG-WDR-009 | P2 | Closed | book 02 schema owner | n/a | identity-field schema changes | `logs/ci/2026-07-12/review-evidence-plan-whole-directory-review-02/remediation-validation.md` |
 | RG-WDR-010 | P2 | Closed | books 02/99 coverage owners | n/a | profile catalog or coverage-dimension changes | `logs/ci/2026-07-12/review-evidence-plan-whole-directory-review-02/remediation-validation.md` |
 | RG-WDR-011 | P1 | Closed | books 02/04/06 schema and recovery-summary owners | n/a | summary severity semantics or routing fields change | `logs/ci/2026-07-12/review-evidence-plan-whole-directory-review-03/remediation-validation.md` |
+| RG-WDR-012 | P2 | Closed | RG-0 focused-validator owner | n/a | focused-validator responsibilities or line count changes | `logs/ci/2026-07-12/review-evidence-rg0-exit-review/remediation-validation.md` |
+| RG-WDR-013 | P1 | Closed | book 02 verdict-contract owner | n/a | raw/derived verdict rules change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-014 | P1 | Closed | book 02 disposition owner | n/a | proof demotion/drop semantics change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-015 | P1 | Closed | book 02 anchor owner | n/a | anchor-type or elevated-proof rules change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-016 | P1 | Closed | book 02 summary owner | n/a | actionable-state or final-severity rules change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-017 | P1 | Closed | book 96 schema-mutation owner | n/a | canonical required fields change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-018 | P1 | Closed | books 08/96 phase-exit owners | n/a | phase status or unlocked scope changes | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-019 | P2 | Closed | book 02 fallback-contract owner | n/a | identity or policy field types change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-020 | P2 | Closed | book 02 reason-code owner | n/a | reason-code family catalog changes | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-021 | P2 | Closed | books 02/04 domain owners | n/a | chapter/domain mapping changes | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-022 | P2 | Closed | book 96 focused-validator owner | n/a | required-book or profile-config parsing changes | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-023 | P2 | Closed | books 00/02/96 schema-authority owners | n/a | plan-local schema pointer fields change | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/remediation-validation.md` |
+| RG-WDR-024 | P2 | Closed | book 96 schema-freeze owner | n/a | canonical nested definitions change | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-025 | P1 | Closed | books 02/96 conditional-contract owners | n/a | canonical conditional rules or schema version change | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-026 | P2 | Closed | RG-0 schema-loader and focused-validator owners | n/a | schema parsing, meta-validation, or malformed control inputs change | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-027 | P2 | Closed | book 02 fallback-contract owner | n/a | payload field types or malformed scalar handling changes | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-028 | P2 | Closed | book 02 canonical/fallback parity owner | n/a | integer, line, chapter, or identity representation changes | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-029 | P1 | Closed | books 06/ADR compatibility owners | n/a | derived OK projection or recovery action changes | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-030 | P2 | Closed | book 02 disposition owner | n/a | reason-code or disposition-state rules change | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-031 | P2 | Closed | book 97 ledger owner | n/a | requirement status or transition registry changes | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+| RG-WDR-032 | P2 | Closed | books 98/99 source-audit owners | n/a | frozen source or control-document reading changes | `logs/ci/2026-07-13/review-evidence-rg0-final-clean-review/remediation-validation.md` |
+
+## Phase Exit Evidence Registry
+
+| Phase | Status | Decision authority | Validation evidence | Scope unlocked |
+| --- | --- | --- | --- | --- |
+| RG-HANDOFF | Closed | user authorization and handoff decision log | `logs/ci/2026-07-12/review-evidence-plan-whole-directory-review-03/` | RG-0 policy and contract freeze |
+| RG-0 | Closed | ADR-0032 and RG-0 exit review | `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/` | RG-1 task creation only; RG-1 implementation remains unstarted |
 
 ## Acceptance
 

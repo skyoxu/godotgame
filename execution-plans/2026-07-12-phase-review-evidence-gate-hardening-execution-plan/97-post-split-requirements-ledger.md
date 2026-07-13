@@ -13,12 +13,12 @@
 
 | ID | Status | Owner | Phase | Requirement | Acceptance reference | Test/evidence intent |
 | --- | --- | --- | --- | --- | --- | --- |
-| RGR-001 | Active | 01 | RG-0 | Repository evidence policy outranks external agent prompts | [01 Acceptance](01-authority-scope-and-invariants.md#acceptance) | precedence regression test |
-| RGR-002 | Active | 01 | RG-0 | Reviewer output remains untrusted until validation | [01 Acceptance](01-authority-scope-and-invariants.md#acceptance) | authority/unit test |
-| RGR-003 | Active | 02 | RG-0 | Versioned evidence schema and example | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | JSON Schema validation |
-| RGR-004 | Active | 02 | RG-0 | Stable anchor types and reason-code families | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | schema and enum tests |
-| RGR-005 | Active | 02 | RG-0 | P0/P1 full proof contract | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | proof-removal mutation tests |
-| RGR-006 | Active | 02 | RG-0 | One severity normalization mapping | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | duplicate/missing mapping tests |
+| RGR-001 | Closed | 01 | RG-0 | Repository evidence policy outranks external agent prompts | [01 Acceptance](01-authority-scope-and-invariants.md#acceptance) | precedence regression test |
+| RGR-002 | Closed | 01 | RG-0 | Reviewer output remains untrusted until validation | [01 Acceptance](01-authority-scope-and-invariants.md#acceptance) | authority/unit test |
+| RGR-003 | Closed | 02 | RG-0 | Versioned evidence schema and example | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | JSON Schema validation |
+| RGR-004 | Closed | 02 | RG-0 | Stable anchor types and reason-code families | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | schema and enum tests |
+| RGR-005 | Closed | 02 | RG-0 | P0/P1 full proof contract | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | proof-removal mutation tests |
+| RGR-006 | Closed | 02 | RG-0 | One severity normalization mapping | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | duplicate/missing mapping tests |
 | RGR-007 | Active | 02 | RG-1 | Derived verdict follows actionable finding states | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | verdict matrix tests |
 | RGR-008 | Active | 02 | RG-1 | Zero actionable findings derives OK | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | zero-finding test |
 | RGR-009 | Active | 02 | RG-1 | Missing/unparseable evidence derives Unknown | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | parser/input tests |
@@ -42,23 +42,37 @@
 | RGR-027 | Active | 05 | RG-4 | Chapter 7 visual findings require screenshot evidence | [05 Acceptance](05-chapter7-ui-review-evidence.md#acceptance) | UI fixture |
 | RGR-028 | Active | 05 | RG-4 | Chapter 7 does not create duplicate tasks or apply status patches directly | [05 Acceptance](05-chapter7-ui-review-evidence.md#acceptance) | duplicate/status tests |
 | RGR-029 | Active | 06 | RG-5 | Evidence modes and rollback are explicit and profile-owned | [06 Acceptance](06-pipeline-integration-recovery-and-compatibility.md#acceptance) | config/rollback test |
-| RGR-030 | Active | 08 | RG-0 | Phases remain strictly sequential with evidence-backed exits | [08 RG-0 Exit](08-implementation-phases.md#phase-rg-0-policy-adr-schema-and-ownership-freeze) | phase validator test |
+| RGR-030 | Closed | 08 | RG-0 | Phases remain strictly sequential with evidence-backed exits | [08 RG-0 Exit](08-implementation-phases.md#phase-rg-0-policy-adr-schema-and-ownership-freeze) | phase validator test |
 | RGR-031 | Active | 09 | RG-5 | No unresolved P0/P1; P2 has owner/expiry/recheck | [09 Global DoD](09-risks-dod-and-glossary.md#global-definition-of-done) | closure validator |
-| RGR-032 | Active | 96 | RG-0 | Split validator covers books, links, ledger, schema, audit, and coverage | [96 Acceptance](96-global-review-and-split-validation.md#acceptance) | mutation suite |
+| RGR-032 | Closed | 96 | RG-0 | Split validator covers books, links, ledger, schema, audit, and coverage | [96 Acceptance](96-global-review-and-split-validation.md#acceptance) | mutation suite |
 | RGR-033 | Active | 99 | RG-5 | Every active requirement maps exactly once in source coverage | [99 Completion](99-source-coverage.md#completion) | coverage validator |
-| RGR-034 | Active | 02 | RG-0 | Chapter 6 architecture findings have an explicit domain distinct from Chapter 4 architecture-document findings | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | schema enum and profile-routing tests |
-| RGR-035 | Active | 02 | RG-0 | Original severity maps to pre-validation normalized severity before proof evaluation and remains distinct from final severity | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | severity mapping and proof-profile mutation tests |
-| RGR-036 | Active | 06 | RG-0 | Derived OK/Needs Fix/Unknown states map exactly into the existing agent-review verdict/action vocabulary | [06 Acceptance](06-pipeline-integration-recovery-and-compatibility.md#acceptance) | projection matrix and contract regression tests |
-| RGR-037 | Active | 02 | RG-0 | Every sidecar has non-empty task/run identity with a stable synthetic scope identity for non-task reviews | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | empty-identity rejection and synthetic-scope tests |
-| RGR-038 | Active | 02 | RG-0 | Chapter 6 profile ownership and coverage enumerate code, security, test, semantic, architecture, and performance | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | profile catalog and source-coverage enumeration test |
-| RGR-039 | Active | 02 | RG-0 | Summary counts and highest severity derive from final actionable dispositions, not pre-validation normalized severity | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | demoted-P1 and zero-actionable summary mutation tests |
+| RGR-034 | Closed | 02 | RG-0 | Chapter 6 architecture findings have an explicit domain distinct from Chapter 4 architecture-document findings | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | schema enum and profile-routing tests |
+| RGR-035 | Closed | 02 | RG-0 | Original severity maps to pre-validation normalized severity before proof evaluation and remains distinct from final severity | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | severity mapping and proof-profile mutation tests |
+| RGR-036 | Closed | 06 | RG-0 | Derived OK/Needs Fix/Unknown states map exactly into the existing agent-review verdict/action vocabulary | [06 Acceptance](06-pipeline-integration-recovery-and-compatibility.md#acceptance) | projection matrix and contract regression tests |
+| RGR-037 | Closed | 02 | RG-0 | Every sidecar has non-empty task/run identity with a stable synthetic scope identity for non-task reviews | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | empty-identity rejection and synthetic-scope tests |
+| RGR-038 | Closed | 02 | RG-0 | Chapter 6 profile ownership and coverage enumerate code, security, test, semantic, architecture, and performance | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | profile catalog and source-coverage enumeration test |
+| RGR-039 | Closed | 02 | RG-0 | Summary counts and highest severity derive from final actionable dispositions, not pre-validation normalized severity | [02 Acceptance](02-review-evidence-contracts-and-severity.md#acceptance) | demoted-P1 and zero-actionable summary mutation tests |
 
 ## Requirement Status Registry
 
 | ID | Previous status | New status | Superseded by | Reason |
 | --- | --- | --- | --- | --- |
+| RGR-001 | Active | Closed | n/a | ADR-0032 and RGE-PLAN-014 freeze repository policy precedence. |
+| RGR-002 | Active | Closed | n/a | ADR-0032, canonical schema validation, and fallback tests keep reviewer output untrusted. |
+| RGR-003 | Active | Closed | n/a | Canonical schema, plan pointer, example, primary validation, and fallback validation are executable. |
+| RGR-004 | Active | Closed | n/a | Canonical anchor enums and stable reason-code validation have mutation coverage. |
+| RGR-005 | Active | Closed | n/a | Elevated-proof removal fails with RGE-SCHEMA-006. |
+| RGR-006 | Active | Closed | n/a | Original-to-normalized severity mapping is unique and mutation tested. |
+| RGR-030 | Active | Closed | n/a | RGE-PLAN-011 validates the predecessor matrix and RG-0-owned exit dependencies. |
+| RGR-032 | Active | Closed | n/a | The focused validator and thirteen plan mutation tests cover the required split controls. |
+| RGR-034 | Active | Closed | n/a | The schema and focused validator preserve distinct architecture and architecture-document domains. |
+| RGR-035 | Active | Closed | n/a | Tests preserve original, normalized, and final severity through demotion. |
+| RGR-036 | Active | Closed | n/a | RGE-PLAN-009 freezes the OK/Needs Fix/Unknown compatibility projection. |
+| RGR-037 | Active | Closed | n/a | Empty identity and synthetic-scope tests pass in fallback and primary validation paths. |
+| RGR-038 | Active | Closed | n/a | Schema and RGE-PLAN-014 cover all six Chapter 6 reviewer domains. |
+| RGR-039 | Active | Closed | n/a | Summary derivation tests reject pre-demotion highest severity and invalid zero-actionable severity. |
 
-No requirement has changed status at plan creation. Status transitions are append-only in this registry.
+Status transitions are append-only in this registry.
 
 ## Research Finding Coverage
 
