@@ -131,6 +131,35 @@ def write_text(path: str, content: str) -> None:
         f.write(content)
 
 
+def prewarm_project(godot_bin: str, project: str, out_dir: str) -> int:
+    """ADR-0018: import resources, then build C# without an editor build host."""
+    projects = sorted(os.path.join(project, name) for name in os.listdir(project)
+                      if name.endswith('.csproj'))
+    if len(projects) > 1:
+        write_text(os.path.join(out_dir, 'prewarm-summary.json'),
+                   json.dumps({'rc': 2, 'error': 'ambiguous_csharp_projects', 'projects': projects}))
+        return 2
+    commands = [('import', [godot_bin, '--headless', '--path', project, '--editor', '--import'])]
+    if projects:
+        commands.append(('build', ['dotnet', 'build', projects[0], '-c', 'Debug', '-v', 'minimal']))
+    steps = []
+    for stage, command in commands:
+        started = time.monotonic()
+        rc, output = run_cmd_failfast(
+            command,
+            cwd=project, timeout=300_000,
+            break_markers=['Debugger Break', 'Parser Error', 'Parse Error', 'SCRIPT ERROR'])
+        write_text(os.path.join(out_dir, f'prewarm-{stage}.txt'), output)
+        steps.append({'stage': stage, 'rc': rc,
+                      'elapsed_sec': round(time.monotonic() - started, 3)})
+        write_text(os.path.join(out_dir, 'prewarm-summary.json'),
+                   json.dumps({'steps': steps, 'rc': rc}, indent=2))
+        print(f'GDUNIT_PREWARM stage={stage} rc={rc} elapsed_sec={steps[-1]["elapsed_sec"]}', flush=True)
+        if rc != 0:
+            return rc
+    return 0
+
+
 def ensure_tests_project_junction(repo_root: str, project_abs: str, out_dir: str) -> None:
     """
     Hard gate: ensure Tests.Godot/Game.Godot is a Junction to the real Game.Godot.
@@ -199,50 +228,15 @@ def main():
     # Hard gate before any Godot invocation.
     ensure_tests_project_junction(repo_root=root, project_abs=proj, out_dir=out_dir)
 
-    # Optional prewarm with fallback
+    # Import and build are separate bounded stages; failures stop before tests.
     prewarm_rc = None
     prewarm_note = None
     if args.prewarm:
-        pre_cmd = [args.godot_bin, '--headless', '--path', proj, '--build-solutions', '--quit']
-        _rcp, _outp = run_cmd(pre_cmd, cwd=proj, timeout=300_000)
+        prewarm_rc = prewarm_project(args.godot_bin, proj, out_dir)
         prewarm_attempts = 1
-        prewarm_rc = _rcp
-        # Write first attempt
-        write_text(os.path.join(out_dir, 'prewarm-godot.txt'), _outp)
-        if _rcp != 0:
-            # Wait and retry once to mitigate transient C# load issues
-            time.sleep(3)
-            _rcp2, _outp2 = run_cmd(pre_cmd, cwd=proj, timeout=360_000)
-            prewarm_attempts = 2
-            prewarm_rc = _rcp2
-            # Append retry log to same file
-            try:
-                with open(os.path.join(out_dir, 'prewarm-godot.txt'), 'a', encoding='utf-8') as f:
-                    f.write("\n=== retry rc=%d ===\n" % _rcp2)
-                    f.write(_outp2)
-            except Exception:
-                pass
-            if _rcp2 == 0:
-                prewarm_note = 'retry-ok'
-            else:
-                # Fallback to dotnet build to avoid editor plugin failures
-                dotnet_projects = []
-                tests_csproj = os.path.join(proj, 'Tests.Godot.csproj')
-                if os.path.isfile(tests_csproj):
-                    dotnet_projects.append(tests_csproj)
-                # Also try solution at repo root if present
-                sln = os.path.join(root, 'GodotGame.sln')
-                # Prefer project build; if solution exists, add as secondary
-                build_logs = []
-                for item in (dotnet_projects or [sln] if os.path.isfile(sln) else []):
-                    rc_b, out_b = run_cmd(['dotnet', 'build', item, '-c', 'Debug', '-v', 'minimal'], cwd=root, timeout=600_000)
-                    build_logs.append((item, rc_b, out_b))
-                # Persist build logs
-                agg = []
-                for item, rc_b, out_b in build_logs:
-                    agg.append(f'=== {item} rc={rc_b} ===\n{out_b}\n')
-                write_text(os.path.join(out_dir, 'prewarm-dotnet.txt'), '\n'.join(agg) if agg else 'NO_DOTNET_BUILD_TARGETS')
-                prewarm_note = 'fallback-dotnet'
+        prewarm_note = 'import-then-build'
+        if prewarm_rc != 0:
+            return prewarm_rc
 
     # Discard stale reports before this invocation; only fresh evidence can pass.
     reports_dir = os.path.join(proj, 'reports')

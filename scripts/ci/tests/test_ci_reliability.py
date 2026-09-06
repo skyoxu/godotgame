@@ -68,6 +68,41 @@ class SelfCheckTests(unittest.TestCase):
 
 
 class GdUnitProcessTests(unittest.TestCase):
+    def test_prewarm_imports_before_build_and_records_each_stage(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / 'Tests.Godot.csproj').touch()
+            with patch.object(run_gdunit, 'run_cmd_failfast', side_effect=[(0, 'imported'), (0, 'built')]) as run:
+                self.assertEqual(0, run_gdunit.prewarm_project('godot', td, td))
+            self.assertIn('--import', run.call_args_list[0].args[0])
+            self.assertEqual(['dotnet', 'build'], run.call_args_list[1].args[0][:2])
+            report = json.loads((Path(td) / 'prewarm-summary.json').read_text(encoding='utf-8'))
+            self.assertEqual(['import', 'build'], [s['stage'] for s in report['steps']])
+            self.assertEqual('imported', (Path(td) / 'prewarm-import.txt').read_text(encoding='utf-8'))
+
+    def test_prewarm_failure_does_not_retry_or_run_later_stages(self):
+        for results in [[(124, 'timeout')], [(1, 'parse error')], [(0, 'imported'), (7, 'build failed')]]:
+            with self.subTest(results=results), tempfile.TemporaryDirectory() as td:
+                (Path(td) / 'Tests.Godot.csproj').touch()
+                with patch.object(run_gdunit, 'run_cmd_failfast', side_effect=results) as run:
+                    self.assertEqual(results[-1][0], run_gdunit.prewarm_project('godot', td, td))
+                self.assertEqual(len(results), run.call_count)
+                report = json.loads((Path(td) / 'prewarm-summary.json').read_text(encoding='utf-8'))
+                self.assertEqual(results[-1][0], report['rc'])
+
+    def test_prewarm_gdscript_project_needs_no_dotnet(self):
+        with tempfile.TemporaryDirectory() as td:
+            with patch.object(run_gdunit, 'run_cmd_failfast', return_value=(0, 'imported')) as run:
+                self.assertEqual(0, run_gdunit.prewarm_project('godot', td, td))
+                self.assertEqual(1, run.call_count)
+
+    def test_prewarm_rejects_ambiguous_build_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            for name in ['One.csproj', 'Two.csproj']:
+                (Path(td) / name).touch()
+            with patch.object(run_gdunit, 'run_cmd_failfast') as run:
+                self.assertEqual(2, run_gdunit.prewarm_project('godot', td, td))
+                run.assert_not_called()
+
     def test_silent_process_obeys_deadline(self):
         start = time.monotonic()
         rc, _ = run_gdunit.run_cmd_failfast([sys.executable, '-c', 'import time; time.sleep(20)'], timeout=200)
