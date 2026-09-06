@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://godotgame.local/schemas/review-evidence.v1.schema.json",
+  "title": "Review Evidence Sidecar v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "policy_version", "mode", "chapter", "review_domain", "reviewer",
+    "task_id", "run_id", "raw_verdict", "derived_verdict", "findings", "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "policy_version": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["legacy-observe", "advisory", "warn", "require"]},
+    "chapter": {"enum": [3, 4, 5, 6, 7]},
+    "review_domain": {
+      "enum": [
+        "task-planning", "architecture-document", "semantic", "code", "security",
+        "test", "architecture", "performance", "ui"
+      ]
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "raw_verdict": {"enum": ["OK", "Needs Fix", "Unknown", "Unparsed"]},
+    "derived_verdict": {"enum": ["OK", "Needs Fix", "Unknown"]},
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "summary": {"$ref": "#/$defs/summary"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "findings": {
+            "contains": {
+              "properties": {
+                "validation": {
+                  "properties": {"state": {"enum": ["validated", "demoted"]}},
+                  "required": ["state"]
+                }
+              },
+              "required": ["validation"]
+            }
+          }
+        },
+        "required": ["findings"]
+      },
+      "then": {"properties": {"derived_verdict": {"const": "Needs Fix"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "raw_verdict": {"enum": ["Unknown", "Unparsed"]},
+          "findings": {
+            "not": {
+              "contains": {
+                "properties": {
+                  "validation": {
+                    "properties": {"state": {"enum": ["validated", "demoted"]}},
+                    "required": ["state"]
+                  }
+                },
+                "required": ["validation"]
+              }
+            }
+          }
+        },
+        "required": ["raw_verdict", "findings"]
+      },
+      "then": {"properties": {"derived_verdict": {"const": "Unknown"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "findings": {
+            "contains": {
+              "properties": {
+                "validation": {"properties": {"state": {"const": "unknown"}}, "required": ["state"]}
+              },
+              "required": ["validation"]
+            },
+            "not": {
+              "contains": {
+                "properties": {
+                  "validation": {"properties": {"state": {"enum": ["validated", "demoted"]}}, "required": ["state"]}
+                },
+                "required": ["validation"]
+              }
+            }
+          }
+        },
+        "required": ["findings"]
+      },
+      "then": {"properties": {"derived_verdict": {"const": "Unknown"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "raw_verdict": {"enum": ["OK", "Needs Fix"]},
+          "findings": {
+            "not": {
+              "contains": {
+                "properties": {
+                  "validation": {"properties": {"state": {"enum": ["validated", "demoted", "unknown"]}}, "required": ["state"]}
+                },
+                "required": ["validation"]
+              }
+            }
+          }
+        },
+        "required": ["raw_verdict", "findings"]
+      },
+      "then": {"properties": {"derived_verdict": {"const": "OK"}}}
+    },
+    {
+      "if": {"properties": {"chapter": {"const": 3}}, "required": ["chapter"]},
+      "then": {"properties": {"review_domain": {"const": "task-planning"}}}
+    },
+    {
+      "if": {"properties": {"chapter": {"const": 4}}, "required": ["chapter"]},
+      "then": {"properties": {"review_domain": {"const": "architecture-document"}}}
+    },
+    {
+      "if": {"properties": {"chapter": {"const": 5}}, "required": ["chapter"]},
+      "then": {"properties": {"review_domain": {"const": "semantic"}}}
+    },
+    {
+      "if": {"properties": {"chapter": {"const": 6}}, "required": ["chapter"]},
+      "then": {"properties": {"review_domain": {"enum": ["code", "security", "test", "semantic", "architecture", "performance"]}}}
+    },
+    {
+      "if": {"properties": {"chapter": {"const": 7}}, "required": ["chapter"]},
+      "then": {"properties": {"review_domain": {"const": "ui"}}}
+    }
+  ],
+  "$defs": {
+    "severity": {"enum": ["critical", "high", "medium", "low", "none"]},
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "anchor_type", "path", "start_line", "end_line", "heading", "field_path",
+        "stable_id", "quote", "artifact_hash"
+      ],
+      "properties": {
+        "anchor_type": {
+          "enum": ["code-line", "document-line", "structured-field", "task", "artifact", "screenshot"]
+        },
+        "path": {"type": "string"},
+        "start_line": {"type": ["integer", "null"], "minimum": 1},
+        "end_line": {"type": ["integer", "null"], "minimum": 1},
+        "heading": {"type": "string"},
+        "field_path": {"type": "string"},
+        "stable_id": {"type": "string"},
+        "quote": {"type": "string"},
+        "artifact_hash": {"type": "string"}
+      }
+    },
+    "failure_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_or_trigger", "state_or_representation", "bad_result_or_consequence"],
+      "properties": {
+        "source_or_trigger": {"type": "string"},
+        "state_or_representation": {"type": "string"},
+        "bad_result_or_consequence": {"type": "string"}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reason_codes", "final_severity"],
+      "properties": {
+        "state": {"enum": ["validated", "demoted", "dropped", "unknown"]},
+        "reason_codes": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^(schema|anchor|quote|context|failure_chain|safeguard_gap|severity|scope|duplicate|false_positive|input|verdict)\\.[a-z0-9_.-]+$"},
+          "uniqueItems": true
+        },
+        "final_severity": {"$ref": "#/$defs/severity"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"enum": ["validated", "demoted"]}}, "required": ["state"]},
+          "then": {"properties": {"final_severity": {"enum": ["critical", "high", "medium", "low"]}}}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["dropped", "unknown"]}}, "required": ["state"]},
+          "then": {"properties": {"final_severity": {"const": "none"}}}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["demoted", "dropped", "unknown"]}}, "required": ["state"]},
+          "then": {"properties": {"reason_codes": {"minItems": 1}}}
+        }
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id", "title", "message", "original_severity", "normalized_severity", "confidence",
+        "anchors", "quote_or_snippet", "failure_chain", "context_inspected", "existing_safeguard_gap",
+        "severity_rationale", "suggested_change", "fingerprint", "validation"
+      ],
+      "properties": {
+        "finding_id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1},
+        "original_severity": {"enum": ["P0", "CRITICAL", "P1", "HIGH", "P2", "MEDIUM", "P3", "LOW"]},
+        "normalized_severity": {"$ref": "#/$defs/severity"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "anchors": {"type": "array", "items": {"$ref": "#/$defs/anchor"}},
+        "quote_or_snippet": {"type": "string"},
+        "failure_chain": {"$ref": "#/$defs/failure_chain"},
+        "context_inspected": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "existing_safeguard_gap": {"type": "string"},
+        "severity_rationale": {"type": "string"},
+        "suggested_change": {"type": "string"},
+        "fingerprint": {"type": "string", "minLength": 1},
+        "validation": {"$ref": "#/$defs/validation"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"original_severity": {"enum": ["P0", "CRITICAL"]}}, "required": ["original_severity"]},
+          "then": {"properties": {"normalized_severity": {"const": "critical"}}}
+        },
+        {
+          "if": {"properties": {"original_severity": {"enum": ["P1", "HIGH"]}}, "required": ["original_severity"]},
+          "then": {"properties": {"normalized_severity": {"const": "high"}}}
+        },
+        {
+          "if": {"properties": {"original_severity": {"enum": ["P2", "MEDIUM"]}}, "required": ["original_severity"]},
+          "then": {"properties": {"normalized_severity": {"const": "medium"}}}
+        },
+        {
+          "if": {"properties": {"original_severity": {"enum": ["P3", "LOW"]}}, "required": ["original_severity"]},
+          "then": {"properties": {"normalized_severity": {"const": "low"}}}
+        },
+        {
+          "if": {
+            "properties": {"validation": {"properties": {"state": {"enum": ["validated", "demoted"]}}, "required": ["state"]}},
+            "required": ["validation"]
+          },
+          "then": {"properties": {"anchors": {"minItems": 1}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "normalized_severity": {"const": "critical"},
+              "validation": {"properties": {"state": {"const": "validated"}}, "required": ["state"]}
+            },
+            "required": ["normalized_severity", "validation"]
+          },
+          "then": {"properties": {"validation": {"properties": {"final_severity": {"const": "critical"}}}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "normalized_severity": {"const": "high"},
+              "validation": {"properties": {"state": {"const": "validated"}}, "required": ["state"]}
+            },
+            "required": ["normalized_severity", "validation"]
+          },
+          "then": {"properties": {"validation": {"properties": {"final_severity": {"const": "high"}}}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "normalized_severity": {"const": "medium"},
+              "validation": {"properties": {"state": {"const": "validated"}}, "required": ["state"]}
+            },
+            "required": ["normalized_severity", "validation"]
+          },
+          "then": {"properties": {"validation": {"properties": {"final_severity": {"const": "medium"}}}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "normalized_severity": {"const": "low"},
+              "validation": {"properties": {"state": {"const": "validated"}}, "required": ["state"]}
+            },
+            "required": ["normalized_severity", "validation"]
+          },
+          "then": {"properties": {"validation": {"properties": {"final_severity": {"const": "low"}}}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "validation": {
+                "properties": {
+                  "state": {"enum": ["validated", "demoted"]},
+                  "final_severity": {"enum": ["critical", "high"]}
+                },
+                "required": ["state", "final_severity"]
+              }
+            },
+            "required": ["validation"]
+          },
+          "then": {
+            "properties": {
+              "anchors": {"minItems": 1},
+              "quote_or_snippet": {"minLength": 1},
+              "context_inspected": {"minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "existing_safeguard_gap": {"minLength": 1},
+              "severity_rationale": {"minLength": 1}
+            }
+          }
+        }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_count", "validated_count", "demoted_count", "dropped_count", "unknown_count",
+        "actionable_count", "highest_severity"
+      ],
+      "properties": {
+        "proposed_count": {"type": "integer", "minimum": 0},
+        "validated_count": {"type": "integer", "minimum": 0},
+        "demoted_count": {"type": "integer", "minimum": 0},
+        "dropped_count": {"type": "integer", "minimum": 0},
+        "unknown_count": {"type": "integer", "minimum": 0},
+        "actionable_count": {"type": "integer", "minimum": 0},
+        "highest_severity": {"$ref": "#/$defs/severity"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"actionable_count": {"const": 0}}, "required": ["actionable_count"]},
+          "then": {"properties": {"highest_severity": {"const": "none"}}}
+        },
+        {
+          "if": {"properties": {"actionable_count": {"minimum": 1}}, "required": ["actionable_count"]},
+          "then": {"properties": {"highest_severity": {"enum": ["critical", "high", "medium", "low"]}}}
+        }
+      ]
+    }
+  }
+}

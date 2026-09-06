@@ -401,6 +401,44 @@ def _screen_state_matrix_lines(*, profile: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _component_routing_summary_lines(repo_root: Path) -> list[str]:
+    doc_path = repo_root / "docs" / "workflows" / "chapter3-7-component-routing.md"
+    fallback_doc_path = Path(__file__).resolve().parents[2] / "docs" / "workflows" / "chapter3-7-component-routing.md"
+    source_path = doc_path if doc_path.exists() else fallback_doc_path
+    start_marker = "<!-- chapter7-generated-summary:start -->"
+    end_marker = "<!-- chapter7-generated-summary:end -->"
+    try:
+        text = source_path.read_text(encoding="utf-8")
+    except OSError:
+        return [
+            "- Formal Chapter 3-7 work should follow `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference.",
+            "- Component routing summary source was not readable when this document was generated.",
+        ]
+    start = text.find(start_marker)
+    end = text.find(end_marker)
+    if start == -1 or end == -1 or end <= start:
+        return [
+            "- Formal Chapter 3-7 work should follow `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference.",
+            "- Component routing summary markers were not found when this document was generated.",
+        ]
+    summary = text[start + len(start_marker) : end].strip()
+    lines = [line.rstrip() for line in summary.splitlines() if line.strip()]
+    return lines or [
+        "- Formal Chapter 3-7 work should follow `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference.",
+    ]
+
+
+def _component_routing_preference_lines(repo_root: Path) -> list[str]:
+    return [
+        "## 10. Chapter 3-7 Component Routing Preferences",
+        "",
+        *_component_routing_summary_lines(repo_root),
+        "",
+        "### 10.1 Scope And Non-Goals",
+        "",
+    ]
+
+
 def render_ui_gdd_flow(*, repo_root: Path, summary: dict[str, Any], profile: dict[str, Any]) -> str:
     inventory, flow, matrix, unwired, candidates, requirements = _slice_lines(summary, profile=profile)
     adr_refs = _merge_adrs(summary, repo_root=repo_root)
@@ -484,44 +522,43 @@ def render_ui_gdd_flow(*, repo_root: Path, summary: dict[str, Any], profile: dic
             "",
             *screen_contracts,
             *screen_state_matrix,
-            "## 9. Scope And Non-Goals",
-            "",
+            *_component_routing_preference_lines(repo_root),
             "- Chapter 7 covers UI or governed visible-surface ownership for every completed task in `.taskmaster/tasks/tasks.json`.",
             "- It does not require final production polish, animation, skinning, or marketing-grade copy.",
             "",
-            "### 9.1 In Scope",
+            "### 10.2 In Scope",
             "",
             "- Surface ownership for startup, loop, combat, economy, meta, and governance capabilities.",
             "- Empty state, failure state, and completion state for each major slice.",
             "- Task alignment and validation references back to completed backlog items.",
             "",
-            "### 9.2 Non-Goals",
+            "### 10.3 Non-Goals",
             "- Final UX polish, visual theming, animation tuning, and cosmetic-only layout work.",
             "- Replacing source-of-truth task status outside `.taskmaster/tasks/tasks.json`.",
             "",
-            "## 10. Unwired UI Feature List",
+            "## 11. Unwired UI Feature List",
             "",
             *unwired,
             "",
-            "## 11. Next UI Wiring Task Candidates",
+            "## 12. Next UI Wiring Task Candidates",
             "",
             *candidates,
             "",
-            "## 12. Copy And Accessibility",
+            "## 13. Copy And Accessibility",
             "",
             "- Visible text should remain explicit and actionable.",
             "- Failure messages must tell the player or operator what happened and what to do next.",
             "- Do not rely on color only to convey terminal, invalid, or route-selection state.",
             "",
-            "## 13. Test And Acceptance",
+            "## 14. Test And Acceptance",
             "",
-            "- Chapter 7 validation must keep `## 5. UI Wiring Matrix`, `## 10. Unwired UI Feature List`, and `## 11. Next UI Wiring Task Candidates` intact.",
+            "- Chapter 7 validation must keep `## 5. UI Wiring Matrix`, `## 11. Unwired UI Feature List`, and `## 12. Next UI Wiring Task Candidates` intact.",
             "- Evidence should resolve back to xUnit, GdUnit, smoke, or CI outputs already referenced by task views.",
             "- Any new UI slice should add or name a concrete validation path before implementation.",
             "",
             *overlay_acceptance,
             "",
-            "## 14. Task Alignment",
+            "## 15. Task Alignment",
             "",
             f"- Completed task count currently expected by Chapter 7: {summary['completed_master_tasks_count']}.",
             "- Chapter 7 uses `.taskmaster/tasks/tasks.json` as the completion-state SSoT.",

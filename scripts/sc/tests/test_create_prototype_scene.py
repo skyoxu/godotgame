@@ -79,6 +79,44 @@ class CreatePrototypeSceneTests(unittest.TestCase):
             self.assertEqual(0, first)
             self.assertEqual(1, second)
 
+    def test_should_copy_template_manifest_scaffold_with_assets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template_root = root / "Game.Godot" / "Prototypes" / "DefaultRpgTemplate"
+            assets = template_root / "Assets"
+            scripts = template_root / "Scripts"
+            assets.mkdir(parents=True)
+            scripts.mkdir(parents=True)
+            (template_root / "DefaultRpgPrototype.tscn").write_text(
+                '[gd_scene load_steps=2 format=3]\n'
+                '[ext_resource type="Script" path="res://Game.Godot/Prototypes/DefaultRpgTemplate/Scripts/DefaultRpgPrototype.cs" id="1"]\n'
+                '[node name="DefaultRpgPrototype" type="Node2D"]\n'
+                'script = ExtResource("1")\n',
+                encoding="utf-8",
+            )
+            (scripts / "DefaultRpgPrototype.cs").write_text(
+                "namespace Game.Godot.Prototypes;\npublic partial class DefaultRpgPrototype : Godot.Node2D { }\n",
+                encoding="utf-8",
+            )
+            (assets / "map_player.png").write_bytes(b"png")
+            manifest = root / "docs" / "prototype-type-kits" / "default-rpg-template.manifest.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                '{"schema_version":1,"game_type":"rpg","paths":{"scene_template_root":"Game.Godot/Prototypes/DefaultRpgTemplate/","default_scene":"Game.Godot/Prototypes/DefaultRpgTemplate/DefaultRpgPrototype.tscn"}}\n',
+                encoding="utf-8",
+            )
+
+            rc = prototype_scene.main(["--repo-root", str(root), "--slug", "night-quest", "--template-manifest", str(manifest)])
+
+            self.assertEqual(0, rc)
+            scene_path = root / "Game.Godot" / "Prototypes" / "night-quest" / "NightQuestPrototype.tscn"
+            script_path = root / "Game.Godot" / "Prototypes" / "night-quest" / "Scripts" / "NightQuestPrototype.cs"
+            self.assertTrue(scene_path.exists())
+            self.assertTrue(script_path.exists())
+            self.assertTrue((root / "Game.Godot" / "Prototypes" / "night-quest" / "Assets" / "map_player.png").exists())
+            self.assertIn("night-quest", scene_path.read_text(encoding="utf-8"))
+            self.assertIn("NightQuestPrototype", script_path.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,6 +18,26 @@ import _sc_test_steps as sc_steps  # noqa: E402
 
 
 class ScTestStepsUnitFallbackTests(unittest.TestCase):
+    def test_run_unit_should_fail_when_task_scope_has_no_csharp_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out_dir = Path(td)
+            with (
+                mock.patch.object(sc_steps, "repo_root", return_value=REPO_ROOT),
+                mock.patch.object(sc_steps, "today_str", return_value="2026-03-30"),
+                mock.patch.object(sc_steps, "task_scoped_cs_refs", return_value=[]),
+                mock.patch.object(sc_steps, "build_dotnet_filter_from_cs_refs", return_value=""),
+                mock.patch.object(sc_steps, "run_cmd") as run_cmd_mock,
+            ):
+                step = sc_steps.run_unit(out_dir, "Game.sln", "Debug", run_id="r0", task_id="181")
+
+            self.assertEqual(2, int(step["rc"]))
+            self.assertEqual("fail", step["status"])
+            self.assertEqual("missing_task_scoped_cs_refs", step["error"])
+            run_cmd_mock.assert_not_called()
+            log_text = (out_dir / "unit.log").read_text(encoding="utf-8")
+            self.assertIn("no C# test refs were resolved", log_text)
+            self.assertIn("full-suite unit run", log_text)
+
     def test_run_unit_should_fail_fast_when_task_scoped_coverage_is_zero_and_fallback_is_disabled(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             out_dir = Path(td)

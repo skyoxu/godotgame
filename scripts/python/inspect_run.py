@@ -51,6 +51,15 @@ _REPAIR_GUIDE_ACTION_MAP: dict[str, str] = {
     "chapter6-route-inspect-first": "inspect",
 }
 
+LATEST_SUMMARY_SIGNAL_KEYS: tuple[str, ...] = (
+    "reason",
+    "run_type",
+    "reuse_mode",
+    "failure_kind",
+    "artifact_integrity_kind",
+    "diagnostics_keys",
+)
+
 
 def _join_command(parts: list[str]) -> str:
     return " ".join(str(item).strip() for item in parts if str(item).strip())

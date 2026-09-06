@@ -16,6 +16,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from _ui_ux_seed_support import UI_UX_SEED_LABELS, build_ui_ux_seed
+
 OWNER_BY_KIND = {
     "gdd": "gameplay",
     "prd": "product",
@@ -59,6 +61,67 @@ def task_id(prefix: str, index: int) -> str:
     return f"{prefix}-{index:04d}"
 
 
+TASK_ID_RE = re.compile(r"^(?P<prefix>.+)-(?P<number>\d+)$")
+TASKS_DIR = Path(".taskmaster/tasks")
+
+
+def iter_task_records(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        master = payload.get("master")
+        if isinstance(master, dict):
+            tasks = master.get("tasks")
+            if isinstance(tasks, list):
+                return [item for item in tasks if isinstance(item, dict)]
+    return []
+
+
+def existing_task_ids(root: Path) -> set[str]:
+    ids: set[str] = set()
+    for name in ("tasks_back.json", "tasks_gameplay.json", "tasks.json"):
+        payload = maybe_load_json(root / TASKS_DIR / name)
+        if payload is None:
+            continue
+        for task in iter_task_records(payload):
+            value = task.get("id")
+            if value is not None:
+                ids.add(str(value))
+    return ids
+
+
+def max_task_number(ids: set[str], prefix: str) -> int:
+    max_seen = 0
+    for tid in ids:
+        match = TASK_ID_RE.match(tid)
+        if match and match.group("prefix") == prefix:
+            max_seen = max(max_seen, int(match.group("number")))
+    return max_seen
+
+
+def renumber_candidates_for_add(candidates: list[dict[str, Any]], existing_ids: set[str], id_prefix: str) -> list[dict[str, Any]]:
+    next_number = max_task_number(existing_ids, id_prefix) + 1
+    used = set(existing_ids)
+    remap: dict[str, str] = {}
+    renumbered: list[dict[str, Any]] = []
+    for candidate in candidates:
+        old_id = str(candidate.get("id") or "")
+        new_id = task_id(id_prefix, next_number)
+        while new_id in used:
+            next_number += 1
+            new_id = task_id(id_prefix, next_number)
+        updated = dict(candidate)
+        updated["id"] = new_id
+        updated["previous_candidate_id"] = old_id
+        used.add(new_id)
+        remap[old_id] = new_id
+        renumbered.append(updated)
+        next_number += 1
+    for candidate in renumbered:
+        candidate["depends_on"] = [remap.get(str(dep), str(dep)) for dep in candidate.get("depends_on", [])]
+    return renumbered
+
+
 def normalize_candidate(raw: dict[str, Any], fallback_id: str, mode: str) -> dict[str, Any]:
     requirement_ids = [str(x) for x in raw.get("requirement_ids", [])]
     source_refs = [str(x) for x in raw.get("source_refs", [])]
@@ -68,12 +131,15 @@ def normalize_candidate(raw: dict[str, Any], fallback_id: str, mode: str) -> dic
     else:
         detail_text = str(details or raw.get("description") or "")
     labels = sorted(set([str(x) for x in raw.get("labels", [])] + ["generated", mode]))
-    return {
+    ui_ux_seed = raw.get("ui_ux_seed") if isinstance(raw.get("ui_ux_seed"), dict) else {}
+    if ui_ux_seed:
+        labels = sorted(set(labels) | UI_UX_SEED_LABELS)
+    candidate = {
         "id": str(raw.get("id") or fallback_id),
         "title": str(raw.get("title") or fallback_id),
         "description": str(raw.get("description") or detail_text)[:700],
         "details": detail_text[:2000],
-        "status": str(raw.get("status") or "pending"),
+        "status": str(raw.get("status") or ("deferred" if ui_ux_seed else "pending")),
         "priority": str(raw.get("priority") or "P2"),
         "layer": str(raw.get("layer") or "feature"),
         "depends_on": list(raw.get("depends_on") or []),
@@ -90,13 +156,20 @@ def normalize_candidate(raw: dict[str, Any], fallback_id: str, mode: str) -> dic
         "covered_anchor_count": int(raw.get("covered_anchor_count") or len(requirement_ids)),
         "generation_mode": mode,
     }
+    if ui_ux_seed:
+        candidate["ui_ux_seed"] = ui_ux_seed
+    return candidate
 
 
-def build_candidates_from_intents(intents: dict[str, Any], mode: str, id_prefix: str) -> dict[str, Any]:
+def build_candidates_from_intents(
+    intents: dict[str, Any], mode: str, id_prefix: str, existing_ids: set[str] | None = None
+) -> dict[str, Any]:
     candidates = [
         normalize_candidate(intent, task_id(id_prefix, idx), mode)
         for idx, intent in enumerate(intents.get("intents", []), 1)
     ]
+    if mode == "add":
+        candidates = renumber_candidates_for_add(candidates, existing_ids or set(), id_prefix)
     return {
         "schema": "task-generation.candidates.v1",
         "generated_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -107,7 +180,9 @@ def build_candidates_from_intents(intents: dict[str, Any], mode: str, id_prefix:
     }
 
 
-def build_candidates(index: dict[str, Any], mode: str, id_prefix: str) -> dict[str, Any]:
+def build_candidates(
+    index: dict[str, Any], mode: str, id_prefix: str, existing_ids: set[str] | None = None
+) -> dict[str, Any]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for anchor in index.get("anchors", []):
         grouped[group_key(anchor)].append(anchor)
@@ -122,33 +197,45 @@ def build_candidates(index: dict[str, Any], mode: str, id_prefix: str) -> dict[s
         refs = sorted({ref for a in anchors for ref in a.get("refs", []) if isinstance(ref, str)})
         source_refs = [f"{a.get('source_path')}:{a.get('line')}" for a in anchors]
         requirement_ids = [str(a.get("requirement_id")) for a in anchors]
-        candidates.append(
-            {
-                "id": task_id(id_prefix, idx),
-                "title": f"Implement {slug_words(title_seed).replace('-', ' ')}",
-                "description": title_seed[:500],
-                "status": "pending",
-                "priority": priority,
-                "layer": LAYER_BY_KIND.get(kind, "feature"),
-                "depends_on": [],
-                "adr_refs": [r for r in refs if r.startswith("ADR-")],
-                "chapter_refs": [],
-                "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
-                "labels": labels,
-                "owner": OWNER_BY_KIND.get(kind, "implementation"),
-                "test_refs": [
-                    r
-                    for r in refs
-                    if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
-                ],
-                "acceptance": [f"Cover requirement {rid}. Source: {src}" for rid, src in zip(requirement_ids[:8], source_refs[:8])],
-                "test_strategy": ["Add or update deterministic tests for the covered requirements before marking the task done."],
-                "source_refs": source_refs,
-                "requirement_ids": requirement_ids,
-                "covered_anchor_count": len(requirement_ids),
-                "generation_mode": mode,
-            }
-        )
+        ui_ux_seed = build_ui_ux_seed(anchors)
+        acceptance = [f"Cover requirement {rid}. Source: {src}" for rid, src in zip(requirement_ids[:8], source_refs[:8])]
+        if ui_ux_seed:
+            labels = sorted(set(labels) | UI_UX_SEED_LABELS)
+            acceptance.append(
+                "UI/UX seed is preserved for Chapter 7 retrofit planning, including categories: "
+                + ", ".join(ui_ux_seed["categories"])
+                + ". Refs: docs/workflows/ui-ux-implementation-policy.md"
+            )
+        candidate = {
+            "id": task_id(id_prefix, idx),
+            "title": f"Implement {slug_words(title_seed).replace('-', ' ')}",
+            "description": title_seed[:500],
+            "status": "deferred" if ui_ux_seed else "pending",
+            "priority": priority,
+            "layer": LAYER_BY_KIND.get(kind, "feature"),
+            "depends_on": [],
+            "adr_refs": [r for r in refs if r.startswith("ADR-")],
+            "chapter_refs": [],
+            "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
+            "labels": labels,
+            "owner": OWNER_BY_KIND.get(kind, "implementation"),
+            "test_refs": [
+                r
+                for r in refs
+                if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
+            ],
+            "acceptance": acceptance,
+            "test_strategy": ["Add or update deterministic tests for the covered requirements before marking the task done."],
+            "source_refs": source_refs,
+            "requirement_ids": requirement_ids,
+            "covered_anchor_count": len(requirement_ids),
+            "generation_mode": mode,
+        }
+        if ui_ux_seed:
+            candidate["ui_ux_seed"] = ui_ux_seed
+        candidates.append(candidate)
+    if mode == "add":
+        candidates = renumber_candidates_for_add(candidates, existing_ids or set(), id_prefix)
     return {
         "schema": "task-generation.candidates.v1",
         "generated_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -168,11 +255,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", default="logs/ci/task-generation/task-candidates.normalized.json")
     args = parser.parse_args(argv)
     root = Path(args.repo_root).resolve()
+    ids = existing_task_ids(root) if args.mode == "add" else set()
     intents = maybe_load_json(root / args.intents)
     if intents and intents.get("schema") == "task-generation.task-intents.v1":
-        data = build_candidates_from_intents(intents, args.mode, args.id_prefix)
+        data = build_candidates_from_intents(intents, args.mode, args.id_prefix, ids)
     else:
-        data = build_candidates(load_json(root / args.requirements), args.mode, args.id_prefix)
+        data = build_candidates(load_json(root / args.requirements), args.mode, args.id_prefix, ids)
     out = root / args.out
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

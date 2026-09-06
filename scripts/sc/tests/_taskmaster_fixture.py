@@ -2,15 +2,19 @@
 from __future__ import annotations
 
 import json
-import shutil
+import os
+import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EXAMPLES_DIR = REPO_ROOT / "examples" / "taskmaster"
-TASKMASTER_DIR = REPO_ROOT / ".taskmaster" / "tasks"
-_BACKUP_DIR = REPO_ROOT / ".taskmaster" / "tasks.__backup_for_sc_tests__"
+_TRIPLET_ENV = {
+    "SC_TASKMASTER_TASKS_JSON_PATH": "tasks.json",
+    "SC_TASKMASTER_TASKS_BACK_PATH": "tasks_back.json",
+    "SC_TASKMASTER_TASKS_GAMEPLAY_PATH": "tasks_gameplay.json",
+}
 
 
 def _read_json(path: Path):
@@ -68,36 +72,24 @@ def _inject_task1(tasks_json: dict, tasks_back: list, tasks_gameplay: list) -> N
             ],
             "test_refs": ["Tests.Godot/tests/Adapters/Config/test_settings_config_utf8.gd"],
         })
-
-
-def _remove_tree_if_exists(path: Path) -> None:
-    if not path.exists():
-        return
-    if path.is_dir():
-        shutil.rmtree(path)
-        return
-    path.unlink()
-
-
 @contextmanager
 def staged_taskmaster_triplet(*, include_task1: bool = False) -> Iterator[Path]:
-    _remove_tree_if_exists(_BACKUP_DIR)
-    if TASKMASTER_DIR.exists():
-        _BACKUP_DIR.parent.mkdir(parents=True, exist_ok=True)
+    previous_env = {key: os.environ.get(key) for key in _TRIPLET_ENV}
+    with tempfile.TemporaryDirectory(prefix="sc-taskmaster-fixture-") as td:
+        taskmaster_dir = Path(td).resolve()
         try:
-            TASKMASTER_DIR.rename(_BACKUP_DIR)
-        except FileNotFoundError:
-            pass
-    TASKMASTER_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        tasks_json, tasks_back, tasks_gameplay = _example_triplet()
-        if include_task1:
-            _inject_task1(tasks_json, tasks_back, tasks_gameplay)
-        _write_json(TASKMASTER_DIR / "tasks.json", tasks_json)
-        _write_json(TASKMASTER_DIR / "tasks_back.json", tasks_back)
-        _write_json(TASKMASTER_DIR / "tasks_gameplay.json", tasks_gameplay)
-        yield TASKMASTER_DIR
-    finally:
-        _remove_tree_if_exists(TASKMASTER_DIR)
-        if _BACKUP_DIR.exists():
-            _BACKUP_DIR.rename(TASKMASTER_DIR)
+            tasks_json, tasks_back, tasks_gameplay = _example_triplet()
+            if include_task1:
+                _inject_task1(tasks_json, tasks_back, tasks_gameplay)
+            _write_json(taskmaster_dir / "tasks.json", tasks_json)
+            _write_json(taskmaster_dir / "tasks_back.json", tasks_back)
+            _write_json(taskmaster_dir / "tasks_gameplay.json", tasks_gameplay)
+            for key, filename in _TRIPLET_ENV.items():
+                os.environ[key] = str(taskmaster_dir / filename)
+            yield taskmaster_dir
+        finally:
+            for key, value in previous_env.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value

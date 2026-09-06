@@ -18,6 +18,11 @@ Operate Chapter 3 from `workflow.md` idempotently for a business repository that
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
 
+- Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
+- Treat `Component` as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
+
+
 ## Repository Layout
 
 Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
@@ -41,30 +46,36 @@ Chapter 3 depends on real requirements and triplet files. This template repo may
 ## Required Reading
 
 1. Read the relevant Chapter 3 section in the template repo `workflow.md`.
-2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+3. Read `docs/workflows/ui-ux-implementation-policy.md` before extracting GDD anchors; Chapter 3 must preserve GDD UI/UX fields as structured `ui_ux_seed` metadata for Chapter 7.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
 1. Resolve whether the run is new project initialization or added-task refresh.
 2. For new project initialization, prepare PRD, GDD, epics, stories, traceability, and rules-supporting docs before building task files.
-3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults. Keep ADR/overlay sources out of default extraction unless explicitly requested.
-4. Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids and source_refs.
-5. Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, or oversized intent groups before compiling task views.
-6. Generate normalized task candidates with generate_task_candidates_from_sources.py; do not let an LLM write final tasks.json directly.
-7. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
-8. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
-9. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch.
-10. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
-11. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
-12. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
-13. Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.
-14. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
+3. Extract requirement anchors with extract_requirement_anchors.py, passing explicit --prd-path, --gdd-path, --epics-path, and --stories-path values when the business repo layout differs from template defaults. Keep ADR/overlay sources out of default extraction unless explicitly requested. GDD UI/UX sections such as UI/UX Direction, Screen Inventory, HUD Priority, Input Model, Localization Seed, and Accessibility Baseline are mandatory seed sources even when they are not written as must/shall requirements.
+4. Normalize requirement anchors into implementation-shaped task intents with normalize_task_intents.py; preserve requirement_ids, source_refs, and any `ui_ux_seed` payload.
+5. Audit task intent quality with audit_task_intents_quality.py and review duplicate prefixes, generic titles, metadata noise, oversized intent groups, or missing UI/UX seed coverage before compiling task views.
+6. Generate normalized task candidates with generate_task_candidates_from_sources.py; candidates sourced from GDD UI/UX fields must retain `ui_ux_seed`, `ui-ux-seed`, and `chapter3-ui-intent`. Do not let an LLM write final tasks.json directly.
+7. In add mode, scan existing tasks_back.json, tasks_gameplay.json, and tasks.json before append; new candidate ids must continue after the existing maximum id for the selected prefix.
+8. Enrich candidates with enrich_task_candidates.py using ADRs, overlays, contract event constants, tests, existing tasks, owner/layer, acceptance, evidence refs, and duplicate-candidate evidence.
+9. Audit coverage with audit_task_candidate_coverage.py and stop when any P0/P1 requirement is missing coverage.
+10. Before writing triplet files in add mode, require renumbered candidates to be sequential and require a blocking conflict check against existing task ids.
+11. Compile a task triplet patch with compile_task_triplet.py; use --write only after reviewing the patch and confirming no new candidate id collides with any existing triplet id.
+12. Build or refresh tasks.json from tasks_back.json and tasks_gameplay.json with build_taskmaster_tasks.py.
+13. Run task_links_validate, check_tasks_all_refs, and validate_task_master_triplet as the baseline gate.
+14. Backfill semantic review tier conservatively and validate it unless the repo already has a clean conservative baseline.
+15. Optionally run run_chapter3_regression_check.py against one or more business repos as read-only regression evidence; do not tune rules to exactly reproduce mature Chapter 4/5/6/7 task history.
+16. When new tasks are added after Chapter 3, rerun the baseline gate before Chapter 4 overlay work or Chapter 6 task execution.
 
 ## 用户交互文案要求
 
-- Chapter 3 面向用户的说明、分步确认与阻断提示使用中文。
-- 任务文件与文档中若写入中文，必须通过 Python 并显式 `encoding=\"utf-8\"` 写入，避免终端编码导致乱码。
+- 面向用户的提问必须使用中文，且要直接说明当前 Chapter 3 阶段需要用户确认什么。
+- 技术命令、文件路径、脚本名保持英文原文。
+- 只有在缺少 PRD、GDD、epics、stories 等必要输入且无法从仓库定位时，才向用户提问。
+
 
 ## Stop-Loss Signals
 

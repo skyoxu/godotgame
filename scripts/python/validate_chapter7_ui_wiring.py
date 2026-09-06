@@ -12,11 +12,19 @@ from typing import Any
 from collect_ui_wiring_inputs import OVERLAY_ROOT, TASKS_BACK, TASKS_GAMEPLAY, TASKS_JSON, UI_GDD_FLOW, build_summary
 
 
-REQUIRED_SECTIONS = [
-    '## 5. UI Wiring Matrix',
-    '## 10. Unwired UI Feature List',
-    '## 11. Next UI Wiring Task Candidates',
+REQUIRED_SECTION_GROUPS = [
+    ['## 5. UI Wiring Matrix'],
+    ['## 11. Unwired UI Feature List', '## 10. Unwired UI Feature List'],
+    ['## 12. Next UI Wiring Task Candidates', '## 11. Next UI Wiring Task Candidates'],
 ]
+REQUIRED_SECTIONS = [group[0] for group in REQUIRED_SECTION_GROUPS]
+
+
+def _required_section_payload() -> dict[str, Any]:
+    return {
+        'required_sections': REQUIRED_SECTIONS,
+        'required_section_groups': REQUIRED_SECTION_GROUPS,
+    }
 
 
 def _today() -> str:
@@ -54,7 +62,7 @@ def validate(
             'status': 'skipped',
             'reason': summary.get('reason') or 'missing_task_triplet',
             'target': str(ui_gdd_flow_path).replace('\\', '/'),
-            'required_sections': REQUIRED_SECTIONS,
+            **_required_section_payload(),
             'missing_sections': [],
             'completed_master_tasks_count': 0,
             'missing_done_task_refs': [],
@@ -72,15 +80,16 @@ def validate(
             'status': 'fail',
             'reason': 'missing_ui_gdd_flow',
             'target': str(ui_gdd_flow_path).replace('\\', '/'),
+            **_required_section_payload(),
             'missing_sections': REQUIRED_SECTIONS,
             'missing_done_task_refs': [item['task_id'] for item in summary['needed_wiring_features']],
         }
         return 1, payload
 
     text = gdd_path.read_text(encoding='utf-8')
-    for section in REQUIRED_SECTIONS:
-        if section not in text:
-            missing_sections.append(section)
+    for section_group in REQUIRED_SECTION_GROUPS:
+        if not any(section in text for section in section_group):
+            missing_sections.append(section_group[0])
     task_refs = _extract_task_refs(text)
     for item in summary['needed_wiring_features']:
         task_id = int(item['task_id'])
@@ -91,7 +100,7 @@ def validate(
         'action': 'validate-chapter7-ui-wiring',
         'status': 'ok' if not missing_sections and not missing_done_task_refs else 'fail',
         'target': str(ui_gdd_flow_path).replace('\\', '/'),
-        'required_sections': REQUIRED_SECTIONS,
+        **_required_section_payload(),
         'missing_sections': missing_sections,
         'completed_master_tasks_count': summary['completed_master_tasks_count'],
         'missing_done_task_refs': missing_done_task_refs,

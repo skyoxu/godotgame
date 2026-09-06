@@ -1,0 +1,50 @@
+{
+  "schema_version":"1.0.0",
+  "review_id":"review-evidence-plan-whole-directory-review-03-2026-07-12",
+  "review_type":"whole-directory",
+  "scope":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/",
+  "protocol":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/96-global-review-and-split-validation.md",
+  "package_manifest_sha256":"061a4844924b980c06b6e4582473154d141dd0513eb2fd1d49f911477d05713b",
+  "result_semantics":"plan_implementation_readiness_only",
+  "verdict":"not-ready-for-implementation",
+  "counts":{"p0":0,"p1":1,"p2":0,"open":1},
+  "checks":{
+    "markdown_files_read":14,
+    "schema_files_read":2,
+    "broken_markdown_links_or_anchors":0,
+    "json_schema_and_fixture":"pass",
+    "schema_mutations":"pass",
+    "recovery_docs_validation":"pass",
+    "active_rgr_rows":38,
+    "rgr_owner_coverage_exactly_once":38,
+    "rgr_explicit_owner_and_acceptance_reference":38,
+    "historical_finding_rows":10,
+    "historical_open_rows":0,
+    "historical_closure_evidence":"pass",
+    "research_lines":815,
+    "research_source_ranges":16,
+    "research_h2_h4_headings_covered_exactly_once":77,
+    "book_99_source_ids_exactly_once":16
+  },
+  "findings":[
+    {
+      "finding_id":"RG-WDR-011",
+      "severity":"P1",
+      "status":"Open",
+      "title":"highest_severity has contradictory pre- and post-demotion semantics",
+      "anchors":[
+        "schemas/review-evidence.v1.example.json:18",
+        "schemas/review-evidence.v1.example.json:48",
+        "schemas/review-evidence.v1.example.json:64",
+        "04-chapter6-review-ingestion-and-residual-closure.md:112",
+        "06-pipeline-integration-recovery-and-compatibility.md:67",
+        "06-pipeline-integration-recovery-and-compatibility.md:101"
+      ],
+      "failure_scenario":"A demoted P1 is summary medium under the example but summary high under the normalized-severity prose, allowing compact recovery routing to undo the demotion.",
+      "safeguard_gap":"The schema enum and actionable_count do not define or derive the highest actionable final severity.",
+      "owner":"books 02/04/06 schema and recovery-summary owners",
+      "expiry":"before schema v1 freeze",
+      "recheck":"summary severity semantics or routing fields change"
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 Generated from the template repo `workflow.md` by `scripts/python/update_workflow_chapter_skills.py`.
 
 - Canonical English name: Phase 1: Task Triplet Initialization
-- Source line span: 168-419
+- Source line span: 201-454
 - Heading count: 14
 - Command-like line count: 21
 - Artifact/reference line count: 1

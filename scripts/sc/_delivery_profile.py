@@ -57,6 +57,10 @@ def profile_agent_review_defaults(profile: str) -> dict[str, Any]:
     return dict((_profile(profile).get('agent_review') or {}))
 
 
+def profile_review_evidence_defaults(profile: str) -> dict[str, Any]:
+    return dict((_profile(profile).get('review_evidence') or {}))
+
+
 def profile_review_pipeline_defaults(profile: str) -> dict[str, Any]:
     return dict((_profile(profile).get('review_pipeline') or {}))
 
@@ -92,6 +96,7 @@ def delivery_profile_payload(profile: str) -> dict[str, Any]:
         'acceptance': profile_acceptance_defaults(resolved),
         'gate_bundle': profile_gate_bundle_defaults(resolved),
         'agent_review': profile_agent_review_defaults(resolved),
+        'review_evidence': profile_review_evidence_defaults(resolved),
         'review_pipeline': profile_review_pipeline_defaults(resolved),
         'llm_review': profile_llm_review_defaults(resolved),
         'needs_fix_fast': profile_needs_fix_fast_defaults(resolved),

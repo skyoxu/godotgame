@@ -1,0 +1,21 @@
+# Review Evidence RG-0 Freeze
+
+- Title: review-evidence-rg0-freeze
+- Date: 2026-07-12
+- Status: accepted
+- Supersedes: none
+- Superseded by: none
+- Branch: fix/chapter3-add-task-numbering
+- Git Head: 05b72a0d7ec2503af55d36a1bd6d0b4a76388be9
+- Why now: RG-HANDOFF closed and the implementation cannot enter Chapter 6 capture work until policy, schema, compatibility, ownership, retention, configuration, and plan validation are executable and stable.
+- Context: the plan assigns fourteen requirements to RG-0. The implementation adds an accepted ADR, one canonical JSON schema, primary and fallback validation, independent delivery-profile configuration, a focused split validator, and mutation tests without changing `summary.json` or runtime reviewer routing.
+- Decision: close RG-0 with `playable-ea=legacy-observe`, `fast-ship=advisory`, and `standard=advisory`. Keep `agent_review.mode` independent. Retain structured summaries, dispositions, and metrics for 30 days; keep sanitized replay fixtures in git; prohibit warn/require promotion before RG-5. Permit creation of one narrowly scoped RG-1 task, but do not claim RG-1 implementation has started.
+- Consequences: RG-1 must consume ADR-0032 and `scripts/sc/schemas/review-evidence.v1.schema.json` as protected inputs. Any schema, projection, mode, retention, or rollback change requires a new accepted decision and phase-exit recheck.
+- Recovery impact: resume from the top-level plan, read the RG-0 exit evidence, and create the RG-1 task before editing Chapter 6 reviewer ingestion or residual routing.
+- Validation: eighteen focused plan mutations, nineteen schema/fallback tests, delivery-profile tests, review-pipeline delivery-profile integration tests, recovery-doc validation, JSON parsing, Python compilation, and Whole-directory review.
+- Related ADRs: `docs/adr/ADR-0032-review-evidence-gate.md`, `docs/adr/ADR-0005-quality-gates.md`
+- Related execution plans: `execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan.md`
+- Related task id(s): n/a because RG-0 is a phase-wide contract freeze
+- Related run id: n/a because RG-0 validation is plan- and test-scoped rather than a business task pipeline run
+- Related latest.json: n/a because no task-scoped pipeline owns the RG-0 exit
+- Related pipeline artifacts: `logs/ci/2026-07-12/review-evidence-rg0-refactor-review/`

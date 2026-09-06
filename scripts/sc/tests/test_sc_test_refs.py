@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -28,6 +29,7 @@ def _load_module(name: str, relative_path: str):
 
 
 refs = _load_module("sc_test_refs_module", "scripts/sc/_sc_test_refs.py")
+fixture = _load_module("sc_taskmaster_fixture_module", "scripts/sc/tests/_taskmaster_fixture.py")
 
 
 def _write_json(path: Path, payload) -> None:
@@ -54,6 +56,19 @@ class ScTestRefsTests(unittest.TestCase):
                 refs.repo_root = original_repo_root
 
         self.assertEqual(["Game.Core.Tests/Tasks/Task11FeatureTests.cs"], actual)
+
+    def test_staged_taskmaster_triplet_should_override_paths_via_environment_only(self) -> None:
+        root_taskmaster_dir = REPO_ROOT / ".taskmaster" / "tasks"
+        had_root_triplet = root_taskmaster_dir.exists()
+        before = {key: os.environ.get(key) for key in fixture._TRIPLET_ENV}
+        with fixture.staged_taskmaster_triplet(include_task1=True) as staged_dir:
+            self.assertEqual(str(staged_dir / "tasks.json"), os.environ.get("SC_TASKMASTER_TASKS_JSON_PATH"))
+            self.assertEqual(str(staged_dir / "tasks_back.json"), os.environ.get("SC_TASKMASTER_TASKS_BACK_PATH"))
+            self.assertEqual(str(staged_dir / "tasks_gameplay.json"), os.environ.get("SC_TASKMASTER_TASKS_GAMEPLAY_PATH"))
+            self.assertEqual(had_root_triplet, root_taskmaster_dir.exists())
+        after = {key: os.environ.get(key) for key in fixture._TRIPLET_ENV}
+        self.assertEqual(before, after)
+        self.assertEqual(had_root_triplet, root_taskmaster_dir.exists())
 
 
 if __name__ == "__main__":

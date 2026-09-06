@@ -293,6 +293,27 @@ def build_run_prototype_workflow_cmd(args) -> list[str]:
     return cmd
 
 
+def build_run_technical_preflight_cmd(args) -> list[str]:
+    cmd = [
+        "py",
+        "-3",
+        "scripts/python/run_technical_preflight.py",
+        "--source",
+        args.source,
+    ]
+    if getattr(args, "source_kind", ""):
+        cmd += ["--source-kind", args.source_kind]
+    if getattr(args, "capability_snapshot", ""):
+        cmd += ["--capability-snapshot", args.capability_snapshot]
+    if getattr(args, "out_json", ""):
+        cmd += ["--out-json", args.out_json]
+    if getattr(args, "recommendation_only", False):
+        cmd.append("--recommendation-only")
+    if getattr(args, "self_check", False):
+        cmd.append("--self-check")
+    return cmd
+
+
 def build_create_prototype_scene_cmd(args) -> list[str]:
     cmd = [
         "py",
@@ -305,6 +326,10 @@ def build_create_prototype_scene_cmd(args) -> list[str]:
         cmd += ["--scene-root", args.scene_root]
     if getattr(args, "prototype_root", ""):
         cmd += ["--prototype-root", args.prototype_root]
+    if getattr(args, "template_manifest", ""):
+        cmd += ["--template-manifest", args.template_manifest]
+    if getattr(args, "force", False):
+        cmd.append("--force")
     return cmd
 
 

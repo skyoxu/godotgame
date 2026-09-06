@@ -41,6 +41,40 @@ inspect_run = _load_module("inspect_run_module", "scripts/python/inspect_run.py"
 
 
 class InspectRunTests(unittest.TestCase):
+    def test_extract_latest_summary_signals_should_match_declared_key_set(self) -> None:
+        payload = inspect_run._extract_latest_summary_signals(
+            latest_payload={
+                "reason": "review_pending",
+                "run_type": "deterministic-only",
+                "reuse_mode": "deterministic-only-reuse",
+                "failure_kind": "step-failed",
+            },
+            latest_path=REPO_ROOT / "logs" / "ci" / "missing-latest.json",
+            summary_payload={},
+            summary_path=None,
+            execution_context_payload={},
+            run_events_path=None,
+            run_id="run-15",
+        )
+
+        self.assertEqual(set(inspect_run.LATEST_SUMMARY_SIGNAL_KEYS), set(payload.keys()))
+
+    def test_inspect_examples_should_include_required_latest_summary_signal_keys(self) -> None:
+        required_keys = set(inspect_run.LATEST_SUMMARY_SIGNAL_KEYS)
+        example_names = [
+            "sc-pipeline-inspect.example.json",
+            "sc-local-hard-checks-inspect.example.json",
+        ]
+
+        for name in example_names:
+            with self.subTest(example=name):
+                payload = json.loads(
+                    (REPO_ROOT / "docs" / "workflows" / "examples" / name).read_text(encoding="utf-8")
+                )
+                latest_summary_signals = payload.get("latest_summary_signals")
+                self.assertIsInstance(latest_summary_signals, dict)
+                self.assertTrue(required_keys.issubset(set(latest_summary_signals.keys())))
+
     def test_pipeline_compact_example_should_match_recommendation_payload(self) -> None:
         inspect_example_path = REPO_ROOT / "docs" / "workflows" / "examples" / "sc-pipeline-inspect.example.json"
         compact_example_path = REPO_ROOT / "docs" / "workflows" / "examples" / "sc-pipeline-compact.example.json"

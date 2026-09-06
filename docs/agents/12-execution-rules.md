@@ -18,6 +18,12 @@ This document preserves the execution-time rules that used to live in the long A
 - Prefer Understand -> Test (red) -> Implement (green) -> Refactor.
 - If you are stuck after three real attempts, record the failure mode, list two or three alternatives, and choose the simpler path or narrow the scope.
 
+## Formal Chapter 3-7 Component Routing
+- For formal Chapter 3-7 work, apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference.
+- If a task may require engine backend, platform, plugin, rendering, networking, save, or performance feasibility decisions, run or consume `docs/workflows/chapter2-5-technical-preflight.md` before Chapter 3 task generation.
+- Prefer Godot Node/Scene Components for views, panels, and scene wiring; do not imply ECS unless a task or ADR explicitly scopes it.
+- During repair, prefer moving rules, state mutation, and simulation back into `Game.Core` before adding more Godot-side glue.
+
 ## Script Size Guardrail
 - Keep a single script file under 400 lines when practical.
 - Split by responsibility before adding more flags, branches, or mixed concerns.

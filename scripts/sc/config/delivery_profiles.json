@@ -30,6 +30,9 @@
       "agent_review": {
         "mode": "skip"
       },
+      "review_evidence": {
+        "mode": "legacy-observe"
+      },
       "review_pipeline": {
         "max_step_retries": 1
       },
@@ -99,6 +102,9 @@
       "agent_review": {
         "mode": "warn"
       },
+      "review_evidence": {
+        "mode": "advisory"
+      },
       "review_pipeline": {
         "max_step_retries": 1
       },
@@ -167,6 +173,9 @@
       },
       "agent_review": {
         "mode": "require"
+      },
+      "review_evidence": {
+        "mode": "advisory"
       },
       "review_pipeline": {
         "max_step_retries": 0

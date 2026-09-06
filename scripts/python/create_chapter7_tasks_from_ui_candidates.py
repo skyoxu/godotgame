@@ -238,6 +238,7 @@ def _master_task(task_id: int, candidate: dict[str, Any], *, ui_candidates_path:
             f"Failure state: {candidate.get('failure_state') or 'TBD'}",
             f"Completion result: {candidate.get('completion_result') or 'TBD'}",
             f"Contract boundary: {contract_boundary}",
+            "Generation preference: docs/workflows/chapter3-7-component-routing.md; UI work should use Godot Node/Scene Components while rules, state mutation, and simulation remain in Game.Core unless explicitly scoped otherwise.",
             f"Requirement IDs: {', '.join(requirement_ids) if requirement_ids else 'n/a'}",
             f"Validation artifact targets: {', '.join(artifact_targets) if artifact_targets else 'n/a'}",
         ]

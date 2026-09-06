@@ -469,6 +469,40 @@ class PrototypeWorkflowRouterTests(unittest.TestCase):
         )
         self.assertIn("prototype-rpg-godot-zh", active_state["confirmation_summary"])
 
+    def test_rpg_day_two_should_use_template_manifest_scene_command(self) -> None:
+        module = _load_module("prototype_workflow_router_rpg_day_two", "scripts/python/run_prototype_workflow.py")
+        payload = module.normalize_prototype_payload(
+            {
+                "slug": "night-quest",
+                "game_type": "rpg",
+                "hypothesis": "test",
+                "core_player_fantasy": "test",
+                "minimum_playable_loop": "test",
+                "game_feature": "test",
+                "core_gameplay_loop": "test",
+                "win_fail_conditions": "test",
+                "success_criteria": ["test"],
+                "prototype_type_kit": {
+                    "game_type": "rpg",
+                    "manifest_path": "docs/prototype-type-kits/default-rpg-template.manifest.json",
+                    "manifest": {
+                        "paths": {
+                            "default_scene": "Game.Godot/Prototypes/DefaultRpgTemplate/DefaultRpgPrototype.tscn",
+                            "asset_pack_root": "Game.Godot/Prototypes/DefaultRpgTemplate/Assets/",
+                        }
+                    },
+                },
+            },
+            today="2026-05-05",
+        )
+
+        day_two = [step for step in module._day_steps(payload) if step["day"] == 2][0]
+        cmd = day_two["cmd"]
+
+        self.assertIn("--template-manifest", cmd)
+        self.assertIn("docs/prototype-type-kits/default-rpg-template.manifest.json", cmd)
+        self.assertIn("--force", cmd)
+
     def test_record_render_should_include_template_fields(self) -> None:
         module = _load_module("prototype_workflow_router_record", "scripts/python/run_prototype_tdd.py")
         rendered = module._render_record(

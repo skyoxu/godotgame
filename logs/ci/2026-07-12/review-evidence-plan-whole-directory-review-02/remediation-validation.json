@@ -1,0 +1,29 @@
+{
+  "schema_version":"1.0.0",
+  "review_id":"review-evidence-plan-whole-directory-review-02-remediation-2026-07-12",
+  "scope":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/",
+  "result_semantics":"plan_implementation_readiness_only",
+  "verdict":"ready-for-implementation",
+  "package_manifest_sha256":"061a4844924b980c06b6e4582473154d141dd0513eb2fd1d49f911477d05713b",
+  "counts":{"p0":0,"p1":0,"p2":0,"open":0,"closed_from_review":5},
+  "checks":{
+    "json_schema":"pass",
+    "example_validation":"pass",
+    "p1_to_medium_mutation":"rejected",
+    "empty_task_id_mutation":"rejected",
+    "empty_run_id_mutation":"rejected",
+    "markdown_links_and_anchors":"pass",
+    "active_rgr_rows":38,
+    "rgr_owner_acceptance_coverage":38,
+    "historical_findings_closed":10,
+    "research_headings_covered_exactly_once":77,
+    "follow_up_findings":0
+  },
+  "closures":[
+    {"finding_id":"RG-WDR-006","status":"Closed"},
+    {"finding_id":"RG-WDR-007","status":"Closed"},
+    {"finding_id":"RG-WDR-008","status":"Closed"},
+    {"finding_id":"RG-WDR-009","status":"Closed"},
+    {"finding_id":"RG-WDR-010","status":"Closed"}
+  ]
+}

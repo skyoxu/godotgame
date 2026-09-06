@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "review_id": "review-evidence-plan-whole-directory-review-02-2026-07-12",
+  "review_type": "whole-directory",
+  "scope": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/",
+  "protocol": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/96-global-review-and-split-validation.md",
+  "package_manifest_sha256": "bd991379d17b2f19eb4a7c95eaf4055cdf1b86c40391102156d68f0a81aef353",
+  "result_semantics": "plan_implementation_readiness_only",
+  "verdict": "not-ready-for-implementation",
+  "counts": {"p0":0,"p1":3,"p2":2,"open":5},
+  "checks": {
+    "markdown_files_read": 14,
+    "schema_files_read": 2,
+    "broken_markdown_links_or_anchors": 0,
+    "json_parse": "pass",
+    "json_schema_meta_validation": "pass",
+    "example_schema_validation": "pass",
+    "recovery_docs_validation": "pass",
+    "active_rgr_rows": 34,
+    "unique_rgr_ids": 34,
+    "rgr_owner_coverage_exactly_once": 34,
+    "rgr_explicit_owner_and_acceptance_reference": 34,
+    "historical_finding_rows": 5,
+    "historical_open_rows": 0,
+    "historical_closure_evidence": "pass",
+    "research_lines": 815,
+    "research_source_ranges": 16,
+    "research_h2_h4_headings_covered_exactly_once": 77,
+    "book_99_source_ids_exactly_once": 16
+  },
+  "findings": [
+    {
+      "finding_id":"RG-WDR-006","severity":"P1","status":"Open",
+      "title":"The schema example normalizes P1 to medium before validation",
+      "anchors":["02-review-evidence-contracts-and-severity.md:69","02-review-evidence-contracts-and-severity.md:78","schemas/review-evidence.v1.example.json:17","schemas/review-evidence.v1.example.json:48"],
+      "failure_scenario":"A validator selecting proof requirements from normalized_severity applies medium rules to an original P1 and loses the distinction between normalization and final demotion.",
+      "safeguard_gap":"The schema enum accepts the contradictory values and the fixture validates.",
+      "owner":"book 02 schema/severity owner","expiry":"before schema v1 freeze","recheck":"schema example or severity semantics change"
+    },
+    {
+      "finding_id":"RG-WDR-007","severity":"P1","status":"Open",
+      "title":"Unknown has no defined projection into the existing agent-review verdict/action vocabulary",
+      "anchors":["02-review-evidence-contracts-and-severity.md:141","04-chapter6-review-ingestion-and-residual-closure.md:124","06-pipeline-integration-recovery-and-compatibility.md:71","scripts/sc/_agent_review_contract.py:8"],
+      "failure_scenario":"Unknown must become pass, needs-fix, or block and none, resume, refresh, or fork; every inferred choice changes recovery semantics, while unknown/inspect is contract-invalid.",
+      "safeguard_gap":"Compatibility tests are requested without a normative mapping table.",
+      "owner":"books 04/06 compatibility projection owners","expiry":"before RG-1 implementation","recheck":"agent-review verdict/action projection changes"
+    },
+    {
+      "finding_id":"RG-WDR-008","severity":"P1","status":"Open",
+      "title":"Global completion contradicts compatibility-mode producer-status retention",
+      "anchors":["execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan.md:78","01-authority-scope-and-invariants.md:43","06-pipeline-integration-recovery-and-compatibility.md:40"],
+      "failure_scenario":"Advisory mode retains producer Needs Fix with zero actionable findings, satisfying Book 06 but violating the top-level global-completion owner.",
+      "safeguard_gap":"No precedence rule resolves the top-level completion owner against the sole compatibility owner.",
+      "owner":"top-level completion owner with books 01/06 compatibility owners","expiry":"before RG-HANDOFF exit","recheck":"producer-status or global-completion semantics change"
+    },
+    {
+      "finding_id":"RG-WDR-009","severity":"P2","status":"Open",
+      "title":"Missing task/run identity has no canonical schema representation",
+      "anchors":["02-review-evidence-contracts-and-severity.md:10","schemas/review-evidence.v1.schema.json:14","schemas/review-evidence.v1.schema.json:57","scripts/sc/_agent_review_contract.py:108"],
+      "failure_scenario":"Unavailable identity must be omitted/null and fail schema, or be empty and pass the sidecar schema while failing projection or collapsing attribution keys.",
+      "safeguard_gap":"The schema accepts ambiguous empty strings and the plan defines no nullable or synthetic-ID policy.",
+      "owner":"book 02 schema owner","expiry":"before RG-0 exit","recheck":"identity-field schema changes"
+    },
+    {
+      "finding_id":"RG-WDR-010","severity":"P2","status":"Open",
+      "title":"Chapter 6 profile ownership summaries omit architecture and performance",
+      "anchors":["01-authority-scope-and-invariants.md:27","02-review-evidence-contracts-and-severity.md:134","04-chapter6-review-ingestion-and-residual-closure.md:72","99-source-coverage.md:29"],
+      "failure_scenario":"Coverage checks following the summary tables can omit architecture/performance catalog ownership while the byte-range source audit still passes.",
+      "safeguard_gap":"Source-range coverage does not enforce semantic enumeration in Books 02 and 99.",
+      "owner":"books 02/99 coverage owners","expiry":"before RG-0 exit","recheck":"profile catalog or coverage-dimension changes"
+    }
+  ]
+}

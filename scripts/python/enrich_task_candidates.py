@@ -208,7 +208,92 @@ def unique(items: list[Any]) -> list[Any]:
     return out
 
 
-def enrich(root: Path, candidates: dict[str, Any]) -> dict[str, Any]:
+def next_candidate_id(candidates: list[dict[str, Any]], prefix: str = "TECH") -> str:
+    max_seen = 0
+    for candidate in candidates:
+        raw = str(candidate.get("id") or "")
+        head, sep, tail = raw.rpartition("-")
+        if sep and head == prefix and tail.isdigit():
+            max_seen = max(max_seen, int(tail))
+    return f"{prefix}-{max_seen + 1:04d}"
+
+
+def technical_engine_route(technical_preflight: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(technical_preflight, dict):
+        return {}
+    preflight = technical_preflight.get("technical_preflight")
+    if not isinstance(preflight, dict):
+        return {}
+    route = preflight.get("engine_route")
+    return route if isinstance(route, dict) else {}
+
+
+def append_technical_preflight_spike(enriched: list[dict[str, Any]], technical_preflight: dict[str, Any] | None) -> list[dict[str, Any]]:
+    route = technical_engine_route(technical_preflight)
+    if route.get("recommended_action") != "engine_spike_required":
+        return enriched
+
+    backend = str(route.get("candidate_backend") or "backend")
+    spike_id = next_candidate_id(enriched)
+    spike = {
+        "id": spike_id,
+        "title": f"Run technical preflight spike for {backend}",
+        "description": f"Evaluate the Chapter 2.5 engine/backend recommendation for {backend} before implementation.",
+        "status": "pending",
+        "priority": "P1" if route.get("adr_required") else "P2",
+        "layer": "docs",
+        "owner": "architecture",
+        "depends_on": [],
+        "adr_refs": [],
+        "chapter_refs": ["CH02.5", "CH03", "CH04", "CH06"],
+        "overlay_refs": [],
+        "labels": ["architecture", "generated", "technical-preflight", "spike"],
+        "test_refs": [],
+        "acceptance": [
+            "Spike records backend behavior, target platform constraints, fallback plan, and whether an ADR or decision-log is required.",
+            *[str(item) for item in route.get("chapter6_acceptance_gates", [])],
+        ],
+        "test_strategy": [
+            "Run the smallest deterministic Godot/Core verification needed to prove or reject the backend recommendation.",
+        ],
+        "evidence_refs": [],
+        "contractRefs": [],
+        "duplicate_candidates": [],
+        "enrichment_status": "ok",
+        "technical_preflight": route,
+    }
+
+    updated: list[dict[str, Any]] = []
+    for task in enriched:
+        candidate = dict(task)
+        labels = {str(item).lower() for item in candidate.get("labels", [])}
+        if labels & {"gameplay", "gdd", "adapter"}:
+            deps = [str(item) for item in candidate.get("depends_on", [])]
+            if spike_id not in deps:
+                deps.insert(0, spike_id)
+            candidate["depends_on"] = deps
+        updated.append(candidate)
+    return [spike, *updated]
+
+
+def technical_preflight_inventory(technical_preflight: dict[str, Any] | None, candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    route = technical_engine_route(technical_preflight)
+    if not route:
+        return {
+            "available": False,
+            "recommended_action": "",
+            "candidate_backend": "",
+            "spike_count": 0,
+        }
+    return {
+        "available": True,
+        "recommended_action": str(route.get("recommended_action") or ""),
+        "candidate_backend": str(route.get("candidate_backend") or ""),
+        "spike_count": sum(1 for candidate in candidates if "technical-preflight" in {str(item).lower() for item in candidate.get("labels", [])}),
+    }
+
+
+def enrich(root: Path, candidates: dict[str, Any], technical_preflight: dict[str, Any] | None = None) -> dict[str, Any]:
     adr_ids = collect_adr_ids(root)
     overlays = collect_overlay_paths(root)
     tests = collect_test_paths(root)
@@ -270,6 +355,7 @@ def enrich(root: Path, candidates: dict[str, Any]) -> dict[str, Any]:
             "enrichment_status": "ok",
         })
         enriched.append(task)
+    enriched = append_technical_preflight_spike(enriched, technical_preflight)
     return {
         "schema": "task-generation.enriched-candidates.v1",
         "generated_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -280,19 +366,22 @@ def enrich(root: Path, candidates: dict[str, Any]) -> dict[str, Any]:
             "test_count": len(tests),
             "contract_event_count": len(contract_events),
             "existing_task_count": len(existing),
+            "technical_preflight": technical_preflight_inventory(technical_preflight, enriched),
         },
         "candidates": enriched,
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Enrich task candidates using repository evidence.")
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--candidates", default=DEFAULT_CANDIDATES)
+    parser.add_argument("--technical-preflight", default="")
     parser.add_argument("--out", default=DEFAULT_OUT)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     root = Path(args.repo_root).resolve()
-    result = enrich(root, load_json(root / args.candidates, {"candidates": []}))
+    technical_preflight = load_json(root / args.technical_preflight, {}) if args.technical_preflight else {}
+    result = enrich(root, load_json(root / args.candidates, {"candidates": []}), technical_preflight)
     out = root / args.out
     write_json(out, result)
     print(f"enriched_candidates={out} candidates={result['candidate_count']} inventory={result['inventory']}")

@@ -47,6 +47,7 @@ Related durable protocol:
 - `chapter7-ui-wiring-profile-bundle`
   - Treat `scripts/python/_chapter7_profile.py`, `run_chapter7_ui_wiring.py`, `chapter7_ui_gdd_writer.py`, `create_chapter7_tasks_from_ui_candidates.py`, `validate_chapter7_ui_wiring.py`, `dev_cli.py`, and `dev_cli_builders.py` as one migration unit when `--chapter7-profile-path` behavior changes.
   - Sync `docs/workflows/chapter7-profile.json`, `docs/workflows/chapter7-profile-guide.md`, `docs/workflows/templates/chapter7-profile.template.json`, `docs/workflows/templates/chapter7-profile.minimal.example.json`, `workflow.md`, `README.md`, `AGENTS.md`, and the workflow entrypoint indexes in the same batch.
+  - Sync `docs/workflows/chapter3-7-component-routing.md` whenever Chapter 3-7 prompt, routing, generated GDD wording, or component boundary behavior changes.
 
 ## Migration Order
 1. Baseline and identity
@@ -65,6 +66,7 @@ Related durable protocol:
    - Sync workflow changes only after local scripts are present.
    - Rebind paths, solution names, secrets, and delivery/security defaults.
    - If Chapter 7 UI wiring profile behavior changes, sync the profile bundle and its docs before treating the workflow entrypoints as current.
+   - If Chapter 3-7 component routing preferences change, sync `docs/workflows/chapter3-7-component-routing.md`, `workflow.md`, Chapter skills, and Chapter 7 generated wording together.
 6. Docs and routing
    - Update `AGENTS.md`, `README.md`, docs indexes, workflow docs, and the stable entrypoint docs so operators can discover the new behavior.
    - If the repo uses gate bundle docs, sync mirror-runtime gate docs together with the gate list.

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://godotgame.local/plans/review-evidence.v1.schema-pointer.json",
+  "title": "Review Evidence Sidecar v1 Canonical Schema Pointer",
+  "$comment": "This planning artifact is non-normative. The executable schema authority is repository-relative path scripts/sc/schemas/review-evidence.v1.schema.json.",
+  "type": "object",
+  "x-canonical-schema": "scripts/sc/schemas/review-evidence.v1.schema.json"
+}

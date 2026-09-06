@@ -38,6 +38,7 @@ from dev_cli_builders import (
     build_run_chapter7_ui_wiring_cmd,
     build_run_prototype_tdd_cmd,
     build_run_prototype_workflow_cmd,
+    build_run_technical_preflight_cmd,
     build_quality_gates_cmd,
     build_run_dotnet_cmd,
     build_run_gdunit_full_cmd,
@@ -280,6 +281,12 @@ def cmd_run_prototype_workflow(args: argparse.Namespace) -> int:
     """Run the top-level prototype workflow router."""
 
     return run(build_run_prototype_workflow_cmd(args))
+
+
+def cmd_run_technical_preflight(args: argparse.Namespace) -> int:
+    """Run the Chapter 2.5 technical preflight."""
+
+    return run(build_run_technical_preflight_cmd(args))
 
 
 def cmd_create_prototype_scene(args: argparse.Namespace) -> int:
@@ -637,6 +644,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto_scene.add_argument("--slug", required=True)
     p_proto_scene.add_argument("--scene-root", default="Node2D")
     p_proto_scene.add_argument("--prototype-root", default="Game.Godot/Prototypes")
+    p_proto_scene.add_argument("--template-manifest", default="")
+    p_proto_scene.add_argument("--force", action="store_true")
     p_proto_scene.set_defaults(func=cmd_create_prototype_scene)
 
     # run-prototype-workflow
@@ -654,6 +663,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_proto_workflow.add_argument("--score-timeout-sec", type=int, default=180)
     p_proto_workflow.add_argument("--self-check", action="store_true")
     p_proto_workflow.set_defaults(func=cmd_run_prototype_workflow)
+
+    # run-technical-preflight
+    p_tech = sub.add_parser(
+        "run-technical-preflight",
+        help="run the Chapter 2.5 technical preflight between bootstrap and Chapter 3 task generation",
+    )
+    p_tech.add_argument("--source", required=True)
+    p_tech.add_argument("--source-kind", default="auto", choices=["auto", "gdd", "prototype", "task"])
+    p_tech.add_argument("--capability-snapshot", default="")
+    p_tech.add_argument("--out-json", default="")
+    p_tech.add_argument("--recommendation-only", action="store_true")
+    p_tech.add_argument("--self-check", action="store_true")
+    p_tech.set_defaults(func=cmd_run_technical_preflight)
 
     # detect-project-stage
     p_stage = sub.add_parser("detect-project-stage", help="检测仓库阶段并刷新 project-health 产物")

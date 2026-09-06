@@ -28,6 +28,70 @@ PATH_ONLY_RE = re.compile(r"^[-*]?\s*`?[\w./\\-]+\.(json|md|cs|gd|yml|yaml|txt|s
 TASK_REF_ONLY_RE = re.compile(r"^[-*]?\s*T\d+\s+`[^`]+`\s*$", re.IGNORECASE)
 REFS_ONLY_RE = re.compile(r"^[-*]?\s*[\w./\\-]+\s+(ADR-Refs|Test-Refs|Refs):\s*$", re.IGNORECASE)
 
+UI_UX_HEADING_CATEGORIES: list[tuple[str, str]] = [
+    ("ui_ux_direction", "UI/UX Direction"),
+    ("ui_ux_direction", "UX Direction"),
+    ("ui_ux_direction", "Experience Direction"),
+    ("ui_ux_direction", "体验方向"),
+    ("ui_ux_direction", "用户体验方向"),
+    ("screen_inventory_seed", "Screen Inventory"),
+    ("screen_inventory_seed", "User Interface"),
+    ("screen_inventory_seed", "UI Surfaces"),
+    ("screen_inventory_seed", "Screens"),
+    ("screen_inventory_seed", "Menus And Screens"),
+    ("screen_inventory_seed", "界面设计"),
+    ("screen_inventory_seed", "用户界面"),
+    ("screen_inventory_seed", "屏幕清单"),
+    ("screen_inventory_seed", "菜单与界面"),
+    ("player_flow_map", "Player Flow Map"),
+    ("player_flow_map", "Player Flow"),
+    ("player_flow_map", "UX Flow"),
+    ("player_flow_map", "玩家流程"),
+    ("player_flow_map", "用户流程"),
+    ("hud_priority", "HUD Priority"),
+    ("hud_priority", "HUD"),
+    ("hud_priority", "Information Architecture"),
+    ("hud_priority", "HUD 优先级"),
+    ("hud_priority", "信息架构"),
+    ("input_model", "Input Model"),
+    ("input_model", "Controls"),
+    ("input_model", "Control Scheme"),
+    ("input_model", "Interaction Model"),
+    ("input_model", "输入模型"),
+    ("input_model", "输入控制"),
+    ("input_model", "控制方案"),
+    ("input_model", "交互模型"),
+    ("state_visibility", "UI State Requirements"),
+    ("state_visibility", "State Visibility"),
+    ("state_visibility", "Feedback States"),
+    ("state_visibility", "状态可见性"),
+    ("state_visibility", "界面状态需求"),
+    ("state_visibility", "反馈状态"),
+    ("localization_seed", "Localization Seed"),
+    ("localization_seed", "Localization"),
+    ("localization_seed", "Internationalization"),
+    ("localization_seed", "I18N"),
+    ("localization_seed", "本地化"),
+    ("localization_seed", "国际化"),
+    ("localization_seed", "多语言"),
+    ("accessibility_baseline", "Accessibility Baseline"),
+    ("accessibility_baseline", "Accessibility"),
+    ("accessibility_baseline", "Accessibility Controls"),
+    ("accessibility_baseline", "Accessibility Options"),
+    ("accessibility_baseline", "无障碍"),
+    ("accessibility_baseline", "可访问性"),
+    ("accessibility_baseline", "辅助功能"),
+    ("accessibility_baseline", "无障碍选项"),
+    ("ui_risk_notes", "UI Risk Notes"),
+    ("ui_risk_notes", "UX Risks"),
+    ("ui_risk_notes", "界面风险"),
+    ("ui_risk_notes", "用户体验风险"),
+]
+UI_UX_HEADING_LOOKUP = {
+    re.sub(r"[^\w]+", " ", heading.lower(), flags=re.UNICODE).strip(): category
+    for category, heading in UI_UX_HEADING_CATEGORIES
+}
+
 
 def sha12(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
@@ -82,6 +146,24 @@ def split_blocks(text: str) -> list[tuple[int, str]]:
     if current:
         blocks.append((start, "\n".join(current).strip()))
     return blocks
+
+
+def normalize_heading(line: str) -> str:
+    stripped = line.strip().lstrip("#").strip()
+    return re.sub(r"[^\w]+", " ", stripped.lower(), flags=re.UNICODE).strip()
+
+
+def ui_ux_category_for_block(block: str) -> str:
+    lines = [line for line in block.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    heading = normalize_heading(lines[0])
+    return UI_UX_HEADING_LOOKUP.get(heading, "")
+
+
+def block_starts_with_heading(block: str) -> bool:
+    lines = [line for line in block.splitlines() if line.strip()]
+    return bool(lines and lines[0].lstrip().startswith("#"))
 
 
 def is_requirement_like(block: str) -> bool:
@@ -158,8 +240,16 @@ def extract(root: Path, patterns: list[str], mode: str) -> dict[str, Any]:
     seen: set[str] = set()
     for path in iter_sources(root, patterns):
         text = read_text(path)
+        current_ui_ux_category = ""
         for line_no, block in split_blocks(text):
-            if not is_requirement_like(block):
+            ui_ux_category = ui_ux_category_for_block(block)
+            if ui_ux_category:
+                current_ui_ux_category = ui_ux_category
+            elif block_starts_with_heading(block):
+                current_ui_ux_category = ""
+            elif current_ui_ux_category:
+                ui_ux_category = current_ui_ux_category
+            if not ui_ux_category and not is_requirement_like(block):
                 continue
             source_rel = rel(path, root)
             stable = explicit_id(block) or f"REQ-{sha12(source_rel + ':' + str(line_no) + ':' + block)}"
@@ -175,6 +265,7 @@ def extract(root: Path, patterns: list[str], mode: str) -> dict[str, Any]:
                 "text": re.sub(r"\s+", " ", block).strip()[:1200],
                 "refs": extract_refs(block),
                 "content_hash": sha12(block),
+                "ui_ux_category": ui_ux_category,
             })
     return {
         "schema": "task-generation.requirements-index.v1",

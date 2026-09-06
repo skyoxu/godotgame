@@ -43,8 +43,10 @@ def audit(intents: dict[str, Any], max_anchors_per_intent: int) -> dict[str, Any
         iid = str(intent.get("id", ""))
         title = str(intent.get("title", ""))
         covered = int(intent.get("covered_anchor_count") or 0)
+        labels = {str(label).lower() for label in intent.get("labels", [])}
+        is_planning_metadata = "planning-metadata" in labels
         issues = []
-        if covered > max_anchors_per_intent:
+        if covered > max_anchors_per_intent and not is_planning_metadata:
             issues.append("too_many_anchors")
         if NOISY_TITLE_RE.search(title):
             issues.append("metadata_noise_in_title")

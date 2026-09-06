@@ -18,6 +18,11 @@ Operate Chapter 7 from `workflow.md` idempotently for a business repository that
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
 
+- Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
+- Treat `Component` as a Godot Node/Scene Component, not an ECS component.
+- Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
+
+
 ## Repository Layout
 
 Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
@@ -41,8 +46,10 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 ## Required Reading
 
 1. Read the relevant Chapter 7 section in the template repo `workflow.md`.
-2. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-3. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+3. Read `docs/workflows/ui-ux-implementation-policy.md`; Chapter 7 consumes Chapter 3 `ui_ux_seed` metadata and turns it into screen contracts, component kit decisions, screenshot acceptance, accessibility checks, and localization checks.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
 ## Idempotent Procedure
 
@@ -51,7 +58,9 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 3. Use a Chapter 7 profile override for policy-level business repo differences instead of forking scripts.
 4. Run self-check before write-doc.
 5. Validate UI GDD, candidates, artifact manifest, and hard gate outputs before task creation.
-6. Stop when backlog-gap evidence says candidate tasks are already covered.
+6. When Chapter 3 generated `ui_ux_seed`, confirm the Chapter 7 UI GDD maps its categories into concrete screen contracts, screenshot acceptance rows, accessibility/localization checks, or explicit waivers.
+7. Stop when backlog-gap evidence says candidate tasks are already covered.
+
 
 ## Stop-Loss Signals
 

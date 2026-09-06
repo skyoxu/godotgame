@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-12",
+  "scope_files": [
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/00-index.md","sha256":"12bdc43beeb73479c6405050e8c7ce72e985c33233cc220024eb459bdf9fb2a9","bytes":2692,"lines":45},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/01-authority-scope-and-invariants.md","sha256":"a0b0ea518a7a2c46134d6bbcce1163c57b040617e596cd092f1b188bfd162f9d","bytes":4082,"lines":101},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/02-review-evidence-contracts-and-severity.md","sha256":"76585c42ee6a84b11c34475105b20a1f85cfcd445ae21c0a47f87013d79f412a","bytes":4765,"lines":155},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/03-chapter3-5-evidence-profiles.md","sha256":"e830ffa2a0a28326318f7e31a77942f09ce047baf395dfbd3c22508b59e1af63","bytes":6040,"lines":159},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/04-chapter6-review-ingestion-and-residual-closure.md","sha256":"c0773ba0a5b0c5d06fc07044b681cda61adb162c0b523877675fff944618a47d","bytes":6905,"lines":196},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/05-chapter7-ui-review-evidence.md","sha256":"7b62ccf8b40405376ea4d287bee1928d6fe8df4c024e5965fee93b4757f9d292","bytes":3905,"lines":119},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/06-pipeline-integration-recovery-and-compatibility.md","sha256":"63bd99b8734c3161639477ea3e5afd4a2b05f5144803570415d1a28ff9aca14c","bytes":4443,"lines":151},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/07-observability-replay-and-performance.md","sha256":"fff8361adb9d3f744841291f2b9f8a5bf98aa50a58e4eb2928236333562bd1cb","bytes":4151,"lines":125},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/08-implementation-phases.md","sha256":"dc6ccf5cad9b0068d5988e139bad192d3261ec672d0a722d6707154e6e9bb3c2","bytes":4868,"lines":168},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/09-risks-dod-and-glossary.md","sha256":"373ecc25bb4e76064f68287508e025b4702ad616bf78d7bf32a25caa5b76465a","bytes":4894,"lines":81},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/96-global-review-and-split-validation.md","sha256":"322933cdef0841223fff4c4f761f9080c912352b165108a71c2e937768dd360f","bytes":3244,"lines":98},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/97-post-split-requirements-ledger.md","sha256":"d8e729b25a9a7f31265f8606d62898fb537b58652be6ddb737a15e84b40b2f41","bytes":5267,"lines":78},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/98-research-to-split-audit.md","sha256":"21dac935ef7c651ecc3d30ba1108fea7390a40200749b3081857a1e7bfe52809","bytes":2074,"lines":60},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/99-source-coverage.md","sha256":"34bedd65021dd6b3147a0d860f35a4964369f4acee00a3147ee0a55c99141a1f","bytes":3031,"lines":87},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/schemas/review-evidence.v1.example.json","sha256":"6c8e6bd1e05b1142d11909fe3105faa47dbbf01cff92e43d9f04e1746720e47b","bytes":2600,"lines":67},
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/schemas/review-evidence.v1.schema.json","sha256":"5b765ba65f31f23f67c0a61f6610f9ea47c8811db5d604f94be242857cef967c","bytes":6854,"lines":332}
+  ],
+  "context_files": [
+    {"path":"execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan.md","sha256":"eccf922cf2c8209834851604ba6ee06120e60dfdd4a66b429a6635fe827c3020","bytes":7958,"lines":87},
+    {"path":"_bmad-output/planning-artifacts/research/technical-ecc-review-anti-hallucination-research-2026-07-12.md","sha256":"a7ee0737ef77e15e882544b49ce8f3176943b6ddbb0e8ffff52640baf81f7241","bytes":49665,"lines":815},
+    {"path":"docs/adr/ADR-0005-quality-gates.md","sha256":"76882a2513b9d679bae275b2a6d7da52770a7ee7f260474700b199838bdc7683","bytes":4108,"lines":102},
+    {"path":"docs/adr/ADR-0017-quality-intelligence-dashboard-and-governance.md","sha256":"a2a9ce2e1a0446b5a66ee3a9408d82dfdc8926cbb6ccf4c2469d6ce34427c511","bytes":1634,"lines":12},
+    {"path":"workflow.md","sha256":"c5946bb50ed91e65d221410356399f416ebe47011793ee2ed5f41f83649ce3e6","bytes":89237,"lines":1638},
+    {"path":"docs/workflows/chapter3-7-component-routing.md","sha256":"ef288f4c50f1a0eefb9901bcaa4f12af4697f9b5bc2caf1cc1adcbc7ee280f1a","bytes":10361,"lines":157},
+    {"path":"docs/workflows/ui-ux-implementation-policy.md","sha256":"4fe5c3dc1019d77c13823af4199a7ce4c85219726d24cb11ba1d42d48dacf716","bytes":9738,"lines":170},
+    {"path":"docs/gdd/ui-gdd-flow.md","sha256":"6ba20c20c21a33c31e31ea9fab1d6044b49f33b9466cb09131d185de86d0f655","bytes":8824,"lines":216}
+  ]
+}

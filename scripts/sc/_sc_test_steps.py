@@ -21,6 +21,27 @@ def run_unit(
     cmd = ["py", "-3", "scripts/python/run_dotnet.py", "--solution", solution, "--configuration", configuration]
     task_cs_refs = task_scoped_cs_refs(task_id=task_id)
     task_filter = build_dotnet_filter_from_cs_refs(task_cs_refs)
+    task_scope_requested = bool(str(task_id or "").strip())
+    if task_scope_requested and not task_filter:
+        message = (
+            "[sc-test] task-scoped unit run refused because no C# test refs were resolved for the task.\n"
+            f"[sc-test] task_id: {str(task_id).strip()}\n"
+            "[sc-test] This would otherwise fall through to a full-suite unit run.\n"
+            "[sc-test] Fix the triplet test_refs or rerun without --task-id if a full run is intentional.\n"
+        )
+        log_path = out_dir / "unit.log"
+        write_text(log_path, message)
+        unit_artifacts_dir = repo_root() / "logs" / "unit" / today_str()
+        write_text(unit_artifacts_dir / "run_id.txt", run_id + "\n")
+        return {
+            "name": "unit",
+            "cmd": cmd,
+            "rc": 2,
+            "log": str(log_path),
+            "artifacts_dir": str(unit_artifacts_dir),
+            "status": "fail",
+            "error": "missing_task_scoped_cs_refs",
+        }
     if task_filter:
         cmd += ["--filter", task_filter]
     rc, out = run_cmd(cmd, cwd=repo_root(), timeout_sec=1_800)

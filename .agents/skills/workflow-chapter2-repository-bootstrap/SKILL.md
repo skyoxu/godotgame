@@ -24,6 +24,7 @@ Operate Chapter 2 from `workflow.md` idempotently for a business repository that
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
 
+
 ## Repository Layout
 
 Template and business repositories are siblings under one parent directory, for example `<parent>/godotgame`, `<parent>/<business-repo-a>`, and `<parent>/<business-repo-b>`.
@@ -81,6 +82,7 @@ Use `codex exec` in read-only mode from the target repo. Provide the player answ
 
 - Chapter 2 面向用户的提问、确认、缺失项提示必须使用中文。
 - 涉及中文写入的文件更新必须通过 Python 且显式 `encoding=\"utf-8\"` 执行，避免 PowerShell 编码干扰导致乱码。
+
 
 ## Stop-Loss Signals
 

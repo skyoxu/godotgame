@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "review-evidence-policy-v1",
+  "mode": "advisory",
+  "chapter": 6,
+  "review_domain": "code",
+  "reviewer": "code-reviewer",
+  "task_id": "225",
+  "run_id": "example-run-id",
+  "raw_verdict": "Needs Fix",
+  "derived_verdict": "Needs Fix",
+  "findings": [
+    {
+      "finding_id": "code-reviewer-001",
+      "title": "Acceptance test does not exercise the production resolver",
+      "message": "The acceptance anchor is attached to a test-local substitute, so the production resolver can regress while the test remains green.",
+      "original_severity": "P1",
+      "normalized_severity": "high",
+      "confidence": 0.93,
+      "anchors": [
+        {
+          "anchor_type": "code-line",
+          "path": "Game.Core.Tests/Tasks/Task225CombatCatalogTests.cs",
+          "start_line": 79,
+          "end_line": 106,
+          "heading": "",
+          "field_path": "",
+          "stable_id": "ACC:T225.6",
+          "quote": "ACC:T225.6",
+          "artifact_hash": ""
+        }
+      ],
+      "quote_or_snippet": "The test constructs a local substitute instead of invoking the production resolver.",
+      "failure_chain": {
+        "source_or_trigger": "The production combat catalog resolver changes behavior.",
+        "state_or_representation": "ACC:T225.6 remains bound to a test-local substitute.",
+        "bad_result_or_consequence": "The acceptance test stays green while production resolution is incorrect."
+      },
+      "context_inspected": [
+        "Game.Core.Tests/Tasks/Task225CombatCatalogTests.cs",
+        "production resolver call sites",
+        "task acceptance for ACC:T225.6"
+      ],
+      "existing_safeguard_gap": "The deterministic anchor check proves the anchor exists but does not prove the test invokes production behavior.",
+      "severity_rationale": "The issue weakens one acceptance proof but does not directly demonstrate a production outage, so the original P1 is demoted to medium.",
+      "suggested_change": "Replace the test-local substitute with the production resolver and assert the expected result and failure path.",
+      "fingerprint": "chapter6:code:task225:acc-t225-6:production-resolver-gap",
+      "validation": {
+        "state": "demoted",
+        "reason_codes": [
+          "severity.insufficient_reachable_impact"
+        ],
+        "final_severity": "medium"
+      }
+    }
+  ],
+  "summary": {
+    "proposed_count": 1,
+    "validated_count": 0,
+    "demoted_count": 1,
+    "dropped_count": 0,
+    "unknown_count": 0,
+    "actionable_count": 1,
+    "highest_severity": "medium"
+  }
+}

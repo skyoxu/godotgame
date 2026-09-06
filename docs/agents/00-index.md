@@ -72,6 +72,7 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 
 ## By Topic
 - Project overview, startup, stack, and legacy AGENTS background sections:
+  - [../workflows/chapter3-7-component-routing.md](../workflows/chapter3-7-component-routing.md)
   - [14-startup-stack-and-template-structure.md](14-startup-stack-and-template-structure.md)
   - [08-project-basics.md](08-project-basics.md)
   - [../../README.md](../../README.md)
@@ -87,6 +88,7 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
   - [15-security-release-health-and-runtime-ops.md](15-security-release-health-and-runtime-ops.md)
   - [04-closed-loop-testing.md](04-closed-loop-testing.md)
   - [09-quality-gates-and-done.md](09-quality-gates-and-done.md)
+  - [17-taskmaster-test-isolation.md](17-taskmaster-test-isolation.md)
   - [../testing-framework.md](../testing-framework.md)
 - Architecture, ADRs, and template rules:
   - [05-architecture-guardrails.md](05-architecture-guardrails.md)
@@ -114,3 +116,12 @@ Use this after Chapter 6 has closed the current completed backlog slice and you 
 ## Prototype And Game Type Guides
 - `docs/game-type-guides/README.md` stores the extracted 24 BMAD/GDS game type guides.
 - `.agents/skills/prototype-7day-playable-godot-zh/SKILL.md` routes the Chinese 7-day playable prototype lane.
+
+## Workflow Chapter Skills
+- `.agents/skills/workflow-chapter2-repository-bootstrap/SKILL.md` routes Chapter 2 repository bootstrap.
+- `.agents/skills/workflow-chapter2-5-technical-preflight/SKILL.md` routes Chapter 2.5 technical preflight before Chapter 3.
+- `.agents/skills/workflow-chapter3-task-triplet-baseline/SKILL.md` routes Chapter 3 task triplet baseline generation.
+- `.agents/skills/workflow-chapter4-overlays-contracts-baseline/SKILL.md` routes Chapter 4 overlays and contracts baseline.
+- `.agents/skills/workflow-chapter5-semantics-stabilization/SKILL.md` routes Chapter 5 semantics stabilization.
+- `.agents/skills/workflow-chapter6-single-task-daily-loop/SKILL.md` routes Chapter 6 single-task daily loop.
+- `.agents/skills/workflow-chapter7-ui-wiring-closure/SKILL.md` routes Chapter 7 UI wiring closure.

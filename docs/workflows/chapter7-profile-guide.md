@@ -2,8 +2,10 @@
 
 ## Purpose
 
-`docs/workflows/chapter7-profile.json` is the repo-local override file for the Chapter 7 UI wiring toolchain.
+`docs/workflows/chapter7-profile.json` is the repo-local override file for the Chapter 7 UI wiring and UI/UX retrofit toolchain.
 Use it when a business repo needs different bucket mapping, closure task ids, task identity templates, labels, refs, headings, or surface defaults without forking the Python scripts.
+
+Chapter 7 generated wording also follows `docs/workflows/chapter3-7-component-routing.md` for Godot Node/Scene Component scope, Core/Godot boundaries, NodePath preference, and EventBus routing. UI/UX retrofit wording follows `docs/workflows/ui-ux-implementation-policy.md` for screen contracts, theme tokens, component kit planning, screenshot acceptance, accessibility checks, localization checks, and post-Chapter-7 polish boundaries.
 
 ## Load Order
 
@@ -69,6 +71,16 @@ Important fields:
 - `source_labels`: source labels for `NG` and `GM` rows
 - `view_id_templates`: generated id format for `NG` and `GM`
 - `default_story_templates`: derived story id templates
+
+When a business repo extends Chapter 7 for UI/UX retrofit, generated tasks should prefer existing `adapter` layer routing and add labels or wording that distinguish:
+
+- `screen-contract`
+- `theme-token`
+- `component-kit`
+- `screenshot-acceptance`
+- `accessibility-check`
+- `localization-check`
+- `post-chapter7-polish`
 
 Current `task_creation` block:
 

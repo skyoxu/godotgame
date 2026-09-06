@@ -1053,6 +1053,19 @@ def _ensure_prototype_record(root: Path, payload: dict[str, Any]) -> tuple[int, 
     return _run(cmd, cwd=root)
 
 
+def _prototype_scene_command(payload: dict[str, Any]) -> list[str]:
+    slug = str(payload["slug"])
+    cmd = ["py", "-3", "scripts/python/dev_cli.py", "create-prototype-scene", "--slug", slug]
+    type_kit = payload.get("prototype_type_kit") if isinstance(payload.get("prototype_type_kit"), dict) else {}
+    manifest_path = str(type_kit.get("manifest_path") or "").strip()
+    manifest = type_kit.get("manifest") if isinstance(type_kit.get("manifest"), dict) else {}
+    paths = manifest.get("paths") if isinstance(manifest.get("paths"), dict) else {}
+    default_scene = str(paths.get("default_scene") or "").strip()
+    if sanitize_slug(str(type_kit.get("game_type") or payload.get("game_type") or "")) == "rpg" and manifest_path and default_scene:
+        cmd += ["--template-manifest", manifest_path, "--force"]
+    return cmd
+
+
 def _day_steps(payload: dict[str, Any]) -> list[dict[str, Any]]:
     slug = str(payload["slug"])
     filter_expr = str(payload.get("test_filter") or slug.replace("-", "").replace("_", ""))
@@ -1065,8 +1078,8 @@ def _day_steps(payload: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "day": 2,
-            "title": "创建最小原型场景脚手架",
-            "cmd": ["py", "-3", "scripts/python/dev_cli.py", "create-prototype-scene", "--slug", slug],
+            "title": "根据游戏类型创建原型场景",
+            "cmd": _prototype_scene_command(payload),
         },
         {
             "day": 3,

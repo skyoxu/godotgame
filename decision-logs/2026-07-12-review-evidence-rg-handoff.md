@@ -1,0 +1,21 @@
+# Review Evidence RG-HANDOFF
+
+- Title: review-evidence-rg-handoff
+- Date: 2026-07-12
+- Status: accepted
+- Supersedes: none
+- Superseded by: none
+- Branch: fix/chapter3-add-task-numbering
+- Git Head: 05b72a0d7ec2503af55d36a1bd6d0b4a76388be9
+- Why now: implementation was explicitly authorized after the split plan completed repeated evidence-gated Whole-directory review.
+- Context: the ECC source is pinned, the local and sibling-repository evidence baseline is recorded, the split plan contains fourteen books plus schema artifacts, and historical Whole-directory findings RG-WDR-001 through RG-WDR-011 are Closed.
+- Decision: close RG-HANDOFF and activate RG-0 on the current branch. Treat the third immutable Whole-directory review as the handoff evidence baseline; do not start RG-1 until the RG-0 ADR, canonical schema, focused validator, configuration contract, tests, and exit review are complete.
+- Consequences: policy and executable contracts may now be frozen; reviewer parser, runtime capture, residual routing, and enforcement behavior remain out of scope until RG-1 or later.
+- Recovery impact: resume from the top-level execution plan and verify RG-0 evidence before creating any RG-1 implementation task.
+- Validation: `validate_recovery_docs.py --dir execution-plans` passed; final plan review reported P0=0, P1=0, P2=0; remediated package SHA-256 was `dcbead20ee226b223bc40c1bcff401605aebeebf53ca5432332517ebe63bfa08`.
+- Related ADRs: `docs/adr/ADR-0005-quality-gates.md`, `docs/adr/ADR-0032-review-evidence-gate.md`
+- Related execution plans: `execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan.md`
+- Related task id(s): n/a because this is a phase-wide governance handoff
+- Related run id: n/a because the handoff uses immutable plan-review evidence rather than a task pipeline run
+- Related latest.json: n/a because no task-scoped pipeline run owns this phase handoff
+- Related pipeline artifacts: `logs/ci/2026-07-12/review-evidence-plan-whole-directory-review-03/`

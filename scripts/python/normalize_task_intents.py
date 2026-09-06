@@ -16,6 +16,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+from _ui_ux_seed_support import UI_UX_SEED_LABELS, build_ui_ux_seed
+
 DEFAULT_REQUIREMENTS = "logs/ci/task-generation/requirements.index.json"
 DEFAULT_OUT = "logs/ci/task-generation/task-intents.normalized.json"
 
@@ -376,6 +378,75 @@ def chunk_size_for_group(
     return max(1, min(max_anchors_per_intent, size))
 
 
+def build_intent_record(
+    *,
+    id_prefix: str,
+    next_index: int,
+    kind: str,
+    layer: str,
+    owner: str,
+    topic: str,
+    stem: str,
+    split_index: int,
+    title_split_index: int,
+    group: list[dict[str, Any]],
+    mode: str,
+    depends_on: list[str],
+) -> dict[str, Any]:
+    requirement_ids = [str(a.get("requirement_id")) for a in group]
+    source_refs = [f"{a.get('source_path')}:{a.get('line')}" for a in group]
+    refs = sorted({ref for a in group for ref in a.get("refs", []) if isinstance(ref, str)})
+    phrase = title_phrase(group, topic)
+    ui_ux_seed = build_ui_ux_seed(group)
+    labels = sorted({kind, layer, owner, mode, "generated", "intent", topic})
+    if ui_ux_seed:
+        labels.extend(UI_UX_SEED_LABELS)
+    acceptance = [
+        f"Requirement {rid} is implemented with traceable evidence. Source: {src}"
+        for rid, src in zip(requirement_ids[:8], source_refs[:8])
+    ]
+    if ui_ux_seed:
+        acceptance.append(
+            "UI/UX seed is preserved for Chapter 7 retrofit planning, including categories: "
+            + ", ".join(ui_ux_seed["categories"])
+            + ". Refs: docs/workflows/ui-ux-implementation-policy.md"
+        )
+    details = intent_details(topic, layer, owner, phrase)
+    if ui_ux_seed:
+        details.append(
+            "Preserve Chapter 3 UI/UX seed metadata for later screen contracts, screenshot acceptance, accessibility, and localization checks."
+        )
+    return {
+        "id": f"{id_prefix}-{next_index:04d}",
+        "intent_key": f"{kind}:{layer}:{owner}:{topic}:{stem}:{split_index}",
+        "topic": topic,
+        "title": intent_title(topic, phrase, title_split_index),
+        "description": " ".join(str(group[0].get("text", "")).split())[:700],
+        "details": details,
+        "status": "deferred" if ui_ux_seed else "pending",
+        "priority": priority_of(group),
+        "layer": layer,
+        "owner": owner,
+        "depends_on": depends_on,
+        "adr_refs": [r for r in refs if r.startswith("ADR-")],
+        "chapter_refs": [],
+        "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
+        "labels": sorted(set(labels)),
+        "test_refs": [
+            r
+            for r in refs
+            if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
+        ],
+        "acceptance": acceptance,
+        "test_strategy": intent_test_strategy(topic, layer),
+        "source_refs": source_refs,
+        "requirement_ids": requirement_ids,
+        "covered_anchor_count": len(group),
+        "generation_mode": mode,
+        **({"ui_ux_seed": ui_ux_seed} if ui_ux_seed else {}),
+    }
+
+
 def build_intents(
     index: dict[str, Any],
     mode: str,
@@ -384,7 +455,11 @@ def build_intents(
     split_profile: str = "balanced",
 ) -> dict[str, Any]:
     grouped: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    ui_ux_seed_anchors: list[dict[str, Any]] = []
     for anchor in index.get("anchors", []):
+        if str(anchor.get("ui_ux_category") or "").strip():
+            ui_ux_seed_anchors.append(anchor)
+            continue
         topic, layer, owner = choose_topic(anchor)
         key = (str(anchor.get("kind", "requirement")), layer, owner, topic, source_stem(anchor))
         grouped[key].append(anchor)
@@ -392,52 +467,49 @@ def build_intents(
     intents: list[dict[str, Any]] = []
     next_index = 1
     previous_by_owner_layer: dict[tuple[str, str], str] = {}
+    if ui_ux_seed_anchors:
+        ui_ux_seed_anchors = sorted(ui_ux_seed_anchors, key=lambda a: (str(a.get("source_path", "")), int(a.get("line", 0))))
+        intents.append(
+            build_intent_record(
+                id_prefix=id_prefix,
+                next_index=next_index,
+                kind="gdd",
+                layer="adapter",
+                owner="gameplay",
+                topic="ui-hud",
+                stem="ui-ux-seed",
+                split_index=1,
+                title_split_index=0,
+                group=ui_ux_seed_anchors,
+                mode=mode,
+                depends_on=[],
+            )
+        )
+        next_index += 1
     for (kind, layer, owner, topic, stem), anchors in sorted(grouped.items(), key=lambda item: item[0]):
         anchors = sorted(anchors, key=lambda a: (str(a.get("source_path", "")), int(a.get("line", 0))))
         chunk_size = chunk_size_for_group(layer, topic, anchors, max_anchors_per_intent, split_profile)
         for split_index, group in enumerate(chunked(anchors, chunk_size), 1):
-            requirement_ids = [str(a.get("requirement_id")) for a in group]
-            source_refs = [f"{a.get('source_path')}:{a.get('line')}" for a in group]
-            refs = sorted({ref for a in group for ref in a.get("refs", []) if isinstance(ref, str)})
-            phrase = title_phrase(group, topic)
             title_split_index = split_index if len(anchors) > chunk_size else 0
-            current_id = f"{id_prefix}-{next_index:04d}"
             dependency_key = (owner, layer)
             depends_on = [previous_by_owner_layer[dependency_key]] if dependency_key in previous_by_owner_layer else []
             intents.append(
-                {
-                    "id": current_id,
-                    "intent_key": f"{kind}:{layer}:{owner}:{topic}:{stem}:{split_index}",
-                    "topic": topic,
-                    "title": intent_title(topic, phrase, title_split_index),
-                    "description": " ".join(str(group[0].get("text", "")).split())[:700],
-                    "details": intent_details(topic, layer, owner, phrase),
-                    "status": "pending",
-                    "priority": priority_of(group),
-                    "layer": layer,
-                    "owner": owner,
-                    "depends_on": depends_on,
-                    "adr_refs": [r for r in refs if r.startswith("ADR-")],
-                    "chapter_refs": [],
-                    "overlay_refs": [r for r in refs if r.startswith("docs/architecture/overlays/")],
-                    "labels": sorted({kind, layer, owner, mode, "generated", "intent", topic}),
-                    "test_refs": [
-                        r
-                        for r in refs
-                        if r.startswith("Game.") or r.startswith("Tests.") or r.endswith(".cs") or r.endswith(".gd")
-                    ],
-                    "acceptance": [
-                        f"Requirement {rid} is implemented with traceable evidence. Source: {src}"
-                        for rid, src in zip(requirement_ids[:8], source_refs[:8])
-                    ],
-                    "test_strategy": intent_test_strategy(topic, layer),
-                    "source_refs": source_refs,
-                    "requirement_ids": requirement_ids,
-                    "covered_anchor_count": len(group),
-                    "generation_mode": mode,
-                }
+                build_intent_record(
+                    id_prefix=id_prefix,
+                    next_index=next_index,
+                    kind=kind,
+                    layer=layer,
+                    owner=owner,
+                    topic=topic,
+                    stem=stem,
+                    split_index=split_index,
+                    title_split_index=title_split_index,
+                    group=group,
+                    mode=mode,
+                    depends_on=depends_on,
+                )
             )
-            previous_by_owner_layer[dependency_key] = current_id
+            previous_by_owner_layer[dependency_key] = f"{id_prefix}-{next_index:04d}"
             next_index += 1
 
     disambiguate_duplicate_titles(intents)

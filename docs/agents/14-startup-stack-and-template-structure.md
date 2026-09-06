@@ -57,6 +57,8 @@ Use this document when you need the old AGENTS content for startup, template sha
 - Prefer one scene per component or responsibility boundary.
 - Design scenes so they map cleanly to task-scoped changes.
 
+Formal Chapter 3-7 routing note: `docs/workflows/chapter3-7-component-routing.md` defines Component as a Godot Node/Scene Component, not an ECS component, and keeps Core rules/state/simulation out of Godot UI scripts by default.
+
 ### Scripting Conventions
 - Use C# for core gameplay logic and maintainable systems.
 - Use GDScript only where rapid engine-side iteration is justified.
