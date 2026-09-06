@@ -23,6 +23,9 @@
 
 ## Addendum (2026-09-06 Verified Windows package)
 
+- Follow-up: example scenes are covered by the required scene smoke suite, including loading their C# scripts and entering the scene tree. Godot text scenes must not carry a UTF-8 BOM.
+- GdUnit prewarm imports resources to completion before building scripting solutions. Each stage has a bounded timeout and separate timing/log evidence; failure stops the run instead of retrying the same cold editor invocation or ignoring a fallback build failure.
+
 - 三个已有发布/导出入口共用 `windows-release.yml` 的 reusable workflow，保留入口名称以兼容现有引用。
 - `Game.Godot/` 是实际运行时资源目录，不得设置目录级 `.gdignore`；移除历史误放的该标记，保留 `docs/`、`_bmad/`、`logs/` 的非运行时导入边界。预设使用 `all_resources`，导出前构建编辑器需要的 Debug 程序集并完成资源导入。
 - 使用与 Godot 版本匹配的 **mono export templates**。正式导出必须是 Release、退出码为零，并生成新的非空 EXE；不再接受 Debug/PCK 降级或“报错但文件存在”。
