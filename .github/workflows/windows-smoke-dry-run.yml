@@ -65,8 +65,11 @@ jobs:
       - name: Headless smoke (no export)
         if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
-        continue-on-error: true
         run: |
+          dotnet build GodotGame.csproj -c Debug -v minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:GODOT_BIN" --headless --editor --path . --import
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 15 -ProjectPath '.'
 
       - name: Upload smoke logs (always)

@@ -19,6 +19,14 @@ import run_gdunit
 
 
 class ScopeTests(unittest.TestCase):
+    def test_import_boundary_change_requires_export(self):
+        self.assertTrue(ci_change_scope.needs_export(['Game.Godot/.gdignore']))
+
+    def test_runtime_resources_are_not_ignored(self):
+        self.assertFalse((ROOT / 'Game.Godot/.gdignore').exists())
+        self.assertTrue((ROOT / 'docs/.gdignore').exists())
+        self.assertTrue((ROOT / 'logs/.gdignore').exists())
+
     def test_documentation_only_can_skip_runtime(self):
         self.assertFalse(ci_change_scope.needs_runtime(['README.md', 'docs/adr/example.md']))
 

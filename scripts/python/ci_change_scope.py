@@ -11,7 +11,7 @@ def needs_runtime(paths):
 
 def needs_export(paths):
     return any(p.startswith(('.github/workflows/', '.github/actions/', 'scripts/ci/')) or
-               p.endswith(('.csproj', '.sln', 'export_presets.cfg', 'project.godot')) for p in paths)
+               p.endswith(('.csproj', '.sln', 'export_presets.cfg', 'project.godot', '.gdignore')) for p in paths)
 
 
 def main():
