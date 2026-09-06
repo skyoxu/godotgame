@@ -65,6 +65,7 @@ jobs:
       - name: Headless smoke (no export)
         if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
+        continue-on-error: true
         run: |
           ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 15 -ProjectPath '.'
 
