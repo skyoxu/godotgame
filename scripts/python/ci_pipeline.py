@@ -107,7 +107,8 @@ def main():
     ap_all = sub.add_parser('all')
     ap_all.add_argument('--solution', default='')
     ap_all.add_argument('--configuration', default='Debug')
-    ap_all.add_argument('--godot-bin', required=True)
+    ap_all.add_argument('--godot-bin', default='')
+    ap_all.add_argument('--static-only', action='store_true', help='Run documentation policy checks without the runtime toolchain.')
     ap_all.add_argument('--project', default='project.godot')
     ap_all.add_argument('--build-solutions', action='store_true')
 
@@ -115,6 +116,9 @@ def main():
     if args.cmd != 'all':
         print('Unsupported command')
         return 1
+
+    if not args.static_only and not args.godot_bin:
+        ap.error('--godot-bin is required for runtime checks')
 
     root = os.getcwd()
     resolved_solution = resolve_test_solution_arg(args.solution)
@@ -171,6 +175,14 @@ def main():
         'expired_count': warn_sum.get('expired_count'),
         'warn_days': warn_sum.get('warn_days'),
     }
+
+    if args.static_only:
+        summary['status'] = 'fail' if hard_fail else 'ok'
+        for stage in ('dotnet', 'selfcheck', 'encoding'):
+            summary[stage] = {'status': 'skipped', 'reason': 'documentation_only'}
+        with io.open(os.path.join(ci_dir, 'ci-pipeline-summary.json'), 'w', encoding='utf-8') as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
+        return 1 if hard_fail else 0
 
     # 1) Dotnet tests + coverage (soft gate on coverage)
     rc, out = run_cmd(['py', '-3', 'scripts/python/run_dotnet.py',
@@ -244,7 +256,7 @@ def main():
     except Exception:
         pass
 
-    sc_ok = (sc_sum.get('status') == 'ok') or (rc2 == 0)
+    sc_ok = rc2 == 0 and sc_sum.get('status') == 'ok'
     summary['selfcheck'] = sc_sum or {'status': 'fail', 'note': 'no-summary'}
     if not sc_ok:
         hard_fail = True

@@ -20,3 +20,11 @@
   - ADR-0005-quality-gates
   - ADR-0003-observability-release-health
   - ADR-0019-godot-security-baseline
+
+## Addendum (2026-09-06 Verified Windows package)
+
+- 三个已有发布/导出入口共用 `windows-release.yml` 的 reusable workflow，保留入口名称以兼容现有引用。
+- 使用与 Godot 版本匹配的 **mono export templates**。正式导出必须是 Release、退出码为零，并生成新的非空 EXE；不再接受 Debug/PCK 降级或“报错但文件存在”。
+- 发布流程在所选提交运行 Release 单测，导出后将完整 `build/` 分发目录打包为 ZIP，保留 C# 运行所需的旁挂数据与依赖。
+- ZIP 解压到仓库外的临时目录后运行 EXE smoke，通过后才上传分发工件。标签工作流只发布该已验证 ZIP，手动流程只生成可下载工件。
+- 单机模板发布继续使用 `fast-ship` 和 `host-safe` 默认姿态；不把所有文档治理、LLM 意见或在线服务健康指标变成每次导出的硬门禁。

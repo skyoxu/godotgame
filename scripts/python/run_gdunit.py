@@ -17,6 +17,8 @@ import subprocess
 import json
 import sys
 import time
+import queue
+import threading
 import xml.etree.ElementTree as ET
 
 
@@ -47,7 +49,7 @@ def _parse_results_xml(path: str):
         root = tree.getroot()
         failures = int(root.attrib.get("failures", "0"))
         tests = int(root.attrib.get("tests", "0"))
-        errors = 0
+        errors = int(root.attrib.get("errors", "0"))
         for ts in root.findall("testsuite"):
             errors += int(ts.attrib.get("errors", "0"))
         return {"path": path, "tests": tests, "failures": failures, "errors": errors}
@@ -78,36 +80,49 @@ def run_cmd_failfast(args, cwd=None, timeout=600_000, break_markers=None):
     ]
     p = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                          text=True, encoding='utf-8', errors='ignore')
-    buf_lines = []
-    hit_break = False
-    try:
-        # Poll line-by-line up to timeout
-        end_ts = dt.datetime.now().timestamp() + (timeout/1000.0)
-        while True:
-            line = p.stdout.readline()
-            if line:
-                buf_lines.append(line)
-                low = line.lower()
-                if any(m.lower() in low for m in break_markers):
-                    hit_break = True
-                    p.kill()
-                    break
-            else:
-                if p.poll() is not None:
-                    break
-            if dt.datetime.now().timestamp() > end_ts:
-                p.kill()
-                return 124, ''.join(buf_lines)
-        out = ''.join(buf_lines)
-        if hit_break:
-            return 1, out
-        return (p.returncode or 0), out
-    except Exception:
+    lines = queue.Queue()
+
+    def read_output():
         try:
+            for line in p.stdout:
+                lines.put(line)
+        finally:
+            lines.put(None)
+
+    reader = threading.Thread(target=read_output, daemon=True)
+    reader.start()
+    output = []
+    deadline = time.monotonic() + timeout / 1000.0
+    try:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                p.kill()
+                p.wait()
+                return 124, ''.join(output)
+            try:
+                line = lines.get(timeout=remaining)
+            except queue.Empty:
+                p.kill()
+                p.wait()
+                return 124, ''.join(output)
+            if line is None:
+                return p.wait(timeout=max(0.01, deadline - time.monotonic())), ''.join(output)
+            output.append(line)
+            if any(marker.lower() in line.lower() for marker in break_markers):
+                p.kill()
+                p.wait()
+                return 1, ''.join(output)
+    except subprocess.TimeoutExpired:
+        p.kill()
+        p.wait()
+        return 124, ''.join(output)
+    finally:
+        if p.poll() is None:
             p.kill()
-        except Exception:
-            pass
-        return 1, ''.join(buf_lines)
+            p.wait()
+        reader.join(timeout=1)
+        p.stdout.close()
 
 
 def write_text(path: str, content: str) -> None:
@@ -229,9 +244,14 @@ def main():
                 write_text(os.path.join(out_dir, 'prewarm-dotnet.txt'), '\n'.join(agg) if agg else 'NO_DOTNET_BUILD_TARGETS')
                 prewarm_note = 'fallback-dotnet'
 
+    # Discard stale reports before this invocation; only fresh evidence can pass.
+    reports_dir = os.path.join(proj, 'reports')
+    if os.path.isdir(reports_dir):
+        shutil.rmtree(reports_dir)
+
     # Run tests (Debugger break, fail-fast).
     # Build command with optional -a filters
-    cmd = [args.godot_bin, '--headless', '--path', proj, '-s', '-d', 'res://addons/gdUnit4/bin/GdUnitCmdTool.gd', '--ignoreHeadlessMode']
+    cmd = [args.godot_bin, '--headless', '--path', proj, '--debug', '--script', 'res://addons/gdUnit4/bin/GdUnitCmdTool.gd', '--ignoreHeadlessMode']
     for a in args.add:
         apath = a
         if not apath.startswith('res://'):
@@ -244,7 +264,7 @@ def main():
         f.write(out)
 
     # Generate HTML log frame (optional)
-    _rc2, _out2 = run_cmd([args.godot_bin, '--headless', '--path', proj, '--quiet', '-s', 'res://addons/gdUnit4/bin/GdUnitCopyLog.gd'], cwd=proj)
+    _rc2, _out2 = run_cmd([args.godot_bin, '--headless', '--path', proj, '--quiet', '-s', 'res://addons/gdUnit4/bin/GdUnitCopyLog.gd', '--quit'], cwd=proj, timeout=30_000)
 
     # Archive reports
     reports_dir = os.path.join(proj, 'reports')
@@ -274,8 +294,11 @@ def main():
         parsed = _parse_results_xml(latest_results)
 
     strict_exit = (os.environ.get("GDUNIT_STRICT_EXIT_CODE") or "0").strip() == "1"
-    normalized_rc = rc
-    if not strict_exit and rc != 0 and parsed and parsed.get("failures") == 0 and parsed.get("errors") == 0:
+    valid_results = bool(parsed and parsed.get("tests", 0) > 0 and
+                         parsed.get("failures") == 0 and parsed.get("errors") == 0)
+    normalized_rc = rc if rc != 0 else (0 if valid_results else 1)
+    # A timeout or parser failure is never normalized into success.
+    if not strict_exit and rc not in (0, 1, 124) and valid_results:
         normalized_rc = 0
 
     # Write a small summary json for CI

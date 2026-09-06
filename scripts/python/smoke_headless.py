@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -79,12 +80,15 @@ def _run_smoke(
             print(f"[smoke_headless] failed to start Godot: {exc}", file=sys.stderr)
             return 1
 
+        timed_out = False
         try:
             proc.wait(timeout=timeout_sec)
         except subprocess.TimeoutExpired:
+            timed_out = True
             print("[smoke_headless] timeout reached; terminating Godot (expected for smoke)")
             try:
                 proc.kill()
+                proc.wait()
             except Exception:
                 pass
 
@@ -115,7 +119,8 @@ def _run_smoke(
     exit_code = 0
     if strict:
         # Strict mode: require at least the marker or a DB opened line.
-        exit_code = 0 if (has_marker or has_db_open) else 1
+        runtime_error = re.search(r"(?im)^\s*(?:SCRIPT ERROR:|ERROR:|Unhandled exception|Parser Error)", text)
+        exit_code = 0 if has_marker and not runtime_error and (timed_out or proc.returncode == 0) else 1
 
     summary = {
         "runId": f"smoke-{ts}",

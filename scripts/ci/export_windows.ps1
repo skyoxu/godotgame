@@ -1,4 +1,4 @@
-﻿param(
+param(
   [string]$GodotBin = $env:GODOT_BIN,
   [string]$Preset = 'Windows Desktop',
   [string]$Output = 'build/Game.exe'
@@ -127,6 +127,7 @@ function Invoke-BuildSolutions() {
       }
     }
   } catch {}
+  if (-not $ok) { return 124 }
   return $p.ExitCode
 }
 
@@ -150,6 +151,7 @@ function Invoke-Export([string]$mode) {
   Add-Content -Encoding UTF8 -Path $glog -Value ("=== export-$mode @ " + (Get-Date).ToString('o'))
   if (Test-Path $out) { Get-Content $out -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
   if (Test-Path $err) { Get-Content $err -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
+  if (-not $ok) { return 124 }
   return $p.ExitCode
 }
 
@@ -166,7 +168,7 @@ if ($sln) {
 } else {
   $buildCode = Invoke-BuildSolutions
   if ($buildCode -ne 0) {
-    Write-Warning "Godot --build-solutions exited with code $buildCode. Continuing to export. See log: $glog"
+    throw "Godot --build-solutions failed: $buildCode. See log: $glog"
   }
 }
 
@@ -188,63 +190,26 @@ foreach ($rel in $excludeRoots) {
   }
 }
 
-$exitCode = Invoke-Export 'release'
-# Heuristic: if target output exists even when exit code is non-zero/null, treat as success
-if ((-not $exitCode) -or ($exitCode -ne 0)) {
-  if (Test-Path $Output) {
-    Write-Warning "Export-release returned exit=$exitCode but output exists ($Output). Treating as success."
-    $exitCode = 0
-  }
+# A previous output must never make this export pass.
+foreach ($oldOutput in @($Output, ($Output -replace '\.exe$','.pck'))) {
+  if (Test-Path -LiteralPath $oldOutput) { Remove-Item -LiteralPath $oldOutput -Force -ErrorAction Stop }
 }
-
-# Restore moved folders
-foreach ($m in $moved) {
-  try {
+$exitCode = 1
+try {
+  $exportResult = @(Invoke-Export 'release')
+  $exitCode = $exportResult[-1]
+} finally {
+  foreach ($m in $moved) {
     if (Test-Path $m.dst) {
-      New-Item -ItemType Directory -Force -Path (Split-Path -Parent $m.src) | Out-Null
       Move-Item -Force -Path $m.dst -Destination $m.src
-      Add-Content -Encoding UTF8 -Path $glog -Value ("Restored: '" + $m.dst + "' -> '" + $m.src + "'")
     }
-  } catch {
-    Write-Warning ("Failed to restore '" + $m.dst + "': " + $_.Exception.Message)
   }
 }
-if ($exitCode -ne 0) {
-  Write-Warning "Export-release failed with exit code $exitCode. Trying export-debug as fallback."
-  $exitCode = Invoke-Export 'debug'
-  if ((-not $exitCode) -or ($exitCode -ne 0)) {
-    if (Test-Path $Output) {
-      Write-Warning "Export-debug returned exit=$exitCode but output exists ($Output). Treating as success."
-      $exitCode = 0
-    }
-  }
-  if ($exitCode -ne 0) {
-    Write-Warning "Both release and debug export failed, trying export-pack as fallback."
-    $pck = ($Output -replace '\.exe$','.pck')
-    $out = Join-Path $dest ("godot_export.pack.out.log")
-    $err = Join-Path $dest ("godot_export.pack.err.log")
-    $resolved = Resolve-Preset $Preset
-    Add-Content -Encoding UTF8 -Path $glog -Value ("Using preset (pack): '" + $resolved + "' output: '" + $pck + "'")
-    $args = @('--headless','--verbose','--path', $ProjectDir, '--export-pack', $resolved, $pck)
-    $argStr = ($args | ForEach-Object { Quote-Arg $_ }) -join ' '
-    $p = Start-Process -FilePath $GodotBin -ArgumentList $argStr -PassThru -WorkingDirectory $ProjectDir -RedirectStandardOutput $out -RedirectStandardError $err -WindowStyle Hidden
-    $ok = $p.WaitForExit(1200000)
-    if (-not $ok) { Write-Warning 'Godot export-pack timed out'; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
-    Add-Content -Encoding UTF8 -Path $glog -Value ("=== export-pack @ " + (Get-Date).ToString('o'))
-    if (Test-Path $out) { Get-Content $out -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
-    if (Test-Path $err) { Get-Content $err -ErrorAction SilentlyContinue | Add-Content -Encoding UTF8 -Path $glog }
-    $exitCode = $p.ExitCode
-    if ((-not $exitCode) -or ($exitCode -ne 0)) {
-      if (Test-Path $pck) {
-        Write-Warning "Export-pack returned exit=$exitCode but pack exists ($pck). Treating as success."
-        $exitCode = 0
-      } else {
-        Write-Error "Export failed (release & debug & pack) with exit code $exitCode. See log: $glog"
-      }
-    } else {
-      Write-Warning "EXE export failed but PCK fallback succeeded: $pck"
-    }
-  }
+if ($null -eq $exitCode -or $exitCode -ne 0) {
+  $exitCode = 1
+} elseif (-not (Test-Path -LiteralPath $Output) -or (Get-Item -LiteralPath $Output).Length -eq 0) {
+  Write-Warning 'Release export produced no executable.'
+  $exitCode = 1
 }
 
 # Collect artifacts
@@ -290,11 +255,12 @@ try {
     if ($sum.pack_exists -and ($pckMB -gt $gateMaxMB)) { $gateFailed = $true }
   }
   if ($gateFailed) {
-    Write-Error ("Export size gate failed: max=${gateMaxMB}MB; see " + $sumPath)
+    Write-Warning ("Export size gate failed: max=${gateMaxMB}MB; see " + $sumPath)
     if ($exitCode -eq 0) { $exitCode = 3 }
   }
 } catch {
   Write-Warning ("Failed to write summary.json or evaluate size gate: " + $_.Exception.Message)
+  $exitCode = 1
 }
 
 exit $exitCode
