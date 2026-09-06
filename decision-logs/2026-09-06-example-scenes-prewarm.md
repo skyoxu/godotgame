@@ -20,6 +20,8 @@
 - Validation: Local regression tests pass; actual Windows timing and scene results pending in PR
 - Related execution plans: execution-plans/2026-09-06-example-scenes-prewarm.md
 
-The import command uses Godot's documented --import behavior: wait for resources to finish importing and exit. Build follows in a second invocation after the resource cache exists. This targets the observed cold import/build interaction without reducing the 300-second per-stage safety bound.
+The import command uses Godot's documented --import behavior: wait for resources to finish importing and exit. Windows run 34047254243 measured import at 11.494 seconds, but the separate editor build invocation still timed out at 300.807 seconds after logging build completion. Use direct dotnet build after import to avoid the editor build host; retain the 300-second stage safety bound. This is based on the failed stage artifact, not an assumption that import alone resolves the hang.
+
+Removing the BOM also exposed stale C# paths in PrimaryButton and CombatPanel. Point both scenes at their existing Examples scripts; required smoke verifies script attachment as well as scene loading.
 
 Reference: https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html

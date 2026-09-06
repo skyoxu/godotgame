@@ -132,13 +132,21 @@ def write_text(path: str, content: str) -> None:
 
 
 def prewarm_project(godot_bin: str, project: str, out_dir: str) -> int:
-    """ADR-0018: finish cold resource import before building C# solutions."""
+    """ADR-0018: import resources, then build C# without an editor build host."""
+    projects = sorted(os.path.join(project, name) for name in os.listdir(project)
+                      if name.endswith('.csproj'))
+    if len(projects) > 1:
+        write_text(os.path.join(out_dir, 'prewarm-summary.json'),
+                   json.dumps({'rc': 2, 'error': 'ambiguous_csharp_projects', 'projects': projects}))
+        return 2
+    commands = [('import', [godot_bin, '--headless', '--path', project, '--editor', '--import'])]
+    if projects:
+        commands.append(('build', ['dotnet', 'build', projects[0], '-c', 'Debug', '-v', 'minimal']))
     steps = []
-    for stage, flags in [('import', ['--editor', '--import']),
-                         ('build', ['--build-solutions', '--quit'])]:
+    for stage, command in commands:
         started = time.monotonic()
         rc, output = run_cmd_failfast(
-            [godot_bin, '--headless', '--path', project, *flags],
+            command,
             cwd=project, timeout=300_000,
             break_markers=['Debugger Break', 'Parser Error', 'Parse Error', 'SCRIPT ERROR'])
         write_text(os.path.join(out_dir, f'prewarm-{stage}.txt'), output)
@@ -146,7 +154,7 @@ def prewarm_project(godot_bin: str, project: str, out_dir: str) -> int:
                       'elapsed_sec': round(time.monotonic() - started, 3)})
         write_text(os.path.join(out_dir, 'prewarm-summary.json'),
                    json.dumps({'steps': steps, 'rc': rc}, indent=2))
-        print(f'GDUNIT_PREWARM stage={stage} rc={rc} elapsed_sec={steps[-1]["elapsed_sec"]}')
+        print(f'GDUNIT_PREWARM stage={stage} rc={rc} elapsed_sec={steps[-1]["elapsed_sec"]}', flush=True)
         if rc != 0:
             return rc
     return 0
