@@ -100,3 +100,15 @@ CI 侧应能在 `logs/**` 中找到对应摘要与日志文件；失败时可直
 - `scripts/sc/llm_review.py`, `scripts/sc/llm_extract_task_obligations.py`, `scripts/sc/llm_check_subtasks_coverage.py`, and `scripts/sc/llm_semantic_gate_all.py` are advisory/diagnostic by default.
 - CI must expose one explicit line in Step Summary: `SecurityProfile: <host-safe|strict>`.
 - Default profile stays `host-safe`; `strict` is opt-in per project phase.
+
+## Addendum (2026-09-06 Single-maintainer CI)
+
+- 保持 `fast-ship` 默认档位和原有硬门禁集合；本次不通过降低覆盖率或取消安全检查来提速。
+- 已知纯文档变更仅跳过昂贵运行时步骤，工作流与原有 required check 名称仍回报结果。未知路径、代码、配置变更和手动运行必须执行运行时检查。
+- PR 执行 Quality 与场景 Smoke；main push 保留 Quality，避免重复运行第二套场景 Smoke。发布包另有独立启动验证。
+- 无导出行为的 CI 不安装导出模板。运行环境准备收敛到 `.github/actions/setup-godot-windows/action.yml`，保留既有 SDK 8.0.401 / Runtime 8.0.21 / Godot 4.5.1 版本并增加缓存。
+- 同一 PR 的新提交取消旧运行；发布流程不取消。
+- `build-test-export` 暂保留为既有分支保护兼容名称，汇总 Quality 与按需导出验证结果。工作流、发布脚本或工程配置变更增加一次完整打包验证，普通玩法和纯文档变更不付出该成本。此兼容例外只用于避免未知现有分支保护被破坏。
+- Self-check 必须成功退出，且六个必需端口全部为 true。源项目与发布包 smoke 均必须出现 `[TEMPLATE_SMOKE_READY]`，无引擎错误，且未异常退出；仅 DB 日志或任意输出不算通过。源项目 smoke 先构建根项目 Debug 程序集并导入资源；不以改成告警来规避启动缺陷。观察窗口到期后的主动终止，只有已满足上述条件时才允许成功。
+- GdUnit 清理旧报告，要求本轮报告至少执行一个测试且无失败；超时和解析错误不可归一化为成功。静默进程也必须服从超时。
+- 回归验证入口：`py -3 -m unittest discover -s scripts/ci/tests -p "test_*.py" -v`。Windows CI 同时运行 PowerShell 成功、异常退出、无标记、错误日志、超时及陈旧导出产物案例。

@@ -12,9 +12,17 @@ on:
         required: false
         default: '1'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-test-export:
     runs-on: windows-latest
+    timeout-minutes: 30
     env:
       GODOT_VERSION: '4.5.1'
       EXPORT_SIZE_MAX_MB: '150'
@@ -27,6 +35,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Resolve runtime scope
+        id: scope
+        shell: pwsh
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: py -3 scripts/python/ci_change_scope.py
+
+      - name: CI regression tests
+        shell: pwsh
+        run: py -3 -m unittest discover -s scripts/ci/tests -p "test_*.py" -v
+
+      - name: Setup Godot Windows
+        if: steps.scope.outputs.runtime == 'true'
+        uses: ./.github/actions/setup-godot-windows
 
       - name: Resolve delivery/security profile
         shell: pwsh
@@ -46,27 +77,13 @@ jobs:
             "DeliveryProfile: $delivery`nSecurityProfile: $security" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           }
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Download Godot .NET (GitHub Releases)
-        shell: pwsh
-        run: |
-          ./scripts/ci/download_godot_release.ps1 -Version "$env:GODOT_VERSION" -PreferConsole
-
-      - name: Setup Python 3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Hard gates bundle (Python)
         shell: pwsh
         run: |
           py -3 scripts/python/run_gate_bundle.py --mode hard --delivery-profile "$env:DELIVERY_PROFILE" --task-files .taskmaster/tasks/tasks_back.json .taskmaster/tasks/tasks_gameplay.json
 
       - name: Ensure GdUnit4 plugin
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Continue'
@@ -97,68 +114,8 @@ jobs:
             Write-Error 'GDUNIT_PLUGIN_MISSING after ensure'; exit 1
           }
 
-      - name: Install Export Templates (GitHub Releases)
-        shell: pwsh
-        run: |
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          $tpz = "godot/export_templates.tpz"
-          $version = "${env:GODOT_VERSION}"
-          $urls = @(
-            "https://github.com/godotengine/godot/releases/download/${version}-stable/Godot_v${version}-stable_export_templates.tpz",
-            "https://downloads.tuxfamily.org/godotengine/${version}/Godot_v${version}-stable_export_templates.tpz"
-          )
-
-          $downloaded = $false
-          foreach ($u in $urls) {
-            for ($attempt = 1; $attempt -le 3; $attempt++) {
-              try {
-                Write-Host "Download templates attempt=$attempt url=$u"
-                Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $tpz -TimeoutSec 600
-                if (-not (Test-Path $tpz)) { throw "Download target not found: $tpz" }
-                $fi = Get-Item $tpz
-                if ($fi.Length -lt 1048576) { throw "Downloaded file too small: $($fi.Length) bytes" }
-                $stream = [System.IO.File]::OpenRead($tpz)
-                try {
-                  $b0 = $stream.ReadByte()
-                  $b1 = $stream.ReadByte()
-                } finally {
-                  $stream.Dispose()
-                }
-                if ($b0 -ne 0x50 -or $b1 -ne 0x4B) {
-                  throw "Downloaded file is not a zip/tpz archive."
-                }
-                $downloaded = $true
-                break
-              } catch {
-                Write-Warning "Download failed attempt=$attempt url=$u err=$($_.Exception.Message)"
-                if (Test-Path $tpz) { Remove-Item -Force $tpz -ErrorAction SilentlyContinue }
-                if ($attempt -lt 3) { Start-Sleep -Seconds (5 * $attempt) }
-              }
-            }
-            if ($downloaded) { break }
-          }
-
-          if (-not $downloaded) {
-            throw "Unable to download export templates from known mirrors."
-          }
-
-          $temp = "godot/templates_unpacked"
-          Expand-Archive $tpz -DestinationPath $temp -Force
-          $src = Join-Path $temp 'templates'
-          if (Test-Path $src) { $copyFrom = $src } else { $copyFrom = $temp }
-          $verMono = "${env:GODOT_VERSION}.stable.mono"
-          $ver = "${env:GODOT_VERSION}.stable"
-          $dsts = @(
-            (Join-Path $env:APPDATA ("Godot/templates/$verMono")),
-            (Join-Path $env:APPDATA ("Godot/templates/$ver")),
-            (Join-Path $env:APPDATA ("Godot/export_templates/$verMono")),
-            (Join-Path $env:APPDATA ("Godot/export_templates/$ver"))
-          )
-          New-Item -ItemType Directory -Force -Path $dsts | Out-Null
-          foreach ($d in $dsts) { Copy-Item -Recurse -Force "$copyFrom/*" $d }
-          Write-Host ("Templates installed: " + ($dsts -join ', '))
-
       - name: Prewarm & Build Solutions
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         run: |
@@ -175,9 +132,15 @@ jobs:
       - name: CI pipeline (Python)
         shell: pwsh
         run: |
-          py -3 scripts/python/ci_pipeline.py all --solution Game.sln --configuration Debug --godot-bin "$env:GODOT_BIN" --build-solutions
+          if ('${{ steps.scope.outputs.runtime }}' -eq 'true') {
+            py -3 scripts/python/ci_pipeline.py all --solution Game.sln --configuration Debug --godot-bin "$env:GODOT_BIN" --build-solutions
+          } else {
+            py -3 scripts/python/ci_pipeline.py all --solution Game.sln --static-only
+          }
+          exit $LASTEXITCODE
 
       - name: Acceptance check post-evidence gate (layer2)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           if (-not (Test-Path ".taskmaster/tasks/tasks.json") -or -not (Test-Path ".taskmaster/tasks/tasks_back.json") -or -not (Test-Path ".taskmaster/tasks/tasks_gameplay.json")) {
@@ -207,6 +170,7 @@ jobs:
           py -3 scripts/python/run_gate_bundle.py --mode soft --delivery-profile "$env:DELIVERY_PROFILE" --task-files .taskmaster/tasks/tasks_back.json .taskmaster/tasks/tasks_gameplay.json
 
       - name: Dotnet coverage (soft gate via Python, optional thresholds)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         env:
@@ -217,6 +181,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Write-Warning 'Coverage soft gate failed'; exit 0 }
 
       - name: Prepare test project link
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           ./scripts/ci/prepare_gd_tests.ps1 -ProjectPath 'Tests.Godot' -RuntimeDir 'Game.Godot'
@@ -230,6 +195,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: GdUnit4 tests (Python, hard gate)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot `
@@ -238,18 +204,21 @@ jobs:
             --timeout-sec 300 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/adapters-security"
 
       - name: GdUnit4 integration tests (Python, soft gate)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         run: |
           py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/Integration --add tests/Adapters/Db --timeout-sec 480 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/integration"
 
       - name: GdUnit4 UI tests (Python, soft gate)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         run: |
           py -3 scripts/python/run_gdunit.py --prewarm --godot-bin "$env:GODOT_BIN" --project Tests.Godot --add tests/UI --timeout-sec 480 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/ui"
 
       - name: GdUnit4 a11y tests (Python, soft gate)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         run: |
@@ -270,6 +239,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Schema dump (soft)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         continue-on-error: true
         run: |

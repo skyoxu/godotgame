@@ -2,18 +2,24 @@ name: Windows Smoke (Dry Run)
 
 # Notes:
 # - Runs headless smoke and GdUnit tests only (no export/templates).
-# - Smoke markers recognized by scripts: [TEMPLATE_SMOKE_READY] (preferred), [DB] opened (fallback)
+# - Requires [TEMPLATE_SMOKE_READY], a healthy exit, and no runtime errors.
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   smoke:
     runs-on: windows-latest
+    timeout-minutes: 20
     env:
       GODOT_VERSION: '4.5.1'
       PYTHONIOENCODING: 'utf-8'
@@ -21,36 +27,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          fetch-depth: 0
 
       - name: Setup Python 3
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Download Godot .NET (Windows)
+      - name: Resolve runtime scope
+        id: scope
         shell: pwsh
-        run: |
-          ./scripts/ci/download_godot_release.ps1 -Version "$env:GODOT_VERSION"
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: py -3 scripts/python/ci_change_scope.py
 
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\Temp\NuGetScratch
-            ~\.nuget\packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+      - name: Setup Godot Windows
+        if: steps.scope.outputs.runtime == 'true'
+        uses: ./.github/actions/setup-godot-windows
 
       - name: Prepare test project link
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           ./scripts/ci/prepare_gd_tests.ps1 -ProjectPath 'Tests.Godot' -RuntimeDir 'Game.Godot'
 
       - name: Run GdUnit4 tests
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
           $env:Path = "$HOME\.dotnet;" + $env:Path
@@ -59,9 +63,14 @@ jobs:
             --timeout-sec 300 --rd "logs/e2e/${{ github.run_id }}/gdunit-reports/smoke-scenes"
 
       - name: Headless smoke (no export)
+        if: steps.scope.outputs.runtime == 'true'
         shell: pwsh
         run: |
-          ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 5 -ProjectPath '.'
+          dotnet build GodotGame.csproj -c Debug -v minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:GODOT_BIN" --headless --editor --path . --import
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/ci/smoke_headless.ps1 -GodotBin "$env:GODOT_BIN" -TimeoutSec 15 -ProjectPath '.'
 
       - name: Upload smoke logs (always)
         if: always()

@@ -7,7 +7,8 @@
     "scripts/python/check_a11y.py",
     "scripts/python/db_schema_dump.py",
     "scripts/python/check_sentry_secrets.py",
-    "scripts/python/run_dotnet.py"
+    "scripts/python/run_dotnet.py",
+    "scripts/python/ci_change_scope.py"
   ],
   "required_bundle_workflows": [
     ".github/workflows/windows-quality-gate.yml",

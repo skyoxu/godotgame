@@ -1,0 +1,41 @@
+name: Setup Godot Windows
+description: Shared pinned runtime and download caches for Windows checks
+inputs:
+  godot-version:
+    description: Godot .NET version
+    default: '4.5.1'
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: ~\.dotnet
+        key: dotnet-windows-sdk-8.0.401-runtime-8.0.21-v1
+    - name: Ensure pinned .NET
+      shell: pwsh
+      run: |
+        $root = "$HOME/.dotnet"
+        if (-not (Test-Path "$root/sdk/8.0.401") -or -not (Test-Path "$root/shared/Microsoft.NETCore.App/8.0.21")) {
+          $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
+          Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+          & $installer -Version 8.0.401 -InstallDir $root
+          if (-not $?) { throw 'SDK installation failed.' }
+          & $installer -Runtime dotnet -Version 8.0.21 -InstallDir $root
+          if (-not $?) { throw 'Runtime installation failed.' }
+        }
+        "DOTNET_ROOT=$root" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+        $root | Out-File $env:GITHUB_PATH -Append -Encoding utf8
+    - uses: actions/cache@v4
+      with:
+        path: godot/godot.zip
+        key: godot-${{ runner.os }}-${{ inputs.godot-version }}-mono-v1
+    - uses: actions/cache@v4
+      with:
+        path: ~\.nuget\packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+        restore-keys: nuget-${{ runner.os }}-
+    - name: Download Godot .NET
+      shell: pwsh
+      env:
+        GODOT_SETUP_VERSION: ${{ inputs.godot-version }}
+      run: ./scripts/ci/download_godot_release.ps1 -Version "$env:GODOT_SETUP_VERSION" -PreferConsole

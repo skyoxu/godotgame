@@ -109,6 +109,9 @@ def run_selfcheck(godot_bin: str, project_godot: str, build_solutions: bool) -> 
                 f.write("\n--- STDERR ---\n")
                 f.write(err)
         summary['build_rc'] = rc
+        if rc != 0:
+            summary['reason'] = 'Godot build failed'
+            return summary
 
     # Run the selfcheck script with explicit --path and verbose output
     args = [godot_bin, '--headless', '--no-window', '--path', root, '-s', 'res://Game.Godot/Scripts/Diagnostics/CompositionRootSelfCheck.gd', '--verbose']
@@ -140,6 +143,9 @@ def run_selfcheck(godot_bin: str, project_godot: str, build_solutions: bool) -> 
         if not m:
             summary['reason'] = 'SELF_CHECK_OUT not found in console output'
             return summary
+    if summary['selfcheck_rc'] != 0:
+        summary['reason'] = 'Self-check process failed'
+        return summary
     user_json = m.group(1).strip()
     if not os.path.exists(user_json):
         summary['reason'] = f'output not found at {user_json}'
@@ -153,11 +159,17 @@ def run_selfcheck(godot_bin: str, project_godot: str, build_solutions: bool) -> 
     try:
         with open(dest, 'r', encoding='utf-8') as f:
             data = json.load(f)
+        required_ports = {'time', 'input', 'resourceLoader', 'dataStore', 'logger', 'eventBus'}
         ports = data.get('ports', {})
-        ok_count = sum(1 for k, v in ports.items() if v is True)
-        summary['ports_ok'] = ok_count
-        summary['ports_total'] = len(ports)
-        summary['status'] = 'ok'
+        if not isinstance(ports, dict):
+            ports = {}
+        summary['ports_ok'] = sum(ports.get(k) is True for k in required_ports)
+        summary['ports_total'] = len(required_ports)
+        summary['failed_ports'] = sorted(k for k in required_ports if ports.get(k) is not True)
+        if data.get('error') or summary['failed_ports']:
+            summary['reason'] = data.get('error') or 'Required ports are unavailable'
+        else:
+            summary['status'] = 'ok'
     except Exception as e:
         summary['reason'] = f'parse json failed: {e}'
     return summary
