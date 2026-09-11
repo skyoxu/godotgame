@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -131,7 +132,14 @@ RAPIER_TERMS = {"rapier"}
 
 
 def _contains_any(text: str, terms: set[str]) -> bool:
-    return any(term in text for term in terms)
+    for term in terms:
+        if term.isascii():
+            pattern = rf"(?<![A-Za-z0-9_]){re.escape(term)}(?![A-Za-z0-9_])"
+            if re.search(pattern, text):
+                return True
+        elif term in text:
+            return True
+    return False
 
 
 def _build_route(
@@ -197,7 +205,8 @@ def _snapshot_plugin_present(snapshot: dict[str, Any], name: str) -> bool:
     plugins = snapshot.get("plugins")
     if isinstance(plugins, dict):
         for key, value in plugins.items():
-            if name.lower() in str(key).lower() and bool(value):
+            enabled = value is True or (isinstance(value, str) and value.strip().lower() in {"1", "true", "enabled"})
+            if name.lower() in str(key).lower() and enabled:
                 return True
     if isinstance(plugins, list):
         return any(name.lower() in str(item).lower() for item in plugins)
@@ -236,6 +245,20 @@ def _reasoned_route(text: str, capability_snapshot: dict[str, Any] | None = None
         reason_codes.append("plugin_present")
 
     physics_backend_signal = heavy_physics or two_d or three_d or rapier_named
+
+    if heavy_physics and two_d and three_d:
+        return _build_route(
+            recommended_action="engine_spike_required",
+            candidate_backend="undecided_physics_backend",
+            confidence="low",
+            reason_codes=reason_codes,
+            adr_required=False,
+            web_export_risk="high" if web else "medium",
+            blocking_questions=[
+                "Separate the 2D and 3D physics requirements before selecting backends.",
+                "Confirm which physics domain carries the determinism and Web constraints.",
+            ],
+        )
 
     if heavy_physics and not (rapier_named or determinism or web) and (two_d or not three_d):
         return _build_route(
@@ -355,9 +378,12 @@ def _read_json_if_present(path_value: str) -> dict[str, Any]:
     if not path.exists():
         return {"missing": str(path)}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         return {"invalid_json": str(path), "error": str(exc)}
+    if not isinstance(payload, dict):
+        return {"snapshot_error": "invalid_shape", "path": str(path)}
+    return payload
 
 
 def capability_snapshot_status(snapshot: dict[str, Any]) -> str:
@@ -365,6 +391,8 @@ def capability_snapshot_status(snapshot: dict[str, Any]) -> str:
         return "missing"
     if snapshot.get("invalid_json"):
         return "invalid_json"
+    if snapshot.get("snapshot_error") == "invalid_shape":
+        return "invalid_shape"
     return "provided" if snapshot else "not_provided"
 
 

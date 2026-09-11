@@ -738,6 +738,28 @@ class Chapter3TaskGenerationTests(unittest.TestCase):
 
         self.assertIn("duplicate_candidate_ids", str(raised.exception))
 
+    def test_compile_triplet_add_should_preserve_each_candidate_prefix(self) -> None:
+        mod = _load_module("compile_task_triplet_for_mixed_prefix_test", "scripts/python/compile_task_triplet.py")
+        candidates = [
+            {"id": "ARCH-0001", "depends_on": []},
+            {"id": "UI-0001", "depends_on": ["ARCH-0001"]},
+        ]
+
+        result = mod.renumber_candidates_for_add(candidates, {"ARCH-0004", "UI-0012"})
+
+        self.assertEqual(["ARCH-0005", "UI-0013"], [candidate["id"] for candidate in result])
+        self.assertEqual(["ARCH-0005"], result[1]["depends_on"])
+
+    def test_compile_triplet_add_should_reject_duplicate_ids_before_renumbering(self) -> None:
+        mod = _load_module("compile_task_triplet_for_duplicate_add_id_test", "scripts/python/compile_task_triplet.py")
+        candidates = [
+            {"id": "SG-0001", "depends_on": []},
+            {"id": "SG-0001", "depends_on": ["SG-0001"]},
+        ]
+
+        with self.assertRaises(SystemExit):
+            mod.renumber_candidates_for_add(candidates, set())
+
     def test_enrichment_should_append_technical_preflight_spike_candidate(self) -> None:
         mod = _load_module("enrich_task_candidates_with_technical_preflight_test", "scripts/python/enrich_task_candidates.py")
         with tempfile.TemporaryDirectory() as td:

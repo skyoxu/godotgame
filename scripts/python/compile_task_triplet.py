@@ -74,13 +74,17 @@ def max_task_number(ids: set[str], prefix: str) -> int:
 
 
 def renumber_candidates_for_add(candidates: list[dict[str, Any]], existing_ids: set[str]) -> list[dict[str, Any]]:
-    prefix = dominant_id_prefix(candidates)
-    next_number = max_task_number(existing_ids, prefix) + 1
+    assert_no_candidate_conflicts(candidates)
+    fallback_prefix = dominant_id_prefix(candidates)
+    next_numbers: dict[str, int] = {}
     used = set(existing_ids)
     remap: dict[str, str] = {}
     renumbered: list[dict[str, Any]] = []
     for candidate in candidates:
         old_id = str(candidate.get("id") or "")
+        parsed = split_task_number(old_id)
+        prefix = parsed[0] if parsed else fallback_prefix
+        next_number = next_numbers.setdefault(prefix, max_task_number(existing_ids, prefix) + 1)
         new_id = f"{prefix}-{next_number:04d}"
         while new_id in used:
             next_number += 1
@@ -91,7 +95,7 @@ def renumber_candidates_for_add(candidates: list[dict[str, Any]], existing_ids: 
         used.add(new_id)
         remap[old_id] = new_id
         renumbered.append(updated)
-        next_number += 1
+        next_numbers[prefix] = next_number + 1
     for candidate in renumbered:
         candidate["depends_on"] = [remap.get(str(dep), str(dep)) for dep in candidate.get("depends_on", [])]
     return renumbered
@@ -236,4 +240,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
