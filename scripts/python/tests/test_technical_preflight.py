@@ -77,6 +77,19 @@ class TechnicalPreflightTests(unittest.TestCase):
         self.assertTrue(any("physics backend spike" in hint.lower() for hint in route["chapter3_task_hints"]))
         self.assertIn("Chapter 4", route["chapter4_overlay_hints"][0])
 
+    def test_mixed_2d_and_3d_heavy_physics_should_not_select_a_2d_backend(self) -> None:
+        mod = _load_module("run_technical_preflight_mixed_dimensions_test", "scripts/python/run_technical_preflight.py")
+        result = mod.evaluate_text(
+            "The Web game combines CharacterBody2D collisions with a deterministic 3D physics sandbox and many rigid bodies.",
+            source_kind="gdd",
+            source_path="docs/gdd/mixed-dimensions.md",
+        )
+
+        route = result["technical_preflight"]["engine_route"]
+        self.assertEqual("engine_spike_required", route["recommended_action"])
+        self.assertEqual("undecided_physics_backend", route["candidate_backend"])
+        self.assertFalse(route["requires_plugin"])
+
     def test_deterministic_card_replay_without_physics_should_not_request_rapier(self) -> None:
         mod = _load_module("run_technical_preflight_determinism_test", "scripts/python/run_technical_preflight.py")
 
@@ -137,6 +150,51 @@ class TechnicalPreflightTests(unittest.TestCase):
         self.assertEqual("high", route["web_export_risk"])
         self.assertIn("web_wasm_target", route["reason_codes"])
         self.assertIn("plugin_present", route["reason_codes"])
+
+    def test_english_terms_should_match_tokens_instead_of_substrings(self) -> None:
+        mod = _load_module("run_technical_preflight_token_boundary_test", "scripts/python/run_technical_preflight.py")
+        result = mod.evaluate_text(
+            "Async statements use websocket transport for estate updates.",
+            source_kind="gdd",
+            source_path="docs/gdd/networking.md",
+        )
+
+        route = result["technical_preflight"]["engine_route"]
+        self.assertEqual("no_engine_change", route["recommended_action"])
+        self.assertEqual(["no_physics_signal"], route["reason_codes"])
+
+    def test_disabled_plugin_strings_should_not_count_as_present(self) -> None:
+        mod = _load_module("run_technical_preflight_plugin_state_test", "scripts/python/run_technical_preflight.py")
+        for value in ("false", "disabled", "0"):
+            with self.subTest(value=value):
+                result = mod.evaluate_text(
+                    "Simple 2D collisions.",
+                    source_kind="gdd",
+                    source_path="docs/gdd/collision.md",
+                    capability_snapshot={"plugins": {"rapier": value}},
+                )
+                self.assertNotIn("plugin_present", result["technical_preflight"]["engine_route"]["reason_codes"])
+
+    def test_enabled_plugin_strings_should_count_as_present(self) -> None:
+        mod = _load_module("run_technical_preflight_enabled_plugin_state_test", "scripts/python/run_technical_preflight.py")
+        result = mod.evaluate_text(
+            "Simple 2D collisions.",
+            source_kind="gdd",
+            source_path="docs/gdd/collision.md",
+            capability_snapshot={"plugins": {"rapier": "enabled"}},
+        )
+
+        self.assertIn("plugin_present", result["technical_preflight"]["engine_route"]["reason_codes"])
+
+    def test_json_snapshot_reader_should_report_non_object_payload(self) -> None:
+        mod = _load_module("run_technical_preflight_snapshot_shape_test", "scripts/python/run_technical_preflight.py")
+        with tempfile.TemporaryDirectory() as td:
+            snapshot = Path(td) / "snapshot.json"
+            snapshot.write_text("[]\n", encoding="utf-8")
+            result = mod._read_json_if_present(str(snapshot))
+
+        self.assertEqual("invalid_shape", result["snapshot_error"])
+        self.assertEqual("invalid_shape", mod.capability_snapshot_status(result))
 
     def test_generic_vehicle_physics_should_not_bind_rapier_without_stronger_signal(self) -> None:
         mod = _load_module("run_technical_preflight_vehicle_test", "scripts/python/run_technical_preflight.py")
