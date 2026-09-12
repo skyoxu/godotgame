@@ -14,6 +14,7 @@ if str(PYTHON) not in sys.path:
 
 from knowledge_locator import locate
 from prepare_knowledge_context import prepare
+from project_health_knowledge import scan
 from publish_knowledge_catalog import PublicationBlocked, check_current, publish, restore_lkg
 
 
@@ -128,6 +129,22 @@ class KnowledgeCatalogPublicationTests(unittest.TestCase):
             current = json.loads((root / "knowledge/indexes/current.json").read_text(encoding="utf-8"))
             self.assertEqual(expected_pointer, current)
             self.assertEqual("current", check_current(root)["status"])
+
+    def test_ephemeral_locator_uses_exact_project_health_scan_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_repo(root)
+            state = scan(root)
+            scanned_revision = state["revision"]
+            (root / "docs/prd/later.md").write_text("FeatureService later evidence.\n", encoding="utf-8")
+            git(root, "add", "docs/prd/later.md")
+            git(root, "commit", "-m", "advance main after scan")
+            self.assertNotEqual(scanned_revision, git(root, "rev-parse", "refs/heads/main"))
+
+            located = locate(root, consumer="chapter6", text="FeatureService", task_id="7", require_published=False)
+            self.assertEqual("ephemeral", located["publication_state"])
+            self.assertEqual(scanned_revision, located["revision"])
+            self.assertNotIn("docs/prd/later.md", {item["path"] for item in located["candidates"]})
 
 
 if __name__ == "__main__":
