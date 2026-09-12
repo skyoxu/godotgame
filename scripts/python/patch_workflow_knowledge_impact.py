@@ -57,8 +57,9 @@ Chapter 6 additions, before RED:
 5. Run strict Impact analysis for implementation targets and validate frozen-context / impact revision lineage with `impact_analysis_handoff.py` before consuming the report.
 6. If semantic scope genuinely changes during RED/GREEN/REFACTOR, create a new candidate/decision/freeze revision; never silently expand a frozen context.
 7. Review must prepare and freeze a separate `consumer=review` context. Never reuse a Chapter 6 freeze as Review context.
-8. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed in this task. With no reviewed resource path, skip instead of inventing associations.
-9. Project Health runtime evidence is task-scoped evidence only. `workspace` verification must not be promoted to `main` runtime acceptance; formal main evidence requires the guarded main-mode verifier and a non-empty passing GdUnit report.
+8. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed in this task. With no reviewed resource path, the explicit-reviewed record must skip instead of inventing associations.
+9. `chapter6_knowledge.py` must deterministically rebuild `task-resource-links.json` from the current Project Health snapshot before any semantic explanation is consumed. When explanation materially helps, `--semantic --llm-backend <codex-cli|openai-api>` is an explicit opt-in; every returned resource path, JSON pointer, scene node, and asset binding must resolve to reconstructed snapshot evidence, and generated prose remains non-authoritative.
+10. Project Health runtime evidence is task-scoped evidence only. `workspace` verification must not be promoted to `main` runtime acceptance; formal main evidence requires the guarded main-mode verifier and a non-empty passing GdUnit report.
 
 Regeneration invariant:
 
