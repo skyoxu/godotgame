@@ -7,6 +7,8 @@ import hashlib
 import json
 import os
 import secrets
+import threading
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -90,6 +92,27 @@ def _image(root: Path, rel: str) -> tuple[bytes, str]:
 
 def handler_factory(root: Path):
     token = secrets.token_urlsafe(32)
+    operation_lock = threading.Lock()
+    operation_state = {"active": False, "action": None, "started_at": None, "task_ids": [], "verification_mode": None}
+
+    def operation_snapshot() -> dict:
+        return {"schema": "godot-project-health.operation.v1", **operation_state}
+
+    def begin_operation(action: str, *, task_ids: list[str] | None = None, verification_mode: str | None = None) -> bool:
+        if not operation_lock.acquire(blocking=False):
+            return False
+        operation_state.update({
+            "active": True,
+            "action": action,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "task_ids": task_ids or [],
+            "verification_mode": verification_mode,
+        })
+        return True
+
+    def end_operation() -> None:
+        operation_state.update({"active": False, "action": None, "started_at": None, "task_ids": [], "verification_mode": None})
+        operation_lock.release()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
@@ -140,6 +163,8 @@ def handler_factory(root: Path):
             try:
                 if path == "/api/knowledge/session":
                     self.send({"token": token, "service": "godot-project-health-knowledge-v1"})
+                elif path == "/api/knowledge/operation":
+                    self.send(operation_snapshot())
                 elif path == "/api/knowledge/status":
                     state = latest(root)
                     task_root = root / ".taskmaster/tasks"
@@ -181,35 +206,53 @@ def handler_factory(root: Path):
             path = urlsplit(self.path).path
             try:
                 request = self.read_request()
-                if path == "/api/knowledge/scan":
-                    state = scan(root)
-                    task_root = root / ".taskmaster/tasks"
-                    state["template_state"] = {"task_data_initialized": task_root.exists() and any(task_root.glob("*.json"))}
-                    self.send(state)
-                elif path == "/api/knowledge/query":
-                    self.send(query(root, str(request.get("query") or "")))
-                elif path == "/api/knowledge/impact":
-                    self.send(ImpactAnalyzer(root).analyze(str(request.get("target") or ""), strict=bool(request.get("strict", False))))
-                elif path == "/api/knowledge/config":
-                    self.send({"status": "saved", "config": save_config(root, request)})
-                elif path == "/api/knowledge/runtime-verify":
-                    godot_bin = str(request.get("godot_bin") or os.environ.get("GODOT_BIN") or "").strip()
-                    if not godot_bin:
-                        raise ValueError("GODOT_BIN is not configured; set it in the server environment or provide godot_bin")
-                    ids = request.get("task_ids")
-                    task_ids = [str(value) for value in ids] if isinstance(ids, list) else None
-                    self.send(verify(
-                        root,
-                        godot_bin,
-                        timeout=int(request.get("timeout_sec", 600)),
-                        task_id=str(request.get("task_id")) if request.get("task_id") is not None else None,
-                        task_ids=task_ids,
-                        all_eligible=bool(request.get("all_eligible", False)),
-                        global_timeout=int(request.get("global_timeout_sec", 3600)),
-                        mode=str(request.get("mode") or "main"),
-                    ))
-                else:
-                    self.send({"reason": "Not found"}, 404)
+                action = {
+                    "/api/knowledge/scan": "scan",
+                    "/api/knowledge/config": "save-config",
+                    "/api/knowledge/runtime-verify": "runtime-verify",
+                }.get(path)
+                task_ids = []
+                if path == "/api/knowledge/runtime-verify":
+                    if request.get("task_id") is not None:
+                        task_ids = [str(request.get("task_id"))]
+                    elif isinstance(request.get("task_ids"), list):
+                        task_ids = [str(value) for value in request["task_ids"]]
+                if action and not begin_operation(action, task_ids=task_ids, verification_mode=str(request.get("mode") or "") or None):
+                    self.send({"status": "busy", "reason": "Another Project Health write operation is active", "operation": operation_snapshot()}, 409)
+                    return
+                try:
+                    if path == "/api/knowledge/scan":
+                        state = scan(root)
+                        task_root = root / ".taskmaster/tasks"
+                        state["template_state"] = {"task_data_initialized": task_root.exists() and any(task_root.glob("*.json"))}
+                        self.send(state)
+                    elif path == "/api/knowledge/query":
+                        self.send(query(root, str(request.get("query") or "")))
+                    elif path == "/api/knowledge/impact":
+                        self.send(ImpactAnalyzer(root).analyze(str(request.get("target") or ""), strict=bool(request.get("strict", False))))
+                    elif path == "/api/knowledge/config":
+                        self.send({"status": "saved", "config": save_config(root, request)})
+                    elif path == "/api/knowledge/runtime-verify":
+                        godot_bin = str(request.get("godot_bin") or os.environ.get("GODOT_BIN") or "").strip()
+                        if not godot_bin:
+                            raise ValueError("GODOT_BIN is not configured; set it in the server environment or provide godot_bin")
+                        ids = request.get("task_ids")
+                        selected_ids = [str(value) for value in ids] if isinstance(ids, list) else None
+                        self.send(verify(
+                            root,
+                            godot_bin,
+                            timeout=int(request.get("timeout_sec", 600)),
+                            task_id=str(request.get("task_id")) if request.get("task_id") is not None else None,
+                            task_ids=selected_ids,
+                            all_eligible=bool(request.get("all_eligible", False)),
+                            global_timeout=int(request.get("global_timeout_sec", 3600)),
+                            mode=str(request.get("mode") or "main"),
+                        ))
+                    else:
+                        self.send({"reason": "Not found"}, 404)
+                finally:
+                    if action:
+                        end_operation()
             except Exception as exc:
                 self.send({"status": "failed", "reason": str(exc)}, 422)
 
