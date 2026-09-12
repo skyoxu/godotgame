@@ -17,7 +17,7 @@
   <form id="query-form">
     <label for="query">需求或查询内容</label>
     <div class="row">
-      <input id="query" required maxlength="2000" placeholder="奖励确认 / Reward / 文件路径 / Task 12">
+      <input id="query" required maxlength="2000" placeholder="功能确认 / Feature / 文件路径 / Task 12">
       <select id="consumer" aria-label="查询范围">
         <option value="repository-session">综合查找</option>
         <option value="chapter4">架构与契约</option>
@@ -81,7 +81,7 @@
     </details>
     <details>
       <summary>Strict Impact probe</summary>
-      <form id="impact-form" class="nested-form"><input id="impact-target" maxlength="1000" required placeholder="精确文件路径或符号"><label><input type="checkbox" id="impact-strict" checked> strict</label><button>Analyze</button></form>
+      <form id="impact-form" class="nested-form"><input id="impact-target" maxlength="1000" required placeholder="精确文件路径、符号或 JSON Pointer"><label><input type="checkbox" id="impact-strict" checked> strict</label><button>Analyze</button></form>
       <pre id="impact"></pre>
     </details>
   </section>
