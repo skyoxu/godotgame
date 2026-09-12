@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Lightweight local HTTP serving for project-health dashboard."""
+"""Local loopback serving for the Project Health dashboard and Knowledge UI."""
 
 from __future__ import annotations
 
+import http.client
 import os
 import socket
 import subprocess
@@ -66,10 +67,22 @@ def port_accepts_connections(port: int, *, timeout_sec: float = 0.2) -> bool:
         return sock.connect_ex((HOST, int(port))) == 0
 
 
+def supports_knowledge_api(port: int, *, timeout_sec: float = 0.4) -> bool:
+    try:
+        conn = http.client.HTTPConnection(HOST, int(port), timeout=timeout_sec)
+        conn.request("GET", "/api/knowledge/session", headers={"Host": f"{HOST}:{int(port)}"})
+        response = conn.getresponse()
+        body = response.read()
+        conn.close()
+        return response.status == 200 and b'"token"' in body
+    except (OSError, http.client.HTTPException):
+        return False
+
+
 def wait_until_port_open(port: int, *, timeout_sec: float = 5.0, poll_sec: float = 0.1) -> bool:
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
-        if port_accepts_connections(port):
+        if port_accepts_connections(port) and supports_knowledge_api(port):
             return True
         time.sleep(poll_sec)
     return False
@@ -108,19 +121,17 @@ def can_reuse_server(info: dict[str, Any], *, root: Path, preferred_port: int = 
         return False
     if int(preferred_port or 0) > 0 and port != int(preferred_port):
         return False
-    return port_accepts_connections(port)
+    return port_accepts_connections(port) and supports_knowledge_api(port)
 
 
 def spawn_detached_http_server(*, root: Path, port: int) -> int:
     cmd = [
         sys.executable,
-        "-m",
-        "http.server",
+        str(root / "scripts" / "python" / "_project_health_http.py"),
+        "--repo-root",
+        str(root),
+        "--port",
         str(port),
-        "--bind",
-        HOST,
-        "-d",
-        str(dashboard_dir(root)),
     ]
     kwargs: dict[str, Any] = {
         "cwd": str(root),
@@ -164,10 +175,7 @@ def ensure_project_health_server(
         }
         validate_project_health_server_payload(payload)
         write_json(server_json_path(resolved_root), payload)
-        return {
-            **payload,
-            "server_json": str(server_json_path(resolved_root)).replace("\\", "/"),
-        }
+        return {**payload, "server_json": str(server_json_path(resolved_root)).replace("\\", "/")}
 
     port = choose_available_port(preferred_port=preferred_port, start=port_start, end=port_end)
     pid = spawn_detached_http_server(root=resolved_root, port=port)
@@ -187,7 +195,4 @@ def ensure_project_health_server(
     }
     validate_project_health_server_payload(payload)
     write_json(server_json_path(resolved_root), payload)
-    return {
-        **payload,
-        "server_json": str(server_json_path(resolved_root)).replace("\\", "/"),
-    }
+    return {**payload, "server_json": str(server_json_path(resolved_root)).replace("\\", "/")}
