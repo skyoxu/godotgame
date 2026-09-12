@@ -1,14 +1,42 @@
 #!/usr/bin/env python3
-"""CLI for deterministic impact exploration / strict target analysis."""
+"""CLI for deterministic Impact exploration or formal strict analysis."""
 from __future__ import annotations
-import argparse, json
+
+import argparse
+import json
 from pathlib import Path
+
 from impact_analyzer import ImpactAnalyzer
 
+
 def main(argv=None):
-    p=argparse.ArgumentParser(); p.add_argument("--repo-root",default="."); p.add_argument("--target",required=True); p.add_argument("--strict",action="store_true"); p.add_argument("--output"); a=p.parse_args(argv)
-    out=ImpactAnalyzer(a.repo_root).analyze(a.target,strict=a.strict); text=json.dumps(out,ensure_ascii=False,indent=2)+"\n"
-    if a.output: Path(a.output).parent.mkdir(parents=True,exist_ok=True); Path(a.output).write_text(text,encoding="utf-8")
-    else: print(text,end="")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo-root", default=".")
+    parser.add_argument("--target", required=True)
+    parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--frozen-context")
+    parser.add_argument("--output")
+    args = parser.parse_args(argv)
+    frozen_hash = None
+    if args.strict:
+        if not args.frozen_context:
+            parser.error("--strict formal analysis requires --frozen-context")
+        frozen = json.loads(Path(args.frozen_context).read_text(encoding="utf-8"))
+        frozen_hash = str(frozen.get("frozen_sha256") or "").strip()
+        if not frozen_hash:
+            raise ValueError("frozen context hash is missing")
+    out = ImpactAnalyzer(args.repo_root).analyze(args.target, strict=args.strict, frozen_context_sha256=frozen_hash)
+    if args.strict:
+        frozen = json.loads(Path(args.frozen_context).read_text(encoding="utf-8"))
+        if frozen.get("revision") != out.get("revision"):
+            raise ValueError("frozen context revision does not match Impact index/report revision")
+    text = json.dumps(out, ensure_ascii=False, indent=2) + "\n"
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        print(text, end="")
     return 0
-if __name__=="__main__": raise SystemExit(main())
+
+
+if __name__ == "__main__": raise SystemExit(main())
