@@ -1,0 +1,11 @@
+{
+  "schema": "godot-project-knowledge.consumer-policies.v1",
+  "revision": "godot-project-knowledge-v1",
+  "consumers": {
+    "repository-session": {"task_id_required": false, "observe_only": true},
+    "chapter4": {"task_id_required": false, "observe_only": true},
+    "chapter5": {"task_id_required": true, "observe_only": true},
+    "chapter6": {"task_id_required": true, "freeze_before_red": true},
+    "review": {"task_id_required": true, "separate_from_chapter6": true}
+  }
+}
