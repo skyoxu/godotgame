@@ -317,13 +317,14 @@ def publish_index(root: Path, index: dict[str, Any], output_root: Path) -> dict[
     directory.mkdir(parents=True, exist_ok=True)
     index_path = directory / "impact-index.v1.json"
     raw = json.dumps(index, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    index_path.write_text(raw, encoding="utf-8")
+    raw_bytes = raw.encode("utf-8")
+    index_path.write_bytes(raw_bytes)
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "index_id": index["index_id"],
         "repository_revision": index["repository_revision"],
         "artifact_path": index_path.relative_to(root).as_posix(),
-        "artifact_sha256": sha256_bytes(raw.encode("utf-8")),
+        "artifact_sha256": sha256_bytes(raw_bytes),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     manifest_path = directory / "manifest.json"
