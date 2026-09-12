@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import deque
-from pathlib import PurePosixPath
 from typing import Any
 
 from impact_analysis_index import ImpactIndexError, load_current_index, normalize_path
@@ -25,6 +24,38 @@ def _alias(index: dict[str, Any], target: str) -> str | None:
     return None
 
 
+def _config_pointer_target(index: dict[str, Any], raw: str) -> dict[str, Any] | None:
+    path_part = None
+    pointer = None
+    if "#" in raw:
+        candidate_path, candidate_pointer = raw.split("#", 1)
+        if not candidate_pointer or candidate_pointer.startswith("/"):
+            path_part, pointer = candidate_path, candidate_pointer
+    elif "::/" in raw:
+        candidate_path, candidate_pointer = raw.split("::", 1)
+        path_part, pointer = candidate_path, candidate_pointer
+    if path_part is None or pointer is None:
+        return None
+    path = normalize_path(path_part)
+    matches = [
+        item for item in index.get("config_pointers", [])
+        if isinstance(item, dict) and item.get("path") == path and item.get("pointer") == pointer
+    ]
+    if len(matches) == 1:
+        item = matches[0]
+        return {
+            "kind": "config-pointer",
+            "id": item["id"],
+            "path": path,
+            "pointer": pointer,
+            "value_type": item.get("value_type"),
+            "display": f"{path}#{pointer}",
+        }
+    if len(matches) > 1:
+        raise ImpactIndexError("underqualified_target", f"config pointer target is ambiguous: {raw}")
+    raise ImpactIndexError("unsupported_target", f"target is not an exact indexed config pointer: {raw}")
+
+
 def resolve_target(index: dict[str, Any], target: str) -> dict[str, Any]:
     raw = str(target or "").strip()
     if not raw:
@@ -36,6 +67,9 @@ def resolve_target(index: dict[str, Any], target: str) -> dict[str, Any]:
     normalized = raw.replace("\\", "/").removeprefix("./")
     if normalized in files:
         return {"kind": "file", "id": "file:" + normalized, "path": normalized, "display": normalized}
+    pointer_target = _config_pointer_target(index, normalized)
+    if pointer_target:
+        return pointer_target
     symbols = [item for item in index.get("symbols", []) if isinstance(item, dict)]
     exact_id = next((item for item in symbols if item.get("id") == raw), None)
     if exact_id:
@@ -48,10 +82,10 @@ def resolve_target(index: dict[str, Any], target: str) -> dict[str, Any]:
         matches = [item for item in symbols if item.get("name") == raw]
     if len(matches) == 1:
         item = matches[0]
-        return {"kind":"symbol","id":item["id"],"path":item["path"],"name":item["name"],"line":item["line"],"display":f"{item['path']}::{item['name']}"}
+        return {"kind": "symbol", "id": item["id"], "path": item["path"], "name": item["name"], "line": item["line"], "display": f"{item['path']}::{item['name']}"}
     if len(matches) > 1:
         raise ImpactIndexError("underqualified_target", f"symbol target is ambiguous: {raw}")
-    raise ImpactIndexError("unsupported_target", f"target is not an exact indexed file or symbol: {raw}")
+    raise ImpactIndexError("unsupported_target", f"target is not an exact indexed file, symbol, or config pointer: {raw}")
 
 
 def analyze_index(root, target: str, revision: str, *, max_depth: int = 2, include_unconfirmed: bool = True) -> dict[str, Any]:
@@ -68,18 +102,22 @@ def analyze_index(root, target: str, revision: str, *, max_depth: int = 2, inclu
         for relation in relations:
             if not include_unconfirmed and not relation.get("confirmed"):
                 continue
-            direction = None; other = None
+            direction = None
+            other = None
             if relation.get("to") == current:
-                direction = "inbound"; other = relation.get("from")
+                direction = "inbound"
+                other = relation.get("from")
             elif relation.get("from") == current:
-                direction = "outbound"; other = relation.get("to")
+                direction = "outbound"
+                other = relation.get("to")
             if not other:
                 continue
             row = dict(relation)
             row.update({"direction": direction, "depth": depth + 1, "via": current})
             evidence.append(row)
             if other not in seen:
-                seen.add(other); queue.append((str(other), depth + 1))
+                seen.add(other)
+                queue.append((str(other), depth + 1))
     return {
         "schema": "godot-project-impact.runtime-analysis.v1",
         "revision": revision,
