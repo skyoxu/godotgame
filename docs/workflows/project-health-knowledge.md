@@ -1,16 +1,91 @@
 # Project Health: Knowledge + Impact
 
-`serve-project-health` now serves the existing health dashboard and a loopback-only `/knowledge/` page from the same `127.0.0.1` process.
+`serve-project-health` serves the existing health dashboard and the loopback-only `/knowledge/` investigation page from the same `127.0.0.1` process.
 
-The page supports repository scan, deterministic knowledge search, Impact exploration and local source configuration. A fresh template intentionally has no business task records; empty task/runtime state is valid and must not be replaced with sibling-repository examples.
+A fresh template intentionally has no business task records. Empty task, mapping, runtime, and generated Knowledge state is valid; do not seed it with sibling-repository examples.
 
-Security boundaries:
+## Snapshot model
+
+In a Git-backed repository, **Scan local main** reads `refs/heads/main` without checking it out. Search results, task/task-view joins, source viewing, image preview, Impact exploration, static Godot navigation, and main-mode runtime eligibility all bind to that scanned revision.
+
+The page surfaces the scanned revision and warns when local main moves after the scan. Re-scan before relying on stale investigation evidence.
+
+Non-Git temporary fixtures fall back to a directory snapshot so deterministic tests can remain self-contained. That fallback is not a substitute for local-main evidence in a real repository.
+
+The bounded scan manifest includes UTF-8 text sources plus supported assets. Images can be previewed only when their bytes still match the scanned manifest. Large assets remain outside the preview budget.
+
+## Knowledge and Impact
+
+The page provides:
+
+- consumer-aware Knowledge lookup for `repository-session`, `chapter4`, `chapter5`, `chapter6`, and `review`;
+- deterministic query aliases;
+- actionable result groups for Tasks, Configuration, Code, and Tests, plus lower-confidence evidence;
+- configured GDD supplements;
+- exploratory and strict Impact probes;
+- source viewing bound to the scan revision.
+
+Locator rank and text-reference Impact edges are evidence only. They do not become semantic acceptance or confirmed dependencies automatically.
+
+Formal Chapter 6 and Review handoffs still require candidate preparation, direct source re-reading, explicit accept/reject decisions, a frozen context, strict Impact output, and lineage validation. The browser page is an investigation surface, not a replacement for those contracts.
+
+## Task and Godot navigation
+
+When task data exists, `tasks.json` is treated as the task SSOT and enrichment views are joined by task id. The task table supports pagination, status/Godot filtering, page selection, selected runtime verification, eligible runtime verification, and all-gameplay runtime auditing.
+
+Task detail can expose:
+
+- reviewed task-to-scene mappings;
+- scene nodes and properties;
+- real scene script attachments;
+- configured code witnesses;
+- code/config/resource reference chains;
+- exact JSON fields and configured JSON pointers;
+- assets and image previews;
+- task-scoped test references and suggested test commands;
+- unresolved references and explicit navigation limitations.
+
+A configured mapping is not enough to claim `static_attached`. The scene must actually attach the declared script to the declared node and the configured witness must exist in that production script. Test references to a scene are only candidates.
+
+Generated semantic evidence may provide blue suggested-field highlighting when an exact JSON pointer exists. Yellow confirmed highlighting is reserved for reviewed/confirmed pointers. Neither visual state changes the authoritative business source.
+
+## Runtime verification
+
+Runtime eligibility means only that the scanned task evidence contains a real, existing task-scoped `Tests.Godot/**` reference. It is not acceptance.
+
+Main-mode verification:
+
+1. confirms the scan still represents local main;
+2. creates an immutable `git archive` snapshot of that revision;
+3. executes only the selected task-scoped GdUnit refs inside the isolated snapshot;
+4. requires a non-empty clean GdUnit report;
+5. verifies input hashes after execution;
+6. records `runtime_verified` only when the scan/main/input lineage remains stable.
+
+Workspace-mode verification uses a separate bounded workspace snapshot and can produce `workspace_verified`, but it must never be promoted to main acceptance.
+
+**Audit all gameplay tasks** includes gameplay-view tasks even when they have no executable task-scoped GdUnit reference. Those tasks are recorded as `runtime_unverified`; the verifier never falls back to an unrelated full test suite to manufacture a green result.
+
+## Local security boundaries
 
 - bind only `127.0.0.1`;
-- reject unexpected Host headers;
-- writes require same-origin `Origin` plus an in-memory session token;
-- JSON requests are bounded;
+- reject unexpected `Host` headers;
+- write operations require exact same-origin `Origin` plus an in-memory session token;
+- JSON request bodies are bounded;
+- scan/config/runtime writes share a non-blocking operation lock and the page visibly locks while a write operation is active;
+- source and image reads are restricted to the scanned manifest;
+- image preview has an explicit size/type boundary;
 - no arbitrary command execution endpoint exists;
-- Impact keyword matches are evidence only, not confirmed dependency edges.
+- the only runtime command path is the repository-owned, task-scoped GdUnit verifier.
 
-Formal Chapter 6 and Review handoffs still use candidate preparation, explicit decisions, frozen context, Impact output and handoff validation. The browser page is an investigation surface, not a replacement for those contracts.
+## Configuration
+
+The structured editor writes `scripts/python/project_health_knowledge_config.json` when the operator chooses to save it. The reusable schema supports:
+
+- `source_path_bindings` and the derived `source_paths`;
+- `gdd_paths`;
+- reviewed `task_scene_bindings`;
+- deterministic `query_aliases`;
+- bounded text/asset limits and result limits.
+
+Saving configuration does not silently alter business data. Re-scan local main to apply the configuration to investigation results.
