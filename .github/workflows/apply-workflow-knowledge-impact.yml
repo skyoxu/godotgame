@@ -1,0 +1,32 @@
+name: Apply Workflow Knowledge Impact Contract
+
+on:
+  push:
+    branches:
+      - feat/align-newrouge-knowledge-impact-health
+
+permissions:
+  contents: write
+
+jobs:
+  patch-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/align-newrouge-knowledge-impact-health
+          fetch-depth: 0
+      - name: Patch workflow.md with UTF-8 Python
+        run: python scripts/python/patch_workflow_knowledge_impact.py --repo-root .
+      - name: Commit patched workflow when needed
+        shell: bash
+        run: |
+          if git diff --quiet -- workflow.md; then
+            echo "workflow.md already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add workflow.md
+          git commit -m "docs(workflow): align knowledge and impact contract"
+          git push origin HEAD:feat/align-newrouge-knowledge-impact-health
