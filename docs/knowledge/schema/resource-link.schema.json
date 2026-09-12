@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge.resource-link.v1",
+  "type": "object",
+  "required": ["id", "kind", "status", "paths", "evidence"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "kind": {"type": "string", "enum": ["configuration", "asset", "scene", "code", "test", "relationship"]},
+    "status": {"type": "string", "enum": ["confirmed", "inferred", "unverified", "removed"]},
+    "summary": {"type": "string"},
+    "paths": {"type": "array", "items": {"type": "string"}},
+    "task_ids": {"type": "array", "items": {"type": ["string", "integer"]}},
+    "source_revision": {"type": ["string", "null"]},
+    "evidence": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}
