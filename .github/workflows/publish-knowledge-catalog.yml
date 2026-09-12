@@ -16,14 +16,7 @@ on:
       - "knowledge/policies/**"
       - "knowledge/evaluation/**"
       - "knowledge/contracts/**"
-      - "scripts/python/_knowledge_catalog_builder.py"
-      - "scripts/python/_knowledge_locator_core.py"
-      - "scripts/python/build_knowledge_catalog.py"
-      - "scripts/python/knowledge_locator.py"
-      - "scripts/python/publish_knowledge_catalog.py"
-      - "scripts/python/prepare_knowledge_context.py"
-      - "scripts/python/freeze_knowledge_context.py"
-      - "scripts/python/validate_knowledge_control_plane.py"
+      - "scripts/python/*knowledge*.py"
   workflow_dispatch:
 
 permissions:
