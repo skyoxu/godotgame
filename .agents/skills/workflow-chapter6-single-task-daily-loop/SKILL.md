@@ -52,6 +52,17 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 4. Read `docs/workflows/ui-ux-implementation-policy.md` when the task carries `ui_ux_seed`; Chapter 6 should preserve stable scene, input, text-key, and state boundaries but should not run a broad visual retrofit.
 5. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
 
+## Knowledge / Impact Contract
+
+- Before RED, prepare `consumer=chapter6` candidates, re-read sources directly, record explicit accept/reject decisions with reasons, and freeze them with `freeze_knowledge_context.py`.
+- Run `analyze_impact.py --target <path-or-symbol> --strict` and validate revision/frozen-context lineage with `impact_analysis_handoff.py` before implementation consumes the report.
+- Frozen semantic scope must not expand silently during RED/GREEN/REFACTOR. A genuine scope change requires a new candidate/decision/freeze revision.
+- Review uses a separate `consumer=review` candidate set and freeze. Never relabel or reuse a Chapter 6 freeze as Review.
+- After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed by the task. With no reviewed paths, the explicit-reviewed resource record must skip instead of inventing associations.
+- When developer-facing semantic explanation would materially help, add `--semantic --llm-backend <codex-cli|openai-api>`. Semantic output is accepted only when every resource path, JSON pointer, scene node, and asset binding resolves to reconstructed snapshot evidence; generated explanations remain non-authoritative.
+- `generate_knowledge_links.py` is the deterministic task-resource reconstruction layer used before semantic enrichment. Do not hand-author generated links to make a page look complete.
+- Knowledge and Impact artifacts are bounded evidence; they never replace Taskmaster, PRD/GDD, ADR/Base/Overlay, Contracts, source, or test authority.
+
 ## Idempotent Procedure
 
 1. Read active-task first when a task id exists.
@@ -62,7 +73,7 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 6. When a task includes `ui_ux_seed`, keep the implementation compatible with seeded screens, input model, localization keys, and accessibility baseline, but defer broad theme/component-kit/screenshot retrofit work to Chapter 7.
 7. Run 6.7 only when deterministic evidence is stale or required by changed implementation, tests, contracts, scripts, or runtime assets. Review preparation uses a separate `consumer=review` candidate/freeze.
 8. Run 6.8 only when route evidence says Needs Fix cleanup is the right lane.
-9. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` for reviewed configuration/assets/scenes/code/tests. With no reviewed paths it must skip rather than invent associations.
+9. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` for resources actually reviewed in the task. Add `--semantic --llm-backend <backend>` only when semantic explanation is useful; the command first reconstructs `task-resource-links.json`, then validates every generated pointer/binding against static snapshot evidence.
 10. Run 6.9 repository validation before commit or PR closure.
 
 ## Stop-Loss Signals
@@ -73,6 +84,7 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 - The same deterministic failure fingerprint appears repeatedly.
 - Frozen context revision/hash no longer matches the task or Impact evidence.
 - The next action would duplicate work already covered by task, overlay, candidate, or manifest evidence.
+- Semantic enrichment returns `unverified`: inspect the generated error and reconstructed links; do not promote the explanation or retry blindly with invented evidence.
 
 ## Business Evidence References
 
