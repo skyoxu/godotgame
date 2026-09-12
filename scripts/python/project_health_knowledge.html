@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Knowledge + Impact · Project Health</title><link rel="stylesheet" href="/knowledge/style.css"><script src="/knowledge/app.js" defer></script></head>
+<body><main>
+<nav><a href="/latest.html">← Project Health</a></nav>
+<header><h1>Knowledge + Impact</h1><p>只读探索主线源码、任务与影响线索。查询结果不是正式 Chapter handoff。</p><span id="snapshot" class="badge">not scanned</span></header>
+<section><div class="row"><h2>Main snapshot</h2><button id="scan">Fetch latest main + scan</button></div><p id="status">No scan loaded.</p><div id="metrics" class="metrics"></div></section>
+<form id="query-form"><h2>Knowledge search</h2><label for="query">需求、符号或路径</label><input id="query" required placeholder="例如 PlayerController 或 docs/gdd/..."><label for="consumer">Consumer</label><select id="consumer"><option>repository-session</option><option>chapter4</option><option>chapter5</option><option>chapter6</option><option>review</option></select><button type="submit">查询</button></form>
+<section id="results" hidden><h2>Investigation results</h2><p id="stale" class="warning" hidden></p><p id="queries"></p><div class="action-grid"><div><h3>Tasks</h3><div id="tasks-action"></div></div><div><h3>Configuration</h3><div id="config-action"></div></div><div><h3>Code</h3><div id="code-action"></div></div><div><h3>Tests</h3><div id="tests-action"></div></div></div><details><summary>Knowledge locations</summary><div id="knowledge"></div></details><details><summary>Impact preview</summary><pre id="impact"></pre></details></section>
+<section><div class="row"><h2>Configuration</h2><button id="reload-config">Reload</button></div><p>仅允许仓库相对路径；保存配置不会伪造任务数据。</p><textarea id="config-json" rows="14"></textarea><button id="save-config">保存配置</button></section>
+<section><h2>Tasks · tasks.json SSoT</h2><p id="task-empty"></p><div class="pager" id="pager"></div><div class="table-scroll"><table><thead><tr><th>id</th><th>title</th><th>status</th><th>dependencies</th></tr></thead><tbody id="task-body"></tbody></table></div></section>
+<dialog id="detail"><button id="close-detail">Close</button><h2 id="detail-title"></h2><pre id="detail-body"></pre></dialog>
+<p id="message" role="status"></p>
+</main></body></html>
