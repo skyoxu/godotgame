@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Knowledge + Impact · Project Health</title>
+  <link rel="stylesheet" href="/knowledge/style.css">
+  <script src="/knowledge/app.js" defer></script>
+</head>
+<body>
+<main>
+  <nav><a href="/latest.html">Project Health</a> / Knowledge + Impact <span class="badge">LOCAL ONLY</span></nav>
+  <h1>Repository Knowledge + Impact</h1>
+  <p class="lede">面向模板仓的本地调查页。没有任务数据时显示空状态；不会伪造任务、场景或业务知识。</p>
+
+  <section class="toolbar">
+    <button id="scan">扫描当前仓库</button>
+    <span id="status">正在加载…</span>
+  </section>
+
+  <section>
+    <h2>知识搜索</h2>
+    <form id="query-form">
+      <input id="query" maxlength="2000" required placeholder="输入需求、类名、文件名、配置字段或任务 ID">
+      <button>搜索</button>
+    </form>
+    <div id="results" class="results"></div>
+  </section>
+
+  <section>
+    <h2>Impact 探索</h2>
+    <p>输入文件路径或符号关键词。模板模式只给出确定性的文本/路径引用证据；正式 Chapter 6/Review 交接仍应使用冻结上下文与正式 Impact 报告。</p>
+    <form id="impact-form">
+      <input id="impact-target" maxlength="1000" required placeholder="例如 Game.Core/Contracts 或 PlayerService">
+      <button>分析影响</button>
+    </form>
+    <pre id="impact"></pre>
+  </section>
+
+  <section>
+    <h2>模板初始化状态</h2>
+    <div id="summary" class="metrics"></div>
+    <details>
+      <summary>来源配置</summary>
+      <textarea id="config" rows="18" spellcheck="false"></textarea>
+      <button id="save-config">保存配置</button>
+      <p class="hint">保存配置不会自动扫描；点击“扫描当前仓库”后生效。</p>
+    </details>
+  </section>
+</main>
+</body>
+</html>
