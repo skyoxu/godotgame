@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""Template-safe task-scoped GdUnit runtime verification for Project Health.
-
-The template may contain no business task data. When task data exists, this module
-finds concrete task-scoped `Tests.Godot/**` references, validates them against the
-current repository, and can invoke the repository's existing `run_gdunit.py`.
-Runtime eligibility is evidence only; a task becomes runtime_verified only after a
-fresh task-scoped report contains at least one passing assertion and no failures.
-"""
+"""Task-scoped GdUnit runtime verification on immutable Project Health snapshots."""
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -21,28 +15,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from project_health_knowledge import latest, revision, write_json
+from _project_health_runtime_snapshot import prepare_snapshot
+from project_health_knowledge import latest, main_revision, task_rows, write_json
 
 TEST_PREFIX = "Tests.Godot/"
 CLEANUP_MARGIN_SECONDS = 30
 
 
-def _walk_tasks(value: Any):
-    if isinstance(value, dict):
-        if "id" in value and ("title" in value or "status" in value):
-            yield value
-        for child in value.values():
-            yield from _walk_tasks(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from _walk_tasks(child)
-
-
 def _canonical_id(value: Any) -> str:
     text = str(value or "").strip()
-    if not text:
-        raise ValueError("task id is required")
-    if any(ch in text for ch in "\\/\r\n\t"):
+    if not text or any(ch in text for ch in "\\/\r\n\t"):
         raise ValueError("invalid task id")
     return text
 
@@ -55,10 +37,12 @@ def _extract_test_refs(value: Any) -> list[str]:
         for key, child in value.items():
             if key in {"test_refs", "testRefs", "acceptance", "acceptance_criteria", "testStrategy", "test_strategy"}:
                 refs.extend(_extract_test_refs(child))
+            elif isinstance(child, (dict, list)):
+                refs.extend(_extract_test_refs(child))
     elif isinstance(value, list):
         for child in value:
             refs.extend(_extract_test_refs(child))
-    cleaned = []
+    cleaned: list[str] = []
     for ref in refs:
         ref = ref.rstrip(".,;:)")
         if ".." in Path(ref).parts or not ref.startswith(TEST_PREFIX):
@@ -68,60 +52,41 @@ def _extract_test_refs(value: Any) -> list[str]:
     return cleaned
 
 
-def _task_rows(root: Path) -> list[dict[str, Any]]:
-    task_dir = root / ".taskmaster/tasks"
-    merged: dict[str, dict[str, Any]] = {}
-    if not task_dir.exists():
-        return []
-    for file in sorted(task_dir.glob("*.json")):
-        try:
-            payload = json.loads(file.read_text(encoding="utf-8-sig"))
-        except Exception:
-            continue
-        for task in _walk_tasks(payload):
-            try:
-                task_id = _canonical_id(task.get("id"))
-            except ValueError:
-                continue
-            row = merged.setdefault(task_id, {"id": task_id, "title": "", "test_refs": [], "sources": []})
-            row["title"] = row["title"] or str(task.get("title") or "")
-            row["sources"].append(file.relative_to(root).as_posix())
-            for ref in _extract_test_refs(task):
-                if ref not in row["test_refs"]:
-                    row["test_refs"].append(ref)
-    return sorted(merged.values(), key=lambda row: (not row["id"].isdigit(), int(row["id"]) if row["id"].isdigit() else row["id"]))
-
-
-def _existing_refs(root: Path, refs: list[str]) -> list[str]:
-    existing: list[str] = []
-    for ref in refs:
-        path = root / Path(ref)
-        if path.exists():
-            existing.append(ref)
-            continue
-        # Directory-style references may identify a suite prefix.
-        prefix = path.parent
-        if prefix.exists() and any(prefix.glob(path.name + "*")):
-            existing.append(ref)
-    return existing
+def _rows(root: Path) -> list[dict[str, Any]]:
+    state = latest(root)
+    manifest = {str(record.get("path") or "") for record in state.get("records", [])}
+    result = []
+    for row in task_rows(root, state):
+        combined = {"task": row.get("task"), "mappings": row.get("mappings")}
+        refs = _extract_test_refs(combined)
+        existing = [ref for ref in refs if ref in manifest or any(path.startswith(ref.rstrip("/") + "/") for path in manifest)]
+        gameplay = any(path.endswith("/tasks_gameplay.json") or path.endswith("tasks_gameplay.json") for path in row.get("sources", []))
+        result.append({
+            "id": _canonical_id(row["id"]),
+            "title": row.get("title", ""),
+            "test_refs": existing,
+            "sources": row.get("sources", []),
+            "gameplay": gameplay,
+            "eligible": bool(existing),
+        })
+    return result
 
 
 def eligibility(root: Path) -> dict[str, Any]:
     root = root.resolve()
-    tasks = []
-    for row in _task_rows(root):
-        existing = _existing_refs(root, row["test_refs"])
-        tasks.append({**row, "eligible": bool(existing), "test_refs": existing})
+    rows = _rows(root)
     return {
-        "schema": "godot-project-health.runtime-eligibility.v2",
+        "schema": "godot-project-health.runtime-eligibility.v3",
         "status": "ok",
-        "tasks": tasks,
-        "eligible_count": sum(1 for row in tasks if row["eligible"]),
-        "note": "Eligibility is not runtime acceptance. Runtime verification executes only existing task-scoped Tests.Godot references.",
+        "revision": latest(root).get("revision"),
+        "tasks": rows,
+        "eligible_count": sum(1 for row in rows if row["eligible"]),
+        "gameplay_count": sum(1 for row in rows if row["gameplay"]),
+        "note": "Eligibility is not runtime acceptance. Verification executes only real task-scoped Tests.Godot refs; gameplay rows without refs remain runtime_unverified.",
     }
 
 
-def _latest_results(report_dir: Path) -> dict[str, Any]:
+def _report_counts(report_dir: Path) -> dict[str, Any]:
     summary = report_dir / "run-summary.json"
     if not summary.exists():
         return {}
@@ -141,40 +106,45 @@ def _write_evidence(root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def _git(root: Path, *args: str) -> str:
-    proc = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    return proc.stdout.strip() if proc.returncode == 0 else ""
+def _unverified(root: Path, row: dict[str, Any], revision: str, mode: str, reason: str) -> dict[str, Any]:
+    now = datetime.now(timezone.utc).isoformat()
+    return _write_evidence(root, {
+        "schema": "godot-project-health.runtime-evidence.v2",
+        "task_id": row["id"], "title": row.get("title", ""), "source_revision": revision,
+        "task_definition_revision": latest(root).get("revision"), "verification_mode": mode,
+        "test_refs": row.get("test_refs", []), "scenes": [], "command": [], "status": "runtime_unverified",
+        "reason": reason, "started_at": now, "finished_at": now, "exit_code": None,
+        "report_path": None, "test_results": {}, "runtime_verified": False, "workspace_verified": False,
+    })
 
 
-def _scan_revision(root: Path) -> str:
-    return str(latest(root).get("revision") or "")
+def _run_process(command: list[str], cwd: Path, timeout: int) -> tuple[int | None, str, str, bool]:
+    proc = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout + CLEANUP_MARGIN_SECONDS)
+        return proc.returncode, stdout, stderr, False
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=15)
+        else:
+            proc.kill()
+        try:
+            stdout, stderr = proc.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+        return None, stdout, stderr, True
 
 
-def _source_revision(root: Path, mode: str) -> tuple[str, bool, str | None]:
-    scan_rev = _scan_revision(root)
-    head = revision(root)
-    if mode == "workspace":
-        return head, True, None
-    if not re.fullmatch(r"[0-9a-f]{40}", scan_rev):
-        return scan_rev, False, "A Git-backed project-health scan is required for main verification"
-    main = _git(root, "rev-parse", "--verify", "refs/heads/main")
-    if main != scan_rev:
-        return scan_rev, False, "The scanned revision does not match local main"
-    if head != scan_rev:
-        return scan_rev, False, "HEAD does not match the scanned local-main revision"
-    dirty = _git(root, "status", "--porcelain")
-    if dirty:
-        return scan_rev, False, "Main verification requires a clean workspace; use workspace mode for local changes"
-    return scan_rev, True, None
-
-
-def _run_one(root: Path, row: dict[str, Any], godot_bin: str, timeout: int, source_revision: str, mode: str) -> dict[str, Any]:
+def _run_one(root: Path, execution_root: Path, row: dict[str, Any], godot_bin: str, timeout: int, source_revision: str, task_definition_revision: str, mode: str) -> dict[str, Any]:
+    refs = row.get("test_refs", [])
+    if not refs:
+        return _unverified(root, row, source_revision, mode, "No task-scoped Godot/GdUnit assertion path was found")
     started = datetime.now(timezone.utc).isoformat()
-    refs = row["test_refs"]
     report = root / "logs/ci/project-health-knowledge/runtime/reports" / uuid.uuid4().hex
+    report.mkdir(parents=True, exist_ok=False)
     command = [
         sys.executable,
-        str(root / "scripts/python/run_gdunit.py"),
+        str(execution_root / "scripts/python/run_gdunit.py"),
         "--godot-bin", godot_bin,
         "--project", "Tests.Godot",
         "--prewarm",
@@ -183,55 +153,30 @@ def _run_one(root: Path, row: dict[str, Any], godot_bin: str, timeout: int, sour
     ]
     for ref in refs:
         command.extend(["--add", ref.removeprefix(TEST_PREFIX)])
-    exit_code: int | None = None
-    status = "runtime_unverified"
-    reason: str | None = None
-    stdout = ""
-    stderr = ""
-    try:
-        proc = subprocess.run(
-            command,
-            cwd=root,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout + CLEANUP_MARGIN_SECONDS,
-        )
-        exit_code = proc.returncode
-        stdout, stderr = proc.stdout, proc.stderr
-        results = _latest_results(report)
-        passing = bool(results.get("tests", 0) > 0 and results.get("failures") == 0 and results.get("errors") == 0)
-        if exit_code == 0 and passing:
-            status = "passed"
-        else:
-            status = "failed"
-            reason = "Task-scoped GdUnit assertions did not produce a clean non-empty report"
-    except subprocess.TimeoutExpired:
-        status = "failed"
-        reason = "runtime test timed out"
-        results = _latest_results(report)
-    report.mkdir(parents=True, exist_ok=True)
+    exit_code, stdout, stderr, timed_out = _run_process(command, execution_root, timeout)
     (report / "project-health-stdout.txt").write_text(stdout[-200000:], encoding="utf-8")
     (report / "project-health-stderr.txt").write_text(stderr[-200000:], encoding="utf-8")
+    results = _report_counts(report)
+    passing = bool(results.get("tests", 0) > 0 and results.get("failures") == 0 and results.get("errors") == 0)
+    status = "passed" if exit_code == 0 and passing and not timed_out else "failed"
+    reason = None if status == "passed" else ("runtime test timed out" if timed_out else "Task-scoped GdUnit assertions did not produce a clean non-empty report")
     return _write_evidence(root, {
-        "schema": "godot-project-health.runtime-evidence.v1",
-        "task_id": row["id"],
-        "title": row["title"],
-        "source_revision": source_revision,
-        "verification_mode": mode,
-        "test_refs": refs,
-        "command": command,
-        "status": status,
-        "reason": reason,
-        "started_at": started,
-        "finished_at": datetime.now(timezone.utc).isoformat(),
-        "exit_code": exit_code,
-        "report_path": report.relative_to(root).as_posix(),
-        "test_results": results,
-        "runtime_verified": status == "passed" and mode == "main",
-        "workspace_verified": status == "passed" and mode == "workspace",
+        "schema": "godot-project-health.runtime-evidence.v2",
+        "task_id": row["id"], "title": row.get("title", ""), "source_revision": source_revision,
+        "task_definition_revision": task_definition_revision, "verification_mode": mode,
+        "test_refs": refs, "scenes": [], "command": command, "status": status, "reason": reason,
+        "started_at": started, "finished_at": datetime.now(timezone.utc).isoformat(), "exit_code": exit_code,
+        "report_path": report.relative_to(root).as_posix(), "test_results": results,
+        "runtime_verified": False, "workspace_verified": False,
     })
+
+
+def _inputs_unchanged(snapshot_root: Path, manifest: dict[str, Any]) -> bool:
+    for path, digest in manifest.get("files", {}).items():
+        candidate = snapshot_root / Path(path)
+        if not candidate.is_file() or hashlib.sha256(candidate.read_bytes()).hexdigest() != digest:
+            return False
+    return True
 
 
 def verify(
@@ -241,6 +186,7 @@ def verify(
     task_id: str | None = None,
     task_ids: list[str] | None = None,
     all_eligible: bool = False,
+    all_gameplay: bool = False,
     global_timeout: int = 3600,
     mode: str = "main",
 ) -> dict[str, Any]:
@@ -249,18 +195,23 @@ def verify(
         raise ValueError("timeout values must be positive")
     if mode not in {"main", "workspace"}:
         raise ValueError("mode must be main or workspace")
-    if sum(bool(value) for value in (task_id, task_ids, all_eligible)) > 1:
+    if sum(bool(value) for value in (task_id, task_ids, all_eligible, all_gameplay)) > 1:
         raise ValueError("Use only one task selection mode")
-    candidates = [row for row in eligibility(root)["tasks"] if row["eligible"]]
+    rows = eligibility(root)["tasks"]
     if task_id is not None:
         wanted = {_canonical_id(task_id)}
+        selected = [row for row in rows if row["id"] in wanted and row["eligible"]]
     elif task_ids is not None:
         wanted = {_canonical_id(value) for value in task_ids}
+        selected = [row for row in rows if row["id"] in wanted and row["eligible"]]
+    elif all_gameplay:
+        wanted = {row["id"] for row in rows if row["gameplay"]}
+        selected = [row for row in rows if row["id"] in wanted]
     elif all_eligible:
-        wanted = {row["id"] for row in candidates}
+        wanted = {row["id"] for row in rows if row["eligible"]}
+        selected = [row for row in rows if row["id"] in wanted]
     else:
-        raise ValueError("Select --task-id, --task-ids, or --all-eligible")
-    selected = [row for row in candidates if row["id"] in wanted]
+        raise ValueError("Select --task-id, --task-ids, --all-eligible, or --all-gameplay")
     missing = sorted(wanted - {row["id"] for row in selected})
     if missing:
         raise ValueError("Runtime-eligible tasks not found: " + ",".join(missing))
@@ -272,39 +223,37 @@ def verify(
     except FileExistsError as exc:
         raise ValueError("Another runtime verification batch is active") from exc
     try:
-        source_revision, allowed, reason = _source_revision(root, mode)
-        if not allowed:
-            results = []
-            for row in selected:
-                now = datetime.now(timezone.utc).isoformat()
-                results.append(_write_evidence(root, {
-                    "schema": "godot-project-health.runtime-evidence.v1",
-                    "task_id": row["id"], "title": row["title"], "source_revision": source_revision,
-                    "verification_mode": mode, "test_refs": row["test_refs"], "command": [],
-                    "status": "runtime_unverified", "reason": reason, "started_at": now,
-                    "finished_at": now, "exit_code": None, "report_path": None, "test_results": {},
-                    "runtime_verified": False, "workspace_verified": False,
-                }))
+        state = latest(root)
+        task_definition_revision = str(state.get("revision") or "")
+        if mode == "main" and main_revision(root) != task_definition_revision:
+            results = [_unverified(root, row, task_definition_revision, mode, "The scanned revision no longer matches local main") for row in selected]
+            manifest = None
+            execution_root = None
         else:
             deadline = time.monotonic() + global_timeout
+            batch = root / "logs/ci/project-health-knowledge/runtime/batches" / uuid.uuid4().hex
+            execution_root = batch / "source"
+            manifest = prepare_snapshot(root, execution_root, task_definition_revision, mode, deadline)
             results = []
             for row in selected:
                 remaining = int(deadline - time.monotonic())
                 if remaining <= CLEANUP_MARGIN_SECONDS:
-                    now = datetime.now(timezone.utc).isoformat()
-                    results.append(_write_evidence(root, {
-                        "schema": "godot-project-health.runtime-evidence.v1",
-                        "task_id": row["id"], "title": row["title"], "source_revision": source_revision,
-                        "verification_mode": mode, "test_refs": row["test_refs"], "command": [],
-                        "status": "runtime_unverified", "reason": "Global runtime timeout reached before task start",
-                        "started_at": now, "finished_at": now, "exit_code": None, "report_path": None,
-                        "test_results": {}, "runtime_verified": False, "workspace_verified": False,
-                    }))
+                    results.append(_unverified(root, row, manifest["source_revision"], mode, "Global runtime verification timeout reached before task start"))
                     continue
-                results.append(_run_one(root, row, godot_bin, min(timeout, remaining - CLEANUP_MARGIN_SECONDS), source_revision, mode))
+                results.append(_run_one(root, execution_root, row, godot_bin, min(timeout, remaining - CLEANUP_MARGIN_SECONDS), manifest["source_revision"], task_definition_revision, mode))
+            unchanged = _inputs_unchanged(execution_root, manifest)
+            stable_main = main_revision(root) == task_definition_revision and latest(root).get("revision") == task_definition_revision
+            for result in results:
+                passed = result.get("status") == "passed" and bool(result.get("test_refs")) and unchanged
+                result["workspace_verified"] = bool(passed and mode == "workspace")
+                result["runtime_verified"] = bool(passed and mode == "main" and stable_main and result.get("source_revision") == task_definition_revision)
+                if result.get("status") == "passed" and not (result["workspace_verified"] or result["runtime_verified"]):
+                    result["status"] = "runtime_unverified"
+                    result["reason"] = "Snapshot inputs, scan or local-main revision changed during runtime verification"
+                write_json(root / result["evidence_path"], result)
         output = {
-            "schema": "godot-project-health.runtime-index.v1",
-            "source_revision": source_revision,
+            "schema": "godot-project-health.runtime-index.v2",
+            "source_revision": task_definition_revision if mode == "main" else (manifest["source_revision"] if manifest else "workspace"),
             "verification_mode": mode,
             "tasks": results,
             "summary": {
@@ -334,10 +283,11 @@ def main(argv=None) -> int:
     parser.add_argument("--task-id")
     parser.add_argument("--task-ids", help="Comma-separated task ids")
     parser.add_argument("--all-eligible", action="store_true")
+    parser.add_argument("--all-gameplay", action="store_true")
     parser.add_argument("--mode", choices=("main", "workspace"), default="main")
     parser.add_argument("--eligibility-only", action="store_true")
     args = parser.parse_args(argv)
-    if args.eligibility_only or not any((args.task_id, args.task_ids, args.all_eligible)):
+    if args.eligibility_only or not any((args.task_id, args.task_ids, args.all_eligible, args.all_gameplay)):
         print(json.dumps(eligibility(args.repo_root.resolve()), ensure_ascii=False, indent=2))
         return 0
     godot_bin = args.godot_bin or os.environ.get("GODOT_BIN")
@@ -346,7 +296,7 @@ def main(argv=None) -> int:
     payload = verify(
         args.repo_root, godot_bin, args.timeout_sec, args.task_id,
         args.task_ids.split(",") if args.task_ids else None,
-        args.all_eligible, args.global_timeout_sec, args.mode,
+        args.all_eligible, args.all_gameplay, args.global_timeout_sec, args.mode,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0 if payload["summary"]["failed"] == 0 else 1
