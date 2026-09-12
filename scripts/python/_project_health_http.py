@@ -14,7 +14,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from impact_analyzer import ImpactAnalyzer
-from project_health_knowledge import load_config, latest, query, safe_file, save_config, scan
+from knowledge_locator import CONSUMERS, locate
+from project_health_knowledge import load_config, latest, query, safe_file, save_config, scan, task_details
 from project_health_runtime import eligibility, verify
 
 IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
@@ -59,7 +60,8 @@ def _task(root: Path, task_id: str) -> dict:
     rows = _tasks(root)
     match = next((row for row in rows if row["id"] == str(task_id)), None)
     runtime = next((row for row in eligibility(root)["tasks"] if row["id"] == str(task_id)), None)
-    return {"schema": "godot-project-health.task.v2", "task": match, "runtime": runtime}
+    knowledge = task_details(root, task_id)
+    return {"schema": "godot-project-health.task.v3", "task": match, "runtime": runtime, "knowledge": knowledge}
 
 
 def _source(root: Path, rel: str) -> dict:
@@ -70,7 +72,7 @@ def _source(root: Path, rel: str) -> dict:
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != manifest[rel].get("sha256"):
         raise ValueError("source changed after scan; scan again")
-    return {"schema": "godot-project-health.source.v1", "path": rel, "text": raw.decode("utf-8-sig")[:200000]}
+    return {"schema": "godot-project-health.source.v1", "path": rel, "revision": latest(root).get("revision"), "text": raw.decode("utf-8-sig")[:200000]}
 
 
 def _image(root: Path, rel: str) -> tuple[bytes, str]:
@@ -227,7 +229,13 @@ def handler_factory(root: Path):
                         state["template_state"] = {"task_data_initialized": task_root.exists() and any(task_root.glob("*.json"))}
                         self.send(state)
                     elif path == "/api/knowledge/query":
-                        self.send(query(root, str(request.get("query") or "")))
+                        search = query(root, str(request.get("query") or ""))
+                        consumer = str(request.get("consumer") or "repository-session")
+                        if consumer not in CONSUMERS:
+                            raise ValueError("unknown consumer")
+                        search["consumer"] = consumer
+                        search["locator"] = locate(root, consumer=consumer, text=str(request.get("query") or ""), task_id=str(request.get("task_id")) if request.get("task_id") is not None else None)
+                        self.send(search)
                     elif path == "/api/knowledge/impact":
                         self.send(ImpactAnalyzer(root).analyze(str(request.get("target") or ""), strict=bool(request.get("strict", False))))
                     elif path == "/api/knowledge/config":
