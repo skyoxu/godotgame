@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import secrets
@@ -15,81 +14,108 @@ from urllib.parse import parse_qs, urlsplit
 
 from impact_analyzer import ImpactAnalyzer
 from knowledge_locator import CONSUMERS, locate
-from project_health_knowledge import load_config, latest, query, safe_file, save_config, scan, task_details
+from project_health_godot import build_navigation
+from project_health_knowledge import (
+    latest,
+    load_config,
+    query,
+    save_config,
+    scan,
+    snapshot_bytes,
+    snapshot_text,
+    task_details,
+    task_rows,
+)
 from project_health_runtime import eligibility, verify
 
-IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
-
-
-def _walk_tasks(value):
-    if isinstance(value, dict):
-        if "id" in value and ("title" in value or "status" in value):
-            yield value
-        for child in value.values():
-            yield from _walk_tasks(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from _walk_tasks(child)
+IMAGE_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".svg": "image/svg+xml",
+}
 
 
 def _tasks(root: Path) -> list[dict]:
-    task_dir = root / ".taskmaster/tasks"
-    rows: dict[str, dict] = {}
-    if not task_dir.exists():
-        return []
-    for file in sorted(task_dir.glob("*.json")):
-        try:
-            data = json.loads(file.read_text(encoding="utf-8-sig"))
-        except Exception:
-            continue
-        for task in _walk_tasks(data):
-            task_id = str(task.get("id") or "").strip()
-            if not task_id:
-                continue
-            row = rows.setdefault(task_id, {"id": task_id, "title": "", "status": "", "dependencies": [], "sources": []})
-            row["title"] = row["title"] or str(task.get("title") or "")
-            row["status"] = row["status"] or str(task.get("status") or "")
-            deps = task.get("dependencies") or []
-            if isinstance(deps, list):
-                row["dependencies"] = sorted({*row["dependencies"], *(str(x) for x in deps)})
-            row["sources"].append(file.relative_to(root).as_posix())
-    return sorted(rows.values(), key=lambda item: (not item["id"].isdigit(), int(item["id"]) if item["id"].isdigit() else item["id"]))
+    state = latest(root)
+    rows = task_rows(root, state)
+    configured = state.get("config", {}).get("task_scene_bindings", [])
+    runtime = {str(row.get("id")): row for row in eligibility(root)["tasks"]}
+    result = []
+    for row in rows:
+        task_id = str(row["id"])
+        mapped = any(str(item.get("task_id", item.get("taskmaster_id", ""))).strip() == task_id for item in configured)
+        item = {key: row.get(key) for key in ("id", "title", "status", "dependencies", "recommendedSubtasks", "sources")}
+        item["godot"] = {
+            "status": "configured" if mapped else ("candidate" if runtime.get(task_id, {}).get("eligible") else "unmapped"),
+            "runtime_eligible": bool(runtime.get(task_id, {}).get("eligible")),
+        }
+        result.append(item)
+    return result
 
 
 def _task(root: Path, task_id: str) -> dict:
-    rows = _tasks(root)
-    match = next((row for row in rows if row["id"] == str(task_id)), None)
-    runtime = next((row for row in eligibility(root)["tasks"] if row["id"] == str(task_id)), None)
+    state = latest(root)
+    row = next((item for item in task_rows(root, state) if item["id"] == str(task_id)), None)
+    runtime = next((item for item in eligibility(root)["tasks"] if item["id"] == str(task_id)), None)
     knowledge = task_details(root, task_id)
-    return {"schema": "godot-project-health.task.v3", "task": match, "runtime": runtime, "knowledge": knowledge}
+    config = state.get("config") or load_config(root)
+    navigation = build_navigation(
+        root,
+        task_id,
+        task=row.get("task") if row else None,
+        mappings=row.get("mappings") if row else None,
+        bindings=config.get("task_scene_bindings", []),
+        state=state,
+    )
+    semantic_path = root / "docs/knowledge/generated" / f"task-{task_id}-semantic.json"
+    semantic = None
+    if semantic_path.is_file():
+        try:
+            semantic = json.loads(semantic_path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            semantic = None
+    resources_path = root / "docs/knowledge/generated" / f"task-{task_id}-resources.json"
+    resources = None
+    if resources_path.is_file():
+        try:
+            resources = json.loads(resources_path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            resources = None
+    return {
+        "schema": "godot-project-health.task.v4",
+        "revision": state.get("revision"),
+        "task": {key: row.get(key) for key in ("id", "title", "status", "dependencies", "recommendedSubtasks", "sources")} if row else None,
+        "runtime": runtime,
+        "knowledge": knowledge,
+        "navigation": navigation,
+        "semantic": semantic,
+        "resource_knowledge": resources,
+    }
 
 
 def _source(root: Path, rel: str) -> dict:
-    path = safe_file(root, rel)
-    manifest = {str(item.get("path")): item for item in latest(root).get("records", [])}
-    if rel not in manifest or not path.is_file():
-        raise ValueError("source path is not in the scanned manifest")
-    raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != manifest[rel].get("sha256"):
-        raise ValueError("source changed after scan; scan again")
-    return {"schema": "godot-project-health.source.v1", "path": rel, "revision": latest(root).get("revision"), "text": raw.decode("utf-8-sig")[:200000]}
+    state = latest(root)
+    text = snapshot_text(root, rel, state)
+    return {
+        "schema": "godot-project-health.source.v2",
+        "path": rel,
+        "revision": state.get("revision"),
+        "text": text[:200000],
+        "content": text[:200000],
+    }
 
 
 def _image(root: Path, rel: str) -> tuple[bytes, str]:
-    path = safe_file(root, rel)
-    mime = IMAGE_TYPES.get(path.suffix.lower())
+    mime = IMAGE_TYPES.get(Path(rel).suffix.casefold())
     if not mime:
         raise ValueError("unsupported image type")
-    manifest = {str(item.get("path")): item for item in latest(root).get("records", [])}
-    record = manifest.get(rel)
-    if record is None or not path.is_file():
-        raise ValueError("image is not in the scanned manifest")
-    raw = path.read_bytes()
-    if len(raw) > 16 * 1024 * 1024:
+    state = latest(root)
+    data = snapshot_bytes(root, rel, state)
+    if len(data) > 16 * 1024 * 1024:
         raise ValueError("image exceeds 16 MiB preview limit")
-    if hashlib.sha256(raw).hexdigest() != record.get("sha256"):
-        raise ValueError("image changed after scan; scan again")
-    return raw, mime
+    return data, mime
 
 
 def handler_factory(root: Path):
@@ -168,14 +194,13 @@ def handler_factory(root: Path):
                 elif path == "/api/knowledge/operation":
                     self.send(operation_snapshot())
                 elif path == "/api/knowledge/status":
-                    state = latest(root)
-                    task_root = root / ".taskmaster/tasks"
-                    state["template_state"] = {"task_data_initialized": task_root.exists() and any(task_root.glob("*.json"))}
+                    state = dict(latest(root))
+                    state["template_state"] = {"task_data_initialized": bool(task_rows(root, state))}
                     self.send(state)
                 elif path == "/api/knowledge/config":
                     self.send(load_config(root))
                 elif path == "/api/knowledge/tasks":
-                    self.send({"schema": "godot-project-health.tasks.v1", "tasks": _tasks(root)})
+                    self.send({"schema": "godot-project-health.tasks.v2", "revision": latest(root).get("revision"), "tasks": _tasks(root)})
                 elif path == "/api/knowledge/task":
                     self.send(_task(root, params.get("id", [""])[0]))
                 elif path == "/api/knowledge/source":
@@ -208,12 +233,8 @@ def handler_factory(root: Path):
             path = urlsplit(self.path).path
             try:
                 request = self.read_request()
-                action = {
-                    "/api/knowledge/scan": "scan",
-                    "/api/knowledge/config": "save-config",
-                    "/api/knowledge/runtime-verify": "runtime-verify",
-                }.get(path)
-                task_ids = []
+                action = {"/api/knowledge/scan": "scan", "/api/knowledge/config": "save-config", "/api/knowledge/runtime-verify": "runtime-verify"}.get(path)
+                task_ids: list[str] = []
                 if path == "/api/knowledge/runtime-verify":
                     if request.get("task_id") is not None:
                         task_ids = [str(request.get("task_id"))]
@@ -225,8 +246,7 @@ def handler_factory(root: Path):
                 try:
                     if path == "/api/knowledge/scan":
                         state = scan(root)
-                        task_root = root / ".taskmaster/tasks"
-                        state["template_state"] = {"task_data_initialized": task_root.exists() and any(task_root.glob("*.json"))}
+                        state["template_state"] = {"task_data_initialized": bool(task_rows(root, state))}
                         self.send(state)
                     elif path == "/api/knowledge/query":
                         search = query(root, str(request.get("query") or ""))
@@ -253,6 +273,7 @@ def handler_factory(root: Path):
                             task_id=str(request.get("task_id")) if request.get("task_id") is not None else None,
                             task_ids=selected_ids,
                             all_eligible=bool(request.get("all_eligible", False)),
+                            all_gameplay=bool(request.get("all_gameplay", False)),
                             global_timeout=int(request.get("global_timeout_sec", 3600)),
                             mode=str(request.get("mode") or "main"),
                         ))
