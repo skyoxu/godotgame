@@ -1,6 +1,7 @@
 let sessionToken = null;
 let runtimeById = new Map();
-let selectedTask = null;
+let selectedTasks = new Set();
+let operationTimer = null;
 const $ = id => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -35,6 +36,30 @@ function runtimeLabel(id, eligible) {
   return eligible ? 'eligible' : 'not eligible';
 }
 
+function updateSelection() {
+  $('selection-count').textContent = `${selectedTasks.size} selected`;
+  $('verify-selected').textContent = `验证选中任务 (${selectedTasks.size})`;
+  $('verify-selected').disabled = selectedTasks.size === 0;
+}
+
+async function refreshOperation() {
+  try {
+    const state = await api('/api/knowledge/operation');
+    $('operation-lock').hidden = !state.active;
+    $('app-main').inert = Boolean(state.active);
+    if (state.active) {
+      const scope = state.task_ids?.length ? ` · tasks ${state.task_ids.join(', ')}` : '';
+      $('operation-lock-message').textContent = `${state.action}${state.verification_mode ? ` (${state.verification_mode})` : ''}${scope}`;
+    }
+    return state;
+  } catch (_) { return null; }
+}
+
+function beginOperationPolling() {
+  if (operationTimer) clearInterval(operationTimer);
+  operationTimer = setInterval(() => refreshOperation(), 1000);
+}
+
 async function loadTasks() {
   const [data, eligibility, latestRuntime] = await Promise.all([
     api('/api/knowledge/tasks'), api('/api/knowledge/runtime-eligibility'), api('/api/knowledge/runtime-latest')
@@ -43,19 +68,24 @@ async function loadTasks() {
   const eligibleById = new Map((eligibility.tasks || []).map(row => [String(row.id), row]));
   if (!data.tasks.length) {
     $('tasks').innerHTML = '<tr><td colspan="7" class="empty">没有任务数据；模板仓空状态正常。</td></tr>';
-    $('verify-selected').disabled = true; $('verify-all').disabled = true;
+    selectedTasks.clear(); updateSelection(); $('verify-all').disabled = true;
     return;
   }
   $('tasks').innerHTML = data.tasks.map(task => {
     const runtime = eligibleById.get(String(task.id));
     const eligible = Boolean(runtime?.eligible);
-    return `<tr data-task="${escapeHtml(task.id)}"><td><input type="radio" name="task-select" value="${escapeHtml(task.id)}" ${eligible ? '' : 'disabled'}></td><td><button class="task-detail">${escapeHtml(task.id)}</button></td><td>${escapeHtml(task.title)}</td><td>${escapeHtml(task.status)}</td><td>${escapeHtml(runtimeLabel(task.id, eligible))}</td><td>${escapeHtml(task.dependencies.join(', '))}</td><td>${task.sources.map(path => `<button class="source" data-path="${escapeHtml(path)}">${escapeHtml(path)}</button>`).join('<br>')}</td></tr>`;
+    const checked = selectedTasks.has(String(task.id)) ? 'checked' : '';
+    return `<tr data-task="${escapeHtml(task.id)}"><td><input class="task-select" type="checkbox" value="${escapeHtml(task.id)}" ${checked} ${eligible ? '' : 'disabled'}></td><td><button class="task-detail">${escapeHtml(task.id)}</button></td><td>${escapeHtml(task.title)}</td><td>${escapeHtml(task.status)}</td><td>${escapeHtml(runtimeLabel(task.id, eligible))}</td><td>${escapeHtml(task.dependencies.join(', '))}</td><td>${task.sources.map(path => `<button class="source" data-path="${escapeHtml(path)}">${escapeHtml(path)}</button>`).join('<br>')}</td></tr>`;
   }).join('');
   document.querySelectorAll('.task-detail').forEach(button => button.addEventListener('click', showTask));
   document.querySelectorAll('.source').forEach(button => button.addEventListener('click', showSource));
-  document.querySelectorAll('input[name="task-select"]').forEach(input => input.addEventListener('change', event => { selectedTask = event.target.value; $('verify-selected').disabled = false; }));
+  document.querySelectorAll('.task-select').forEach(input => input.addEventListener('change', event => {
+    if (event.target.checked) selectedTasks.add(event.target.value); else selectedTasks.delete(event.target.value);
+    updateSelection();
+  }));
   $('verify-all').disabled = !(eligibility.eligible_count > 0);
   $('runtime-summary').textContent = `${eligibility.eligible_count} runtime-eligible task(s). ${eligibility.note}`;
+  updateSelection();
 }
 
 async function showTask(event) {
@@ -84,27 +114,34 @@ async function showSource(event) {
 
 async function runRuntime(payload) {
   $('status').textContent = 'Runtime verification running…';
+  await refreshOperation(); beginOperationPolling();
   try {
     const data = await api('/api/knowledge/runtime-verify', {method:'POST', body:JSON.stringify(payload)});
     $('runtime-summary').textContent = JSON.stringify(data.summary, null, 2);
     await loadTasks();
     $('status').textContent = 'Runtime verification complete';
   } catch (err) { $('status').textContent = err.message; }
+  finally { await refreshOperation(); }
 }
 
 async function load() {
   const [status, config] = await Promise.all([api('/api/knowledge/status'), api('/api/knowledge/config')]);
-  renderSummary(status); $('config').value = JSON.stringify(config, null, 2); await loadTasks(); $('status').textContent = 'Ready';
+  renderSummary(status); $('config').value = JSON.stringify(config, null, 2); await loadTasks(); await refreshOperation(); beginOperationPolling(); $('status').textContent = 'Ready';
 }
 
 $('scan').addEventListener('click', async () => {
   $('status').textContent = 'Scanning…';
   try { renderSummary(await api('/api/knowledge/scan', {method:'POST', body:'{}'})); await loadTasks(); $('status').textContent = 'Scan complete'; }
   catch (err) { $('status').textContent = err.message; }
+  finally { await refreshOperation(); }
 });
 $('runtime').addEventListener('click', () => loadTasks().catch(err => { $('runtime-summary').textContent = err.message; }));
-$('verify-selected').addEventListener('click', () => { if (selectedTask) runRuntime({task_id:selectedTask, mode:$('runtime-mode').value}); });
+$('verify-selected').addEventListener('click', () => runRuntime({task_ids:[...selectedTasks], mode:$('runtime-mode').value}));
 $('verify-all').addEventListener('click', () => runRuntime({all_eligible:true, mode:$('runtime-mode').value}));
+$('select-all-visible').addEventListener('click', () => {
+  document.querySelectorAll('.task-select:not(:disabled)').forEach(input => { input.checked = true; selectedTasks.add(input.value); }); updateSelection();
+});
+$('clear-selection').addEventListener('click', () => { selectedTasks.clear(); document.querySelectorAll('.task-select').forEach(input => input.checked = false); updateSelection(); });
 $('query-form').addEventListener('submit', async event => {
   event.preventDefault(); $('results').textContent = 'Searching…';
   try {
@@ -122,6 +159,7 @@ $('impact-form').addEventListener('submit', async event => {
 $('save-config').addEventListener('click', async () => {
   try { await api('/api/knowledge/config', {method:'POST', body:JSON.stringify(JSON.parse($('config').value))}); $('status').textContent = 'Configuration saved; scan to apply'; }
   catch (err) { $('status').textContent = err.message; }
+  finally { await refreshOperation(); }
 });
 $('close-detail').addEventListener('click', () => $('detail').close());
 load().catch(err => { $('status').textContent = err.message; });
