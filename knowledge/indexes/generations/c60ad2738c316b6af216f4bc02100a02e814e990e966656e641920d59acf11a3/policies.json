@@ -1,0 +1,230 @@
+{
+  "consumers": {
+    "chapter4": {
+      "observe_only": true,
+      "task_id_required": false
+    },
+    "chapter5": {
+      "observe_only": true,
+      "task_id_required": true
+    },
+    "chapter6": {
+      "freeze_before_red": true,
+      "task_id_required": true
+    },
+    "repository-session": {
+      "observe_only": true,
+      "task_id_required": false
+    },
+    "review": {
+      "separate_from_chapter6": true,
+      "task_id_required": true
+    }
+  },
+  "policies": [
+    {
+      "consumer": "repository-session",
+      "domains": [
+        "toolchain",
+        "game-design",
+        "game-runtime",
+        "delivery"
+      ],
+      "exact_paths": [
+        "AGENTS.md",
+        "README.md",
+        "workflow.md",
+        "DELIVERY_PROFILE.md"
+      ],
+      "freeze_point": "session-context-ready",
+      "historical_mode": "exact-only",
+      "lifecycles": [
+        "repository-source"
+      ],
+      "max_candidates": 24,
+      "minimum_confidence": "medium",
+      "path_prefixes": [
+        "docs/",
+        ".taskmaster/",
+        ".agents/skills/",
+        "Game.Core/Contracts/",
+        "execution-plans/",
+        "decision-logs/"
+      ],
+      "statuses": [
+        "active",
+        "conditional",
+        "historical"
+      ],
+      "visibility": [
+        "active",
+        "dependency",
+        "conditional"
+      ]
+    },
+    {
+      "consumer": "chapter4",
+      "domains": [
+        "toolchain",
+        "game-design",
+        "game-runtime"
+      ],
+      "exact_paths": [
+        "AGENTS.md",
+        "workflow.md",
+        ".taskmaster/docs/prd.txt"
+      ],
+      "freeze_point": "before-overlay-write",
+      "historical_mode": "forbidden",
+      "lifecycles": [
+        "repository-source"
+      ],
+      "max_candidates": 24,
+      "minimum_confidence": "medium",
+      "path_prefixes": [
+        "docs/prd/",
+        "docs/gdd/",
+        "docs/adr/",
+        "docs/architecture/",
+        "Game.Core/Contracts/",
+        ".agents/skills/workflow-chapter4-"
+      ],
+      "statuses": [
+        "active",
+        "conditional"
+      ],
+      "visibility": [
+        "active",
+        "dependency",
+        "conditional"
+      ]
+    },
+    {
+      "consumer": "chapter5",
+      "domains": [
+        "toolchain",
+        "game-design",
+        "game-runtime",
+        "delivery"
+      ],
+      "exact_paths": [
+        "AGENTS.md",
+        "workflow.md",
+        "docs/testing-framework.md",
+        ".taskmaster/docs/prd.txt"
+      ],
+      "freeze_point": "before-semantic-stabilization",
+      "historical_mode": "exact-only",
+      "lifecycles": [
+        "repository-source"
+      ],
+      "max_candidates": 28,
+      "minimum_confidence": "medium",
+      "path_prefixes": [
+        "docs/prd/",
+        "docs/gdd/",
+        "docs/adr/",
+        "docs/architecture/",
+        "Game.Core/Contracts/",
+        ".taskmaster/tasks/",
+        "execution-plans/",
+        ".agents/skills/workflow-chapter5-"
+      ],
+      "statuses": [
+        "active",
+        "conditional",
+        "historical"
+      ],
+      "visibility": [
+        "active",
+        "dependency",
+        "conditional"
+      ]
+    },
+    {
+      "consumer": "chapter6",
+      "domains": [
+        "toolchain",
+        "game-design",
+        "game-runtime",
+        "delivery"
+      ],
+      "exact_paths": [
+        "AGENTS.md",
+        "workflow.md",
+        "docs/testing-framework.md",
+        ".taskmaster/docs/prd.txt"
+      ],
+      "freeze_point": "before-red",
+      "historical_mode": "exact-only",
+      "lifecycles": [
+        "repository-source"
+      ],
+      "max_candidates": 32,
+      "minimum_confidence": "medium",
+      "path_prefixes": [
+        "docs/prd/",
+        "docs/gdd/",
+        "docs/adr/",
+        "docs/architecture/",
+        "Game.Core/Contracts/",
+        ".taskmaster/tasks/",
+        "execution-plans/",
+        "decision-logs/",
+        ".agents/skills/workflow-chapter6-"
+      ],
+      "statuses": [
+        "active",
+        "conditional",
+        "historical"
+      ],
+      "visibility": [
+        "active",
+        "dependency",
+        "conditional"
+      ]
+    },
+    {
+      "consumer": "review",
+      "domains": [
+        "toolchain",
+        "game-design",
+        "game-runtime",
+        "delivery"
+      ],
+      "exact_paths": [
+        "AGENTS.md",
+        "README.md",
+        "workflow.md",
+        "DELIVERY_PROFILE.md"
+      ],
+      "freeze_point": "review-run-input",
+      "historical_mode": "exact-only",
+      "lifecycles": [
+        "repository-source"
+      ],
+      "max_candidates": 32,
+      "minimum_confidence": "medium",
+      "path_prefixes": [
+        "docs/",
+        "Game.Core/Contracts/",
+        ".taskmaster/tasks/",
+        "execution-plans/",
+        "decision-logs/",
+        ".agents/skills/"
+      ],
+      "statuses": [
+        "active",
+        "conditional",
+        "historical"
+      ],
+      "visibility": [
+        "active",
+        "dependency",
+        "conditional"
+      ]
+    }
+  ],
+  "policy_revision": "godot-project-knowledge-consumer-policies.v2",
+  "schema": "godot-project-knowledge.consumer-policies.v2"
+}

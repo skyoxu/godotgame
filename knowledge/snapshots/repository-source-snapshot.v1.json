@@ -1,0 +1,3953 @@
+{
+  "commit": "18aa0700ab94e0fa512b6282472b7b425b643f10",
+  "ref": "refs/heads/main",
+  "schema": "godot-project-knowledge.repository-source-snapshot.v1",
+  "snapshot_id": "0db16521285a83dbc5a4855eceac35f69536a0c001e74225348ad3fa966224a0",
+  "sources": [
+    {
+      "path": ".agents/skills/bmad-advanced-elicitation/SKILL.md",
+      "sha256": "705cc827cab892855d07dcc926f5c9f749c3abab33e915d6ac1574aec174896b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-analyst/SKILL.md",
+      "sha256": "dff8fbd39de875ccc6735204561f2b7b877788843ecd6e8b6001e7ca7f39641e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-architect/SKILL.md",
+      "sha256": "1bb79ab9d9ae3180a6142d9d20c2a5cb15ad5d5f28e38a7f847295dd04d2299f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-dev/SKILL.md",
+      "sha256": "ab47a75e3031bc58a9783e4f8dece8d44dfdacb7ba74cd56f766b260f9993218",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-game-architect/SKILL.md",
+      "sha256": "644d9984062bab1e81c21a72b371633e1fe5de9e4ed19b49411f8d2592b08d0e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-game-designer/SKILL.md",
+      "sha256": "d14acf1f30961e20929c85411986d367ff7d8ad9d5a4bb5e8074b8e98938d855",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-game-dev/SKILL.md",
+      "sha256": "94cc8f1d6b9c48294e1fa47b5b3b69ee5d5323ccb6e528a1ce5450bc83594cd8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-game-solo-dev/SKILL.md",
+      "sha256": "ca037dd94e5f46902d0e34a118b6f09bab1a54f10b86c0a09bb9572d0d950db7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-game-tech-writer/SKILL.md",
+      "sha256": "a1dab4569f7d888efa2a667d626e747eaccb6dff739e337ec6599e7c56a241d5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-pm/SKILL.md",
+      "sha256": "3a8550daac2df2f01a7c04b66148c1e30b50f81730f043415f2a1aba6314f8a4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-tech-writer/SKILL.md",
+      "sha256": "d39ffa2a931361e9fea11ef5eb96da0fc6b8dbab70dc200142404a50b78e7665",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-tech-writer/explain-concept.md",
+      "sha256": "6ea82dbe4e41d4bb8880cbaa62d936e40cef18f8c038be73ae6e09c462abafc9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-tech-writer/mermaid-gen.md",
+      "sha256": "1d83fcc5fa842bc31ecd9fd7e45fbf013fabcadf0022d3391fff5b53b48e4b5d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-tech-writer/validate-doc.md",
+      "sha256": "3b8d25f60be191716266726393f2d44b77262301b785a801631083b610d6acc5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-tech-writer/write-document.md",
+      "sha256": "c0ddfd981f765b82cba0921dad331cd1fa32bacdeea1f02320edfd60a0ae7e6f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-agent-ux-designer/SKILL.md",
+      "sha256": "3ac99856f0ee9bae3ba05cefab32e90920b4a1fdf0e8c4bf9c440be31f9e5a1f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/SKILL.md",
+      "sha256": "f4a2c22b40ed34cdbd3282dd6161a3b869902f3bc75b58e181fc9faf78eedd9d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-01-session-setup.md",
+      "sha256": "7fd2aed9527ccdf35fc86bd4c9b27b4a530b5cfdfb90ae2b7385d3185bcd60bc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-01b-continue.md",
+      "sha256": "49f8d78290291f974432bc8e8fce340de58ed62aa946e9e3182858bf63829920",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-02a-user-selected.md",
+      "sha256": "7ff3bca27286d17902ecea890494599796633e24a25ea6b31bbd6c3d2e54eba2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-02b-ai-recommended.md",
+      "sha256": "cb77b810e0c98e080b4378999f0e250bacba4fb74c1bcb0a144cffe9989d2cbd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-02c-random-selection.md",
+      "sha256": "91c6e16213911a231a41b1a55be7c939e7bbcd1463bd49cb03b5b669a90c0868",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-02d-progressive-flow.md",
+      "sha256": "6b6fbbd34bcf334d79f09e8c36ed3c9d55ddd3ebb8f8f77aa892643d1a4e3436",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-03-technique-execution.md",
+      "sha256": "b97afefd4ccc5234e554a3dfc5555337269ce171e730b250c756718235e9df60",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/steps/step-04-idea-organization.md",
+      "sha256": "acb7eb6a54161213bb916cabf7d0d5084316704e792a880968fc340855cdcbbb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/template.md",
+      "sha256": "5c99d76963eb5fc21db96c5a68f39711dca7c6ed30e4f7d22aedee9e8bb964f9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-brainstorming/workflow.md",
+      "sha256": "74c87846a5cda7a4534ea592ea3125a8d8a1a88d19c94f5f4481fb28d0d16bf2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/SKILL.md",
+      "sha256": "c683db5628781e6dba6fad388ed65cf7561a208e773f72c786918743e379abef",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-01-document-discovery.md",
+      "sha256": "c763b512d55906122433cb65c1bcd5b5b283e45eacdc07281c8ec7596b6b3980",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-02-prd-analysis.md",
+      "sha256": "38be2bf4b924c0b5b395b57d68f685d790ade7b1a6c10993d3c550675f87d954",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-03-epic-coverage-validation.md",
+      "sha256": "7b187f03a47cba0325fcfd10240410db9c59d93768342fc2dd3de2a01ec23356",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-04-ux-alignment.md",
+      "sha256": "f71e5f0d77615e885ae40fdee6b04c1dd6e472c871f87b515fe869cb5f6966fb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-05-epic-quality-review.md",
+      "sha256": "d8a84e57f4e3a321734b5b5d093458ceb1e338744f18954c5a204f5ce3576185",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/steps/step-06-final-assessment.md",
+      "sha256": "1b9c8c2a21950f85e052e05309bfcb3bfe38157ba6fca402ccf37444e7f1cee3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-check-implementation-readiness/templates/readiness-report-template.md",
+      "sha256": "0da97ab1e38818e642f36dc0ef24d2dae69fc6e0be59924dc2dbf44329738ff6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/SKILL.md",
+      "sha256": "fcdd92af6b97ae64f99a89c37deef0074a974ffa577263e6c79c4b6734c63bda",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/generate-trail.md",
+      "sha256": "4a5936d86fbe5a85285b4535097b1e2edda8849da35586f4b588a982d7224459",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/step-01-orientation.md",
+      "sha256": "d9e3b949c36d49a025f3535773af2b51888fe4ce616b6d6d69683a122716b1d2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/step-02-walkthrough.md",
+      "sha256": "66cf893f8f968ee81034e9ccd8c20415692c3a8c23a9a143c2245fe6c800acdc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/step-03-detail-pass.md",
+      "sha256": "d48163b9f305f15af57729a8443142e47beb6c3e977554afe12b39ee49cb9fc0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/step-04-testing.md",
+      "sha256": "28a56e868968ea2d18add0df8c4bccced0f94b698e218df3d45ddac072ce369c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-checkpoint-preview/step-05-wrapup.md",
+      "sha256": "c2d4dbc17fed4f8ecbfcb09a2f9c77f0d4562bd27397270e2c27ba37cf4fe073",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-code-review/SKILL.md",
+      "sha256": "6801f6742156f125185b1eb6e10c58dfde4ff6545b2e6278acf68cbcfbe0abe4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-code-review/steps/step-01-gather-context.md",
+      "sha256": "d0ee7558605e9d48b5b6f15d9b535542eb6d922613f529bb520326eacade4171",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-code-review/steps/step-02-review.md",
+      "sha256": "1883758e0e91fba439497d04417f03d778f3f6fb12754f49aa8cfa5e15489f70",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-code-review/steps/step-03-triage.md",
+      "sha256": "91eaa27f6a167702ead00da9e93565c9bff79dce92c02eccbca61b1d1ed39a80",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-code-review/steps/step-04-present.md",
+      "sha256": "eee5687e9d7da9a0aeffd78180b8289fca804fc2d59896db5f65a8dd476e4869",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-correct-course/SKILL.md",
+      "sha256": "25be5dd528b5c3996e5fa02fc30b72377f688436742c6962f4a1e9a2dac46e55",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-correct-course/checklist.md",
+      "sha256": "3e082b95def90ccb876e3101ce0bbaf797a0f03a9471e1347361897f27977327",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/SKILL.md",
+      "sha256": "b12711f1655cb809bb74a3e11e40943dce225ccba9d01974d5bf521a5867ba23",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/architecture-decision-template.md",
+      "sha256": "5d9adf90c28df61031079280fd2e49998ec3b44fb3757c6a202cda353e172e9f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-01-init.md",
+      "sha256": "5119205b712ebda0cd241c3daad217bb0f6fa9e6cb41d6635aec6b7fe83b838a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-01b-continue.md",
+      "sha256": "4bf216008297dcea25f8be693109cf17879c621865b302c994cdd15aa5124e5f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-02-context.md",
+      "sha256": "4381c5128de7d5c02ac806a1263e3965754bd2598954f3188219fbd87567e5c9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-03-starter.md",
+      "sha256": "b7727e0f37bc5325e15abad1c54bef716d617df423336090189efd1d307a0b3f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-04-decisions.md",
+      "sha256": "7fc0ebb63ab5ad0efc470f1063c15f14f52f5d855da2382fd17576cf060a8763",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-05-patterns.md",
+      "sha256": "3c80aba507aa46893ef43f07c5c321b985632ef57abc82d5ee93c3d9c2911134",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-06-structure.md",
+      "sha256": "f8333ca290b62849c1e2eb2f770b46705b09fe0322217b699b13be047efdd03e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-07-validation.md",
+      "sha256": "dde4cd93a3015011da9a8a3237aafa2d15d0935205686231e58bf7064f81cc28",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-architecture/steps/step-08-complete.md",
+      "sha256": "6466e5196be63e9e21b81d6fed45f1ff547d6ac739271201d6180febc857473d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/SKILL.md",
+      "sha256": "9db05e4a63ead6e416009fdec250bb9b749b361331964b601559ffeedd2f1c0f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/steps/step-01-validate-prerequisites.md",
+      "sha256": "5c2aabc871363d84fc2e12fd83a3889e9d752b6bd330e31a0067c96204dd4880",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/steps/step-02-design-epics.md",
+      "sha256": "7c66987808c1f84e853fe54b7aff26d209196d450b5644704110f124a15179bc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/steps/step-03-create-stories.md",
+      "sha256": "c5b787a82e4e49ed9cd9c028321ee1689f32b8cd69d89eea609b37cd3d481afc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/steps/step-04-final-validation.md",
+      "sha256": "6b83fcf177c24c6b43c2eb0df2efc1430cb0f357b3ab20ee8a5c5483c3fee079",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-epics-and-stories/templates/epics-template.md",
+      "sha256": "a804f740155156d89661fa04e7a4264a8f712c4dc227c44fd8ae804a9b0f6b72",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/SKILL.md",
+      "sha256": "ada295172352839ec0c38c833387bf3d188052b054eeb44686b9ec075c4944f2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/data/prd-purpose.md",
+      "sha256": "49c4641b91504bb14e3887029b70beacaff83a2de200ced4f8cb11c1356ecaee",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-01-init.md",
+      "sha256": "922f59e960569f68bbf0d2c17ecdca74e9d9b92c6a802a5ea888e10774be7738",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-01b-continue.md",
+      "sha256": "bdc3677aa220c4822b273d9bc8579669e003cc96d49475ddb3116bdef759cf04",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-02-discovery.md",
+      "sha256": "4ef0a3e62c05bfe90fbeca03d58ada11017098523a563003d574462d65f51e78",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-02b-vision.md",
+      "sha256": "641fcd72722c34850bf2daf38a4dfc544778999383aa9b33b4e7569de5860721",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-02c-executive-summary.md",
+      "sha256": "7abf23a4ae7a7e1653cb86d90fdb1698cbe876628de3273b5638cfb05e34b615",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-03-success.md",
+      "sha256": "3959db0848f9a4c99f80ac8d59855f9bb77f833475d3d5512e623d62b52b86dc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-04-journeys.md",
+      "sha256": "a9f2b74f06230916f66a1cf42437e4173061a157642c5eaf0d985d4078872526",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-05-domain.md",
+      "sha256": "983617d33fe6b7e911f34cf6a2adb86be595952ab9a7c7308e7f6b3858b39a12",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-06-innovation.md",
+      "sha256": "a0b3863e11f1dc91c73871967c26c3a2746a11c29a1cd23ee000df5b6b22f1b3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-07-project-type.md",
+      "sha256": "ba60660354a1aa7dff8a03bfff79ace4589af13e3a2945ae78157a33abd12f17",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-08-scoping.md",
+      "sha256": "868accb05c998543ac01ae068c6316e408cbc4e450bf9cc10b16fe843956faa9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-09-functional.md",
+      "sha256": "4880a2f02fdc43964bd753c733c7800b9ccf6b1ccf194b2a8c3f09f1ad85843c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-10-nonfunctional.md",
+      "sha256": "afde3cd586227cec7863267518667605e9487025a9c0f3b7f220c66adbbc347c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-11-polish.md",
+      "sha256": "4271ae5026e30d807f1272b91161d57567badf0bd89e760ea067636d13f12223",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/steps-c/step-12-complete.md",
+      "sha256": "bb9471a4b14729785572480b1e0d9e57ab5a4580a04575aea1b1ea1e22971458",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-prd/templates/prd-template.md",
+      "sha256": "7ccccab9c06a626b7a228783b0b9b6e4172e9ec0b10d47bbfab56958c898f837",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-story/SKILL.md",
+      "sha256": "81517ba8ef137a15002d6d21ef18a1e88190c74ac9e0c5b29227e4059870809a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-story/checklist.md",
+      "sha256": "b94e28e774c3be0288f04ea163424bece4ddead5cd3f3680d1603ed07383323a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-story/discover-inputs.md",
+      "sha256": "dfedba6a8ea05c9a91c6d202c4b29ee3ea793d8ef77575034787ae0fef280507",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-story/template.md",
+      "sha256": "29ba697368d77e88e88d0e7ac78caf7a78785a7dcfc291082aa96a62948afb67",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/SKILL.md",
+      "sha256": "24a4123035194bd3517a059417dcd8114db90f99314ed1a51cfdbbaff02860b2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-01-init.md",
+      "sha256": "0b257533a0ce34d792f621da35325ec11cb883653e3ad546221ee1f0dee5edcd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-01b-continue.md",
+      "sha256": "4d42c6b83eaa720975bf2206a7eea1a8c73ae922668cc2ef03d34c49ab066c19",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-02-discovery.md",
+      "sha256": "9ffd5b31cc869b564e4d78cdc70767f0fb1b04db4c40201ccfa9dde75739fa8d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-03-core-experience.md",
+      "sha256": "1f58c8a2f6872f468629ecb67e94f793af9d10d2804fe3e138eba03c090e00c5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-04-emotional-response.md",
+      "sha256": "75724811b170c8897e230a49e968e1db357fef3387008b0906b5ff79a43dbff9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-05-inspiration.md",
+      "sha256": "b0cadcd4665c46d2e6e89bdb45ddfdd4e4aac47b901e59aa156b935878a2b124",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-06-design-system.md",
+      "sha256": "1c71e452916c5b9ed000af4dd1b83954ae16887463c73776251e1e734e7d7641",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-07-defining-experience.md",
+      "sha256": "17f78d679a187cfb703c2cd30eea84d9dd683f3708d24885421239338eea4edd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-08-visual-foundation.md",
+      "sha256": "985b4da65435114529056f33ff583ec4d1b29feb3550494ae741b6dbb89798a9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-09-design-directions.md",
+      "sha256": "07962c637e69a612a904efccf6188b7f08c9e484d4d7369c74cd0de7da0cb1e3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-10-user-journeys.md",
+      "sha256": "eabe15745e6b68df06833bca103c704d31094c8f070c84e35f1ee9b0c28d10bd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-11-component-strategy.md",
+      "sha256": "52a1d0230160124496467ddbe26dd9cc4ae7d9afceaea987aad658e1bb195f59",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-12-ux-patterns.md",
+      "sha256": "37215fe8ea33247e9a31b5f8b8fe3b36448d7f743c18803e4d5054c201348be8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-13-responsive-accessibility.md",
+      "sha256": "cd4d4e2a307b4cbc805c6954860c93c14a11b74b1e206c45ff89f8b81ab03a62",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/steps/step-14-complete.md",
+      "sha256": "47880f82ada9f2edff8be144328f86fb683fd78aba64ec0ea9dfbff71732be00",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-create-ux-design/ux-design-template.md",
+      "sha256": "ffa4b89376cd9db6faab682710b7ce755990b1197a8b3e16b17748656d1fca6a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-customize/SKILL.md",
+      "sha256": "7617ef46b179e2b9aec7e7176933fd65dcba8fd0ca188ea8beb8cee1dedf449c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-dev-story/SKILL.md",
+      "sha256": "5e7d3bca5051ff8f009bcf608e3fdac3260c2aa6faa8df170a954fe03a4a03f8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-dev-story/checklist.md",
+      "sha256": "630b68c6824a8785003a65553c1f335222b17be93b1bd80524c23b38bde1d8af",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/SKILL.md",
+      "sha256": "756ee0706ff6b8a3d5726b465e81ba244e4eaeba21b7de0d2390473acebb5ddc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/agents/distillate-compressor.md",
+      "sha256": "c00da33b39a43207a224c4043d1aa4158e90e41ab421fff0ea7cc55beec81ef8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/agents/round-trip-reconstructor.md",
+      "sha256": "47c83f4a37249ddac38460d8c95d162f6fc175a8919888e8090aed71bd9383bc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/resources/compression-rules.md",
+      "sha256": "86e53d6a2072b379864766681d1cc4e1aad3d4428ecca8c46010f7364da32724",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/resources/distillate-format-reference.md",
+      "sha256": "616488300d40c6de2f0a69ee153258ed4664e9763048f3993db8efd2adca1706",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-distillator/resources/splitting-strategy.md",
+      "sha256": "26d3ed05f912cf99ff9ebe2353f2d84d70e3e852e23a32b1215c13416ad708b5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/SKILL.md",
+      "sha256": "efe25c8c27116faeeef119078953c38e827db787338fdb2dca65c086f42e0c4b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/checklist.md",
+      "sha256": "581b0b034c25de17ac3678db2dbafedaeb113de37ddf15a4df6584cf2324a7d7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/instructions.md",
+      "sha256": "9f4bc3a46559ffd44289b0d61a0f8f26f829783aa1c0e2a09dfa807fa93eb12f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/templates/deep-dive-template.md",
+      "sha256": "6198aa731d87d6a318b5b8d180fc29b9aa53ff0966e02391c17333818e94ffe9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/templates/index-template.md",
+      "sha256": "42c8a14f53088e4fda82f26a3fe41dc8a89d4bcb7a9659dd696136378b64ee90",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/templates/project-overview-template.md",
+      "sha256": "a7c7325b75a5a678dca391b9b69b1e3409cfbe6da95e70443ed3ace164e287b2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/templates/project-scan-report-schema.json",
+      "sha256": "8466965321f1db22f5013869636199f67e0113706283c285a7ffbbf5efeea321",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/templates/source-tree-template.md",
+      "sha256": "109bc335ebb22f932b37c24cdc777a351264191825444a4d147c9b82a1e2ad7a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/workflows/deep-dive-instructions.md",
+      "sha256": "a79e24b93a25ab456062916a9dad7b6a16dc43ac0b4b555700d3c3751cff0d25",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/workflows/deep-dive-workflow.md",
+      "sha256": "a64d98dfa3b771df2853c4fa19a4e9c90d131e409e13b4c6f5e494d6ac715125",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/workflows/full-scan-instructions.md",
+      "sha256": "2235945df2ae261265187447ce593238e132a026a9b88d3507a1f1d6808a0263",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-document-project/workflows/full-scan-workflow.md",
+      "sha256": "3bff88a392c16602bd44730f32483505e73e65e46e82768809c13a0a5f55608b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/SKILL.md",
+      "sha256": "53d2ee5ccbd1d73290e752cff0235bfdb4928dc5ee70f347992ef15621341124",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-01-init.md",
+      "sha256": "efee243f13ef54401ded88f501967b8bc767460cec5561b2107fc03fe7b7eab1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-02-domain-analysis.md",
+      "sha256": "385a288d9bbb0adf050bcce4da4dad198a9151822f9766900404636f2b0c7f9d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-03-competitive-landscape.md",
+      "sha256": "f10aa088ba00c59491507f6519fb314139f8be6807958bb5fd1b66bff2267749",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-04-regulatory-focus.md",
+      "sha256": "d22035529efe91993e698b4ebf297bf2e7593eb41d185a661c357a8afc08977b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-05-technical-trends.md",
+      "sha256": "fd6c577010171679f630805eb76e09daf823c2b9770eb716986d01f351ce1fb4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/domain-steps/step-06-research-synthesis.md",
+      "sha256": "805f2cb7005a4fb0c4da52ea38d45de863f3e840e0f2de1456c414831cdbdf59",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-domain-research/research.template.md",
+      "sha256": "507bb6729476246b1ca2fca4693986d286a33af5529b6cd5cb1b0bb5ea9926ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/SKILL.md",
+      "sha256": "b0ae6e77ca10f1869c5d3ff8f3ed4f8fe0b318982dde870cef944f18207e4197",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/data/prd-purpose.md",
+      "sha256": "49c4641b91504bb14e3887029b70beacaff83a2de200ced4f8cb11c1356ecaee",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/steps-e/step-e-01-discovery.md",
+      "sha256": "5f733ce1dc3663fbbb1fe661471dc1fcb5a9c02621c1f5599bba5850dfe3b7a3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/steps-e/step-e-01b-legacy-conversion.md",
+      "sha256": "62bf07f0da57c4f87440b5db95928239527542b39be2ff806e85dfca8a0f7e40",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/steps-e/step-e-02-review.md",
+      "sha256": "e6a2025055840d5625fc2eec71209da1d63d6bf530c305d353b1d4500202d8bd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/steps-e/step-e-03-edit.md",
+      "sha256": "38d70a13738c87da364ca7dc5ef9270f84e3c24d5204cdad969e0269f1d55994",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-edit-prd/steps-e/step-e-04-complete.md",
+      "sha256": "9689a795db6e55dd9b946f21b2c4e6a83004693938d9de833334ed76508ddb61",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-editorial-review-prose/SKILL.md",
+      "sha256": "b3687fe80567378627bc2a0c5034ae8d65dfeedcf2b6c90da077f4feca462d0c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-editorial-review-structure/SKILL.md",
+      "sha256": "164444359d74f695a84faf7ea558d0eef39c75561e6b26669f97a165c6f75538",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-generate-project-context/SKILL.md",
+      "sha256": "3d8c20e13e62981464365509fc5e1dfd31e70a94e8c08b048a3e3866ea00ff43",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-generate-project-context/project-context-template.md",
+      "sha256": "54e351394ceceb0ac4b5b8135bb6295cf2c37f739c7fd11bb895ca16d79824a5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-generate-project-context/steps/step-01-discover.md",
+      "sha256": "8b2c8c7375f8a3c28411250675a28c0d0a9174e6c4e67b3d53619888439c4613",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-generate-project-context/steps/step-02-generate.md",
+      "sha256": "b1f063edae66a74026b67a79a245cec7ee85438bafcacfc70dcf6006b495e060",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-generate-project-context/steps/step-03-complete.md",
+      "sha256": "e61463db76a8fa060411aa24127aee936d646b97564e9e2a883494ea50e68464",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-help/SKILL.md",
+      "sha256": "cd7096b2ff55b2b87e12d6b9c4c9ea13dfca78c49299a09327c97107f9531da8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-index-docs/SKILL.md",
+      "sha256": "a855d7060414e73ca4fe8e1a3e1cc4d0f2ce394846e52340bdf5a1317e0d234a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/SKILL.md",
+      "sha256": "720183e577a5f6f307f320703a5ec522190723e957cfe6ad7821d8d833dea0c7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/research.template.md",
+      "sha256": "507bb6729476246b1ca2fca4693986d286a33af5529b6cd5cb1b0bb5ea9926ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-01-init.md",
+      "sha256": "64d5501aea0c0005db23a0a4d9ee84cf4e9239f553c994ecc6b1356917967ccc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-02-customer-behavior.md",
+      "sha256": "bac4de244049f90d1f2eb95e2cc9389cc84966d9538077fef1ec9c35e4533849",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-03-customer-pain-points.md",
+      "sha256": "5b2418ccaaa89291c593efed0311b3895faad1e9181800d382da823a8eb1312a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-04-customer-decisions.md",
+      "sha256": "f0bc25f2179b7490e7a6704159a32fc9e83ab616022355ed53acfe8e2f7059d5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-05-competitive-analysis.md",
+      "sha256": "17532051ad232cfc859f09ac3b44f9f4d542eb24cff8d07317126ccdff0d225a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-market-research/steps/step-06-research-completion.md",
+      "sha256": "4f5d3158a8462656d6959d29544ed5c92cb925641e2205e47af05c124fcd7666",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-party-mode/SKILL.md",
+      "sha256": "bd13fd6cb0b0c61d215e4c394cf4b7cac3a465394c3918f4dc14910513ddb898",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/SKILL.md",
+      "sha256": "9e864f574cc2e1411284edb625a17268aab1f894c46baac2edc3bcf1383adaca",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/agents/artifact-analyzer.md",
+      "sha256": "7bdc44830f8d593346ec0ee15e36e1e431432fcc6c38b70bb861999315c9cfa4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/agents/web-researcher.md",
+      "sha256": "6e9127bb9bd3e4b15c701e4ced9eef328769262cd34eadc221bebe954c1f3aef",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/assets/prfaq-template.md",
+      "sha256": "b27e6964f0437ab4e78c8c0ffbe5052c28e3b3ef2fc811726cbb394d5a5c7559",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/bmad-manifest.json",
+      "sha256": "3da3d0a00b21c040f17bbc5d63283f23b432a92214634b211a5396ca864b2c7d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/references/customer-faq.md",
+      "sha256": "96f8565197649c58908a1d61b6cd805fd01f57da7945ba889c18d087ad597aeb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/references/internal-faq.md",
+      "sha256": "26eb83f844cda1ed8efb50f4703d61713ada8a64bd27eb387f759f858b5748de",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/references/press-release.md",
+      "sha256": "c406adb0e2d2cc326cbc45d0174f89d014523448ad82bc272293999d22aec596",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-prfaq/references/verdict.md",
+      "sha256": "1a1cbc34090114d3a2b928456edec1563b73d84fea66c58e98780bf680f172ec",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/SKILL.md",
+      "sha256": "044459f71dd94177982629837d47c5e507599f351e0acbab0edf9d36e5f08d2e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/agents/artifact-analyzer.md",
+      "sha256": "dcd8c4bb367fa48ff99c26565d164323b2ae057b09642ba7d1fda1683262be2d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/agents/opportunity-reviewer.md",
+      "sha256": "3b6d770c45962397bfecce5d4b001b03fc0e577aa75f7932084b56efe41edc07",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/agents/skeptic-reviewer.md",
+      "sha256": "fc1642dff30b49032db63f6518c5b34d3932c9efefaea2681186eb963b207b97",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/agents/web-researcher.md",
+      "sha256": "66aadb087f9bb3e7d05787c8f30237247ad3b90f241d342838e4ca95ed0d0260",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/bmad-manifest.json",
+      "sha256": "22c9c569e116024e19ce8d57a1572a9be456dadc3df309a6e3922862a72775b6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/prompts/contextual-discovery.md",
+      "sha256": "b29d2c555cec9777d43b9aa7193881c468e619db14f366f53a3be5661d0e05b4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/prompts/draft-and-review.md",
+      "sha256": "e05a02ea67fcd0f4683b9c9bd42ac8673878d403e002037e3962062d11f69059",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/prompts/finalize.md",
+      "sha256": "973a3e2ae70f9c2413c5435591a4b8d1919e8a209c139d063483bc5028922ee3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/prompts/guided-elicitation.md",
+      "sha256": "db9c691986aeb9ccc2aae824eefabb1740e64920b5bb9a517e3b7d99bcaa3da5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-product-brief/resources/brief-template.md",
+      "sha256": "d42f0ef6b154b5c314090be393febabd61de3d8de1ecf926124d40d418552b4b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-qa-generate-e2e-tests/SKILL.md",
+      "sha256": "ad6025f0279ef9fac2f6c76d8f612c37ccc23f8062b7ac0ac40708b49cc7db80",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-qa-generate-e2e-tests/checklist.md",
+      "sha256": "b58f810aeb1040c2f6758c88aa133afce72f8cc178d3d97ff0fbaa3d943057dc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/SKILL.md",
+      "sha256": "2b2e57e5327fc69962e6529a0c17498185b571646a9c7360e5c15be14ea7e63b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/compile-epic-context.md",
+      "sha256": "5cfda02f252941e415b80c57b4528f46226b3cbf456ad45d78fcb5a7ef4816e2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/spec-template.md",
+      "sha256": "3ee15d5a63cf5eeee74149c590668fc61d0e44023eac12988a1ca2a9438a9d39",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-01-clarify-and-route.md",
+      "sha256": "b5eb9f0cecf2a462885b8e7b4c21abbaec1e95c8abbd76bc410d9090fd8379f0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-02-plan.md",
+      "sha256": "72f4df415adceaaf554166983559e058c6a019d783d0f87cf42c401db3c5f52c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-03-implement.md",
+      "sha256": "4d848865eafe5eeba7d83529c766bd410a9cc20a05de1d6a764954c7275b4749",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-04-review.md",
+      "sha256": "e62a50a37ab20eb426f5abd44179dfac51548707b5e85e6fe7817c144cbe3dae",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-05-present.md",
+      "sha256": "ea49ce8703d4946ec54a59ff428d52ad64ab2649f49c43230bec1f3d09e85b55",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/step-oneshot.md",
+      "sha256": "d68648848bb8277f5b762c3528c2aa42122268037b97d252a8f4faf4edb2830e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-quick-dev/sync-sprint-status.md",
+      "sha256": "c0f2fdb940984206a4b7aa2467fbcb7c4811f648634e43a488593974e9efff5e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-retrospective/SKILL.md",
+      "sha256": "997308d999545fa6c82b8652a2973e1d89d82cfbf892531e25e491291a95c33e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-review-adversarial-general/SKILL.md",
+      "sha256": "7bffc39e6dba4d9123648c5d4d79e17c3c5b1efbd927c3fe0026c2dbb8d99cff",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-review-edge-case-hunter/SKILL.md",
+      "sha256": "f49ed9976f46b4cefa1fc8b4f0a495f16089905e6a7bbf4ce73b8f05c9ae3ee6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-shard-doc/SKILL.md",
+      "sha256": "3a1538536514725fd4f31aded280ee56b9645fc61d114fd94aacb3ac52304e52",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-sprint-planning/SKILL.md",
+      "sha256": "21946cdaef8115deee6ce322c460e8af39368509d700c778cd7109f50a6821eb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-sprint-planning/checklist.md",
+      "sha256": "80b10aedcf88ab1641b8e5f99c9a400c8fd9014f13ca65befc5c83992e367dd7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-sprint-status/SKILL.md",
+      "sha256": "2fe141bc2033ea341a73fb93349fcee0296d8d8714fcf984ab056bc0abae0a19",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/SKILL.md",
+      "sha256": "1c4b61afaeedd3191db65923253be56084c64e4f832f0e2b9179671f91b5bf20",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/research.template.md",
+      "sha256": "507bb6729476246b1ca2fca4693986d286a33af5529b6cd5cb1b0bb5ea9926ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-01-init.md",
+      "sha256": "c9a1627ecd26227e944375eb691e7ee6bc9f5db29a428a5d53e5d6aef8bb9697",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-02-technical-overview.md",
+      "sha256": "9c7582241038b16280cddce86f2943216541275daf0a935dcab78f362904b305",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-03-integration-patterns.md",
+      "sha256": "005d517a2f962e2172e26b23d10d5e6684c7736c0d3982e27b2e72d905814ad9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-04-architectural-patterns.md",
+      "sha256": "4636f23e9c585a7a0c90437a660609d913f16362c3557fc2e71d408d6b9f46ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-05-implementation-research.md",
+      "sha256": "e2b8a2c79bcebadc85f3823145980fa47d7e7be8d1c112f686c6223c8c138608",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-technical-research/technical-steps/step-06-research-synthesis.md",
+      "sha256": "64d9303ef0c9ce839dc3b2d72e94e3e5b4673e82dc7fc9f1571bd0b03b3a43a7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/SKILL.md",
+      "sha256": "801127bfb5592608fb8e7d3e5d89f37e7c675ab4710520f87a5db4d8a8240d88",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/data/prd-purpose.md",
+      "sha256": "49c4641b91504bb14e3887029b70beacaff83a2de200ced4f8cb11c1356ecaee",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-01-discovery.md",
+      "sha256": "65c4686abf818f35eeeff7cf7d31646b9693f3b8aaaa04eac7c97e9be0572a57",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-02-format-detection.md",
+      "sha256": "c27ea549b1414a9a013c6e334daf278bc26e7101879fd5832eb57ed275daeb0d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-02b-parity-check.md",
+      "sha256": "5216fea52f9bbcb76a8ea9b9e80c98c51c529342e448dcf75c449ffa6fbaa45f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-03-density-validation.md",
+      "sha256": "1eed2b7eea8745edefbee124e9c9aff1e75a1176b8ba3bad42cfcf9b7c2f2a1c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-04-brief-coverage-validation.md",
+      "sha256": "7b870fea072193271c9dc80966b0777cbc892a85912a273ba184f2d19fc68c47",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-05-measurability-validation.md",
+      "sha256": "06a8762b225e7d77f9c1b9f5be8783bcced29623f3a3bc8dbf7ea109b531c0ae",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-06-traceability-validation.md",
+      "sha256": "58b89788683540c3122f886ca7a6191866a3abb2851bd505faa3fc9ab46a73c4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-07-implementation-leakage-validation.md",
+      "sha256": "aeab46b20c6aafc4b1d369c65ccf02a1fc5f7de60cbffddf7719e2899de6fe28",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-08-domain-compliance-validation.md",
+      "sha256": "1be1de3adc40ded63e3662a75532fa1b13c28596b3b49204fbda310f6fa5f0da",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-09-project-type-validation.md",
+      "sha256": "fffbf78461186456a5ca72b2b9811cb391476c1d1af0301ff71b8f73198c88d1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-10-smart-validation.md",
+      "sha256": "81bf3fbe84054b51cb36b673a3877c65c9b790acd502a9a8a01f76899f5f4f4c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-11-holistic-quality-validation.md",
+      "sha256": "4be7756dce12a6c7c5de6a551716d9e3b1df1f5d9d87fc28efb95fe6960cd3ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-12-completeness-validation.md",
+      "sha256": "20371cf379d396292dd63ad721fe48258853048e10cd9ecb8998791194fe4236",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/bmad-validate-prd/steps-v/step-v-13-report-complete.md",
+      "sha256": "67458c55a321c0d2857371a7588fbd387497570cd1b7c53f5a0cf558e1cdc325",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-architect/SKILL.md",
+      "sha256": "40467ae92aee8a33b2fd0c772173b6c3eea2ade2e1e094cf54b577176ad5e1a4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-designer/SKILL.md",
+      "sha256": "c0380daebece5446c57362bb504829c2f6d4f23683a62e482884f76e319d8fb7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/SKILL.md",
+      "sha256": "cb01a9e3d2cc5c7aa97bc6a0126a6a7ec43a7c086be88c75e209ea86dc39ced7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/balance-testing.md",
+      "sha256": "01843831d603883219828afbe19784864464277f3bcddb2c104ff05bedbb8053",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/certification-testing.md",
+      "sha256": "9e7f57aac247f9c4d384b498f749e2e2376b8706066fb60d3e7b9c27d3ffccab",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/compatibility-testing.md",
+      "sha256": "52647005c34e8219084c35536c6bcdec284936cdaf215cd0c6d130804f3823d7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/e2e-testing.md",
+      "sha256": "e6480e6a6011c21fd68dc4eeb1d00653773c5436c67b7baaaa22ab168fc4aa69",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/godot-testing.md",
+      "sha256": "17b51e665fe6c0e49d7619710bf5a199b3feb3de2f035aff03075a2e7aadf4ac",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/input-testing.md",
+      "sha256": "331c6c844db592deac86847e3982b5fad8ebb7ead322ab637093f92152bfe90d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/localization-testing.md",
+      "sha256": "6eee5cccfd9a81db853a8aa2327bd5f898276155a0868758a2c76c6e9094d0fe",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/multiplayer-testing.md",
+      "sha256": "51ac9e47ba1a8ddae7720d301f97596d67d72252d91cd44338fd73353fc5969d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/performance-testing.md",
+      "sha256": "b9acfb6f8d20b9f9d2e7b83419298f3053f6fc5dab5cb9005898d133556c09fe",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/playtesting.md",
+      "sha256": "bd989a375d3e444da9b892bf0e33ed98c9f9d88f578f260501c3eaf7553d0b3c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/qa-automation.md",
+      "sha256": "1de6d14ea9299a2b73a2da33dff6c5b4c1bf5757365a5449968589baaa123cbc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/regression-testing.md",
+      "sha256": "bbf85811219194de9df3499277f93427d2cc623384a8f1ac22726067ab6426dd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/save-testing.md",
+      "sha256": "b64e42def93f604dcfadd6ed81c8950e1d0eb75d936f1da7de3f727323e76201",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/smoke-testing.md",
+      "sha256": "41843100e39f9a2d48316623d979cfdeed5f0977db5241a1a52f1049301dcd6f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/test-priorities.md",
+      "sha256": "bf1c726cfcbd44511a97820e1c4d4de1f4b2579ca97cd216f91b91fbeb72e04a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/unity-testing.md",
+      "sha256": "17b84ad2c6b651cad40edf697991be60b86aa80d3c98666c08b71e8908474492",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-dev/gametest/knowledge/unreal-testing.md",
+      "sha256": "0ca53c31bd4c65dac328488433b49b7673e25f47e9945d9abfa9644c43bf2572",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-game-solo-dev/SKILL.md",
+      "sha256": "710885deacd65c2fd018642ed6009c146263b6bba27c97b410632246ba320edc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/SKILL.md",
+      "sha256": "27c0bad5f0b1f7464f75996826b4c9a666f53ba125c9a6e741e7935eb4ca411c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/documentation-standards.md",
+      "sha256": "b046192ee42fcd1a3e9b2ae6911a0db38510323d072c8d75bad0594f943039e4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/explain-concept.md",
+      "sha256": "6ea82dbe4e41d4bb8880cbaa62d936e40cef18f8c038be73ae6e09c462abafc9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/mermaid-gen.md",
+      "sha256": "1d83fcc5fa842bc31ecd9fd7e45fbf013fabcadf0022d3391fff5b53b48e4b5d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/update-standards.md",
+      "sha256": "a4bbbff641c454f872cad8b263bf96b0f519e718e7f6c0b18d283c46e4df377c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/validate-doc.md",
+      "sha256": "5e12651ffc5c8020b59d66e267a6d5605f0e4583683935528697fe642d58af9e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-agent-tech-writer/write-document.md",
+      "sha256": "d76084c9a1b2da01960819b1daa1714c8580f13005d2ea1e0bb9f94ef9005e8d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/SKILL.md",
+      "sha256": "c177e420a848ca55cece7a9e05491cc79a1d11da31917883a1b697c90e49f154",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/game-context.md",
+      "sha256": "d0f5cb4d6151bb65b799676281ea2af0fe1b5ec227c92ceba655ba363e18a0ba",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/steps/step-01-init.md",
+      "sha256": "eca859cb1c662a92b3f3f3590fdd2272a183707a58ff9dc8a8944355a0794ac1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/steps/step-02-context.md",
+      "sha256": "823252089860938bb1ef7d7167a4c974b93a910d7428d9b83fa532743763b06a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/steps/step-03-ideation.md",
+      "sha256": "cc31cc1d5eed19349cdfc9ce7e9cc176e31c3f94dd4195354a96edc5ef2766ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-brainstorm-game/steps/step-04-complete.md",
+      "sha256": "70249af936c84a93bd110851b1ff2e013088ec6ae56a69803ec60823d9bbb184",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/SKILL.md",
+      "sha256": "65bb8d35eca535c2285ed6845b83da15ef2b9fe734f45f05f318febf792cf62a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-01-document-discovery.md",
+      "sha256": "92b09399c38bf96da3379d96f4709f19f4bc727a6bcf1adf080416ab5fc161ea",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-02-gdd-analysis.md",
+      "sha256": "d617aa1ece3a5d1c864ec8befa13eca5ce9947a4c95d05864514757f29ceb39c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-03-epic-coverage-validation.md",
+      "sha256": "300a9c39dc879d3265f2b753bbf11439b8a8f35d9fb3bb8223f55af19cba1bc0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-04-ux-alignment.md",
+      "sha256": "dbc0e078c29b253bcbe621a3f2f6489d5ac5b2b489c49b74812bc99bbf37d07a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-05-epic-quality-review.md",
+      "sha256": "c08c2a8971947e08c20bb2921daaf6ba2343241dc94abcbfab9f98b82d36bf83",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/steps/step-06-final-assessment.md",
+      "sha256": "82ed2106b21626ece71e503c18ea0471c9505bd6095f70190014831d3cdb7d52",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-check-implementation-readiness/templates/readiness-report-template.md",
+      "sha256": "0da97ab1e38818e642f36dc0ef24d2dae69fc6e0be59924dc2dbf44329738ff6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/SKILL.md",
+      "sha256": "abf173c33a51dd38031bc01393be586ae01e0e31c4e9f9896ade3e6c4adfbdd6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/backlog-template.md",
+      "sha256": "84b1381c05012999ff9a8b036b11c8aa2f926db4d840d256b56d2fa5c11f4ef7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/checklist.md",
+      "sha256": "e30d2890ba5c50777bbe04071f754e975a1d7ec168501f321a79169c4201dd28",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/discover-inputs.md",
+      "sha256": "dfedba6a8ea05c9a91c6d202c4b29ee3ea793d8ef77575034787ae0fef280507",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/steps/step-01-gather-context.md",
+      "sha256": "dedb3db28815e3df3363bc0d52d00cf7c13db798ac57b622172062e3b38abb8b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/steps/step-02-review.md",
+      "sha256": "00a6a01eef43d1d29861b1625058f64fcd0851824766e701ddfa338499d78bab",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/steps/step-03-triage.md",
+      "sha256": "f8dfcba535cd65a053146f96965324d88ed01a790d2aa4bc352869eb90f80a45",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-code-review/steps/step-04-present.md",
+      "sha256": "b92b5fadcee1ed5851195b1e842b03e5f96b38f20d4805ac8472383cc47abed9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-correct-course/SKILL.md",
+      "sha256": "a11c4da09f60845bdcd611490e265d25b8d6a3f57fa2a99f01189b53d6c5e1c4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-correct-course/checklist.md",
+      "sha256": "3e082b95def90ccb876e3101ce0bbaf797a0f03a9471e1347361897f27977327",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/SKILL.md",
+      "sha256": "89f33063cc2983b13f5ecb03f39a02e56516379ef1f193071a8ca67a9d3a0e67",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/steps/step-01-validate-prerequisites.md",
+      "sha256": "956d5cf655621b750f77af9144ebf8ea5c86f910d053469a7e5eabc653c4a341",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/steps/step-02-design-epics.md",
+      "sha256": "93f3c1cfe187846646b11d49a6bb0c6884076fc906d2c9e43b5c1d4e00c36a9c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/steps/step-03-create-stories.md",
+      "sha256": "01a5d4b0d760a4dd6ecf911f4e3a3e21159b326e24105813c55630faf8fae628",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/steps/step-04-final-validation.md",
+      "sha256": "9e54271fe47b9795b875c8a0ba2b14d378706796450e113f951ffde29631ecb0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-epics-and-stories/templates/epics-template.md",
+      "sha256": "e61ae220bfb3e2394e0f0d58dc4c5436343703b0ff8efe18e0f690b584571927",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/SKILL.md",
+      "sha256": "a6ed41211c22fef48eb7627bab3bf9f74bf34d0360e3030b6c3dda619082d634",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/checklist.md",
+      "sha256": "3516d66cffceb3e5ab23e1ddc9aaed8c0335eb0755e7437488cdebff96162395",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-01-init.md",
+      "sha256": "0f4184419fe89698c272d959b6e816daca81f4b15e09ab87c7475c940172121a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-01b-continue.md",
+      "sha256": "b742c364da8d60d94db84fe6a3a5cef08a77612a64bc0a7cb46e3b5eb354de3a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-02-vision.md",
+      "sha256": "66c999bad79ac6a267975876fadf54a09a9c41f29f3d911b4560e64d9de98c5d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-03-market.md",
+      "sha256": "3435a83b18d2961f13e14f97571fce53af1877f2e09d8f20cbbdc1853d115a32",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-04-fundamentals.md",
+      "sha256": "31183563ca54d28efc4f85cf55285188fd3c9d91181bdcec8975240f9ab42d97",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-05-scope.md",
+      "sha256": "c53c4e02a661927284a31482b615114633ffa4a1534ba394e36c7c0b35ad8008",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-06-references.md",
+      "sha256": "d40571cfc0bd0188edfb962970f431d492182fef766b2c766004759fb068304c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-07-content.md",
+      "sha256": "d8fa4a93d0d0b7e6bef1f7dd42fada232053516063f3cd4430f6f9065db93d57",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/steps/step-08-complete.md",
+      "sha256": "6ba54f9f4236fbd3e836bc24373eaa22bd4d330c20760a17b6e82a3fa1232651",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-game-brief/templates/game-brief-template.md",
+      "sha256": "6d5555fae3763e8528898663d51276e0cc7d2d9725a8c74162d8e9732dbc5843",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/SKILL.md",
+      "sha256": "ae6261e2009d3f46155a84d3ae1ca6c5b3aaf019e9c94a20a7d3bbc56debed35",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/checklist.md",
+      "sha256": "d733c5d0118d692710fb7af3018239f4fc01c47fe122437db6d8477d697b3fb3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/action-platformer.md",
+      "sha256": "f1cbe9e9a52acd01ff120d05ce22fa81b30500933f62a3c6c36642280244057c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/adventure.md",
+      "sha256": "06aa57786c2e7ebc7580d501fcdefaabb28933c7b5785d6643bf643f58ae13e7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/card-game.md",
+      "sha256": "6b9298ace2607c8e93d64533e6406828053234282e4977e4407faa2e9302fd0a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/fighting.md",
+      "sha256": "52e5a142aac496ae7154fc0829bfbce1ef22296f0a464cf8e595aa14ca02eb86",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/horror.md",
+      "sha256": "7ff7599d5701bb7a8ef0e14f3ba614626cdd0d8960a8e880fc1cd41c5f508f75",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/idle-incremental.md",
+      "sha256": "515b52bb301e467c1f096cc55abde47159bb0b0d87157b9fa565973b48601ddf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/metroidvania.md",
+      "sha256": "2a8c101dda7911d1cd1d9c66d1be86af3725832f5dcc7fab71e95204f45614ea",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/moba.md",
+      "sha256": "92d0ba9f7508a38d5bfeac1651c6aee8a1a58c54659ad3f0e0d1fd678a1ef498",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/party-game.md",
+      "sha256": "0cc50b3aede0c45c94cdff743cdac2d8ad67421ea80497a29d2300a1744ea703",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/puzzle.md",
+      "sha256": "f9c08b6f087bfaa41ea08c9dfa78aa034f5ae46b627b9f476bdf8b4f5c3389ed",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/racing.md",
+      "sha256": "085ea5d0914d7bc6a233c479d0ad6288a575ad1c8b9a8a85881e779fac0e60fc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/rhythm.md",
+      "sha256": "83bbf1761fdc604b8c2b50ed86c5874cce331417e1b3a46c65cb6c4c1a7c8db2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/roguelike.md",
+      "sha256": "fb1ebc838011020a6f740e6fb4f2ceb81be8477f9c67bc7ae3a8e34dfe548f00",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/rpg.md",
+      "sha256": "5aa57ecefb448a0507ee0c8d503b43bd34d0c612ba130240d1af9842b80cba50",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/sandbox.md",
+      "sha256": "836f656bbaae549f31ac574c0865a61de451c08ab8c561db2c93398e147ece85",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/shooter.md",
+      "sha256": "2452850295ac2b9fac04ce2d6126bfc19bb7dccbb04c40e7f89c801aecc5555d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/simulation.md",
+      "sha256": "fd74a7d21243f8d9827fe6a99263579309bc0aabd9e56261d3dd4eb5cfc75ad5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/sports.md",
+      "sha256": "2247ea87dbca74e879f8c686d9e80434618e9e61bd3572739274c1af64cb0bb8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/strategy.md",
+      "sha256": "997380919f6c1b408906c364f74e728b9c6b45bf2960d1f0bfe8b0def594735e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/survival.md",
+      "sha256": "3647795ee0073a85217633412a41a938e51a553776acbe9ac953fb403e3437f9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/text-based.md",
+      "sha256": "5895ca65dc93f676bb33b754f2c6be85d5d9b651df87d8431d404dc9bb736ee7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/tower-defense.md",
+      "sha256": "03a2cc577fdd1a183ba04409b01b22f2f38713d28f1278481b0f221858f97ec8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/turn-based-tactics.md",
+      "sha256": "30a150d8a0ab746f0c67d414be79e7e421fff1b8b7a1b716e64800df72bdb6c2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/game-types/visual-novel.md",
+      "sha256": "2d98f4c682f0abbd6330ac1bad04600c596e6b27302adbe9510fc0c0bf53052c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-01-init.md",
+      "sha256": "40145df4ef12f1fe919381b1d6b99cad43e9aa18e7f50b58aa2a84f7b3e6ba32",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-01b-continue.md",
+      "sha256": "76125d5854b3ad6e20bfb3f78c964d7f23c7c9580884dfb83a4112aff33b37c9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-02-context.md",
+      "sha256": "21ad9b6fcd4a98d681646a67fef173d73308b308f9f6504a9eded8ca0e66c171",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-03-platforms.md",
+      "sha256": "d14eda065cd1c87b18ea01f01d19d9a44a596d1b9dded5b0606827f99292ab49",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-04-vision.md",
+      "sha256": "3c8637851a078beb38168f2e901f5aee6746e1f134442f557e835dd4d836010d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-05-core-gameplay.md",
+      "sha256": "2b15ce6e38b0678c98115ff6f25b1ba5eda47686c18af451c492c57a7f9bd4a9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-06-mechanics.md",
+      "sha256": "90e2f9e7fa1cdc9b77b4073734911833c3d36c02e1627f7a2a65de73b07b8e74",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-07-game-type.md",
+      "sha256": "44cc010c546911818ab65c153f413cec6dfe0f5c3aababe77354542441d2c568",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-08-progression.md",
+      "sha256": "f215c05fc47ff794124438efc659e1412590a17efc8dec4f5f4d245a198ec078",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-09-levels.md",
+      "sha256": "d525dc7cfbb53c82af73532b83b8ebf5df2423f39972d0ef31177de031f702bb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-10-art-audio.md",
+      "sha256": "6283cc8cb31601a1b6bf271c4e612792e86b5ddbea4e6a87628f2e42701580b3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-11-technical.md",
+      "sha256": "11d92f543a41fef236056187c6ae4a572e1272d03b55096e334f41d2d7a332db",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-12-epics.md",
+      "sha256": "ff024c4d2e25bbce930deac4fcf8cd9f59faa07dba9b70fd71b0f963f5dbf37d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-13-metrics.md",
+      "sha256": "0d3d1563340fbc90821b51e119e5a172bbe91c21159f294e2e1c1d66833f53de",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/steps-c/step-14-complete.md",
+      "sha256": "c7e35ed931096fb26bd6855635dfd009eb4c4fe370a13ca920edef80dd7e636c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-gdd/templates/gdd-template.md",
+      "sha256": "070ccbb7f491dc1b1d126245c2e4db4a55dbc5a7ee6a6df4be521ca70e3c9ea6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/SKILL.md",
+      "sha256": "9c171e07fbca1fbad10d62087f337c718dcaa80dff1212c43c2c08021dbb0c7d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/checklist.md",
+      "sha256": "9bcfa41212cd74869199dba1a7d9cd5691e2bbc49e6b74b11e51c32955477524",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-01-init.md",
+      "sha256": "5691536f98f127eb19baeeff3f4a4a6646a84cc393c74921a242c528e96cb9c8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-01b-continue.md",
+      "sha256": "01560e00ece082145aa3f775f1b63ed9baf5b1f28e113c615ac2caa03383a0f1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-02-foundation.md",
+      "sha256": "1e73ffe1540d2eb38b293848b6a01a8acc96e90ed1b5bb6e03ed48bdb2b60dea",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-03-story.md",
+      "sha256": "323cddfe1eb7c2639e872410f41938380e5f3a5a0e2497eb1e08628498d6b693",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-04-characters.md",
+      "sha256": "62768bf6ee2d8cd09a0aa5e8d59ad02da552983c9e7c51b4197e276f92530d10",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-05-world.md",
+      "sha256": "5299a1c4cf2ba1fbd35b11de9b5112c825a7cb81ce5bbb4e517ac1d363de1877",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-06-dialogue.md",
+      "sha256": "41eeb85da9cdb3c52f4a0b713d5ffaed11bc8f660e3aaa772a7cefd02aa3a4bf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-07-environmental.md",
+      "sha256": "3a8c5898d2659c7c185554a53e80ccdb85d35cbc925e35681b142655068457b0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-08-delivery.md",
+      "sha256": "720f99945f72579c9eb564f7e6d97cad7ae70a08bf6bc710b58467f1a9c441c8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-09-integration.md",
+      "sha256": "deede2f73efebb7ab44bb1d91584e52c032e2d2cfe630349817f1d994edb2bcb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-10-production.md",
+      "sha256": "2915b7b30a2341e4f4252d65320ae4d9079477a66cc2784ab6452fc97373fdb6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/steps/step-11-complete.md",
+      "sha256": "154a88a667eecadad044ce6f6de9a93a462b3d6aed97e927874cfc84b41e4f72",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-narrative/templates/narrative-template.md",
+      "sha256": "a97e07173c540f85e946eb9c525e1ccad9294ae5f970760f2a9c537b5c0dcd6b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/SKILL.md",
+      "sha256": "3413ef01e5fc9adabe2f74541dbb555c9d1ac66e04265be625e6f6397e5d6a61",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/data/prd-purpose.md",
+      "sha256": "9e2738afd4a0f11f232ea9b64c56baa6535e95e3bcbc1d3861b1c43fa5008901",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-01-init.md",
+      "sha256": "aebff462d85ed2c5c2ddb6bfbff11c4291a3d8529cf0993b69cb01eaf2c57d56",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-01b-continue.md",
+      "sha256": "c2c939cf2dc096e7cbc42a59f82bc986ba5d5119249c61e9520cb618347ef401",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-02-discovery.md",
+      "sha256": "811534d2a58530b0259922f644cdee3b577c5e1ebabbcd7cec6c241905240d9e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-02b-vision.md",
+      "sha256": "e8330b41a89a5d7a225bbfc34208e52e9168d2bec1825a19c1604413733c1a19",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-02c-executive-summary.md",
+      "sha256": "3d92407fdd44d5caf201c2cc3fb3a377b66324814b9d534aa586be02a3d430f0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-03-success.md",
+      "sha256": "5062daf8ddf2e68056451e9279473e4c766f3bbd48b059ba6016c23ac1fdd834",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-04-journeys.md",
+      "sha256": "d90f3a5cbf7c6eb549d07b70f66aa57e8a05bf50104aff03421f21733b611ac8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-05-domain.md",
+      "sha256": "d4e9be19128697491a11f5e2dddf08552cb6c0bfce52fc1b02ed4baabd66be21",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-06-innovation.md",
+      "sha256": "34369fb544f559b779a6b8fba32b9bd3bdccbaf083c7f01d311d6fdc85b1e95a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-07-project-type.md",
+      "sha256": "26631ee08b4014abe21da6079eb38c4c910effd1f6c69cb4dcece18cbcf9f683",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-08-scoping.md",
+      "sha256": "132d72250c89863852458c40f068d2b5f88a52ceb46923f118de63fe82fa261c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-09-functional.md",
+      "sha256": "7b3f25182c92a55b393e841d2cca7db0125d2a107deee27bc54d6d9433584a8a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-10-nonfunctional.md",
+      "sha256": "f3c67399bef6c3ce595bb3cbaa9f9fb3d96a50965b9f4b926d7e9a42cd1956ac",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-11-polish.md",
+      "sha256": "eaedd95e40ad47fed4362ccf6da99a52557c2785057d898cca1e13503e86ac3a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/steps-c/step-12-complete.md",
+      "sha256": "92eb2bcea20c1fdbe6cfa430686969dbfbdf96a92b31cc423bbb735e8b075ff0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-prd/templates/prd-template.md",
+      "sha256": "7ccccab9c06a626b7a228783b0b9b6e4172e9ec0b10d47bbfab56958c898f837",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-story/SKILL.md",
+      "sha256": "d8a79126840015bc7d26c77a45eea26807227718bd0456b663463a88a1ff5357",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-story/checklist.md",
+      "sha256": "0694a44014e15c7724b6268b6d96a41cbbdb7a9a33597d787078e652f4223280",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-story/discover-inputs.md",
+      "sha256": "dfedba6a8ea05c9a91c6d202c4b29ee3ea793d8ef77575034787ae0fef280507",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-story/template.md",
+      "sha256": "bb22dc83535c732675a3609638a8af7c7da2df2b65e0dc588d3b22800539d45a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/SKILL.md",
+      "sha256": "e286aced853f241def2d246f88bc4335e00907c51c9b73b6f9aeb4d4983e5b00",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-01-init.md",
+      "sha256": "e25940f3efeada6206dd053416680d0df736b45fef6f04db78bbaff3b8846721",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-01b-continue.md",
+      "sha256": "fde4bf8fa3a6d3230d20cb23e71cbc8e2db1cd2b30b693e13d0b3184bc6bb9a6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-02-discovery.md",
+      "sha256": "674d361addceb953f13b74418a682522f3604bfed340a7376019c130e7393199",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-03-core-experience.md",
+      "sha256": "a7852809a777a4fa87e6f8d14cf86b90b5944e94f4d5e39d9d639e1d79fcde71",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-04-emotional-response.md",
+      "sha256": "0e4cb91186573ddfb96e23aa2ada5e8560200f1b0e8e31c28f27cd1eb8036d20",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-05-inspiration.md",
+      "sha256": "b64315563e41e8a596d0ef7a8badba79ab96101a9914bda0402fed08cfcafe42",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-06-design-system.md",
+      "sha256": "0fdb99845d82cb7b22d3bc73f56a6745d3b9d67f9a47c3f8efe752967179f66c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-07-defining-experience.md",
+      "sha256": "04f338f30517d0e20ff81333f3a4a835151d190ab86edbbeb0f5408cc119e8e8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-08-visual-foundation.md",
+      "sha256": "504cebd2f6329a4b66761dc0c294e2c7733825329da6f592dca83e2a478b9944",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-09-design-directions.md",
+      "sha256": "d4e793d43f2cf9d25037a974f91194e481fb579106e60d0dc6c8ca4e870202f5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-10-user-journeys.md",
+      "sha256": "dfd9d1fa37405812623fba3f70e60f6cdb7f1adb4afb62f0afa8848878f10e02",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-11-component-strategy.md",
+      "sha256": "aee0cdb0ba76e29394b8b59fba8d61dd2a3a75557782acac7d9714b8faf1b953",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-12-ux-patterns.md",
+      "sha256": "7b79d913cc2f3b0ff3b6fce384d5b99d44fb010b5d9695e1606110945234ee18",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-13-responsive-accessibility.md",
+      "sha256": "c0b32efd11e95c8267421ba18a68a013b4bda9d5641ecde092c94cb3ee60a5c0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/steps/step-14-complete.md",
+      "sha256": "2c83168cfbd64404b7e802a43f9b2e63f7044f3a5c5a969f75a3ef985bbc060b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-create-ux-design/ux-design-template.md",
+      "sha256": "ffa4b89376cd9db6faab682710b7ce755990b1197a8b3e16b17748656d1fca6a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-dev-story/SKILL.md",
+      "sha256": "4d2c701b858bbe352cb6a10ee8de1ec08fe837f96d1c7ffc37772f00aab2cef3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-dev-story/checklist.md",
+      "sha256": "630b68c6824a8785003a65553c1f335222b17be93b1bd80524c23b38bde1d8af",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/SKILL.md",
+      "sha256": "59808aa61828d96891ac5a3bd664192e7bd92d90c4c11c9ad5f903866ba26acd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/checklist.md",
+      "sha256": "581b0b034c25de17ac3678db2dbafedaeb113de37ddf15a4df6584cf2324a7d7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/instructions.md",
+      "sha256": "88dd5f184c3881e8213b0d19b3a6c16bbc7f434aa19d43c90ab08ca565c97ee0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/templates/deep-dive-template.md",
+      "sha256": "6198aa731d87d6a318b5b8d180fc29b9aa53ff0966e02391c17333818e94ffe9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/templates/index-template.md",
+      "sha256": "42c8a14f53088e4fda82f26a3fe41dc8a89d4bcb7a9659dd696136378b64ee90",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/templates/project-overview-template.md",
+      "sha256": "a7c7325b75a5a678dca391b9b69b1e3409cfbe6da95e70443ed3ace164e287b2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/templates/project-scan-report-schema.json",
+      "sha256": "53255f15a10cab801a1d75b4318cdb0095eed08c51b3323b7e6c236ae6b399b7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/templates/source-tree-template.md",
+      "sha256": "109bc335ebb22f932b37c24cdc777a351264191825444a4d147c9b82a1e2ad7a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/workflows/deep-dive-instructions.md",
+      "sha256": "95a1aa90c59f9648f7b61511c691635442c15be3895fc93efef20d8f127814cb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/workflows/deep-dive-workflow.md",
+      "sha256": "ea0c34679e4f06cd2e5d04bc71bdb337e45a6b8194d0e0f00ca7bde22815f66f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/workflows/full-scan-instructions.md",
+      "sha256": "ca670cc0b9dddd918bae872f95bb2120eb068d1e3112fa9d9482dfe96a7d9f67",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-document-project/workflows/full-scan-workflow.md",
+      "sha256": "3c9f0ab595c2ca465d47d3c67ad64da5995017891f7376960a9af9e8a7cd73dd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/SKILL.md",
+      "sha256": "67c5421db061850bba5aa02d16e29fb217fa02f0c27e33823e136f0212de471e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-01-init.md",
+      "sha256": "b91f1561eef3c9126a533ecf58b1eb045f8b7f584f108bada8247f217d5b2dcb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-02-domain-analysis.md",
+      "sha256": "828ceb015f4b62dfb65a0cf71becbe9ce84de0e6ffcaa3faca56f1e83074cda6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-03-competitive-landscape.md",
+      "sha256": "cbfb0020e085395a01615f9b08085d0306f35ffbbfcc6b4236546be34d06695b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-04-regulatory-focus.md",
+      "sha256": "043b814ab146ca144c5b968df3f485166145b3013852b5abbe4e463fd1abe711",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-05-technical-trends.md",
+      "sha256": "6005b52750aea1f7da12da2266de03dea2b0cc6504854d1c123fe11cf817a1cf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/domain-steps/step-06-research-synthesis.md",
+      "sha256": "180932be6c54a84833d8e07ec5c68b80444a49b6d170ae9949e8760709a1b6b4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-domain-research/research.template.md",
+      "sha256": "507bb6729476246b1ca2fca4693986d286a33af5529b6cd5cb1b0bb5ea9926ce",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-e2e-scaffold/SKILL.md",
+      "sha256": "21c052dad8c930feb0d101df66583b6a86b7cd23f9948373edb6f2fc1b764e79",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-e2e-scaffold/checklist.md",
+      "sha256": "0bf93f3994d88ea73024ddb90682a78b7d5d2ac9f39e0db18f372be06f79bff1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/SKILL.md",
+      "sha256": "548a3882070550ff943a7b3fd645ee487effdecac9e20ab90d756689e799888e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/data/gdd-purpose.md",
+      "sha256": "245fc7b3acbeecb402bd0a9e8267c2ca2a87d7a82114fa3f6b2226e87060c163",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/steps-e/step-e-01-discovery.md",
+      "sha256": "7da53371fe16019c6d4ace4377e8d186b9a25986f8d13b1e967589f684b2d58e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/steps-e/step-e-01b-legacy-conversion.md",
+      "sha256": "88c60df863561af7ab7f3f6b7ea5de2be316f9d4a8fa5143519d8490307f1563",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/steps-e/step-e-02-review.md",
+      "sha256": "762ee4616a94867e666b0578f379e4deebd2fcd8bad90f47f651e79b985a415a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/steps-e/step-e-03-edit.md",
+      "sha256": "34092f66cec3b1632489573b12e301c6a34528ca38b75e25eb3da8128a33bf43",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-gdd/steps-e/step-e-04-complete.md",
+      "sha256": "2725bd2dcc2d0d8c1e222312155308b4183f8755d53e714ae0bc74191a396b12",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/SKILL.md",
+      "sha256": "ea35294f4fefe0031044032535cd5855c18b43a38632ed12e04dcc204fe4ce1d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/data/prd-purpose.md",
+      "sha256": "9e2738afd4a0f11f232ea9b64c56baa6535e95e3bcbc1d3861b1c43fa5008901",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/steps-e/step-e-01-discovery.md",
+      "sha256": "53e8b5d774622c32a97289f5ef0ba34c1bbf82b5e7a856de44f32b07d195c2fa",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/steps-e/step-e-01b-legacy-conversion.md",
+      "sha256": "b28666119a35fd260ad336b8b39e7f6d4f5e65661a567cea62158006368a7846",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/steps-e/step-e-02-review.md",
+      "sha256": "f9d13aff1b08d034c18997bdbc169cf821bdba156980fbbbadad512502d91d59",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/steps-e/step-e-03-edit.md",
+      "sha256": "80ca84bac702cbe1b027c19ba1a46f70140b94e63ec29eb5cd0ef94164a6474f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-edit-prd/steps-e/step-e-04-complete.md",
+      "sha256": "d16261993530ab445120d21bbf6a795208361c73847366c0a59b4398d41fcb62",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/SKILL.md",
+      "sha256": "3050b0708149851cb8dd1f4744f36afc307704227a332e8f1816b4de0ecbf12e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/checklist.md",
+      "sha256": "289baf9035dd22a4159a78b20afe93bb549d6177f95d261054ded79b4667052e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/knowledge/godot-engine.md",
+      "sha256": "d1d02c49d4642eb8b934e9860fad9b15d3905cf6220d54685f94057f5300fea0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/knowledge/phaser-engine.md",
+      "sha256": "23536650150ed5f2a794e081fba4669abfb953c8e0be6ac6b000e17d35eebb3d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/knowledge/unity-engine.md",
+      "sha256": "7246db2a0b267d9c34b94b6869ee43bb67ef24728d96ffa0907a158bdc5852cb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/knowledge/unreal-engine.md",
+      "sha256": "25c737e132f37d736ec17ac531712795c1a9197dabd7a26084de8117e226590a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-01-init.md",
+      "sha256": "f7365466c5a6d92bda82906043f422d053dcefd867d89d7f97e70404e104ec05",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-01b-continue.md",
+      "sha256": "ec31da22df2837924af7d1360701cd7c15c78269357c122149d7f767f966d9bf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-02-context.md",
+      "sha256": "2017829264085d45ee25ead36a668624a15bdf73eb5f81f54c45290193ece607",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-03-starter.md",
+      "sha256": "5cc2fb706cfe7f73aeb4c24ff828d532ab7b3d548d5e1d9003297bd4f3d3f2e0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-04-decisions.md",
+      "sha256": "9d1ce5c5910f73eafa0ef161933e4ea6bca9165c0102305f6ad45a6d4dac0938",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-05-crosscutting.md",
+      "sha256": "f2a82bcd5411088e7e49a314354459f2ec6a1f16450ecd6970e52ad90303612e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-06-structure.md",
+      "sha256": "5890ee8fd23080c3997e232fef0135a4c9d06267feb96d9ec686ffc879f5f5f1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-07-patterns.md",
+      "sha256": "c3b6928e272f315c036e5378d751e94c33d1ec175f0c29ad852c5f4b5444b325",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-08-validation.md",
+      "sha256": "4645aeb15979b8b5cd4fdced9849ebbb842f8cabb27802db27b01be7de6139d5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/steps/step-09-complete.md",
+      "sha256": "0b5ea3dca27a60b6d2aeceb64a9155af4bc7cd194a84ebacbf255f35dfd5915d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-game-architecture/templates/architecture-template.md",
+      "sha256": "91655e166f5a2f3f56ae09997107eab15772c1e4d9186397bce0339eca7be32f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-generate-project-context/SKILL.md",
+      "sha256": "d0b92f5a002cf02ed7c212bffecda1080cfd1506ff1d6c662a02d9c6e04453a0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-generate-project-context/project-context-template.md",
+      "sha256": "4816f83b0edc8c7e19a57e4a4a6419ca40953fc7dcd48326700f2876e77c60fa",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-generate-project-context/steps/step-01-discover.md",
+      "sha256": "41a123ead9f18cc92b2d3cf021729593f16250f4891887c7416afa519914b61a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-generate-project-context/steps/step-02-generate.md",
+      "sha256": "531201685a090a5bf313932730f83080b470741a994530e62d1d1ff8b64e2dfe",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-generate-project-context/steps/step-03-complete.md",
+      "sha256": "52cdc0fdc0ec509dbcb6f6799dde25431425eeba0273d43d7a7c738d868cf7bf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-performance-test/SKILL.md",
+      "sha256": "a9c6bb5e5718f0df0ab3997921aba743b13e05e867fc00739af6eb02d1e967dd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-performance-test/checklist.md",
+      "sha256": "20ab16701d3b0e51b90bcf394f9a74afc40e3db8e04dbdc6fff6f88287639954",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-performance-test/performance-template.md",
+      "sha256": "4bd04e73953f2f3dedff20b9032f99023656f141f21c080e49f15060c64ffa80",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-playtest-plan/SKILL.md",
+      "sha256": "386bec1b3d7dea4dafa6ce74847c15b1270a50a8e195ed0557900c65f33ddf16",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-playtest-plan/checklist.md",
+      "sha256": "7d504957f7edb22081f5ae01b6f35db118414c33b4f612b6cd08b5f71645cbf3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-playtest-plan/playtest-template.md",
+      "sha256": "8fa7654007f4f881f0167cb252b6b9ca63c0735fb9e6ef63a4bc81954b428f47",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/SKILL.md",
+      "sha256": "788b86f4f0d0f5392825b1a5f80b4ea5b8b6aba0a20a8d7b1469eae96f7619e0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/compile-epic-context.md",
+      "sha256": "5cfda02f252941e415b80c57b4528f46226b3cbf456ad45d78fcb5a7ef4816e2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/spec-template.md",
+      "sha256": "3ee15d5a63cf5eeee74149c590668fc61d0e44023eac12988a1ca2a9438a9d39",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-01-clarify-and-route.md",
+      "sha256": "b5eb9f0cecf2a462885b8e7b4c21abbaec1e95c8abbd76bc410d9090fd8379f0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-02-plan.md",
+      "sha256": "cd1a634c3adbc5b296344d55cead5aa0647d4ceeff95bc6a930715254503ad58",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-03-implement.md",
+      "sha256": "4d848865eafe5eeba7d83529c766bd410a9cc20a05de1d6a764954c7275b4749",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-04-review.md",
+      "sha256": "e62a50a37ab20eb426f5abd44179dfac51548707b5e85e6fe7817c144cbe3dae",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-05-present.md",
+      "sha256": "ea49ce8703d4946ec54a59ff428d52ad64ab2649f49c43230bec1f3d09e85b55",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/step-oneshot.md",
+      "sha256": "400fcd81dd8debacef2387a380e3155906b41978d53515eacb2beb1aa08912d2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-quick-dev/sync-sprint-status.md",
+      "sha256": "c0f2fdb940984206a4b7aa2467fbcb7c4811f648634e43a488593974e9efff5e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-retrospective/SKILL.md",
+      "sha256": "cbb10f144af7391d347c238a5275a180ccc0370de3e8a64b0d86f946b1a91a5d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-sprint-planning/SKILL.md",
+      "sha256": "460d44f37dfd09d7ee02c84656b476284fdce796d1bce74d05ec4a1b0589c96f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-sprint-planning/checklist.md",
+      "sha256": "80b10aedcf88ab1641b8e5f99c9a400c8fd9014f13ca65befc5c83992e367dd7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-sprint-status/SKILL.md",
+      "sha256": "d972102752217db72e8da89c3f60eb1dc8211c27f31cf4de86378d2503cdab21",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-automate/SKILL.md",
+      "sha256": "7999e05b3e9693907e542aa7fc941233b4b6bc67a607fadb243d5798d0ddb063",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-automate/checklist.md",
+      "sha256": "b2eefabfba15ccf30a49d46eb0e2b3f9e88304e1c1bbe6febe00d1006d85e155",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-design/SKILL.md",
+      "sha256": "f6a56fbdd3353d236a02eb28d6e5d221473e7b2648c06c6e7b903477a7e2a933",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-design/checklist.md",
+      "sha256": "5346d6af9545fed2f338834d58624b84598e4527cc21718b77bf9166b8a80840",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-design/test-design-template.md",
+      "sha256": "87ea44fb715e0a8502c59be8d9fe88695e20edbd01a26f8b70ec83769a5a208f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-framework/SKILL.md",
+      "sha256": "ac9942f6dcec03a89f101fc4a52fd97d85f9e7b56740171435a1ea295a44b20a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-framework/checklist.md",
+      "sha256": "cb4e9255f7386eed2244e77d74a9086980950f3d62927f38f6ee7707676c1a39",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-review/SKILL.md",
+      "sha256": "ef20091b88e785cd3ae9484c0c8ed39e79d4fbe3013f524923e42f7ae9b79d30",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-review/checklist.md",
+      "sha256": "2444685b29ed742dacfbab77f17cfbc17bd2fd4f91917afb01eb2b9c3f33ffca",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-test-review/test-review-template.md",
+      "sha256": "62f64abc9e42f3014f65b7a663477ea2ae84eea7da423508761535da67d9ad0f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/SKILL.md",
+      "sha256": "1295e229babb947b11696f387b20a53841279c8f8d07e3c7e4df066501d39b8b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/data/gdd-purpose.md",
+      "sha256": "245fc7b3acbeecb402bd0a9e8267c2ca2a87d7a82114fa3f6b2226e87060c163",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-01-discovery.md",
+      "sha256": "f3e6c8e1f295689b39a9d336016773f5882d947c576f12aa957fb62d6650b3b9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-02-format-detection.md",
+      "sha256": "67442cbb93ffc19003032c24c1dff448ca081a41dc65aacbcb05e88052394fed",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-02b-parity-check.md",
+      "sha256": "35dc07024fdbc94a1a22901a3ad4a5c8dc8c4f9edc648f1b5237c8a9c15d6875",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-03-density-validation.md",
+      "sha256": "5561a7bfe4f9399599e79fb1ea23a2a10856242ee6bb77e18a9c591191bd45f9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-04-brief-coverage-validation.md",
+      "sha256": "d13bd3966cf419641bff80427c69d08177f5226e874b6631b0542df82fff9b9f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-05-measurability-validation.md",
+      "sha256": "563f2ee2e2667e0c4cfdeaa87d1be981e561b09311828d65f955442a0d2bd246",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-06-traceability-validation.md",
+      "sha256": "568bd0aeacbc66cab0bb5e0646f1ff3c7463b6de68c3d1fbbe9d8ef60301ba09",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-07-implementation-leakage-validation.md",
+      "sha256": "99e00553c9afcc0fc1f2f6362f8f33c1aac2dd4be50467e8293157fa45b344a8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-08-genre-compliance-validation.md",
+      "sha256": "a4d75e4ddf267f18199849db5de4f74a26db311241d7777c74cea66b6f533917",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-09-game-type-validation.md",
+      "sha256": "14ecf6edab59e38b1a528b989ea37a9c5fd745eca37a18e0e69989d2fbabe890",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-10-smart-validation.md",
+      "sha256": "f3fcd252ac33b249247107b000dd6ee390eb2f1b896b50fdacf0fedce97e0b53",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-11-holistic-quality-validation.md",
+      "sha256": "700c68a3ed325b542da5f3c4dff814589c2b8012fd7d83de7566c8045de2e5f7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-12-completeness-validation.md",
+      "sha256": "9d40d9ea01be5546c360b638ecf99f2b12bffecb32edf48f0925f8574c340bbd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-gdd/steps-v/step-v-13-report-complete.md",
+      "sha256": "f9e23b6f4715a162dedf1a6bc02d62986ffe47189ab6325880301675bd8dd32a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/SKILL.md",
+      "sha256": "f26a59bf772a98ef74dc9a3d604415505d73f12ff8a8fea2a995cd25b88a3a72",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/data/prd-purpose.md",
+      "sha256": "9e2738afd4a0f11f232ea9b64c56baa6535e95e3bcbc1d3861b1c43fa5008901",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-01-discovery.md",
+      "sha256": "ad2963d8f0d85f6d512aa006b44e7c2b9a49257fc8d641d84ed0d01adba1daf6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-02-format-detection.md",
+      "sha256": "251ea5a1cf7779db2dc39d5d8317976a27f84b421359c1974ae96c0943094341",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-02b-parity-check.md",
+      "sha256": "3481beae212bb0140c105d0ae87bb9714859c93a471048048512fd1278da2fcd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-03-density-validation.md",
+      "sha256": "5b95ecd032fb65f86b7eee7ce7c30c997dc2a8b5e4846d88c2853538591a9e40",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-04-brief-coverage-validation.md",
+      "sha256": "97eb248c7d67e6e5121dd0b020409583998fba433799ea4c5c8cb40c7ff9c7c1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-05-measurability-validation.md",
+      "sha256": "2f331ee6d4f174dec0e4b434bf7691bfcf3a13c6ee0c47a65989badaa6b6a28c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-06-traceability-validation.md",
+      "sha256": "970ea67486211a611a701e1490ab7e8f2f98060a9f78760b6ebfdb9f37743c74",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-07-implementation-leakage-validation.md",
+      "sha256": "f75d1d808fdf3d61b15bea55418b82df747f45902b6b22fe541e83b4ea3fa465",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-08-domain-compliance-validation.md",
+      "sha256": "a1902baaf4eaaf946e5c2c2101a1ac46f8ee4397e599218b8dc030cd00c97512",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-09-project-type-validation.md",
+      "sha256": "d53e95264625335184284d3f9d0fc6e7674f67bdf97e19362fc33df4bea7f096",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-10-smart-validation.md",
+      "sha256": "ef281e25378b4453a12b1b6500a4743c38a0f5adbb640c3ca04cf574ddc297c9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-11-holistic-quality-validation.md",
+      "sha256": "62c9a084cbed94f747a78564ea3746b07e2bf546c74f5b298eeb5c42915bbcb9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-12-completeness-validation.md",
+      "sha256": "c966933a0ca3753db75591325cef4d4bdaf9639a1a63f9438758d32f7e1a1dda",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/gds-validate-prd/steps-v/step-v-13-report-complete.md",
+      "sha256": "696c311f9a886b5785f3d038342da89094052b76d4263eee1eba7c072353fe69",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dmap/SKILL.md",
+      "sha256": "007e70f341bb3e9078cc828ad372e6e7535eda120f84d66004de88ab3ed8c251",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dmap/references/layered-map-contract.md",
+      "sha256": "472a342b87376923d171cf850d1fa9e0b220e3d56ba2fcc1f773d71884d8b374",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dmap/references/map-strategies.md",
+      "sha256": "701033949d225a4b60b401e3c25d832be1d5ddd1943fcd0327f4cbc73f34fe00",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dmap/references/prop-pack-contract.md",
+      "sha256": "521c0644c75efd6eedc5336d4ede6b88c9dbf2b9e308b38a7168ced39eee929b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dsprite/SKILL.md",
+      "sha256": "33ea0df75845d7d1124401d3ca844c6c241f6f63dfcbdc5e3da1be93637f01c5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dsprite/references/modes.md",
+      "sha256": "381d99a937ec651bf48560c0127b80a2fd34de1aa20c9249638484f47e648bb0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/generate2dsprite/references/prompt-rules.md",
+      "sha256": "a61ee4c7ed8b7d07a559e58deb05b3a8e37062ddfe565fc5fc2a18507a531936",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/prototype-7day-playable-godot-zh/SKILL.md",
+      "sha256": "1730c846f132442cc115c8b803f17c0f7954ae9f1c08661556931dd22671bd19",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/prototype-rpg-godot-zh/SKILL.md",
+      "sha256": "a6dfc27617dd66973e852a51395812fd421bc867f8535840cb98777c6e36c73c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/prototype-rpg-godot-zh/references/rpg-prototype-contract.md",
+      "sha256": "dac5f53a6f2687ee62f7fee8ca8b9b5a4d2a7f67f6585c92f40cd99e5281a9b7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-5-technical-preflight/SKILL.md",
+      "sha256": "a075bdca0be77981eee4d16bc3ed937ba4896da6a121efadecb5d1db4c5fcda8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-5-technical-preflight/references/business-repos/lastking.md",
+      "sha256": "0ef53ffb0f6e4eb1f140c7bfa9e187e02dbc70fe3e69794b171074e6635019f2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-5-technical-preflight/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-5-technical-preflight/references/workflow-source.md",
+      "sha256": "7d6bb607649ac9ef4a8f2625bb451c9a41ed610bfd8d337813abb25fd93fab80",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-repository-bootstrap/SKILL.md",
+      "sha256": "de7f6f2bbff4c12e160fbe14431082932e074a04bb054d3a209bec7984fc413f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter2-repository-bootstrap/references/workflow-source.md",
+      "sha256": "bb262cf1461bce78e0f5ef7bccc0d93c397bbb00f6aed859b6760d675eda74d8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter3-task-triplet-baseline/SKILL.md",
+      "sha256": "499ce26da4781f0e43333da1ce3d0f15fba8d01dca5e1486a921a4cacfd92f1a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter3-task-triplet-baseline/references/business-repos/newrouge.md",
+      "sha256": "0e0d819ab75d09370956f4e2e428837bc553b4ff9c6c18cb7ca1981f11576675",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter3-task-triplet-baseline/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter3-task-triplet-baseline/references/workflow-source.md",
+      "sha256": "393eb535b6f6d45e726771fec3602548176389644c6e27685b4e6e024e495310",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter4-overlays-contracts-baseline/SKILL.md",
+      "sha256": "b758cdec26ad4cc84835c9ad721e9e36b0a7c99e29dc8feb8f6f513e5ba6c98f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter4-overlays-contracts-baseline/references/business-repos/newrouge.md",
+      "sha256": "0e0d819ab75d09370956f4e2e428837bc553b4ff9c6c18cb7ca1981f11576675",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter4-overlays-contracts-baseline/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter4-overlays-contracts-baseline/references/workflow-source.md",
+      "sha256": "8503a5858f908eabe210ee10161ebbd690689fb5e78c0eee68a44747f5e05d4e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter5-semantics-stabilization/SKILL.md",
+      "sha256": "f6a8ba64b652b938a24812025f039c29c93ed275ad6e5ab6bab36c8bf82cf8bb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter5-semantics-stabilization/references/business-repos/newrouge.md",
+      "sha256": "0e0d819ab75d09370956f4e2e428837bc553b4ff9c6c18cb7ca1981f11576675",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter5-semantics-stabilization/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter5-semantics-stabilization/references/workflow-source.md",
+      "sha256": "3a61bf5f1638eb29432ddbde965839c6a4da1cca3db62530ba35fa3ff471f6dc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter6-single-task-daily-loop/SKILL.md",
+      "sha256": "06b2d352f3c2156498f8278c14850953041fb575af90b22d26c4fc7359317a19",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter6-single-task-daily-loop/references/business-repos/newrouge.md",
+      "sha256": "0e0d819ab75d09370956f4e2e428837bc553b4ff9c6c18cb7ca1981f11576675",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter6-single-task-daily-loop/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter6-single-task-daily-loop/references/workflow-source.md",
+      "sha256": "56ee85051a04d6bcea1e3be231394e368a0643533e76d69fb845d91ba29b108e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter7-ui-wiring-closure/SKILL.md",
+      "sha256": "99f6b39d504aa60de34d36e126ef9ab56c2290b11a9f404f89260b214666bcc7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter7-ui-wiring-closure/references/business-repos/newrouge.md",
+      "sha256": "0e0d819ab75d09370956f4e2e428837bc553b4ff9c6c18cb7ca1981f11576675",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter7-ui-wiring-closure/references/business-repos/sanguo.md",
+      "sha256": "ba36d219ef0d6db71cb6e8c29670ad9a7891b44d9cd7fcb09f9bad9cdbf85de4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": ".agents/skills/workflow-chapter7-ui-wiring-closure/references/workflow-source.md",
+      "sha256": "9a94290e1e70d664cd1c8df3e978ce44b50a07b55590408b72364a991ed7910a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "1a1ff6f6983165e7c0ae573e42373c4352340a2ca454b389249afc6c2f733c32",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "DELIVERY_PROFILE.md",
+      "sha256": "5729ffb40f616ba96d13d4b58bd77d63a66f2567fb94642ab16b8179f5d228e9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "Game.Core/Contracts/DomainEvent.cs",
+      "sha256": "960a7c25fc5e3639164f70c3e3eadbd2bce5ed143bf4933ba888c6bf8b03b453",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "Game.Core/Contracts/EventTypes.cs",
+      "sha256": "9c3723c93bee33e9aad278f82cd3ac5b91e232726f9df81d8293917c62c79355",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "Game.Core/Contracts/Guild/GuildMemberJoined.cs",
+      "sha256": "9bc0d8a80e614a5bc870bdeb79062743275dc1b4b83a3558560b5f7d7cc45c5d",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ba4e5c504a8ecefe0a61c71b2ad738d6c3763282ff2ad8a5f2b95c9201d35c0c",
+      "source_role": "repository-overview"
+    },
+    {
+      "path": "decision-logs/2026-03-19-agent-review-sidecar-contract.md",
+      "sha256": "02ea8ded2c19d4a7d1b577321822c1d038b6756cb42a0046a3e9800ae6d128ea",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-03-19-agents-index-and-persistent-harness.md",
+      "sha256": "0e4b8145e918811092cb5f1021b88ae7a3e969a32c66e61dc44aec45115eca43",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-05-06-godot-resource-import-boundary.md",
+      "sha256": "30696629072d3b66059781cf5d9c93817272ad7e3129b4204b95b7d96f1d6f35",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-07-12-review-evidence-rg-handoff.md",
+      "sha256": "e6233140305903662194ccf4673cbabfc79c9cbbd3af92336eb594b110916dd2",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-07-12-review-evidence-rg0-freeze.md",
+      "sha256": "a0e0816bca76982ab3c5e8c9d59abfa37388d4642b23d81371a88ed18b253a52",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-09-06-ci-optimization.md",
+      "sha256": "f99dc456a611a7f7949d2cb348d1c40212f55aa4a03a05d06723ac695c58d207",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/2026-09-06-example-scenes-prewarm.md",
+      "sha256": "0bf23ae1bf6119bfa048df6bdee61c52a6215cac34beab04da3264b488985a4e",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/README.md",
+      "sha256": "c638d4249bbeffcabe443c548d9b28bbf4fb09dfd54ddc578fb48e24ca2d6fec",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/TEMPLATE.md",
+      "sha256": "1775b84d9de9a995c5cb31c11899833a62d8c7a492602c64b772fdeb38466c9a",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/workflow-rule-feedback/2026-04-19-newrouge-5.1-extract-timeout-retry-boost.md",
+      "sha256": "fe6524f215c3bed321651b420ccceeafb4ea92bddb92028173f7eed5af0f6c5b",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/workflow-rule-feedback/2026-04-19-newrouge-chapter6-p1-floor-acceptance-refs.md",
+      "sha256": "6aa1865eba9656ce756cf488447a5008be7a1b1c180c7e7ab44235b6212c80bf",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/workflow-rule-feedback/2026-04-19-sanguo-5.1-acceptance-extract-preflight.md",
+      "sha256": "e4d8e040de8acdee057854713be673979840732c2a4c01229aea5a1b2eb08499",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "decision-logs/workflow-rule-feedback/README.md",
+      "sha256": "83928b175b9d105b33959bbbd6ebe1809ce593c6553e3850b9033a569c25f6f8",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "docs/PROJECT_DOCUMENTATION_INDEX.md",
+      "sha256": "6ed32e83d2a09419feae02e41ed3882e157d3db679ce6e949f6b5ede2f3425c0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0001-tech-stack.md",
+      "sha256": "9fa559c5ffc798fbbad1e8ba907337183ba03e7d80448ac46ceb3dace4990d55",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0002-legacy-desktop-shell-security-baseline.md",
+      "sha256": "928f4dc4e41129116561b682c7517984503e6350cb548ccd3f52619bdc0db423",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0003-observability-release-health.md",
+      "sha256": "7daaeff4894e6b1656ca53353eca83b723c8bfa74753d1323e3a1caab929f9d1",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0004-event-bus-and-contracts.md",
+      "sha256": "15ea9d92271178373e1e15ddce60d75bc06652aac4643918d13deb98ad4c5322",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0005-quality-gates.md",
+      "sha256": "34fd42001c297e0685693b673f37d4112478fc31e574ce345c5efd7c91509213",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0006-data-storage.md",
+      "sha256": "46989ec9a1b75d54596382b9de515c13ca2ad84146757b72910230becc0338ca",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0007-ports-adapters.md",
+      "sha256": "6c04048443ec2a54d3bdb67bc9f10341d1c04a7fda62464d56d4c8a516abf1bb",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0008-deployment-release.md",
+      "sha256": "9207388b3fb7f34594fec1205a8fe25185cafbaa0d06513b76f5eca9c1179a1f",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0009-cross-platform.md",
+      "sha256": "c6423317f8f041a67fb2173fa4579e7a5a48c1d6b02a6e81f562b1ded7a6ec22",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0010-internationalization.md",
+      "sha256": "e7f281a46894331cac02b44c7819e43c8c866cf94990b44971c6aaf5cd51dc50",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0011-windows-only-platform-and-ci.md",
+      "sha256": "fdcc4a9295232f62ea91deb727a2270898f78fc72cbbdbfbe227393dbf658dde",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0012-pr-template-conditional-rendering.md",
+      "sha256": "db95293540adf4c3f58e602b3a4960041df330b8d50379e911fb5083e5a8c713",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0015-performance-budgets-and-gates.md",
+      "sha256": "00c3625daf1400b8f0e2b65a4ca3f642da0c1e82e19aecdc8343f6ed90fe4a20",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0016-api-contracts-openapi.md",
+      "sha256": "4a70ec7489f11c1968c09f5a24e926dacc2cc2dccfd9acb40b9e9c006579aabc",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0017-quality-intelligence-dashboard-and-governance.md",
+      "sha256": "a2a9ce2e1a0446b5a66ee3a9408d82dfdc8926cbb6ccf4c2469d6ce34427c511",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0018-godot-runtime-and-distribution.md",
+      "sha256": "1c1af64b87f6c51f640cde2b8fb3ccb3b2f0078ea8b7bdf18e4da0fa78e0ff56",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0019-godot-security-baseline.md",
+      "sha256": "28bb155badcf83bb8a05bd9a85af252fcaea3b0017cd26f929f80e59a561b110",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0020-contract-location-standardization.md",
+      "sha256": "176ef6f28b61cbb0bbe2eda9300f5abc8a27b0ab80c4c693adb0a60b622d99c8",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0021-csharp-domain-layer-architecture.md",
+      "sha256": "ff4fe2d399c0c26f83825423be5fa0231423b9440f15da5992076bf0bf373c0b",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0022-godot-signal-system-and-contracts.md",
+      "sha256": "875304af0817ff039c9db1a12e16adbecf92cd726e2676e1e49fb15987537290",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0023-settings-ssot-configfile.md",
+      "sha256": "279788d6f4c15a479e049726de1fa13d35744981305d3ce4944a7ca1f77e0a09",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0024-template-lineage-and-naming.md",
+      "sha256": "2b44e7789732f790d638522a1346042a5d290f0186bd9f31db4a2fe2daed4d87",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0025-godot-test-strategy.md",
+      "sha256": "67e11300f164a11fd00c5c7694464483e7735dc239fd9263bb0a6a8368538628",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0026-event-publish-failure-strategy.md",
+      "sha256": "70557c9c91c923bc0e6922bcf1eedcfca176d2a0183842ce2925761c28074edf",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0027-ownership-write-entry.md",
+      "sha256": "e8c1c6fd440af2251e3b300e6649440bc11336db218d743b24e9fca6e78577fa",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0028-event-usage-tiering.md",
+      "sha256": "e462adc5482889bfae390fda501dfbbda09d0f68b12c5520a3cc315b59c6ea8f",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0029-error-handling-policy.md",
+      "sha256": "9c5b7baa0bcad1f8c5128dd417394d1773b6941d79c34be6523f7528fbcf455f",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0030-core-threading-model.md",
+      "sha256": "07810be470cf2f5e4b76170f87743cf246a3a51ac8abf60414850dbac7b894c8",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0031-security-profile-host-safe-default.md",
+      "sha256": "9c65cfec677cdf070e682efd26225646a87a3d10110c99ac9e6e049a82b4fee6",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/ADR-0032-review-evidence-gate.md",
+      "sha256": "569f47aafe6463f85f6cf08fe1deb1b110ee2b9ec732842f518fb43d6e99e71d",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/addenda/ADR-0005-godot-quality-gates-addendum.md",
+      "sha256": "d63e1f1dd2588efb81fd95d06a8c22ca844054403ebfac1d6c0293200e0622e3",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/addenda/ADR-0006-godot-data-storage-addendum.md",
+      "sha256": "5c339d1223ed06d2bb069002cf702c5cb5596d141b1a86908241cf1995337afd",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/adr/guide.md",
+      "sha256": "361e992453ca350a26b06045de140ed431df4a46e22505daf85b5426c426b983",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/agents/00-index.md",
+      "sha256": "da01899619278d98ddb757e93573cf1b3a1f04486ab3d5dc719f5b6305232794",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/01-session-recovery.md",
+      "sha256": "19bb33c673a672b1ea00af444f19826d761a29b83850e7d5a3e565eefbef8a74",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/02-repo-map.md",
+      "sha256": "471d31169ad275ef068157a991282f6906d56473d2a406a1cba6cfd1ad2139e1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/03-persistent-harness.md",
+      "sha256": "5e922c5b012af91a1d0961e5039ccc982a6f5574015a12e2f3ee7e5650a9be64",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/04-closed-loop-testing.md",
+      "sha256": "edd39930f7fcdd44bd13b896cffaf080019211b1a298930916beccf92fdd7a09",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/05-architecture-guardrails.md",
+      "sha256": "879d684ff77bad674001350c060cdabf90afd7b7ab2b4adc93c1bc3606051328",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/06-harness-marathon.md",
+      "sha256": "9f0dbf16c8b7d833191dd12d1a843dda4454bb779540a51ba0137446b029230e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/07-agent-to-agent-review.md",
+      "sha256": "8d83af3a5de3980dd1850db3462603e3d53a5cd47d7a1420c1f66f8e556cd130",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/08-project-basics.md",
+      "sha256": "82a948403180317106f3a11f42088030c31213ff0979a8d750e3beaa2435aa74",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/09-quality-gates-and-done.md",
+      "sha256": "0a263bcc1199414da853d30a27d1815db13827ea6da2c3cd3dd00f3b24cca3cb",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/10-template-customization.md",
+      "sha256": "b4e0adcf9467005cadd91234a3be13ed92495f526b0b0fb21eb72c4f62813a6f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/11-agents-construction-principles.md",
+      "sha256": "bc9279e7c5d8116884560b5c3390d9c2a60bfccf7829a7419ac5ac344e0911fe",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/12-execution-rules.md",
+      "sha256": "4f331829f405577edd02f7c1059f8651617f3457d1b83fd43eb694d866975956",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/13-rag-sources-and-session-ssot.md",
+      "sha256": "bba474b70effca440319d3a6083513db28e64786a444fa1be649f5ff380ed70e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/14-startup-stack-and-template-structure.md",
+      "sha256": "25f4c2dce16827b0ed4770fd86dc90cc781c4851614fd8504c90107094507c79",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/15-security-release-health-and-runtime-ops.md",
+      "sha256": "cb52ee61a70b2d8d6afc15cc045b886984f2375d14e94656fdf2d73c3f14adf4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/16-directory-responsibilities.md",
+      "sha256": "a6ab5bf1a92a8460be89bedef3e1d69490c627ee31eba6194dc55fd18f047d88",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/agents/17-taskmaster-test-isolation.md",
+      "sha256": "6686c6683b58b66f4d3721ffcb0e412ed4789a17ce8fa20e30c147f35c45589d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/architecture/ADR_INDEX_GODOT.md",
+      "sha256": "1f67f480c5e1c79390ba85ecbd7dcf8f96a95f91ebe9f06cbf86511121b4e9d7",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/00-README.md",
+      "sha256": "f7fb25e4d032b1ef1727f2b7581ccd0167552ee743d04b4e80d9c9cf3e12dbc1",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/01-introduction-and-goals-v2.md",
+      "sha256": "3f2a5eed758a7402cad21d5c7f27f3ef7e056a0ca49805223430937c4a284b53",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/02-security-baseline-godot-v2.md",
+      "sha256": "7e02285d99299995247a286ba9938ddae492291878f5cd0babeeb8aa4f91c592",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/03-observability-sentry-logging-v2.md",
+      "sha256": "aae684894f2a65211528ea93d3b9b42eea067aa48d368228fa2f7b643a702a79",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/04-system-context-c4-event-flows-v2.md",
+      "sha256": "a204e2382b1813bdce11ac5fdc9d57146f2fec324ced402aed26b77eec578946",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/05-data-models-and-storage-ports-v2.md",
+      "sha256": "8bed1f14c0262306b613083007146959ebc23d620181dd96348afabc7afd9399",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/06-runtime-view-loops-state-machines-error-paths-v2.md",
+      "sha256": "65567712381288b0e0fe946e10e9031420f2a7c3d81bd4655b1710a1589db2a3",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/07-dev-build-and-gates-v2.md",
+      "sha256": "cf47db256b4bef579891c2f4751cfb1c6b020cecf2e07901cb7fccaf16343d35",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/08-crosscutting-and-feature-slices.base.md",
+      "sha256": "582aefedf1dde6564987036cbb610c262ef6a5eb5c9c4b322a6102c2b572eb48",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/09-performance-and-capacity-v2.md",
+      "sha256": "e491a7f54a6cd4b6c9b8e698ee88e74f35a739791f1c6fdf7dffa34c911545b3",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/10-i18n-ops-release-v2.md",
+      "sha256": "20d876b2d2c6c6febec9c5fd14ea5bedc81b199f1a035a0fc9e152cf56eeaa91",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/11-risks-and-technical-debt-v2.md",
+      "sha256": "ccbc9bb7aaaf57875376f832189e119cc8ab5b7cae193a858fa510094621fbd6",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/12-glossary-v2.md",
+      "sha256": "39877a0ac9abad1205d0e64568daf154601f8d020888aefc462729615377a55c",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/ZZZ-encoding-fixture-bad.md",
+      "sha256": "9f5814839cb0e7651592c278a626d2fc170d02269f769a09a2a70e81e91e36aa",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/ZZZ-encoding-fixture-clean.md",
+      "sha256": "3ab48f4db6a57f6a8061da6af3fec703e5027a7f36485599d0faed40b2b98020",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/architecture-completeness-checklist.md",
+      "sha256": "c2e1698c90e49bd92249763088f340aa61ffde68dea609d44e715774f651c9f2",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/base/front-matter-standardization-example.md",
+      "sha256": "5ca791be3065602491789a9a0e32444c07d67bec8b71b049484023eac9830849",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-CloudEvent.md",
+      "sha256": "47b4b19cb122f0c77702c149f4bdfd79a4225ff1639b392fb04be8170cbe76f8",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-CloudEvents-Core.md",
+      "sha256": "eb7857a0191d4f0ef981967adaacf81848736a97424e5f427b9565cbb67783a5",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-Guild-Manager-Events.md",
+      "sha256": "ec8f17e2cbd94d4e024f85fb204d5d52018a3c58e7775475e4c03de93746d4e3",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-Preload-Whitelist.md",
+      "sha256": "7dba252bd6cf65c13f9151f56c883784b517478910b545be282fa6d9fbe8ca3e",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-Quality-Metrics.md",
+      "sha256": "d462f8e3c7c7031772d58fe00562da1dc1b587e7fec204b1c8d65a8f1a5ee296",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Contracts-Security.md",
+      "sha256": "66b4bd187bfea03d3e67688d87056e1b3dd69f42781fbd0e304490fa6fe360e2",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/08-Feature-Slice-Guild-Manager.md",
+      "sha256": "b3888668d5e0c1791210138321e5fc6ddb1f782e6d3ff90c2267b6b602f4ee09",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/ACCEPTANCE_CHECKLIST.md",
+      "sha256": "6bf69b8e7f36dbb9d4507df2257fc709e37b805261f63141ac1a6e38130b6599",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/architecture/overlays/PRD-Guild-Manager/08/_index.md",
+      "sha256": "3d69b6c66dad15cb4ef21bc253f087d61110ebb0c325626eb24857b0db93f7a7",
+      "source_role": "architecture-authority"
+    },
+    {
+      "path": "docs/game-type-guides/README.md",
+      "sha256": "e10e893bf74fe934804aea90e504d3a5d006250ce70932f22f1f9c4a70ab04af",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/action-platformer.md",
+      "sha256": "f1cbe9e9a52acd01ff120d05ce22fa81b30500933f62a3c6c36642280244057c",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/adventure.md",
+      "sha256": "06aa57786c2e7ebc7580d501fcdefaabb28933c7b5785d6643bf643f58ae13e7",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/card-game.md",
+      "sha256": "6b9298ace2607c8e93d64533e6406828053234282e4977e4407faa2e9302fd0a",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/fighting.md",
+      "sha256": "52e5a142aac496ae7154fc0829bfbce1ef22296f0a464cf8e595aa14ca02eb86",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/horror.md",
+      "sha256": "7ff7599d5701bb7a8ef0e14f3ba614626cdd0d8960a8e880fc1cd41c5f508f75",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/idle-incremental.md",
+      "sha256": "515b52bb301e467c1f096cc55abde47159bb0b0d87157b9fa565973b48601ddf",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/metroidvania.md",
+      "sha256": "2a8c101dda7911d1cd1d9c66d1be86af3725832f5dcc7fab71e95204f45614ea",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/moba.md",
+      "sha256": "92d0ba9f7508a38d5bfeac1651c6aee8a1a58c54659ad3f0e0d1fd678a1ef498",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/party-game.md",
+      "sha256": "0cc50b3aede0c45c94cdff743cdac2d8ad67421ea80497a29d2300a1744ea703",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/puzzle.md",
+      "sha256": "f9c08b6f087bfaa41ea08c9dfa78aa034f5ae46b627b9f476bdf8b4f5c3389ed",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/racing.md",
+      "sha256": "085ea5d0914d7bc6a233c479d0ad6288a575ad1c8b9a8a85881e779fac0e60fc",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/rhythm.md",
+      "sha256": "83bbf1761fdc604b8c2b50ed86c5874cce331417e1b3a46c65cb6c4c1a7c8db2",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/roguelike.md",
+      "sha256": "fb1ebc838011020a6f740e6fb4f2ceb81be8477f9c67bc7ae3a8e34dfe548f00",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/rpg.md",
+      "sha256": "5aa57ecefb448a0507ee0c8d503b43bd34d0c612ba130240d1af9842b80cba50",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/sandbox.md",
+      "sha256": "836f656bbaae549f31ac574c0865a61de451c08ab8c561db2c93398e147ece85",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/shooter.md",
+      "sha256": "2452850295ac2b9fac04ce2d6126bfc19bb7dccbb04c40e7f89c801aecc5555d",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/simulation.md",
+      "sha256": "fd74a7d21243f8d9827fe6a99263579309bc0aabd9e56261d3dd4eb5cfc75ad5",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/sports.md",
+      "sha256": "2247ea87dbca74e879f8c686d9e80434618e9e61bd3572739274c1af64cb0bb8",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/strategy.md",
+      "sha256": "997380919f6c1b408906c364f74e728b9c6b45bf2960d1f0bfe8b0def594735e",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/survival.md",
+      "sha256": "3647795ee0073a85217633412a41a938e51a553776acbe9ac953fb403e3437f9",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/text-based.md",
+      "sha256": "5895ca65dc93f676bb33b754f2c6be85d5d9b651df87d8431d404dc9bb736ee7",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/tower-defense.md",
+      "sha256": "03a2cc577fdd1a183ba04409b01b22f2f38713d28f1278481b0f221858f97ec8",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/turn-based-tactics.md",
+      "sha256": "30a150d8a0ab746f0c67d414be79e7e421fff1b8b7a1b716e64800df72bdb6c2",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/game-type-guides/visual-novel.md",
+      "sha256": "2d98f4c682f0abbd6330ac1bad04600c596e6b27302adbe9510fc0c0bf53052c",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/gdd/ui-gdd-flow.md",
+      "sha256": "6ba20c20c21a33c31e31ea9fab1d6044b49f33b9466cb09131d185de86d0f655",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/knowledge/README.md",
+      "sha256": "2ae010f8a4085e170ec89a728b21432fe767bf5e55edba6e95ca89eb5a222736",
+      "source_role": "resource-guide"
+    },
+    {
+      "path": "docs/knowledge/schema/task-resource-links.v2.schema.json",
+      "sha256": "db4fc6218718c48c1cfb3b38ad1725d330062b799388c97750938bb1ebbaef96",
+      "source_role": "resource-guide"
+    },
+    {
+      "path": "docs/knowledge/schema/task-semantic.v1.schema.json",
+      "sha256": "b48e79e21cb598d6a04ee58a3920703b1342136bd796a9d0d7ea9ea45df5ac8b",
+      "source_role": "resource-guide"
+    },
+    {
+      "path": "docs/prd/PRD-NEWGUILD-VS-0001.md",
+      "sha256": "55cc7b90b492c52024afe6656ec5644935581beb81cb5196675ee7df8b8a337d",
+      "source_role": "product-authority"
+    },
+    {
+      "path": "docs/testing-framework.md",
+      "sha256": "ad15f22e934d5e6dae598cd5e07f780a1f4de7e46bab8a0079091f4acf27d17f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/GM-NG-T2-playable-guide.md",
+      "sha256": "930d23abce1f5e590aaef83887ddbd78be113959ad6d8ac0c8121b27b95c60bc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/README.cn.md",
+      "sha256": "1ecd8e28fc07f4c3af25ab0e9918eb925dae4bace573d2ed04097c4d9c7fc5c8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/README.md",
+      "sha256": "cf74665c300bad7af8be79f79cb90c62b78eca5395b5c1a55284419630b8084a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/acceptance-check-and-llm-review.md",
+      "sha256": "455cbc608c6118f1142394ec11d92ed5741a7fe4c3fb56fc87e63bde97ac621a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/acceptance-semantics-methodology.md",
+      "sha256": "b01f50636f83b5a9f31e3828057028518a07facc8d2aca5277fc8f3b95a92d2c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/alterlab-patch-policy.md",
+      "sha256": "29fc007307d8dd5a88ba71989351e75d8766b09d70a8c0c15331966dddbe1baf",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/build_taskmaster_tasks.md",
+      "sha256": "7cf6d741198584d137e1314b0b1ad4cceef722b23d09215bc1a5454277bbefd2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/business-repo-upgrade-guide.md",
+      "sha256": "d32e8e25209f37b88f130303e4150016c58799bb5554abe0f8b9ec017b1d6daa",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/chapter-6-t56-optimization-guide.md",
+      "sha256": "778f7ae7be84c20d523edd3395849c35ef9b6e1c8f7a440cd24255af469b8f07",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/chapter2-5-technical-preflight.md",
+      "sha256": "68a23ee2c11d3ff54f91806caf0e2fd80f5b95c25c5f444d9cb69d48bb25cf94",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/chapter3-7-component-routing.md",
+      "sha256": "ef288f4c50f1a0eefb9901bcaa4f12af4697f9b5bc2caf1cc1adcbc7ee280f1a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/chapter7-profile-guide.md",
+      "sha256": "0fece82bf911d1a09f8083214ba4b34dffb8cecb2e94f30537be0fd4cb7b3ec9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/chapter7-profile.json",
+      "sha256": "33a9c62b5d96b54470a0bc7847240f1d9075095b32965b5ada4d328f5dbfc8f6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/cloud-platform-evolution-plan.cn.md",
+      "sha256": "dd5d6fdfa08a579c4aeef9d2ae88715b33175d172c17890d061c1c353bbc7ca7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/cloud-platform-evolution-plan.md",
+      "sha256": "ff3056f3e6284fbfa8ebcbd27e56dfdcb97413059d0388b391f288c691133d16",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/cloud-user-telemetry-and-feedback-plan.cn.md",
+      "sha256": "d5b8e905393145de2d14034f697e7fa8b7b9e2f097aa969815b10b88cd6288a0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/cloud-user-telemetry-and-feedback-plan.md",
+      "sha256": "e959a39acfe2f145d097495f5b34e770192f6ab4c6eea40d96b0eae6bb61bef0",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/contracts-catalog-guide.md",
+      "sha256": "c1767e2ef6ee8f8faf1dc32898927d0695865891f4242c9b3ff0fb2418d6de8c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/contracts-template-v1.md",
+      "sha256": "17d0f6fc22b151e1a0b3b4dce3b86ea2df3966e017d07380dbcd89fa08341323",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/doc-stack-convergence-guide.md",
+      "sha256": "7150aec0cdca8180ca6fae7ab0b724378a08a003abe3fa5523b880d1610a8986",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/README.md",
+      "sha256": "5865342db74b616f24c8fd9f72a2db1e7861d4a10a2df1f52b09bae4f2463753",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-active-task.example.json",
+      "sha256": "ea8c704e8fa969190585b7881a1725b1b1c03b6262202fa893f5af229b9b66e1",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-active-task.example.md",
+      "sha256": "be1c1c141dfcfee1fbd9bb3e946c8e67378185139c7eedac90bc66591733d560",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-approval-request.example.json",
+      "sha256": "2afb759963258f67c1ec9df8ec812609defce29fa79fd1d856155864821d613a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-approval-response.example.json",
+      "sha256": "a570472f230b5fb8095e8ff334e32accba361882e9976f950025eedba81bbc89",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-chapter6-route-compact.example.json",
+      "sha256": "3cad6cdaafb333e27a8d1e472fcb96d84ccfd2f7d71b2fbab5a9d3354001b102",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-chapter6-route-compact.stdout.example.txt",
+      "sha256": "1b6224ea97ab3ac5c10c5c3058fce79a739f99cc4698e02356628dd2d8a11a44",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-compact.example.json",
+      "sha256": "00dcc5c83232a33510d784c5f055ee2a7ad4b0fde1b1351b3f1dc41c10652b55",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-compact.stdout.example.txt",
+      "sha256": "d18e92383ce27bcbe7b7a40b22fa8e84de5b2cdbe35d74e74bdc4e3a69213f8b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-execution-context.example.json",
+      "sha256": "3dd44c458eb63db7d09463314d5cd862e014e4b58a1256cf4767c0f5dbdfb29b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-inspect.example.json",
+      "sha256": "49e2075ac7c077534328f40b41c754c97132cb0ee58c9fa227a43bea6ae26760",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-inspect.stdout.example.txt",
+      "sha256": "49e2075ac7c077534328f40b41c754c97132cb0ee58c9fa227a43bea6ae26760",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-latest-index.example.json",
+      "sha256": "c4ce2b83a1fa63756670303abdba63c6318c11e750935cee2a08c50592fba32c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-repair-guide.example.json",
+      "sha256": "f0033707c73d312e19753e0ee0c97737ca3d1336735d435c01c9c877622932a7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-local-hard-checks-repair-guide.example.md",
+      "sha256": "29f7646dc94cb30d84ff8c717cc384492999d0a66ab1c55ddf706e0901fb4c80",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-pipeline-compact.example.json",
+      "sha256": "c900f41e3cbaa174f9f587c081f8ada2f10c428e094559b1e38d636960c566fa",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-pipeline-compact.stdout.example.txt",
+      "sha256": "36ea3cf5477cbf5aaefbf44f0fa5b655046ad5abce31f4df7fccd8acb0d62678",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-pipeline-inspect.example.json",
+      "sha256": "a216ac404a87d68b0e2ce92782a890947497d5b6a191871c82a7cd1c4ded38ef",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-pipeline-inspect.stdout.example.txt",
+      "sha256": "a216ac404a87d68b0e2ce92782a890947497d5b6a191871c82a7cd1c4ded38ef",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-check-directory-boundaries.example.json",
+      "sha256": "3d85faf6c6aa6d03c34e8fbff379f11b7dcf69b472c35ff9965818510f7a392b",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-detect-project-stage.example.json",
+      "sha256": "cde380a16aa9ed90fcd2b6b07f02d9405138f5d02f76502d2af25b1efbd35343",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-doctor-project.example.json",
+      "sha256": "5f6998d66ba1412e3b108a2a9ebd8df71f45790949cf8f2153f0961045afe1b4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-record.example.md",
+      "sha256": "067c77014be1c268cfceb48dd081a5190e7dfeb85eb2ce7acea310e817e7bb35",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-report-catalog.example.json",
+      "sha256": "2cf9af6f5c7166e8ca491cf6f5e3dbd073cffeb9bb3c7aad3633f72c86245cf4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-scan-ci-fail.stdout.example.txt",
+      "sha256": "83fecc4ea43247a2bb8025ec524b12648f3cd7261f887bb55ab57006a270cef7",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-scan.example.json",
+      "sha256": "873b885efe62c8e61986f74208845b1b9092c83d871d0024946e7aa13847d77e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-scan.stdout.example.txt",
+      "sha256": "2d03fdd489d6b69e1f1fdb6143e3bb36ed12ff4c27ee7318a69d9879833bd617",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-server-ci-fail.stdout.example.txt",
+      "sha256": "92fda4352c0829308e2665668441b0ae5432a78c018f1878f9a6c5c88f54ce94",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-server.example.json",
+      "sha256": "e18ebe08738486d8484af1532686ddf4abf0a3838a02cfaed28f4b9391687b7c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-project-health-server.stdout.example.txt",
+      "sha256": "eb186faddd305ee4d31d376b855db6cc2f94ecaceb3118528c669041d88a7ebc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-recovery-compact.example.json",
+      "sha256": "4e8c6542b1d6303de5888a0504365d3fefc44e35fc833d35ba41a216ad8c2103",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-resume-task-compact.example.json",
+      "sha256": "a08a6214a7cd1da4c359dcf44ad3f6e45275a7463f3542b40c6948704cb61393",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/examples/sc-resume-task-compact.stdout.example.txt",
+      "sha256": "b2e155867269fe949a29dcd94290abc0b7f17d3dc54cfcf2a00a4dafbfa636cd",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/gate-bundle.md",
+      "sha256": "fc811032a9c5ea9b7f2ba15e22ce79f40b0c959daa067ed9e68b8ec8bd6065ef",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/godogen-absorption-policy.md",
+      "sha256": "7609aae9d30a2059ce3258e5a7f6ffea7d0d0fe980f1580286c4d9fbbcad2890",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/harness-boundary-matrix.md",
+      "sha256": "d2df4cbc6a12f5f6e422bc5bda3ff696707f57805d88786f18875a3e9dd7f965",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/hermes-openai-api-and-orchestration-optimization-plan.md",
+      "sha256": "fc3445e9051ee4df303a360386c4b4aa9387a07e630704a2be8a5d8095cc936e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/knowledge-context-freeze.md",
+      "sha256": "3dc6f74888d96dc7bef0cbe230abfbe9daa43d71f3f8fd6f478d49cb23d8833e",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/knowledge-context-shadow.md",
+      "sha256": "dbad092141a55d5a8992687822424c1e2c30536dec75286565670c16a5a8d523",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/local-hard-checks.md",
+      "sha256": "caa5bb993cb627ffb6b85e2d3ceeb6aeb78d86b44f87e013a610d16c0e9941f6",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/openspec-vs-current-stack.md",
+      "sha256": "8f000f3056e53709592100b7cc70986f91a7e8acdc9693c37bd02be30d5d7af4",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/overlay-generation-quickstart.md",
+      "sha256": "ae9d15212eb459ab894efbc005d619ead9e4d1ef7f50eaf334d5f2fefba84677",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/overlay-generation-sop.md",
+      "sha256": "e226e01de0b66c5fc9507faf3fb0eeff85b79af3e0a0f43a92f8c7f43ef847fc",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/overlays-authoring-guide.md",
+      "sha256": "c23c808e75d145d70b5a93372de1730a7ee798e5467af6c8d25214e29122baba",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/project-health-dashboard.md",
+      "sha256": "c5cd40ea891809e134a381f2d62f8afcdb6ab4eed6eed6b466e04748eba6c0af",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/project-health-knowledge.md",
+      "sha256": "8a68265f382002c0b6e27ff806040a133dae9af1b9d8c0b6263539540d3c3941",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/prototype-7day-playable-godot-zh.md",
+      "sha256": "c4b0d5cf98ddd92700fda8d82661a0644a370a45907ea250f642b658f053b9c8",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/prototype-lane-playbook.md",
+      "sha256": "08279cdd0c4cf7960d90457a2aca669671fb7d5212f84081232b556ec43b2db3",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/prototype-lane.md",
+      "sha256": "ebc51bfaad2687e8554fb03ed7fd72fa8df56b0b9cde1038d8042f36f7b17f26",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/prototype-tdd.md",
+      "sha256": "083c60773fe523217402dbbeb553c1085abc2bfd2e6ffb6cb63f30764dfc183f",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/prototype-workflow-zh.md",
+      "sha256": "447b701ef0002fd576acae6a90dcffb6b30f797efa004d728cfda5ae11fcb977",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/run-protocol.md",
+      "sha256": "879771b24fbef807d26c7add779261e024dbefcaf362366eb0d9cce9f1b53ae2",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/script-entrypoints-index.md",
+      "sha256": "5ebef34f9ffc0da927e2bbb7a98065559ad3dace66df6a008cfac2ffa27b2821",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/serena-mcp-command-reference.md",
+      "sha256": "f5242cd4478c058db8bceaf31cb3f98f77f61421202b2d259bd826bc6141356d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/stable-public-entrypoints.md",
+      "sha256": "4a05338f9dbdedac54a2659e87d41ffec56caa06999e279dc94fdfe506fe1f2a",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/superclaude-command-reference.md",
+      "sha256": "bc0cc6bdb2e8053e755d53ba158fadb25905628209df1bc8026cfbb987712e85",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/superpowers-vs-chapter6-router.md",
+      "sha256": "7255d163de0cd9f1d8f308b9bd42550889d62d780f1f48a9371a4d395363b381",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/task-master-superclaude-integration.md",
+      "sha256": "d13210ed0479de5913938edc8aaccca66abaefa4d726d9f1d3635ea44d053d55",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/task-semantics-gates-evolution.md",
+      "sha256": "980eae2150ab80980360842845aad3c4354b97ed6738ff0130bd640715720c4d",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/template-bootstrap-checklist.md",
+      "sha256": "9aed20c7cbeda35281395fdde0ba3f6de23594521c8955185697caaae15d4e06",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/template-upgrade-protocol.md",
+      "sha256": "284a3c94edd3f5503fd1855fbe37fb5cf2a9846445a4114fd56a9a092b1c4677",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/chapter7-profile.minimal.example.json",
+      "sha256": "610c69b3464fe1f5013b276d88e36c6d6d32f75d31872b5ce6f17f73d2e16450",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/chapter7-profile.template.json",
+      "sha256": "acb4900f4865f3d1bd2cfa68aa13840cee090c1374956917b43aacd0640f2da5",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/contracts-dto-template-v1.md",
+      "sha256": "05430a952b1f94eef5d3a476c491e3ce1c7c8ea0fa4bc1bb40f3ae26e857b832",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/contracts-event-template-v1.md",
+      "sha256": "08c4981a11c84ce62b5fed74fdde876efdbfac6f2b08b458d065b94dcacfc275",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/contracts-interface-template-v1.md",
+      "sha256": "aa89148c6d8be2333761add1ef3becb3aeb9845fd01c47c324313b0cc0549d61",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/templates/workflow-rule-feedback-template.md",
+      "sha256": "ffabcb5523c9c4de85cf22f8f42ab4935517612053c38a4fdcb1bca7cc6df280",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/ui-ux-implementation-policy.md",
+      "sha256": "4fe5c3dc1019d77c13823af4199a7ce4c85219726d24cb11ba1d42d48dacf716",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/unified-pipeline-command-whitelist.txt",
+      "sha256": "2014897aaa1e775d61d6b5cdd459bbc1347fc32ae9c7c54b123aa77404d8400c",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "docs/workflows/workflow-rule-feedback-protocol.md",
+      "sha256": "8857a6c2c721d7c87340dd6429453bedfe9fffb861a2cec596742b39b949c1d9",
+      "source_role": "repository-authority"
+    },
+    {
+      "path": "execution-plans/2026-03-19-phase1-agent-harness-foundation.md",
+      "sha256": "504b726f12337b8d2a24ec3f3542f946e0f4bf8fe503a11c5ae2541f44de4584",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-03-19-phase2-agent-review-sidecar.md",
+      "sha256": "6ead448825f19713ac562fe9659621fdc4b91755f9b402f642843bcc8ef62e7b",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan.md",
+      "sha256": "e481efa9980fa045aad2fb98dcf456a2c8bddfb60756396946030e57f72e4195",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/00-index.md",
+      "sha256": "eb0a1398cb286d482078d5faf3f21930705f21828eedda81592e84f3870933ff",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/01-authority-scope-and-invariants.md",
+      "sha256": "5beeae2e9fcb4eec0422e0d98a63102f62d0531550536df333dea46f791cf3e0",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/02-review-evidence-contracts-and-severity.md",
+      "sha256": "97aeac7d39081fb131c0d63067c026ff8b8124c2b36fee5537d933d8a9b8175b",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/03-chapter3-5-evidence-profiles.md",
+      "sha256": "1485af735c13285a339f67e1bf97a79fa0007ad81a01b1cabbd916f65fcc37fb",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/04-chapter6-review-ingestion-and-residual-closure.md",
+      "sha256": "6b704a87e68bac5437df884962f9ca92c8f805ee830b04cf96707de6c95e58f5",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/05-chapter7-ui-review-evidence.md",
+      "sha256": "8793a155bcca953d796339b2abe7624dcc944b15ac1b16c9c741d5d2ab52bee6",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/06-pipeline-integration-recovery-and-compatibility.md",
+      "sha256": "17044e92d63b3245d811e1f155fcf494399ed4eadbe80fcb352e3ebc9d6dce33",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/07-observability-replay-and-performance.md",
+      "sha256": "5b117845fc6da0a05c756ca04579c6cea6c260ba1befe9d4ad84393637222793",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/08-implementation-phases.md",
+      "sha256": "e33bd7b07caf1b266b55d6f978d5af4452bb7d51b31df75cead09f40b8ca3f1e",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/09-risks-dod-and-glossary.md",
+      "sha256": "3f4626fb02b5bea853bc038e953b237ab771b9745a61989c70e59968c549f707",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/96-global-review-and-split-validation.md",
+      "sha256": "ef8485efca1d370eaa482dd669f77d984c92ffa747669d7e132e4d48651cfd45",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/97-post-split-requirements-ledger.md",
+      "sha256": "90e3aceac0380753d94e29d14290bf1b2ce59c1f027928fb63335913444b08f0",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/98-research-to-split-audit.md",
+      "sha256": "d3142872a0a454a9eec057fbd2a10d6f95a03012639e7fc5a20b873fbf6da7bd",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/99-source-coverage.md",
+      "sha256": "0f791d9b1982c70fd986fe5c4782bba0f9ac124f806feecfea25b0397ade2c42",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/schemas/review-evidence.v1.example.json",
+      "sha256": "13f17c1c782b4877df45d8ba9faef2127572e3a8386da0697034eebc14bed27a",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-07-12-phase-review-evidence-gate-hardening-execution-plan/schemas/review-evidence.v1.schema.json",
+      "sha256": "28c9c01bdd792aa168cfaf45c643f504f9a5025b3c6a5f3a73ca22b2b0ed11a9",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-09-06-ci-optimization.md",
+      "sha256": "98d4ebaf028ca2e7b525c3b75af38a91827aaf3c99bc88dc85cfead618405a29",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/2026-09-06-example-scenes-prewarm.md",
+      "sha256": "37d6e1bc1089b605dd44519ca53adfb38ea10f191e79d5482ed13e5d4d8c5fb8",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/README.md",
+      "sha256": "3e97e84f94fcfcae09bc0129aaecdf412fa3d74a28780804427c12795647e8c8",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "execution-plans/TEMPLATE.md",
+      "sha256": "61f14b5b29caea25950f0b27caa7cf63aa41760a26f0df4ceb84d82365f8c880",
+      "source_role": "delivery-authority"
+    },
+    {
+      "path": "workflow.md",
+      "sha256": "f3e064e8a6a2882ad4c8bc54730dd670996e91ad74be52d21117ee8db26ffb2f",
+      "source_role": "repository-authority"
+    }
+  ]
+}

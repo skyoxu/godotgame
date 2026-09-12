@@ -1,0 +1,5 @@
+{
+  "cases": [],
+  "note": "The reusable template intentionally ships no business query expectations. Business repositories add their own deterministic cases before treating publication evaluation as product coverage.",
+  "schema": "godot-project-knowledge.evaluation-suite.v1"
+}
