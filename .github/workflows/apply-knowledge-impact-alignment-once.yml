@@ -21,27 +21,57 @@ jobs:
           ref: feat/align-newrouge-knowledge-impact-health
           fetch-depth: 0
 
-      - name: Apply bounded alignment sync
+      - name: Apply bounded alignment sync and capture result
+        id: sync
         shell: pwsh
         run: |
-          python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --write
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m py_compile scripts/python/dev_cli.py scripts/python/sync_knowledge_impact_alignment.py scripts/python/impact_analysis_index.py scripts/python/impact_runtime.py
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $log = @()
+          python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --write 2>&1 | Tee-Object -Variable writeLog
+          $writeRc = $LASTEXITCODE
+          $log += $writeLog
+          if ($writeRc -eq 0) {
+            python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --check 2>&1 | Tee-Object -Variable checkLog
+            $checkRc = $LASTEXITCODE
+            $log += $checkLog
+          } else {
+            $checkRc = 99
+          }
+          if ($writeRc -eq 0 -and $checkRc -eq 0) {
+            python -m py_compile scripts/python/dev_cli.py scripts/python/sync_knowledge_impact_alignment.py scripts/python/impact_analysis_index.py scripts/python/impact_runtime.py 2>&1 | Tee-Object -Variable compileLog
+            $compileRc = $LASTEXITCODE
+            $log += $compileLog
+          } else {
+            $compileRc = 99
+          }
+          @(
+            "write_rc=$writeRc",
+            "check_rc=$checkRc",
+            "compile_rc=$compileRc",
+            "--- output ---"
+          ) + $log | Set-Content -Encoding utf8 .alignment-sync-diagnostic.txt
+          if ($writeRc -eq 0 -and $checkRc -eq 0 -and $compileRc -eq 0) {
+            "ok=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            "ok=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
 
-      - name: Commit synchronized surfaces and remove one-shot workflow
+      - name: Commit synchronized surfaces or diagnostic and remove one-shot workflow
         shell: pwsh
         run: |
           Remove-Item .github/workflows/apply-knowledge-impact-alignment-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add workflow.md scripts/python/dev_cli.py scripts/python/project_health_knowledge.js .agents/skills .github/workflows/apply-knowledge-impact-alignment-once.yml
-          $changes = git status --porcelain
-          if (-not $changes) {
-            Write-Host "alignment_sync=no-changes"
-            exit 0
+          if ("${{ steps.sync.outputs.ok }}" -eq "true") {
+            Remove-Item .alignment-sync-diagnostic.txt
+            git add workflow.md scripts/python/dev_cli.py scripts/python/project_health_knowledge.js .agents/skills .github/workflows/apply-knowledge-impact-alignment-once.yml
+            $message = "chore: sync knowledge impact alignment surfaces"
+          } else {
+            git reset --hard HEAD
+            Remove-Item .github/workflows/apply-knowledge-impact-alignment-once.yml
+            git add .alignment-sync-diagnostic.txt .github/workflows/apply-knowledge-impact-alignment-once.yml
+            $message = "chore: record knowledge impact sync diagnostic"
           }
-          git commit -m "chore: sync knowledge impact alignment surfaces"
+          $changes = git status --porcelain
+          if (-not $changes) { exit 0 }
+          git commit -m $message
           git push origin HEAD:feat/align-newrouge-knowledge-impact-health
