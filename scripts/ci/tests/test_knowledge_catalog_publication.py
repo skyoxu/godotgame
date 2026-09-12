@@ -76,7 +76,9 @@ class KnowledgeCatalogPublicationTests(unittest.TestCase):
             located = locate(root, consumer="chapter6", text="FeatureService", task_id="7", require_published=True)
             self.assertEqual("published-current", located["publication_state"])
             self.assertEqual("matched", located["status"])
-            self.assertEqual("docs/prd/feature.md", located["candidates"][0]["path"])
+            candidate_paths = {item["path"] for item in located["candidates"]}
+            self.assertIn("docs/prd/feature.md", candidate_paths)
+            self.assertIn("AGENTS.md", candidate_paths)
             bundle = prepare(root, "chapter6", "FeatureService", "7")
             self.assertEqual("ready", bundle["status"])
             self.assertEqual("published-current", bundle["publication_state"])
