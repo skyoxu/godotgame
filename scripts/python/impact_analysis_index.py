@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Template-safe immutable Impact Index core.
 
-The index is evidence-only. It records exact files, declarations, exact resource
-references, scene/script wiring and configured task-scene relations from a trusted
-Git revision. Plain text symbol references remain explicitly unconfirmed.
+The index is evidence-only. It records exact files, declarations, exact JSON
+configuration pointers, resource references, scene/script wiring and configured
+task-scene relations from a trusted Git revision. Plain text symbol references
+remain explicitly unconfirmed.
 """
 from __future__ import annotations
 
@@ -125,6 +126,10 @@ def _file_id(path: str) -> str:
     return "file:" + path
 
 
+def _config_pointer_id(path: str, pointer: str) -> str:
+    return f"config:{path}#{pointer}"
+
+
 def _line_for(text: str, start: int) -> int:
     return text.count("\n", 0, start) + 1
 
@@ -143,6 +148,45 @@ def _declarations(path: str, text: str) -> list[dict[str, Any]]:
             line = _line_for(text, match.start())
             symbols.append({"id": _symbol_id(path, kind, name, line), "kind": kind, "name": name, "path": path, "line": line})
     return symbols
+
+
+def _pointer_token(value: object) -> str:
+    return str(value).replace("~", "~0").replace("/", "~1")
+
+
+def _json_pointers(path: str, text: str) -> list[dict[str, Any]]:
+    if PurePosixPath(path).suffix.casefold() != ".json":
+        return []
+    try:
+        document = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    result: list[dict[str, Any]] = []
+
+    def walk(value: Any, pointer: str) -> None:
+        if pointer:
+            if isinstance(value, dict):
+                value_type = "object"
+            elif isinstance(value, list):
+                value_type = "array"
+            elif value is None:
+                value_type = "null"
+            elif isinstance(value, bool):
+                value_type = "boolean"
+            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                value_type = "number"
+            else:
+                value_type = "string"
+            result.append({"id": _config_pointer_id(path, pointer), "path": path, "pointer": pointer, "value_type": value_type})
+        if isinstance(value, dict):
+            for key in sorted(value):
+                walk(value[key], f"{pointer}/{_pointer_token(key)}")
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                walk(item, f"{pointer}/{index}")
+
+    walk(document, "")
+    return result
 
 
 def _resource_edges(path: str, text: str, known_paths: set[str]) -> list[dict[str, Any]]:
@@ -164,17 +208,20 @@ def _scene_edges(path: str, text: str, known_paths: set[str]) -> tuple[list[dict
     node_matches = list(NODE.finditer(text))
     for index, match in enumerate(node_matches):
         name, node_type, parent = match.group(1), match.group(2), match.group(3)
-        start = match.end(); end = node_matches[index + 1].start() if index + 1 < len(node_matches) else len(text)
+        start = match.end()
+        end = node_matches[index + 1].start() if index + 1 < len(node_matches) else len(text)
         block = text[start:end]
         node_path = name if not parent or parent == "." else f"{parent}/{name}"
         node = {"node_path": node_path, "type": node_type, "line": _line_for(text, match.start())}
         script = SCRIPT_ASSIGN.search(block)
         if script and resources.get(script.group(1)) in known_paths:
-            target = resources[script.group(1)]; node["script"] = target
+            target = resources[script.group(1)]
+            node["script"] = target
             edges.append({"from": _file_id(path), "to": _file_id(target), "type": "scene-script", "confirmed": True, "node_path": node_path, "line": _line_for(text, start + script.start())})
         instance = INSTANCE_ASSIGN.search(match.group(0)) or INSTANCE_ASSIGN.search(block)
         if instance and resources.get(instance.group(1)) in known_paths:
-            target = resources[instance.group(1)]; node["instance"] = target
+            target = resources[instance.group(1)]
+            node["instance"] = target
             edges.append({"from": _file_id(path), "to": _file_id(target), "type": "scene-instance", "confirmed": True, "node_path": node_path, "line": node["line"]})
         nodes.append(node)
     return edges, nodes
@@ -198,28 +245,44 @@ def _configured_edges(root: Path, revision: str, known_paths: set[str]) -> list[
 
 
 def build_index(root: Path, revision: str, *, trusted_ref: str | None = None, config_path: str = "scripts/python/impact_analysis_config.v1.json", aliases_path: str = "scripts/python/impact_target_aliases.v1.json") -> dict[str, Any]:
-    root = root.resolve(); revision = resolve_revision(root, revision, trusted_ref)
-    config = _read_json(root, revision, config_path); aliases = _read_json(root, revision, aliases_path)
-    files = _git_files(root, revision, config); known_paths = {item["path"] for item in files}
-    symbols = []; relations = []; scenes = []; manifest = []
+    root = root.resolve()
+    revision = resolve_revision(root, revision, trusted_ref)
+    config = _read_json(root, revision, config_path)
+    aliases = _read_json(root, revision, aliases_path)
+    files = _git_files(root, revision, config)
+    known_paths = {item["path"] for item in files}
+    symbols: list[dict[str, Any]] = []
+    config_pointers: list[dict[str, Any]] = []
+    relations: list[dict[str, Any]] = []
+    scenes: list[dict[str, Any]] = []
+    manifest: list[dict[str, Any]] = []
     for item in files:
         path = item["path"]
         text = _text(root, revision, path)
         digest = sha256_bytes(text.encode("utf-8"))
         manifest.append({**item, "sha256": digest})
-        declared = _declarations(path, text); symbols.extend(declared)
+        declared = _declarations(path, text)
+        symbols.extend(declared)
         for symbol in declared:
             relations.append({"from": _file_id(path), "to": symbol["id"], "type": "declares", "confirmed": True, "line": symbol["line"]})
+        pointers = _json_pointers(path, text)
+        config_pointers.extend(pointers)
+        for pointer in pointers:
+            relations.append({"from": _file_id(path), "to": pointer["id"], "type": "declares-config-pointer", "confirmed": True, "pointer": pointer["pointer"]})
         relations.extend(_resource_edges(path, text, known_paths))
-        scene_edges, nodes = _scene_edges(path, text, known_paths); relations.extend(scene_edges)
-        if nodes: scenes.append({"path": path, "nodes": nodes})
+        scene_edges, nodes = _scene_edges(path, text, known_paths)
+        relations.extend(scene_edges)
+        if nodes:
+            scenes.append({"path": path, "nodes": nodes})
     relations.extend(_configured_edges(root, revision, known_paths))
     # Unconfirmed symbol-text evidence is useful for exploration but never semantic authority.
     symbol_names = {symbol["name"]: symbol for symbol in symbols}
     for item in files:
-        path = item["path"]; text = _text(root, revision, path)
+        path = item["path"]
+        text = _text(root, revision, path)
         for name, symbol in symbol_names.items():
-            if path == symbol["path"]: continue
+            if path == symbol["path"]:
+                continue
             for match in re.finditer(rf"\b{re.escape(name)}\b", text):
                 relations.append({"from": _file_id(path), "to": symbol["id"], "type": "text-symbol-reference", "confirmed": False, "line": _line_for(text, match.start())})
                 break
@@ -233,11 +296,18 @@ def build_index(root: Path, revision: str, *, trusted_ref: str | None = None, co
     }
     index_id = "idx-" + sha256_bytes(canonical_bytes(identity))
     return {
-        "schema": INDEX_SCHEMA, "index_id": index_id, "repository_revision": revision,
-        "trusted_ref": trusted_ref, "identity": identity, "source_manifest": manifest,
+        "schema": INDEX_SCHEMA,
+        "index_id": index_id,
+        "repository_revision": revision,
+        "trusted_ref": trusted_ref,
+        "identity": identity,
+        "source_manifest": manifest,
         "files": [{"id": _file_id(item["path"]), **item} for item in manifest],
         "symbols": sorted(symbols, key=lambda item: item["id"]),
-        "scenes": scenes, "relations": relations, "aliases": aliases.get("aliases", []),
+        "config_pointers": sorted(config_pointers, key=lambda item: item["id"]),
+        "scenes": scenes,
+        "relations": relations,
+        "aliases": aliases.get("aliases", []),
     }
 
 
@@ -249,7 +319,8 @@ def publish_index(root: Path, index: dict[str, Any], output_root: Path) -> dict[
     raw = json.dumps(index, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     index_path.write_text(raw, encoding="utf-8")
     manifest = {
-        "schema": MANIFEST_SCHEMA, "index_id": index["index_id"],
+        "schema": MANIFEST_SCHEMA,
+        "index_id": index["index_id"],
         "repository_revision": index["repository_revision"],
         "artifact_path": index_path.relative_to(root).as_posix(),
         "artifact_sha256": sha256_bytes(raw.encode("utf-8")),
@@ -257,18 +328,24 @@ def publish_index(root: Path, index: dict[str, Any], output_root: Path) -> dict[
     }
     manifest_path = directory / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    current = root / "logs/ci/impact-index/current.json"; current.parent.mkdir(parents=True, exist_ok=True)
+    current = root / "logs/ci/impact-index/current.json"
+    current.parent.mkdir(parents=True, exist_ok=True)
     current.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return {"status": "published", "index_id": index["index_id"], "index_path": manifest["artifact_path"], "manifest_path": manifest_path.relative_to(root).as_posix()}
 
 
 def load_current_index(root: Path, revision: str | None = None) -> dict[str, Any]:
     pointer = root / "logs/ci/impact-index/current.json"
-    if not pointer.is_file(): raise ImpactIndexError("missing_index", "current impact index is missing")
+    if not pointer.is_file():
+        raise ImpactIndexError("missing_index", "current impact index is missing")
     manifest = json.loads(pointer.read_text(encoding="utf-8"))
-    if revision and manifest.get("repository_revision") != revision: raise ImpactIndexError("stale_index", "impact index revision does not match requested revision")
-    path = root / str(manifest.get("artifact_path")); raw = path.read_bytes()
-    if sha256_bytes(raw) != manifest.get("artifact_sha256"): raise ImpactIndexError("invalid_manifest", "impact index hash mismatch")
+    if revision and manifest.get("repository_revision") != revision:
+        raise ImpactIndexError("stale_index", "impact index revision does not match requested revision")
+    path = root / str(manifest.get("artifact_path"))
+    raw = path.read_bytes()
+    if sha256_bytes(raw) != manifest.get("artifact_sha256"):
+        raise ImpactIndexError("invalid_manifest", "impact index hash mismatch")
     index = json.loads(raw.decode("utf-8"))
-    if index.get("index_id") != manifest.get("index_id"): raise ImpactIndexError("invalid_manifest", "impact index id mismatch")
+    if index.get("index_id") != manifest.get("index_id"):
+        raise ImpactIndexError("invalid_manifest", "impact index id mismatch")
     return index
