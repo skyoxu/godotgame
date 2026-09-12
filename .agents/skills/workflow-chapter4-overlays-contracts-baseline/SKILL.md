@@ -17,11 +17,9 @@ Operate Chapter 4 from `workflow.md` idempotently for a business repository that
 - Keep generated code, scripts, tests, comments, and log messages in English.
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
-
 - Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
 - Treat `Component` as a Godot Node/Scene Component, not an ECS component.
 - Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
-
 
 ## Repository Layout
 
@@ -47,24 +45,36 @@ Chapter 4 depends on real overlay and contract files. Use business-repo overlays
 
 1. Read the relevant Chapter 4 section in the template repo `workflow.md`.
 2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+3. Read `docs/workflows/project-health-knowledge.md` before using Knowledge candidates; candidate ranking is observe-only and never authorizes an overlay or contract change by itself.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+
+## Knowledge Candidate Gate
+
+Before writing an overlay or contract for a scoped task, generate an observe-only candidate bundle:
+
+```powershell
+py -3 scripts/python/prepare_knowledge_context.py --consumer chapter4 --task-id <id> --query "<task intent>" --out logs/ci/knowledge-context/chapter4-<id>.json
+```
+
+Re-read the authoritative candidate files directly. Ranking is not semantic acceptance. Chapter 4 does not freeze Chapter 6 execution context and must not use a page Impact preview as a formal handoff.
 
 ## Idempotent Procedure
 
 1. Confirm the Chapter 3.9 triplet baseline is clean before generating overlays.
-2. Generate overlay skeletons through batch dry-run, batch simulate, single-page repair for outliers, and limited apply.
-3. Do not perform full apply in the first overlay pass, and do not mix acceptance rewrites into overlay generation.
-4. Freeze overlay refs with sync_task_overlay_refs and validate_overlay_execution, then rerun task refs and triplet validators.
-5. Create or adjust contract skeletons under Game.Core/Contracts only, using the workflow contract templates.
-6. Validate contract baseline with validate_contracts, check_domain_contracts, and Game.Core.Tests before leaving Chapter 4.
-
+2. Generate the Chapter 4 Knowledge candidate bundle for the current task and re-read relevant authoritative sources directly.
+3. Generate overlay skeletons through batch dry-run, batch simulate, single-page repair for outliers, and limited apply.
+4. Do not perform full apply in the first overlay pass, and do not mix acceptance rewrites into overlay generation.
+5. Freeze overlay refs with sync_task_overlay_refs and validate_overlay_execution, then rerun task refs and triplet validators.
+6. Create or adjust contract skeletons under Game.Core/Contracts only, using the workflow contract templates.
+7. Validate contract baseline with validate_contracts, check_domain_contracts, and Game.Core.Tests before leaving Chapter 4.
 
 ## Stop-Loss Signals
 
 - Existing `forbidden_commands` blocks the command about to be run.
 - `artifact_integrity`, `planned_only_incomplete`, or planned-only run type appears in recovery evidence.
 - Route evidence recommends inspect-first, record-residual, fix-deterministic, repo-noise-stop, or pause.
+- Knowledge candidates cannot be verified against their authoritative source paths or revision.
 - The same deterministic failure fingerprint appears repeatedly.
 - The next action would duplicate work already covered by task, overlay, candidate, or manifest evidence.
 
