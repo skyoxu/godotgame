@@ -32,6 +32,14 @@ class KnowledgeImpactAlignmentSyncTests(unittest.TestCase):
             "impact-analyze",
         ):
             self.assertIn(f'sub.add_parser("{command}"', text)
+        self.assertEqual(1, text.count("# KNOWLEDGE_IMPACT_CLI_FUNCTIONS_BEGIN"))
+        self.assertEqual(1, text.count("# KNOWLEDGE_IMPACT_CLI_FUNCTIONS_END"))
+        self.assertEqual(1, text.count("# KNOWLEDGE_IMPACT_CLI_PARSERS_BEGIN"))
+        self.assertEqual(1, text.count("# KNOWLEDGE_IMPACT_CLI_PARSERS_END"))
+
+    def test_temporary_alignment_artifacts_are_absent(self):
+        self.assertFalse((ROOT / ".alignment-sync-diagnostic.txt").exists())
+        self.assertFalse((ROOT / ".github/workflows/apply-knowledge-impact-alignment-once.yml").exists())
 
 
 if __name__ == "__main__":
