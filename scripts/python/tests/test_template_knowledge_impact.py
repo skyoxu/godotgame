@@ -69,17 +69,17 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             (root / "Game.Core").mkdir()
             (root / "Tests.Godot").mkdir()
             (root / "docs/gdd").mkdir(parents=True)
-            (root / "Game.Core/Reward.cs").write_text("class RewardService {}\n", encoding="utf-8")
-            (root / "Tests.Godot/test_reward.gd").write_text("RewardService\n", encoding="utf-8")
-            (root / "docs/gdd/reward.md").write_text("奖励 RewardService\n", encoding="utf-8")
+            (root / "Game.Core/Feature.cs").write_text("class FeatureService {}\n", encoding="utf-8")
+            (root / "Tests.Godot/test_feature.gd").write_text("FeatureService\n", encoding="utf-8")
+            (root / "docs/gdd/feature.md").write_text("功能 FeatureService\n", encoding="utf-8")
             save_config(root, config(
                 {"domain_code": "Game.Core", "engine_tests": "Tests.Godot"},
-                gdd=["docs/gdd"], aliases={"奖励": ["RewardService"]},
+                gdd=["docs/gdd"], aliases={"功能": ["FeatureService"]},
                 extensions=[".md", ".cs", ".gd"],
             ))
             scan(root)
-            result = query(root, "奖励")
-            self.assertIn("RewardService", result["queries"])
+            result = query(root, "功能")
+            self.assertIn("FeatureService", result["queries"])
             self.assertTrue(result["actionable"]["code"])
             self.assertTrue(result["actionable"]["tests"])
             self.assertTrue(result["gdd_supplements"])
@@ -156,15 +156,15 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             task_dir = root / ".taskmaster/tasks"
             task_dir.mkdir(parents=True)
             (task_dir / "tasks.json").write_text(json.dumps({
-                "master": {"tasks": [{"id": 7, "title": "Reward", "status": "done", "dependencies": [2]}]}
+                "master": {"tasks": [{"id": 7, "title": "Feature", "status": "done", "dependencies": [2]}]}
             }), encoding="utf-8")
             (task_dir / "tasks_gameplay.json").write_text(json.dumps([
-                {"taskmaster_id": 7, "test_refs": ["Tests.Godot/tests/test_reward.gd"], "gameplay_note": "view"}
+                {"taskmaster_id": 7, "test_refs": ["Tests.Godot/tests/test_feature.gd"], "gameplay_note": "view"}
             ]), encoding="utf-8")
             scan(root, config({"tasks": ".taskmaster/tasks"}, extensions=[".json"]))
             rows = task_rows(root)
             self.assertEqual(["7"], [row["id"] for row in rows])
-            self.assertEqual("Reward", rows[0]["title"])
+            self.assertEqual("Feature", rows[0]["title"])
             self.assertIn(".taskmaster/tasks/tasks_gameplay.json", rows[0]["mappings"])
 
     def test_runtime_eligibility_uses_only_existing_snapshot_test_refs(self):
@@ -174,12 +174,12 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             task_dir.mkdir(parents=True)
             test_dir = root / "Tests.Godot/tests/Gameplay"
             test_dir.mkdir(parents=True)
-            (test_dir / "test_reward.gd").write_text("extends GdUnitTestSuite\n", encoding="utf-8")
+            (test_dir / "test_feature.gd").write_text("extends GdUnitTestSuite\n", encoding="utf-8")
             (task_dir / "tasks_gameplay.json").write_text(json.dumps({
                 "tasks": [{
-                    "id": "7", "title": "Reward",
+                    "id": "7", "title": "Feature",
                     "test_refs": [
-                        "Tests.Godot/tests/Gameplay/test_reward.gd",
+                        "Tests.Godot/tests/Gameplay/test_feature.gd",
                         "Tests.Godot/tests/Gameplay/missing.gd",
                     ],
                 }]
@@ -192,7 +192,7 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             result = eligibility(root)
             self.assertEqual(1, result["eligible_count"])
             self.assertTrue(result["tasks"][0]["gameplay"])
-            self.assertEqual(["Tests.Godot/tests/Gameplay/test_reward.gd"], result["tasks"][0]["test_refs"])
+            self.assertEqual(["Tests.Godot/tests/Gameplay/test_feature.gd"], result["tasks"][0]["test_refs"])
 
     def test_static_godot_navigation_requires_real_attachment_and_witness(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -205,29 +205,29 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             script_dir.mkdir(parents=True)
             data_dir.mkdir(parents=True)
             task_dir.mkdir(parents=True)
-            (script_dir / "RewardPanel.gd").write_text(
-                'extends Control\nconst DATA = "Game.Godot/Data/reward.json"\nfunc _claim_reward() -> void:\n    pass\n',
+            (script_dir / "FeaturePanel.gd").write_text(
+                'extends Control\nconst DATA = "Game.Godot/Data/feature.json"\nfunc _apply_feature() -> void:\n    pass\n',
                 encoding="utf-8",
             )
-            (scene_dir / "Reward.tscn").write_text(
+            (scene_dir / "FeaturePanel.tscn").write_text(
                 '[gd_scene load_steps=2 format=3]\n\n'
-                '[ext_resource type="Script" path="res://Game.Godot/Scripts/RewardPanel.gd" id="1"]\n\n'
-                '[node name="Reward" type="Control"]\nscript = ExtResource("1")\n',
+                '[ext_resource type="Script" path="res://Game.Godot/Scripts/FeaturePanel.gd" id="1"]\n\n'
+                '[node name="FeaturePanel" type="Control"]\nscript = ExtResource("1")\n',
                 encoding="utf-8",
             )
-            (data_dir / "reward.json").write_text(
-                '{"reward":{"id":"reward.basic","pick":3,"weight":1}}', encoding="utf-8"
+            (data_dir / "feature.json").write_text(
+                '{"feature":{"id":"feature.basic","limit":3,"weight":1}}', encoding="utf-8"
             )
             (task_dir / "tasks.json").write_text(json.dumps({
-                "master": {"tasks": [{"id": 7, "title": "Reward", "status": "pending"}]}
+                "master": {"tasks": [{"id": 7, "title": "Feature", "status": "pending"}]}
             }), encoding="utf-8")
             binding = {
                 "task_id": "7",
-                "scene": "Game.Godot/Scenes/Reward.tscn",
+                "scene": "Game.Godot/Scenes/FeaturePanel.tscn",
                 "node": ".",
-                "script": "Game.Godot/Scripts/RewardPanel.gd",
-                "witness": "func _claim_reward() -> void:",
-                "configs": [{"path": "Game.Godot/Data/reward.json", "pointers": ["/reward/pick"]}],
+                "script": "Game.Godot/Scripts/FeaturePanel.gd",
+                "witness": "func _apply_feature() -> void:",
+                "configs": [{"path": "Game.Godot/Data/feature.json", "pointers": ["/feature/limit"]}],
             }
             save_config(root, config(
                 {"tasks": ".taskmaster/tasks", "engine_code": "Game.Godot"},
@@ -237,9 +237,9 @@ class TemplateKnowledgeImpactTests(unittest.TestCase):
             row = task_rows(root, state)[0]
             nav = build_navigation(root, "7", task=row["task"], mappings=row["mappings"], bindings=[binding], state=state)
             self.assertEqual("static_attached", nav["static"]["status"])
-            self.assertEqual("Game.Godot/Scripts/RewardPanel.gd", nav["static"]["scenes"][0]["script"])
-            config_row = next(item for item in nav["configs"] if item["path"] == "Game.Godot/Data/reward.json")
-            self.assertEqual(["/reward/pick"], [item["pointer"] for item in config_row["confirmed_fields"]])
+            self.assertEqual("Game.Godot/Scripts/FeaturePanel.gd", nav["static"]["scenes"][0]["script"])
+            config_row = next(item for item in nav["configs"] if item["path"] == "Game.Godot/Data/feature.json")
+            self.assertEqual(["/feature/limit"], [item["pointer"] for item in config_row["confirmed_fields"]])
             bad = {**binding, "witness": "func missing()"}
             bad_nav = build_navigation(root, "7", task=row["task"], mappings=row["mappings"], bindings=[bad], state=state)
             self.assertNotEqual("static_attached", bad_nav["static"]["status"])
