@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Deterministic repository impact exploration for the template repository.
+"""Deterministic snapshot-bound impact exploration for the template repository.
 
-The analyzer intentionally reports evidence only. It never upgrades keyword matches
-into confirmed symbol relationships.
+The analyzer reports evidence only. Text matches never become confirmed semantic
+relationships; the exact scanned target path is the only confirmed target edge.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from project_health_knowledge import base_dir, latest, safe_file, revision
+from project_health_knowledge import base_dir, latest, snapshot_text
 
 
 class ImpactAnalyzer:
@@ -21,27 +21,24 @@ class ImpactAnalyzer:
         needle = str(target or "").strip()
         if not needle:
             raise ValueError("impact target is required")
-        manifest = latest(self.root).get("records", [])
-        exact_path = None
-        try:
-            candidate = safe_file(self.root, needle)
-            if candidate.is_file():
-                exact_path = candidate.relative_to(self.root).as_posix()
-        except ValueError:
-            pass
-
-        tokens = [t.lower() for t in re.findall(r"[A-Za-z_][A-Za-z0-9_.:/-]*", needle)]
+        state = latest(self.root)
+        manifest = state.get("records", [])
+        manifest_paths = {str(record.get("path") or "") for record in manifest}
+        normalized = needle.replace("\\", "/").removeprefix("./")
+        exact_path = normalized if normalized in manifest_paths else None
+        tokens = [token.casefold() for token in re.findall(r"[\w_.:/-]+", needle, flags=re.UNICODE) if token.strip()]
         if not tokens:
-            tokens = [needle.lower()]
+            tokens = [needle.casefold()]
         evidence: list[dict[str, Any]] = []
         for record in manifest:
-            rel = str(record.get("path") or "")
-            path = safe_file(self.root, rel)
-            try:
-                text = path.read_text(encoding="utf-8-sig")
-            except (OSError, UnicodeDecodeError):
+            if not record.get("searchable"):
                 continue
-            lower = text.lower()
+            rel = str(record.get("path") or "")
+            try:
+                text = snapshot_text(self.root, rel, state)
+            except (ValueError, UnicodeDecodeError):
+                continue
+            lower = text.casefold()
             count = sum(lower.count(token) for token in tokens)
             if exact_path and rel == exact_path:
                 count += 1000
@@ -49,7 +46,7 @@ class ImpactAnalyzer:
                 continue
             line_hits = []
             for idx, line in enumerate(text.splitlines(), 1):
-                if any(token in line.lower() for token in tokens):
+                if any(token in line.casefold() for token in tokens):
                     line_hits.append({"line": idx, "text": line[:500]})
                     if len(line_hits) >= 8:
                         break
@@ -62,10 +59,11 @@ class ImpactAnalyzer:
             })
         evidence.sort(key=lambda item: (-int(item["score"]), item["path"]))
         if strict and exact_path is None and not evidence:
-            raise ValueError("impact target could not be resolved")
+            raise ValueError("impact target could not be resolved in the scanned snapshot")
         return {
-            "schema": "godot-project-impact.report.v1",
-            "revision": revision(self.root),
+            "schema": "godot-project-impact.report.v2",
+            "revision": state.get("revision"),
+            "snapshot_mode": state.get("snapshot_mode"),
             "target": needle,
             "mode": "strict" if strict else "explore",
             "warning": "text-reference edges are evidence, not confirmed semantic dependencies",
