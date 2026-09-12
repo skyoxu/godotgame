@@ -1,0 +1,10 @@
+{
+  "schema_version": "godot-project-knowledge.consumer-policies.v1",
+  "policies": [
+    {"consumer":"repository-session","domains":["toolchain","game-design","game-runtime","delivery"],"required_context_classes":["repository-entrypoints"],"optional_context_classes":["design","runtime","delivery"]},
+    {"consumer":"chapter4","domains":["game-design","delivery"],"required_context_classes":["requirements","architecture"],"optional_context_classes":["resource-knowledge"]},
+    {"consumer":"chapter5","domains":["game-design","game-runtime"],"required_context_classes":["requirements","contracts"],"optional_context_classes":["resource-knowledge"]},
+    {"consumer":"chapter6","domains":["game-runtime","delivery"],"required_context_classes":["task","contracts","implementation"],"optional_context_classes":["resource-knowledge","tests"]},
+    {"consumer":"review","domains":["game-runtime","delivery"],"required_context_classes":["task","implementation","tests"],"optional_context_classes":["resource-knowledge"]}
+  ]
+}
