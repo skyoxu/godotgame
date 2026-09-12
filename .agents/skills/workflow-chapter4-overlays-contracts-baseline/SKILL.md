@@ -17,11 +17,11 @@ Operate Chapter 4 from `workflow.md` idempotently for a business repository that
 - Keep generated code, scripts, tests, comments, and log messages in English.
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
+- Knowledge Locator output is candidate evidence only; it never replaces PRD/GDD/ADR/Overlay/Contracts/source authority.
 
 - Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
 - Treat `Component` as a Godot Node/Scene Component, not an ECS component.
 - Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
-
 
 ## Repository Layout
 
@@ -46,19 +46,28 @@ Chapter 4 depends on real overlay and contract files. Use business-repo overlays
 ## Required Reading
 
 1. Read the relevant Chapter 4 section in the template repo `workflow.md`.
-2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/knowledge-context-shadow.md`; prepare an observe-only `consumer=chapter4` bundle before writing overlays/contracts.
+3. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Before writing overlays/contracts, run `prepare_knowledge_context.py --consumer chapter4 --query "<architecture/product intent>"`.
+- Chapter 4 candidates are observe-only. Re-read candidate files directly; ranking is never acceptance and Chapter 4 does not freeze context.
+- Browser/observe-only investigation may use an ephemeral policy-aware catalog when no publication exists; direct PRD/GDD/ADR/Overlay/Contract/source authority remains stronger than locator rank.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
 
 ## Idempotent Procedure
 
 1. Confirm the Chapter 3.9 triplet baseline is clean before generating overlays.
-2. Generate overlay skeletons through batch dry-run, batch simulate, single-page repair for outliers, and limited apply.
-3. Do not perform full apply in the first overlay pass, and do not mix acceptance rewrites into overlay generation.
-4. Freeze overlay refs with sync_task_overlay_refs and validate_overlay_execution, then rerun task refs and triplet validators.
-5. Create or adjust contract skeletons under Game.Core/Contracts only, using the workflow contract templates.
-6. Validate contract baseline with validate_contracts, check_domain_contracts, and Game.Core.Tests before leaving Chapter 4.
-
+2. Run `prepare_knowledge_context.py --consumer chapter4` using the current architecture/product intent; re-read candidate sources directly. Do not freeze or auto-accept candidates in Chapter 4.
+3. Generate overlay skeletons through batch dry-run, batch simulate, single-page repair for outliers, and limited apply.
+4. Do not perform full apply in the first overlay pass, and do not mix acceptance rewrites into overlay generation.
+5. Freeze overlay refs with sync_task_overlay_refs and validate_overlay_execution, then rerun task refs and triplet validators.
+6. Create or adjust contract skeletons under Game.Core/Contracts only, using the workflow contract templates.
+7. Validate contract baseline with validate_contracts, check_domain_contracts, and Game.Core.Tests before leaving Chapter 4.
 
 ## Stop-Loss Signals
 

@@ -1,0 +1,89 @@
+name: Publish knowledge catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-knowledge-catalog.yml"
+      - "AGENTS.md"
+      - "README.md"
+      - "workflow.md"
+      - "DELIVERY_PROFILE.md"
+      - "docs/**"
+      - ".taskmaster/**"
+      - ".agents/skills/**"
+      - "Game.Core/Contracts/**"
+      - "knowledge/policies/**"
+      - "knowledge/evaluation/**"
+      - "knowledge/contracts/**"
+      - "scripts/python/*knowledge*.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: knowledge-catalog-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish and validate derived state
+        shell: pwsh
+        run: |
+          py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          py -3 scripts/python/validate_knowledge_control_plane.py --repository-root . --require-generated
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Open or reuse derived-state pull request
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $changes = git status --porcelain -- knowledge
+          if (-not $changes) {
+            Write-Host "publication_result=already-current"
+            exit 0
+          }
+          $short = $env:GITHUB_SHA.Substring(0,12)
+          $branch = "automation/knowledge-catalog-$short"
+          $remote = git ls-remote --heads origin $branch
+          if ($remote) {
+            Write-Host "publication_result=already-published branch=$branch"
+            $existing = gh pr list --base main --head $branch --state open --json number,url --limit 1 2>$null
+            if ($LASTEXITCODE -eq 0 -and $existing -and $existing -ne "[]") {
+              Write-Host "existing_pr=$existing"
+            }
+            exit 0
+          }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c $branch
+          git add knowledge
+          git commit -m "chore(knowledge): publish catalog for main $short"
+          git push --set-upstream origin $branch
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "publication_result=read-only reason=unable-to-push-derived-branch"
+            exit 0
+          }
+          $existing = gh pr list --base main --head $branch --state open --json number,url --limit 1
+          if ($LASTEXITCODE -eq 0 -and $existing -and $existing -ne "[]") {
+            Write-Host "publication_result=existing-pr $existing"
+            exit 0
+          }
+          gh pr create --base main --head $branch --title "chore(knowledge): publish catalog for main" --body "Automated publication of derived Knowledge state for main commit $env:GITHUB_SHA. This PR contains machine-generated catalog/projection/snapshot/current/LKG artifacts only."
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "publication_result=read-only reason=unable-to-create-derived-pr branch=$branch"
+            exit 0
+          }
+          Write-Host "publication_result=pr-created branch=$branch"

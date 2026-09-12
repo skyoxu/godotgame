@@ -140,4 +140,6 @@ py -3 scripts/python/remind_overlay_task_drift.py --write --overlay-index docs/a
 
 - 新增 workflow 中的 Python 脚本调用前，先判断是否应纳入 gate bundle；
 - 仅当脚本明确不属于门禁聚合域（例如发布专用检查）时，才可加入 `allowed_direct_scripts`；
+- Knowledge 派生状态发布工作流仅直接放行 `publish_knowledge_catalog.py` 与 `validate_knowledge_control_plane.py` 两个入口；builder、locator、prepare/freeze 等内部实现不得加入白名单；
+- workflow 的 `paths` 过滤条件应使用 glob（例如 `scripts/python/*knowledge*.py`）表达脚本族，避免被静态执行扫描误识别为直接命令调用；
 - 修改白名单必须在 PR 描述里说明原因，避免静默扩大绕过范围。

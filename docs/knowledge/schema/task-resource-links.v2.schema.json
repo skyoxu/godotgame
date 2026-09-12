@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge/task-resource-links.v2",
+  "type": "object",
+  "required": ["schema", "generated", "task_ids"],
+  "properties": {
+    "schema": {"const": "godot-project-knowledge.task-resource-links.v2"},
+    "source_revision": {"type": ["string", "null"]},
+    "task_ids": {"type": "array", "items": {"type": "string"}},
+    "generated": {"type": "array", "items": {"type": "object", "required": ["id", "task_id", "path", "kind", "confidence", "reconstruction"], "properties": {"id": {"type": "string"}, "task_id": {"type": "string"}, "path": {"type": "string"}, "kind": {"enum": ["config", "asset", "scene", "code"]}, "confidence": {"enum": ["confirmed", "inferred"]}, "reconstruction": {"const": "static_repository_evidence"}}}}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge/knowledge-index-pointer.v1",
+  "type": "object",
+  "required": ["schema", "generation_id", "generation_sha256", "source_snapshot_id", "authority_ref", "main_commit"],
+  "properties": {
+    "schema": {"const": "godot-project-knowledge.index-pointer.v1"},
+    "generation_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "generation_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "source_snapshot_id": {"type": "string"},
+    "authority_ref": {"const": "refs/heads/main"},
+    "main_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  },
+  "additionalProperties": false
+}

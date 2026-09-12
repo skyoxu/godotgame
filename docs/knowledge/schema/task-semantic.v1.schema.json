@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge/task-semantic.v1",
+  "type": "object",
+  "required": ["status", "task_id", "generated_by"],
+  "properties": {
+    "status": {"enum": ["verified", "unverified"]},
+    "task_id": {"type": "string"},
+    "generated_by": {"const": "llm-assisted-semantic-analysis"},
+    "backend": {"type": "string"},
+    "entries": {"type": "array", "items": {"type": "object", "required": ["path", "kind", "parameters", "bindings"], "properties": {"path": {"type": "string"}, "kind": {"enum": ["config", "asset", "scene"]}, "explanation": {"type": "string"}, "modification_guidance": {"type": "string"}, "modification_impact": {"type": "string"}, "parameters": {"type": "array"}, "bindings": {"type": "array"}}}}
+  },
+  "additionalProperties": true
+}

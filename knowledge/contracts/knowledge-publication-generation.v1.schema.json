@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge/knowledge-publication-generation.v1",
+  "type": "object",
+  "required": ["schema", "generation_id", "authority_ref", "main_commit", "source_snapshot_id", "artifacts"],
+  "properties": {
+    "schema": {"const": "godot-project-knowledge.publication-generation.v1"},
+    "generation_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authority_ref": {"const": "refs/heads/main"},
+    "main_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_snapshot_id": {"type": "string"},
+    "artifacts": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+  },
+  "additionalProperties": false
+}

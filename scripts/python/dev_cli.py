@@ -331,6 +331,73 @@ def cmd_generate_image(args: argparse.Namespace) -> int:
     return run(build_generate_image_cmd(args))
 
 
+# KNOWLEDGE_IMPACT_CLI_FUNCTIONS_BEGIN
+def _knowledge_impact_script(script: str, *values: str) -> list[str]:
+    return ["py", "-3", f"scripts/python/{script}", *values]
+
+
+def cmd_knowledge_publish(args: argparse.Namespace) -> int:
+    return run(_knowledge_impact_script("publish_knowledge_catalog.py", "--repository-root", args.repo_root, "--publish"))
+
+
+def cmd_knowledge_check(args: argparse.Namespace) -> int:
+    return run(_knowledge_impact_script("publish_knowledge_catalog.py", "--repository-root", args.repo_root, "--check"))
+
+
+def cmd_knowledge_restore_lkg(args: argparse.Namespace) -> int:
+    return run(_knowledge_impact_script("publish_knowledge_catalog.py", "--repository-root", args.repo_root, "--restore-lkg"))
+
+
+def cmd_knowledge_locate(args: argparse.Namespace) -> int:
+    cmd = _knowledge_impact_script(
+        "knowledge_locator.py", "--repository-root", args.repo_root,
+        "--consumer", args.consumer, "--query", args.query,
+    )
+    if args.task_id:
+        cmd.extend(["--task-id", args.task_id])
+    if args.require_published:
+        cmd.append("--require-published")
+    return run(cmd)
+
+
+def cmd_knowledge_context(args: argparse.Namespace) -> int:
+    cmd = _knowledge_impact_script(
+        "prepare_knowledge_context.py", "--repository-root", args.repo_root,
+        "--consumer", args.consumer, "--query", args.query,
+    )
+    if args.task_id:
+        cmd.extend(["--task-id", args.task_id])
+    if args.output:
+        cmd.extend(["--output", args.output])
+    if args.allow_unpublished:
+        cmd.append("--allow-unpublished")
+    return run(cmd)
+
+
+def cmd_impact_build_index(args: argparse.Namespace) -> int:
+    cmd = _knowledge_impact_script(
+        "build_impact_index.py", "--repository-root", args.repo_root,
+        "--revision", args.revision, "--output-root", args.output_root,
+    )
+    if args.trusted_ref:
+        cmd.extend(["--trusted-ref", args.trusted_ref])
+    if args.reuse_only:
+        cmd.append("--reuse-only")
+    return run(cmd)
+
+
+def cmd_impact_analyze(args: argparse.Namespace) -> int:
+    cmd = _knowledge_impact_script("analyze_impact.py", "--repo-root", args.repo_root, "--target", args.target)
+    if args.strict:
+        cmd.append("--strict")
+    if args.frozen_context:
+        cmd.extend(["--frozen-context", args.frozen_context])
+    if args.output:
+        cmd.extend(["--output", args.output])
+    return run(cmd)
+# KNOWLEDGE_IMPACT_CLI_FUNCTIONS_END
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Dev CLI for Godot+C# template (AI-friendly entrypoint)",
@@ -537,7 +604,54 @@ def build_parser() -> argparse.ArgumentParser:
     p_ch6.add_argument("--self-check", action="store_true")
     p_ch6.set_defaults(func=cmd_run_single_task_chapter6)
 
+    # KNOWLEDGE_IMPACT_CLI_PARSERS_BEGIN
+    knowledge_consumers = ["repository-session", "chapter4", "chapter5", "chapter6", "review"]
 
+    p_kpub = sub.add_parser("knowledge-publish", help="publish a hash-bound Knowledge generation from trusted local main")
+    p_kpub.add_argument("--repo-root", default=".")
+    p_kpub.set_defaults(func=cmd_knowledge_publish)
+
+    p_kcheck = sub.add_parser("knowledge-check", help="validate the current Knowledge publication and its hashes")
+    p_kcheck.add_argument("--repo-root", default=".")
+    p_kcheck.set_defaults(func=cmd_knowledge_check)
+
+    p_klkg = sub.add_parser("knowledge-restore-lkg", help="restore Knowledge current pointer from last-known-good after validation")
+    p_klkg.add_argument("--repo-root", default=".")
+    p_klkg.set_defaults(func=cmd_knowledge_restore_lkg)
+
+    p_klocate = sub.add_parser("knowledge-locate", help="locate policy-aware candidate evidence without semantic acceptance")
+    p_klocate.add_argument("--repo-root", default=".")
+    p_klocate.add_argument("--consumer", default="repository-session", choices=knowledge_consumers)
+    p_klocate.add_argument("--query", required=True)
+    p_klocate.add_argument("--task-id", default="")
+    p_klocate.add_argument("--require-published", action="store_true")
+    p_klocate.set_defaults(func=cmd_knowledge_locate)
+
+    p_kcontext = sub.add_parser("knowledge-context", help="prepare consumer-scoped Knowledge candidates for explicit decisions/freeze")
+    p_kcontext.add_argument("--repo-root", default=".")
+    p_kcontext.add_argument("--consumer", required=True, choices=knowledge_consumers)
+    p_kcontext.add_argument("--query", required=True)
+    p_kcontext.add_argument("--task-id", default="")
+    p_kcontext.add_argument("--output", default="")
+    p_kcontext.add_argument("--allow-unpublished", action="store_true")
+    p_kcontext.set_defaults(func=cmd_knowledge_context)
+
+    p_iindex = sub.add_parser("impact-build-index", help="build/reuse an immutable revision-bound Impact Index")
+    p_iindex.add_argument("--repo-root", default=".")
+    p_iindex.add_argument("--revision", required=True)
+    p_iindex.add_argument("--trusted-ref", default="refs/heads/main")
+    p_iindex.add_argument("--output-root", default="logs/ci")
+    p_iindex.add_argument("--reuse-only", action="store_true")
+    p_iindex.set_defaults(func=cmd_impact_build_index)
+
+    p_impact = sub.add_parser("impact-analyze", help="run exploratory or frozen-context strict Impact analysis")
+    p_impact.add_argument("--repo-root", default=".")
+    p_impact.add_argument("--target", required=True)
+    p_impact.add_argument("--strict", action="store_true")
+    p_impact.add_argument("--frozen-context", default="")
+    p_impact.add_argument("--output", default="")
+    p_impact.set_defaults(func=cmd_impact_analyze)
+    # KNOWLEDGE_IMPACT_CLI_PARSERS_END
 
     # run-chapter7-ui-wiring
     p_ch7 = sub.add_parser(

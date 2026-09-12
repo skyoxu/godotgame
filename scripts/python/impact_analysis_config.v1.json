@@ -1,0 +1,9 @@
+{
+  "schema": "godot-project-impact.analysis-config.v1",
+  "revision": "godot-project-impact-config.v1",
+  "include_prefixes": ["Game.Core/", "Game.Godot/", "Game.Core.Tests/", "Tests.Godot/", "docs/", ".taskmaster/tasks/"],
+  "include_exact_paths": ["AGENTS.md", "workflow.md", "project.godot"],
+  "include_extensions": [".cs", ".gd", ".tscn", ".tres", ".json", ".cfg", ".md"],
+  "max_file_bytes": 1048576,
+  "relation_types": ["declares", "declares-config-pointer", "resource-reference", "scene-script", "scene-instance", "configured-task-scene", "text-symbol-reference"]
+}

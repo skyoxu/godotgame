@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -66,10 +69,22 @@ def port_accepts_connections(port: int, *, timeout_sec: float = 0.2) -> bool:
         return sock.connect_ex((HOST, int(port))) == 0
 
 
+def knowledge_service_available(port: int, *, timeout_sec: float = 0.5) -> bool:
+    try:
+        with urllib.request.urlopen(
+            f"http://{HOST}:{int(port)}/api/knowledge/session",
+            timeout=timeout_sec,
+        ) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+    return isinstance(payload, dict) and payload.get("service") == "godot-project-health-knowledge-v1"
+
+
 def wait_until_port_open(port: int, *, timeout_sec: float = 5.0, poll_sec: float = 0.1) -> bool:
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
-        if port_accepts_connections(port):
+        if port_accepts_connections(port) and knowledge_service_available(port):
             return True
         time.sleep(poll_sec)
     return False
@@ -108,19 +123,33 @@ def can_reuse_server(info: dict[str, Any], *, root: Path, preferred_port: int = 
         return False
     if int(preferred_port or 0) > 0 and port != int(preferred_port):
         return False
-    return port_accepts_connections(port)
+    return port_accepts_connections(port) and knowledge_service_available(port)
+
+
+def _ensure_knowledge_link(root: Path) -> None:
+    path = dashboard_dir(root) / "latest.html"
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    if 'href="/knowledge/"' in text:
+        return
+    link = '<p class="project-health-knowledge-link"><a href="/knowledge/">Knowledge + Impact</a></p>'
+    if "</body>" in text:
+        text = text.replace("</body>", link + "\n</body>", 1)
+    else:
+        text += "\n" + link + "\n"
+    path.write_text(text, encoding="utf-8", newline="\n")
 
 
 def spawn_detached_http_server(*, root: Path, port: int) -> int:
+    script = Path(__file__).with_name("_project_health_http.py")
     cmd = [
         sys.executable,
-        "-m",
-        "http.server",
+        str(script),
+        "--repo-root",
+        str(root),
+        "--port",
         str(port),
-        "--bind",
-        HOST,
-        "-d",
-        str(dashboard_dir(root)),
     ]
     kwargs: dict[str, Any] = {
         "cwd": str(root),
@@ -149,6 +178,7 @@ def ensure_project_health_server(
 ) -> dict[str, Any]:
     resolved_root = resolve_root(root)
     refresh_dashboard(resolved_root)
+    _ensure_knowledge_link(resolved_root)
     info = load_server_info(resolved_root)
     if can_reuse_server(info, root=resolved_root, preferred_port=preferred_port):
         payload = {
@@ -164,10 +194,7 @@ def ensure_project_health_server(
         }
         validate_project_health_server_payload(payload)
         write_json(server_json_path(resolved_root), payload)
-        return {
-            **payload,
-            "server_json": str(server_json_path(resolved_root)).replace("\\", "/"),
-        }
+        return {**payload, "server_json": str(server_json_path(resolved_root)).replace("\\", "/")}
 
     port = choose_available_port(preferred_port=preferred_port, start=port_start, end=port_end)
     pid = spawn_detached_http_server(root=resolved_root, port=port)
@@ -187,7 +214,4 @@ def ensure_project_health_server(
     }
     validate_project_health_server_payload(payload)
     write_json(server_json_path(resolved_root), payload)
-    return {
-        **payload,
-        "server_json": str(server_json_path(resolved_root)).replace("\\", "/"),
-    }
+    return {**payload, "server_json": str(server_json_path(resolved_root)).replace("\\", "/")}

@@ -23,7 +23,7 @@ Operate Chapter 2 from `workflow.md` idempotently for a business repository that
 - Keep generated code, scripts, tests, comments, and log messages in English.
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
-
+- Knowledge bootstrap creates contracts/directories only; it must never seed copied sibling-repository task or gameplay data.
 
 ## Repository Layout
 
@@ -35,7 +35,7 @@ Use this skill to bootstrap a copied template repository into a clean business r
 
 ## Default Lane
 
-Clean project identity and indexes first, run repository-level hard checks immediately after that, and start project-health only when an interactive local dashboard is useful.
+Clean project identity and indexes first, initialize the empty Knowledge plane, run repository-level hard checks immediately after that, and start project-health only when an interactive local dashboard is useful.
 
 ## Primary Command Or Action
 
@@ -48,31 +48,34 @@ Chapter 2 is an early bootstrap workflow. Prefer direct repository checks and pr
 ## Required Reading
 
 1. Read the relevant Chapter 2 section in the template repo `workflow.md`.
-2. Inspect the target repository state directly; Chapter 2 does not use historical business-repo evidence.
-3. Refresh this skill with `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` when `workflow.md` changes.
+2. Read `docs/knowledge/README.md` and `docs/workflows/project-health-knowledge.md` for the Knowledge/Impact ownership and browser boundaries.
+3. Inspect the target repository state directly; Chapter 2 does not use historical business-repo evidence.
+4. Refresh this skill with `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` when `workflow.md` changes.
+
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Run `py -3 scripts/python/init_knowledge_catalog.py --repo-root .` during repository bootstrap. It may create empty directories, policies, schemas, and an empty evaluation suite only; it must not seed sibling-repository task/gameplay data.
+- Read `docs/knowledge/README.md` and `docs/workflows/project-health-knowledge.md` before treating Knowledge output as repository authority.
+- After the Knowledge control plane and repository bootstrap changes are committed on local `main`, publish the hash-bound catalog with `py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --publish`, then verify with `--check`. Publication is blocked while the Knowledge control plane is dirty.
+- `serve-project-health` exposes `/latest.html` and the same-origin `/knowledge/` investigation page on `127.0.0.1`.
+- A fresh template with no `.taskmaster/tasks/*.json` is a valid empty state. The template evaluation suite intentionally contains no business expectations.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
 
 ## Idempotent Procedure
 
 1. Resolve the target business repo as a sibling of the template repo.
 2. Clean copied template names, paths, workflow names, release names, project paths, and PRD ids.
 3. Ensure `docs/prd`, `docs/gdd`, and `docs/prototypes` exist as the primary PRD, GDD, and prototype document directories.
-4. 初始化完成后，分两步向玩家提问：
-   - 第 1 步：游戏名称。
-   - 第 2 步：游戏类型或参考游戏名称。
-5. Classify the Step 2 answer with `codex exec` against exactly one of the 24 ids in `docs/game-type-guides/game-types.csv`; never leave it unclassified or outside the canonical set.
-6. 将结果写入 `AGENTS.md` 与 `README.md` 的 `## Game Project Metadata` 段：
-   - `Game Name: <player input>`
-   - `Game Type: <canonical id>`
-   - `Game Type Source: <player input>`
-   - `Game Type Guide: docs/game-type-guides/<canonical id>.md`
-7. Rebuild entry indexes in README.md, AGENTS.md, docs/PROJECT_DOCUMENTATION_INDEX.md, and docs/agents/00-index.md.
-8. Run repository-level hard checks immediately after cleanup and index repair.
-9. Optionally start the local project-health service when browser-based health inspection is useful; keep it bound to 127.0.0.1.
-10. Use OpenAI backend bootstrap only when the repo explicitly opts into openai-api transport, and keep it out of default CI until checklist self-checks are clean.
-11. Chapter 2 任务完成后必须显示 project-health 访问链接：
-    - URL: read `logs/ci/project-health/server.json` -> `url` when available.
-    - HTML: `logs/ci/project-health/latest.html`.
-    - 如果启动了本地服务，向用户显示 URL；否则显示 HTML 路径。
+4. Run `py -3 scripts/python/init_knowledge_catalog.py --repo-root .` to create only empty/template-safe Knowledge directories and policies. Do not add task fixtures, asset mappings, publication generations, or sibling-repository hashes.
+5. 初始化完成后，分两步向玩家提问：第 1 步游戏名称；第 2 步游戏类型或参考游戏名称。
+6. Classify the Step 2 answer with `codex exec` against exactly one of the 24 ids in `docs/game-type-guides/game-types.csv`; never leave it unclassified or outside the canonical set.
+7. 将结果写入 `AGENTS.md` 与 `README.md` 的 `## Game Project Metadata` 段：`Game Name`、`Game Type`、`Game Type Source`、`Game Type Guide`。
+8. Rebuild entry indexes in README.md, AGENTS.md, docs/PROJECT_DOCUMENTATION_INDEX.md, and docs/agents/00-index.md.
+9. Run repository-level hard checks immediately after cleanup and index repair.
+10. Optionally start the local project-health service when browser-based health inspection is useful; keep it bound to 127.0.0.1. The same service exposes `/knowledge/`.
+11. Use OpenAI backend bootstrap only when the repo explicitly opts into openai-api transport, and keep it out of default CI until checklist self-checks are clean.
+12. Chapter 2 任务完成后必须显示 project-health 访问链接：URL 优先读 `logs/ci/project-health/server.json`; HTML 为 `logs/ci/project-health/latest.html`; Knowledge + Impact 为同源 `/knowledge/`。
 
 ## Game Type Classification Prompt
 
@@ -81,8 +84,7 @@ Use `codex exec` in read-only mode from the target repo. Provide the player answ
 ## 用户交互文案要求
 
 - Chapter 2 面向用户的提问、确认、缺失项提示必须使用中文。
-- 涉及中文写入的文件更新必须通过 Python 且显式 `encoding=\"utf-8\"` 执行，避免 PowerShell 编码干扰导致乱码。
-
+- 涉及中文写入的文件更新必须通过 Python 且显式 `encoding="utf-8"` 执行，避免 PowerShell 编码干扰导致乱码。
 
 ## Stop-Loss Signals
 
@@ -98,9 +100,6 @@ Generated evidence may live under `references/business-repos/<repo>.md`. These f
 
 ## Maintenance
 
-Refresh optional evidence after new business-repo logs are generated:
-
 ```powershell
 py -3 scripts/python/update_workflow_chapter_skills.py <business-repo>
-py -3 scripts/python/update_workflow_chapter_skills.py <business-repo-a>,<business-repo-b>
 ```

@@ -17,11 +17,11 @@ Operate Chapter 5 from `workflow.md` idempotently for a business repository that
 - Keep generated code, scripts, tests, comments, and log messages in English.
 - Do not modify the business repo unless the user explicitly asks for that change.
 - Do not rerun expensive steps before reading existing recovery artifacts.
+- Knowledge ranking is not acceptance; re-read authoritative candidate files before semantic decisions.
 
 - Apply `docs/workflows/chapter3-7-component-routing.md` as a soft generation and repair preference for Chapter 3-7 only.
 - Treat `Component` as a Godot Node/Scene Component, not an ECS component.
 - Keep Godot scripts focused on lifecycle, presentation, input, and wiring; keep rules, state mutation, and simulation logic in `Game.Core` unless an ADR or task explicitly scopes otherwise.
-
 
 ## Repository Layout
 
@@ -46,19 +46,28 @@ Chapter 5 evidence is usually sparse, so workflow.md remains the governing sourc
 ## Required Reading
 
 1. Read the relevant Chapter 5 section in the template repo `workflow.md`.
-2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
-3. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-4. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+2. Read `docs/workflows/knowledge-context-shadow.md`; prepare an observe-only `consumer=chapter5` bundle for the target task.
+3. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
+4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Before semantic stabilization, run `prepare_knowledge_context.py --consumer chapter5 --task-id <id> --query "<task acceptance>"`.
+- Chapter 5 candidates are observe-only. Re-read candidate files directly and do not turn ranking into acceptance.
+- Acceptance extraction or triplet defects remain stop-and-fix signals; Knowledge retrieval must not hide them.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
 
 ## Idempotent Procedure
 
 1. Resolve the target business repo as a sibling of the template repo.
 2. Check task triplet validity before semantic stabilization work.
-3. Run lightweight semantic checks before any batch lane.
-4. Treat acceptance extraction failure as a stop-and-fix signal, not a reason to add more downstream review.
-5. Escalate to batch instability only when the same failure family repeats across tasks.
-6. Record durable rule feedback only when a repeated workflow rule gap is proven.
-
+3. Run `prepare_knowledge_context.py --consumer chapter5 --task-id <id>` and re-read candidate sources directly; keep the bundle observe-only.
+4. Run lightweight semantic checks before any batch lane.
+5. Treat acceptance extraction failure as a stop-and-fix signal, not a reason to add more downstream review.
+6. Escalate to batch instability only when the same failure family repeats across tasks.
+7. Record durable rule feedback only when a repeated workflow rule gap is proven.
 
 ## Stop-Loss Signals
 
