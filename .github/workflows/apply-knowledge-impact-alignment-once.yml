@@ -1,0 +1,47 @@
+name: Apply Knowledge Impact alignment once
+
+on:
+  push:
+    branches:
+      - feat/align-newrouge-knowledge-impact-health
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-knowledge-impact-alignment-once
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/align-newrouge-knowledge-impact-health
+          fetch-depth: 0
+
+      - name: Apply bounded alignment sync
+        shell: pwsh
+        run: |
+          python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --write
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/python/sync_knowledge_impact_alignment.py --repo-root . --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m py_compile scripts/python/dev_cli.py scripts/python/sync_knowledge_impact_alignment.py scripts/python/impact_analysis_index.py scripts/python/impact_runtime.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Commit synchronized surfaces and remove one-shot workflow
+        shell: pwsh
+        run: |
+          Remove-Item .github/workflows/apply-knowledge-impact-alignment-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add workflow.md scripts/python/dev_cli.py scripts/python/project_health_knowledge.js .agents/skills .github/workflows/apply-knowledge-impact-alignment-once.yml
+          $changes = git status --porcelain
+          if (-not $changes) {
+            Write-Host "alignment_sync=no-changes"
+            exit 0
+          }
+          git commit -m "chore: sync knowledge impact alignment surfaces"
+          git push origin HEAD:feat/align-newrouge-knowledge-impact-health
