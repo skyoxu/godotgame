@@ -47,7 +47,33 @@ Task detail can expose:
 
 A configured mapping is not enough to claim `static_attached`. The scene must actually attach the declared script to the declared node and the configured witness must exist in that production script. Test references to a scene are only candidates.
 
-Generated semantic evidence may provide blue suggested-field highlighting when an exact JSON pointer exists. Yellow confirmed highlighting is reserved for reviewed/confirmed pointers. Neither visual state changes the authoritative business source.
+## Resource reconstruction and semantic explanation
+
+`generate_knowledge_links.py` deterministically reconstructs task-to-config/asset/scene/code associations from the current Project Health snapshot. It never seeds product identities or upgrades filename similarity into authority.
+
+For an implemented task, the normal capture entry is:
+
+```powershell
+py -3 scripts/python/chapter6_knowledge.py --task-id <id> --path <reviewed-resource>
+```
+
+The `--path` values are explicit reviewed workspace resources. If no reviewed resource path is supplied, that explicit-reviewed record is skipped rather than invented. The command still rebuilds snapshot-derived `docs/knowledge/generated/task-resource-links.json` for the selected task.
+
+When developer-facing semantic explanation is useful, opt in explicitly:
+
+```powershell
+py -3 scripts/python/chapter6_knowledge.py --task-id <id> --path <reviewed-resource> --semantic --llm-backend codex-cli
+```
+
+`openai-api` is also supported when that backend is explicitly configured. Semantic output is written to `docs/knowledge/generated/task-<id>-semantic.json` only after validation. The model may explain only evidence already reconstructed for the task:
+
+- configuration parameters must use exact JSON pointers that exist in the scanned file;
+- asset bindings must use exact source/line pairs from static evidence;
+- scene bindings must use exact node-path/line pairs from parsed scene evidence;
+- unknown paths, pointers, nodes, or bindings reject the semantic output;
+- generated prose never proves runtime observation or business authority.
+
+The 127 page renders exact reviewed/confirmed configuration pointers separately from generated semantic suggestions. Generated semantic evidence may provide blue suggested-field highlighting only when the JSON pointer exists. Yellow confirmed highlighting remains reserved for reviewed/static-confirmed evidence.
 
 ## Runtime verification
 
