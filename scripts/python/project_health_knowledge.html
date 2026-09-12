@@ -15,7 +15,10 @@
 
   <section class="toolbar">
     <button id="scan">扫描当前仓库</button>
-    <button id="runtime">检查 Runtime 资格</button>
+    <button id="runtime">刷新 Runtime 资格</button>
+    <button id="verify-selected" disabled>验证选中任务</button>
+    <button id="verify-all" disabled>验证全部可运行任务</button>
+    <label>模式 <select id="runtime-mode"><option value="workspace">workspace</option><option value="main">main</option></select></label>
     <span id="status">正在加载…</span>
   </section>
 
@@ -33,6 +36,7 @@
     <p>输入文件路径或符号关键词。文本引用只作为 evidence，不自动升级为确定依赖。</p>
     <form id="impact-form">
       <input id="impact-target" maxlength="1000" required placeholder="例如 Game.Core/Contracts 或 PlayerService">
+      <label><input type="checkbox" id="impact-strict"> strict</label>
       <button>分析影响</button>
     </form>
     <pre id="impact"></pre>
@@ -40,9 +44,9 @@
 
   <section>
     <h2>Tasks · Taskmaster</h2>
-    <p class="hint">模板仓可以为空。Runtime eligible 只表示发现了真实存在的 task-scoped test refs，不等于测试已经通过。</p>
+    <p class="hint">模板仓可以为空。Runtime eligible 只表示发现真实存在的 task-scoped test refs；只有实际 GdUnit 报告通过后才产生 runtime evidence。</p>
     <div id="runtime-summary" class="hint"></div>
-    <div class="table-scroll"><table><thead><tr><th>id</th><th>title</th><th>status</th><th>dependencies</th><th>sources</th></tr></thead><tbody id="tasks"></tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th></th><th>id</th><th>title</th><th>status</th><th>runtime</th><th>dependencies</th><th>sources</th></tr></thead><tbody id="tasks"></tbody></table></div>
   </section>
 
   <section>
@@ -56,7 +60,7 @@
     </details>
   </section>
 
-  <dialog id="detail"><button id="close-detail">关闭</button><h2 id="detail-title"></h2><pre id="detail-body"></pre></dialog>
+  <dialog id="detail"><button id="close-detail">关闭</button><h2 id="detail-title"></h2><div id="detail-image"></div><pre id="detail-body"></pre></dialog>
 </main>
 </body>
 </html>

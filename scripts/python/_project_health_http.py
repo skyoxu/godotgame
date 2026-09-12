@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -12,7 +13,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from impact_analyzer import ImpactAnalyzer
 from project_health_knowledge import load_config, latest, query, safe_file, save_config, scan
-from project_health_runtime import eligibility
+from project_health_runtime import eligibility, verify
 
 IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 
@@ -53,8 +54,10 @@ def _tasks(root: Path) -> list[dict]:
 
 
 def _task(root: Path, task_id: str) -> dict:
-    matches = [row for row in _tasks(root) if row["id"] == str(task_id)]
-    return {"schema": "godot-project-health.task.v1", "task": matches[0] if matches else None}
+    rows = _tasks(root)
+    match = next((row for row in rows if row["id"] == str(task_id)), None)
+    runtime = next((row for row in eligibility(root)["tasks"] if row["id"] == str(task_id)), None)
+    return {"schema": "godot-project-health.task.v2", "task": match, "runtime": runtime}
 
 
 def _source(root: Path, rel: str) -> dict:
@@ -152,6 +155,9 @@ def handler_factory(root: Path):
                     self.send(_source(root, params.get("path", [""])[0]))
                 elif path == "/api/knowledge/runtime-eligibility":
                     self.send(eligibility(root))
+                elif path == "/api/knowledge/runtime-latest":
+                    runtime_path = root / "logs/ci/project-health-knowledge/runtime/latest.json"
+                    self.send(json.loads(runtime_path.read_text(encoding="utf-8")) if runtime_path.exists() else {"schema": "godot-project-health.runtime-index.v1", "tasks": [], "summary": {}})
                 elif path == "/api/knowledge/image":
                     data, mime = _image(root, params.get("path", [""])[0])
                     self.send(data, content_type=mime)
@@ -183,9 +189,25 @@ def handler_factory(root: Path):
                 elif path == "/api/knowledge/query":
                     self.send(query(root, str(request.get("query") or "")))
                 elif path == "/api/knowledge/impact":
-                    self.send(ImpactAnalyzer(root).analyze(str(request.get("target") or ""), strict=False))
+                    self.send(ImpactAnalyzer(root).analyze(str(request.get("target") or ""), strict=bool(request.get("strict", False))))
                 elif path == "/api/knowledge/config":
                     self.send({"status": "saved", "config": save_config(root, request)})
+                elif path == "/api/knowledge/runtime-verify":
+                    godot_bin = str(request.get("godot_bin") or os.environ.get("GODOT_BIN") or "").strip()
+                    if not godot_bin:
+                        raise ValueError("GODOT_BIN is not configured; set it in the server environment or provide godot_bin")
+                    ids = request.get("task_ids")
+                    task_ids = [str(value) for value in ids] if isinstance(ids, list) else None
+                    self.send(verify(
+                        root,
+                        godot_bin,
+                        timeout=int(request.get("timeout_sec", 600)),
+                        task_id=str(request.get("task_id")) if request.get("task_id") is not None else None,
+                        task_ids=task_ids,
+                        all_eligible=bool(request.get("all_eligible", False)),
+                        global_timeout=int(request.get("global_timeout_sec", 3600)),
+                        mode=str(request.get("mode") or "main"),
+                    ))
                 else:
                     self.send({"reason": "Not found"}, 404)
             except Exception as exc:
