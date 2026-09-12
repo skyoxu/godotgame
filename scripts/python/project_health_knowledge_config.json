@@ -1,0 +1,15 @@
+{
+  "schema_version": "godot-project-knowledge.config.v1",
+  "source_paths": [
+    ".taskmaster/tasks",
+    "docs",
+    "scripts",
+    "Game.Core",
+    "Game.Godot",
+    "Game.Core.Tests",
+    "Game.Godot.Tests"
+  ],
+  "gdd_paths": [],
+  "query_aliases": {},
+  "task_scene_bindings": []
+}
