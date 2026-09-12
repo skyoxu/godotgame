@@ -8,7 +8,8 @@
   <script src="/knowledge/app.js" defer></script>
 </head>
 <body>
-<main>
+<div id="operation-lock" hidden><div><strong>Verification in progress</strong><p id="operation-lock-message">The page is locked until the active operation finishes.</p></div></div>
+<main id="app-main">
   <nav><a href="/latest.html">Project Health</a> / Knowledge + Impact <span class="badge">LOCAL ONLY</span></nav>
   <h1>Repository Knowledge + Impact</h1>
   <p class="lede">面向模板仓的本地调查页。没有任务数据时显示空状态；不会伪造任务、场景或业务知识。</p>
@@ -16,7 +17,7 @@
   <section class="toolbar">
     <button id="scan">扫描当前仓库</button>
     <button id="runtime">刷新 Runtime 资格</button>
-    <button id="verify-selected" disabled>验证选中任务</button>
+    <button id="verify-selected" disabled>验证选中任务 (0)</button>
     <button id="verify-all" disabled>验证全部可运行任务</button>
     <label>模式 <select id="runtime-mode"><option value="workspace">workspace</option><option value="main">main</option></select></label>
     <span id="status">正在加载…</span>
@@ -45,8 +46,9 @@
   <section>
     <h2>Tasks · Taskmaster</h2>
     <p class="hint">模板仓可以为空。Runtime eligible 只表示发现真实存在的 task-scoped test refs；只有实际 GdUnit 报告通过后才产生 runtime evidence。</p>
+    <div class="toolbar"><button id="select-all-visible">选择全部可运行任务</button><button id="clear-selection">清空选择</button><span id="selection-count">0 selected</span></div>
     <div id="runtime-summary" class="hint"></div>
-    <div class="table-scroll"><table><thead><tr><th></th><th>id</th><th>title</th><th>status</th><th>runtime</th><th>dependencies</th><th>sources</th></tr></thead><tbody id="tasks"></tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Select</th><th>id</th><th>title</th><th>status</th><th>runtime</th><th>dependencies</th><th>sources</th></tr></thead><tbody id="tasks"></tbody></table></div>
   </section>
 
   <section>
