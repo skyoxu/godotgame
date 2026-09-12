@@ -32,23 +32,31 @@ class KnowledgeCatalogPublicationTests(unittest.TestCase):
         (root / "docs/prd").mkdir(parents=True)
         (root / "knowledge/policies").mkdir(parents=True)
         (root / "knowledge/evaluation").mkdir(parents=True)
-        (root / "AGENTS.md").write_text("# Repository Rules\nUse RewardService.\n", encoding="utf-8")
-        (root / "docs/prd/reward.md").write_text("# Reward System\nRewardService grants deterministic rewards.\n", encoding="utf-8")
+        (root / "AGENTS.md").write_text("# Repository Rules\nUse FeatureService.\n", encoding="utf-8")
+        (root / "docs/prd/feature.md").write_text("# Feature System\nFeatureService applies deterministic behavior.\n", encoding="utf-8")
         policies = {
-            "schema":"godot-project-knowledge.consumer-policies.v2",
-            "policy_revision":"test-v1",
-            "consumers":{"chapter6":{"task_id_required":True,"freeze_before_red":True}},
-            "policies":[{
-                "consumer":"chapter6","domains":["toolchain","game-design","game-runtime","delivery"],
-                "visibility":["active","dependency","conditional"],"lifecycles":["repository-source"],
-                "statuses":["active","conditional","historical"],"historical_mode":"exact-only",
-                "path_prefixes":["docs/prd/"],"exact_paths":["AGENTS.md"],"max_candidates":12
-            }]
+            "schema": "godot-project-knowledge.consumer-policies.v2",
+            "policy_revision": "test-v1",
+            "consumers": {"chapter6": {"task_id_required": True, "freeze_before_red": True}},
+            "policies": [{
+                "consumer": "chapter6",
+                "domains": ["toolchain", "game-design", "game-runtime", "delivery"],
+                "visibility": ["active", "dependency", "conditional"],
+                "lifecycles": ["repository-source"],
+                "statuses": ["active", "conditional", "historical"],
+                "historical_mode": "exact-only",
+                "path_prefixes": ["docs/prd/"],
+                "exact_paths": ["AGENTS.md"],
+                "max_candidates": 12,
+            }],
         }
-        exclusions = {"schema":"godot-project-knowledge.source-exclusions.v1","rules":[]}
-        suite = {"schema":"godot-project-knowledge.evaluation-suite.v1","cases":[{
-            "id":"reward","consumer":"chapter6","query":"RewardService","expected_status":"matched",
-            "must_include_paths":["docs/prd/reward.md"]
+        exclusions = {"schema": "godot-project-knowledge.source-exclusions.v1", "rules": []}
+        suite = {"schema": "godot-project-knowledge.evaluation-suite.v1", "cases": [{
+            "id": "feature",
+            "consumer": "chapter6",
+            "query": "FeatureService",
+            "expected_status": "matched",
+            "must_include_paths": ["docs/prd/feature.md"],
         }]}
         (root / "knowledge/policies/consumer-policies.v1.json").write_text(json.dumps(policies), encoding="utf-8")
         (root / "knowledge/policies/source-exclusions.v1.json").write_text(json.dumps(exclusions), encoding="utf-8")
@@ -64,11 +72,11 @@ class KnowledgeCatalogPublicationTests(unittest.TestCase):
             self.assertEqual("published", result["status"])
             self.assertEqual("passed", result["evaluation"]["status"])
             self.assertEqual("current", check_current(root)["status"])
-            located = locate(root, consumer="chapter6", text="RewardService", task_id="7", require_published=True)
+            located = locate(root, consumer="chapter6", text="FeatureService", task_id="7", require_published=True)
             self.assertEqual("published-current", located["publication_state"])
             self.assertEqual("matched", located["status"])
-            self.assertEqual("docs/prd/reward.md", located["candidates"][0]["path"])
-            bundle = prepare(root, "chapter6", "RewardService", "7")
+            self.assertEqual("docs/prd/feature.md", located["candidates"][0]["path"])
+            bundle = prepare(root, "chapter6", "FeatureService", "7")
             self.assertEqual("ready", bundle["status"])
             self.assertEqual("published-current", bundle["publication_state"])
 
