@@ -19,20 +19,39 @@ def freeze(bundle: dict, decisions: dict) -> dict:
         raise ValueError("candidate bundle is not ready for freeze")
     if bundle.get("consumer") in {"chapter6", "review"} and bundle.get("schema") == "godot-project-knowledge.context-candidates.v2" and bundle.get("publication_state") != "published-current":
         raise ValueError("formal Chapter 6 / Review freeze requires published-current Knowledge")
-    by_path = {candidate["path"]: candidate for candidate in bundle.get("candidates", [])}
+    candidates = [candidate for candidate in bundle.get("candidates", []) if isinstance(candidate, dict) and candidate.get("path")]
+    by_path = {str(candidate["path"]): candidate for candidate in candidates}
+    raw_decisions = decisions.get("decisions", [])
+    if not isinstance(raw_decisions, list):
+        raise ValueError("decisions must be a list")
+    seen: set[str] = set()
     rows = []
-    for item in decisions.get("decisions", []):
+    for item in raw_decisions:
+        if not isinstance(item, dict):
+            raise ValueError("every decision must be an object")
         path = str(item.get("path") or "")
-        accepted = bool(item.get("accepted"))
-        reason = str(item.get("reason") or "").strip()
-        satisfies = str(item.get("satisfies") or "").strip()
+        if path in seen:
+            raise ValueError(f"duplicate decision path: {path}")
+        seen.add(path)
         if path not in by_path:
             raise ValueError(f"decision path is not a candidate: {path}")
+        if "accepted" not in item or not isinstance(item.get("accepted"), bool):
+            raise ValueError(f"decision accepted must be boolean: {path}")
+        accepted = item["accepted"]
+        reason = str(item.get("reason") or "").strip()
+        satisfies = str(item.get("satisfies") or "").strip()
         if not reason:
             raise ValueError(f"decision reason required: {path}")
+        if not satisfies:
+            raise ValueError(f"decision satisfies required: {path}")
         rows.append({"path": path, "accepted": accepted, "reason": reason, "satisfies": satisfies, "source": by_path[path]})
+    expected = set(by_path)
+    if seen != expected:
+        missing = sorted(expected - seen)
+        extra = sorted(seen - expected)
+        raise ValueError(f"every candidate requires exactly one explicit decision; missing={missing}, extra={extra}")
     if not rows:
-        raise ValueError("at least one explicit candidate decision is required")
+        raise ValueError("at least one candidate decision is required")
     out = {
         "schema": "godot-project-knowledge.frozen-context.v2",
         "consumer": bundle.get("consumer"),
