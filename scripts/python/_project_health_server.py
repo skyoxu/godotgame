@@ -112,15 +112,14 @@ def can_reuse_server(info: dict[str, Any], *, root: Path, preferred_port: int = 
 
 
 def spawn_detached_http_server(*, root: Path, port: int) -> int:
+    script = Path(__file__).with_name("_project_health_http.py")
     cmd = [
         sys.executable,
-        "-m",
-        "http.server",
+        str(script),
+        "--repo-root",
+        str(root),
+        "--port",
         str(port),
-        "--bind",
-        HOST,
-        "-d",
-        str(dashboard_dir(root)),
     ]
     kwargs: dict[str, Any] = {
         "cwd": str(root),
