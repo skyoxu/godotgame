@@ -33,7 +33,9 @@ OVERLAYS = {
 - Run `analyze_impact.py --target <path-or-symbol> --strict` and validate revision/frozen-context lineage with `impact_analysis_handoff.py` before implementation consumes the report.
 - Frozen semantic scope must not expand silently during RED/GREEN/REFACTOR. A genuine scope change requires a new candidate/decision/freeze revision.
 - Review uses a separate `consumer=review` candidate set and freeze. Never relabel or reuse a Chapter 6 freeze as Review.
-- After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for reviewed configuration/assets/scenes/code/tests. With no reviewed paths it must skip instead of inventing associations.
+- After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed by the task. With no reviewed paths, the explicit-reviewed resource record must skip instead of inventing associations.
+- When developer-facing semantic explanation would materially help, add `--semantic --llm-backend <codex-cli|openai-api>`. Semantic output is accepted only when every resource path, JSON pointer, scene node, and asset binding resolves to reconstructed snapshot evidence; generated explanations remain non-authoritative.
+- `generate_knowledge_links.py` is the deterministic task-resource reconstruction layer used before semantic enrichment. Do not hand-author generated links to make a page look complete.
 - Knowledge and Impact artifacts are bounded evidence; they never replace Taskmaster, PRD/GDD, ADR/Base/Overlay, Contracts, source, or test authority.
 """,
 }
@@ -52,13 +54,14 @@ def _strip_existing(text: str) -> str:
 def apply_overlay(path: Path, body: str) -> bool:
     if not path.exists():
         raise FileNotFoundError(path)
-    text = _strip_existing(path.read_text(encoding="utf-8"))
+    original = path.read_text(encoding="utf-8")
+    text = _strip_existing(original)
     anchor = "\n## Idempotent Procedure\n"
     if anchor not in text:
         raise ValueError(f"Idempotent Procedure heading not found: {path}")
     block = f"\n{BEGIN}\n{body.rstrip()}\n{END}\n"
     updated = text.replace(anchor, block + anchor, 1)
-    if updated == path.read_text(encoding="utf-8"):
+    if updated == original:
         return False
     path.write_text(updated, encoding="utf-8", newline="\n")
     return True
