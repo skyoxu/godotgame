@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "godot-project-knowledge/knowledge-locator-result.v3",
+  "type": "object",
+  "required": ["schema", "status", "consumer", "query", "publication_state", "candidates"],
+  "properties": {
+    "schema": {"const": "godot-project-knowledge.locator.v3"},
+    "status": {"enum": ["matched", "insufficient_match", "blocked"]},
+    "reason": {"type": "string"},
+    "consumer": {"enum": ["repository-session", "chapter4", "chapter5", "chapter6", "review"]},
+    "task_id": {"type": ["string", "null"]},
+    "revision": {"type": ["string", "null"]},
+    "query": {"type": "string"},
+    "publication_state": {"enum": ["published-current", "ephemeral"]},
+    "policy_revision": {"type": ["string", "null"]},
+    "candidates": {"type": "array", "items": {"type": "object", "required": ["path", "semantic_satisfaction"], "properties": {"path": {"type": "string"}, "source_sha256": {"type": "string"}, "semantic_satisfaction": {"const": "undecided"}, "rank_evidence": {"type": "object"}}}}
+  },
+  "additionalProperties": true
+}
