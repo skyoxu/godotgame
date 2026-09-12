@@ -5,5 +5,5 @@
   "include_exact_paths": ["AGENTS.md", "workflow.md", "project.godot"],
   "include_extensions": [".cs", ".gd", ".tscn", ".tres", ".json", ".cfg", ".md"],
   "max_file_bytes": 1048576,
-  "relation_types": ["declares", "resource-reference", "scene-script", "scene-instance", "configured-task-scene", "text-symbol-reference"]
+  "relation_types": ["declares", "declares-config-pointer", "resource-reference", "scene-script", "scene-instance", "configured-task-scene", "text-symbol-reference"]
 }
