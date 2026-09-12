@@ -35,9 +35,12 @@ def _ephemeral_layers(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
     policies = _load(root / POLICY_PATH)
     exclusions = _load(root / EXCLUSIONS_PATH)
     snapshot = latest(root)
-    authority_ref = "refs/heads/main" if snapshot.get("snapshot_mode") == "main" else None
-    if authority_ref:
-        _, catalog, projections = build_layers(GitSnapshot(root, authority_ref), exclusions, policies)
+    revision = str(snapshot.get("revision") or "").strip()
+    if snapshot.get("snapshot_mode") == "main" and revision:
+        # Bind ephemeral candidates to the exact Project Health scan revision.
+        # Local main may have advanced after the scan; mixing those revisions would
+        # make browser evidence internally inconsistent.
+        _, catalog, projections = build_layers(GitSnapshot(root, revision), exclusions, policies)
         return catalog, projections, policies
     # Non-Git fixtures keep the existing bounded text-query fallback in project_health_knowledge.
     from project_health_knowledge import query
