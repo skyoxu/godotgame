@@ -23,6 +23,7 @@ jobs:
 
       - name: Apply bounded alignment sync and capture result
         id: sync
+        continue-on-error: true
         shell: pwsh
         run: |
           $log = @()
@@ -53,16 +54,18 @@ jobs:
             "ok=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           } else {
             "ok=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 1
           }
 
       - name: Commit synchronized surfaces or diagnostic and remove one-shot workflow
+        if: always()
         shell: pwsh
         run: |
-          Remove-Item .github/workflows/apply-knowledge-impact-alignment-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if ("${{ steps.sync.outputs.ok }}" -eq "true") {
-            Remove-Item .alignment-sync-diagnostic.txt
+            if (Test-Path .alignment-sync-diagnostic.txt) { Remove-Item .alignment-sync-diagnostic.txt }
+            Remove-Item .github/workflows/apply-knowledge-impact-alignment-once.yml
             git add workflow.md scripts/python/dev_cli.py scripts/python/project_health_knowledge.js .agents/skills .github/workflows/apply-knowledge-impact-alignment-once.yml
             $message = "chore: sync knowledge impact alignment surfaces"
           } else {
