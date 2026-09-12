@@ -15,6 +15,7 @@
 
   <section class="toolbar">
     <button id="scan">扫描当前仓库</button>
+    <button id="runtime">检查 Runtime 资格</button>
     <span id="status">正在加载…</span>
   </section>
 
@@ -29,12 +30,19 @@
 
   <section>
     <h2>Impact 探索</h2>
-    <p>输入文件路径或符号关键词。模板模式只给出确定性的文本/路径引用证据；正式 Chapter 6/Review 交接仍应使用冻结上下文与正式 Impact 报告。</p>
+    <p>输入文件路径或符号关键词。文本引用只作为 evidence，不自动升级为确定依赖。</p>
     <form id="impact-form">
       <input id="impact-target" maxlength="1000" required placeholder="例如 Game.Core/Contracts 或 PlayerService">
       <button>分析影响</button>
     </form>
     <pre id="impact"></pre>
+  </section>
+
+  <section>
+    <h2>Tasks · Taskmaster</h2>
+    <p class="hint">模板仓可以为空。Runtime eligible 只表示发现了真实存在的 task-scoped test refs，不等于测试已经通过。</p>
+    <div id="runtime-summary" class="hint"></div>
+    <div class="table-scroll"><table><thead><tr><th>id</th><th>title</th><th>status</th><th>dependencies</th><th>sources</th></tr></thead><tbody id="tasks"></tbody></table></div>
   </section>
 
   <section>
@@ -47,6 +55,8 @@
       <p class="hint">保存配置不会自动扫描；点击“扫描当前仓库”后生效。</p>
     </details>
   </section>
+
+  <dialog id="detail"><button id="close-detail">关闭</button><h2 id="detail-title"></h2><pre id="detail-body"></pre></dialog>
 </main>
 </body>
 </html>
