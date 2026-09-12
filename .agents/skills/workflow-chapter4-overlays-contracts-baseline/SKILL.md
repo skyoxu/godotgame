@@ -51,6 +51,14 @@ Chapter 4 depends on real overlay and contract files. Use business-repo overlays
 4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
 5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Before writing overlays/contracts, run `prepare_knowledge_context.py --consumer chapter4 --query "<architecture/product intent>"`.
+- Chapter 4 candidates are observe-only. Re-read candidate files directly; ranking is never acceptance and Chapter 4 does not freeze context.
+- Browser/observe-only investigation may use an ephemeral policy-aware catalog when no publication exists; direct PRD/GDD/ADR/Overlay/Contract/source authority remains stronger than locator rank.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
+
 ## Idempotent Procedure
 
 1. Confirm the Chapter 3.9 triplet baseline is clean before generating overlays.

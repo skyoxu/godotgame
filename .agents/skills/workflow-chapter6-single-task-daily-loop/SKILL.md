@@ -63,6 +63,21 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 - `generate_knowledge_links.py` is the deterministic task-resource reconstruction layer used before semantic enrichment. Do not hand-author generated links to make a page look complete.
 - Knowledge and Impact artifacts are bounded evidence; they never replace Taskmaster, PRD/GDD, ADR/Base/Overlay, Contracts, source, or test authority.
 
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Before RED, Chapter 6 context preparation requires `publication_state = published-current`. If local main or the control plane changed, rebuild/publish the Knowledge generation before freezing; do not freeze an ephemeral catalog.
+- Prepare `consumer=chapter6` candidates, re-read sources directly, record explicit accept/reject decisions with reasons and satisfies fields, and freeze them with `freeze_knowledge_context.py`.
+- Read the frozen context revision, then build/reuse an immutable Impact Index for that exact revision with `build_impact_index.py --revision <frozen-revision> --trusted-ref refs/heads/main`.
+- Run `analyze_impact.py --target <path-or-symbol-or-config-pointer> --strict --frozen-context <frozen.json>` and validate revision/frozen-context/index lineage with `impact_analysis_handoff.py` before implementation consumes the report.
+- Frozen semantic scope must not expand silently during RED/GREEN/REFACTOR. A genuine scope change requires a new candidate/decision/freeze revision and a matching revision-bound Impact Index.
+- Review uses a separate `consumer=review` candidate set and freeze and also requires published-current Knowledge. Never relabel or reuse a Chapter 6 freeze as Review.
+- After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed by the task. With no reviewed paths, the explicit-reviewed resource record must skip instead of inventing associations.
+- When developer-facing semantic explanation would materially help, add `--semantic --llm-backend <codex-cli|openai-api>`. Semantic output is accepted only when every resource path, JSON pointer, scene node, and asset binding resolves to reconstructed snapshot evidence; generated explanations remain non-authoritative.
+- `generate_knowledge_links.py` is the deterministic task-resource reconstruction layer used before semantic enrichment. Do not hand-author generated links to make a page look complete.
+- Knowledge and Impact artifacts are bounded evidence; they never replace Taskmaster, PRD/GDD, ADR/Base/Overlay, Contracts, source, or test authority.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
+
 ## Idempotent Procedure
 
 1. Read active-task first when a task id exists.

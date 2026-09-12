@@ -51,6 +51,14 @@ Chapter 5 evidence is usually sparse, so workflow.md remains the governing sourc
 4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
 5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
 
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Before semantic stabilization, run `prepare_knowledge_context.py --consumer chapter5 --task-id <id> --query "<task acceptance>"`.
+- Chapter 5 candidates are observe-only. Re-read candidate files directly and do not turn ranking into acceptance.
+- Acceptance extraction or triplet defects remain stop-and-fix signals; Knowledge retrieval must not hide them.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
+
 ## Idempotent Procedure
 
 1. Resolve the target business repo as a sibling of the template repo.

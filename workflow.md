@@ -103,6 +103,7 @@ General authority rules:
 - Locator ranking never means semantic acceptance. Candidate files must be re-read directly before use.
 - A fresh template with no business task data is valid. Never copy sibling-repository task ids, gameplay entities, asset mappings, hashes, generated publications, or runtime evidence into this template.
 - Consumer policies are separate for `repository-session`, `chapter4`, `chapter5`, `chapter6`, and `review`; do not relabel one consumer's frozen context as another's.
+- Browser investigation may use an ephemeral policy-aware catalog, but formal Chapter 6 and Review freezes require `publication_state = published-current`.
 
 Chapter 2 bootstrap additions:
 
@@ -111,8 +112,16 @@ py -3 scripts/python/init_knowledge_catalog.py --repo-root .
 ```
 
 - Read `docs/knowledge/README.md`, `docs/workflows/project-health-knowledge.md`, and the policies under `knowledge/policies/`.
+- Empty Knowledge directories/policies and an empty evaluation suite are allowed; bootstrap must not seed business records or product query expectations.
+- After bootstrap/control-plane changes are committed on local `main`, publish and validate the hash-bound Knowledge generation:
+
+```powershell
+py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --publish
+py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --check
+```
+
+- Publication is blocked if Knowledge policies/evaluation/control-plane scripts are dirty. `knowledge/indexes/current.json` and `last-known-good.json` bind generations under `knowledge/indexes/generations/<generation-id>/` to hashes and the authority ref.
 - `serve-project-health` must expose both `/latest.html` and the same-origin `/knowledge/` investigation surface on `127.0.0.1`.
-- Empty Knowledge directories/policies are allowed; bootstrap must not seed business records.
 
 Chapter 4 additions, before overlay / contract authoring:
 
@@ -134,16 +143,18 @@ py -3 scripts/python/prepare_knowledge_context.py --consumer chapter5 --task-id 
 
 Chapter 6 additions, before RED:
 
-1. Prepare `consumer=chapter6` candidates for the current task and intent.
-2. Re-read candidate files directly.
-3. Record explicit accept/reject decisions with non-empty reasons.
-4. Freeze the accepted context with `freeze_knowledge_context.py`.
-5. Run strict Impact analysis for implementation targets and validate frozen-context / impact revision lineage with `impact_analysis_handoff.py` before consuming the report.
-6. If semantic scope genuinely changes during RED/GREEN/REFACTOR, create a new candidate/decision/freeze revision; never silently expand a frozen context.
-7. Review must prepare and freeze a separate `consumer=review` context. Never reuse a Chapter 6 freeze as Review context.
-8. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed in this task. With no reviewed resource path, the explicit-reviewed record must skip instead of inventing associations.
-9. `chapter6_knowledge.py` must deterministically rebuild `task-resource-links.json` from the current Project Health snapshot before any semantic explanation is consumed. When explanation materially helps, `--semantic --llm-backend <codex-cli|openai-api>` is an explicit opt-in; every returned resource path, JSON pointer, scene node, and asset binding must resolve to reconstructed snapshot evidence, and generated prose remains non-authoritative.
-10. Project Health runtime evidence is task-scoped evidence only. `workspace` verification must not be promoted to `main` runtime acceptance; formal main evidence requires the guarded main-mode verifier and a non-empty passing GdUnit report.
+1. Ensure the Knowledge publication is current. If local `main`, policies, exclusions, evaluation, or control-plane code changed, republish before preparing a formal context.
+2. Prepare `consumer=chapter6` candidates for the current task and intent. Formal preparation rejects ephemeral Knowledge.
+3. Re-read candidate files directly.
+4. Record an explicit accept/reject decision for every candidate with non-empty `reason` and `satisfies` fields.
+5. Freeze the accepted context with `freeze_knowledge_context.py`; a Chapter 6 or Review freeze must be bound to `published-current` Knowledge.
+6. Read the frozen context revision and build/reuse an immutable Impact Index for that exact revision: `py -3 scripts/python/build_impact_index.py --revision <frozen-revision> --trusted-ref refs/heads/main`.
+7. Run strict Impact analysis with `py -3 scripts/python/analyze_impact.py --target <path-or-symbol-or-config-pointer> --strict --frozen-context <frozen.json> --output <impact.json>`, then validate frozen-context / impact revision / index lineage with `impact_analysis_handoff.py` before consuming the report.
+8. If semantic scope genuinely changes during RED/GREEN/REFACTOR, create a new candidate/decision/freeze revision and a matching revision-bound Impact Index; never silently expand a frozen context.
+9. Review must prepare and freeze a separate `consumer=review` context. Never reuse a Chapter 6 freeze as Review context.
+10. After implementation evidence is stable, run `chapter6_knowledge.py --task-id <id> --path <reviewed-resource>` only for resources actually reviewed in this task. With no reviewed resource path, the explicit-reviewed record must skip instead of inventing associations.
+11. `chapter6_knowledge.py` must deterministically rebuild `task-resource-links.json` from the current Project Health snapshot before any semantic explanation is consumed. When explanation materially helps, `--semantic --llm-backend <codex-cli|openai-api>` is an explicit opt-in; every returned resource path, JSON pointer, scene node, and asset binding must resolve to reconstructed snapshot evidence, and generated prose remains non-authoritative.
+12. Project Health runtime evidence is task-scoped evidence only. `workspace` verification must not be promoted to `main` runtime acceptance; formal main evidence requires the guarded main-mode verifier and a non-empty passing GdUnit report.
 
 Regeneration invariant:
 

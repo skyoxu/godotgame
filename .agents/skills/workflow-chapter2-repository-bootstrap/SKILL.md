@@ -52,6 +52,16 @@ Chapter 2 is an early bootstrap workflow. Prefer direct repository checks and pr
 3. Inspect the target repository state directly; Chapter 2 does not use historical business-repo evidence.
 4. Refresh this skill with `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` when `workflow.md` changes.
 
+<!-- KNOWLEDGE_IMPACT_OVERLAY_BEGIN -->
+## Knowledge / Impact Contract
+
+- Run `py -3 scripts/python/init_knowledge_catalog.py --repo-root .` during repository bootstrap. It may create empty directories, policies, schemas, and an empty evaluation suite only; it must not seed sibling-repository task/gameplay data.
+- Read `docs/knowledge/README.md` and `docs/workflows/project-health-knowledge.md` before treating Knowledge output as repository authority.
+- After the Knowledge control plane and repository bootstrap changes are committed on local `main`, publish the hash-bound catalog with `py -3 scripts/python/publish_knowledge_catalog.py --repository-root . --publish`, then verify with `--check`. Publication is blocked while the Knowledge control plane is dirty.
+- `serve-project-health` exposes `/latest.html` and the same-origin `/knowledge/` investigation page on `127.0.0.1`.
+- A fresh template with no `.taskmaster/tasks/*.json` is a valid empty state. The template evaluation suite intentionally contains no business expectations.
+<!-- KNOWLEDGE_IMPACT_OVERLAY_END -->
+
 ## Idempotent Procedure
 
 1. Resolve the target business repo as a sibling of the template repo.

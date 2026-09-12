@@ -147,15 +147,17 @@ def _remove_marker_block(text: str, begin: str, end: str) -> str:
 
 def expected_dev_cli(text: str) -> str:
     text = _remove_marker_block(text, CLI_FUNCTION_BEGIN, CLI_FUNCTION_END)
-    text = _remove_marker_block(text, CLI_PARSER_BEGIN.strip(), CLI_PARSER_END.strip())
-    function_anchor = "\ndef build_parser() -> argparse.ArgumentParser:\n"
-    if function_anchor not in text:
+    text = _remove_marker_block(text, CLI_PARSER_BEGIN, CLI_PARSER_END)
+    function_anchor = "def build_parser() -> argparse.ArgumentParser:\n"
+    index = text.find(function_anchor)
+    if index < 0:
         raise ValueError("dev_cli.py build_parser anchor not found")
-    text = text.replace(function_anchor, "\n" + CLI_FUNCTION_BLOCK + "\n\n\ndef build_parser() -> argparse.ArgumentParser:\n", 1)
+    text = text[:index].rstrip() + "\n\n\n" + CLI_FUNCTION_BLOCK + "\n\n\n" + text[index:]
     parser_anchor = "    # run-chapter7-ui-wiring\n"
-    if parser_anchor not in text:
+    index = text.find(parser_anchor)
+    if index < 0:
         raise ValueError("dev_cli.py Chapter 7 parser anchor not found")
-    text = text.replace(parser_anchor, CLI_PARSER_BLOCK + "\n\n" + parser_anchor, 1)
+    text = text[:index].rstrip() + "\n\n" + CLI_PARSER_BLOCK + "\n\n" + text[index:]
     return text
 
 
