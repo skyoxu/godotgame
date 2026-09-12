@@ -3,14 +3,86 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from impact_analyzer import ImpactAnalyzer
-from project_health_knowledge import load_config, latest, query, save_config, scan
+from project_health_knowledge import load_config, latest, query, safe_file, save_config, scan
+from project_health_runtime import eligibility
+
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+
+
+def _walk_tasks(value):
+    if isinstance(value, dict):
+        if "id" in value and ("title" in value or "status" in value):
+            yield value
+        for child in value.values():
+            yield from _walk_tasks(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _walk_tasks(child)
+
+
+def _tasks(root: Path) -> list[dict]:
+    task_dir = root / ".taskmaster/tasks"
+    rows: dict[str, dict] = {}
+    if not task_dir.exists():
+        return []
+    for file in sorted(task_dir.glob("*.json")):
+        try:
+            data = json.loads(file.read_text(encoding="utf-8-sig"))
+        except Exception:
+            continue
+        for task in _walk_tasks(data):
+            task_id = str(task.get("id") or "").strip()
+            if not task_id:
+                continue
+            row = rows.setdefault(task_id, {"id": task_id, "title": "", "status": "", "dependencies": [], "sources": []})
+            row["title"] = row["title"] or str(task.get("title") or "")
+            row["status"] = row["status"] or str(task.get("status") or "")
+            deps = task.get("dependencies") or []
+            if isinstance(deps, list):
+                row["dependencies"] = sorted({*row["dependencies"], *(str(x) for x in deps)})
+            row["sources"].append(file.relative_to(root).as_posix())
+    return sorted(rows.values(), key=lambda item: (not item["id"].isdigit(), int(item["id"]) if item["id"].isdigit() else item["id"]))
+
+
+def _task(root: Path, task_id: str) -> dict:
+    matches = [row for row in _tasks(root) if row["id"] == str(task_id)]
+    return {"schema": "godot-project-health.task.v1", "task": matches[0] if matches else None}
+
+
+def _source(root: Path, rel: str) -> dict:
+    path = safe_file(root, rel)
+    manifest = {str(item.get("path")): item for item in latest(root).get("records", [])}
+    if rel not in manifest or not path.is_file():
+        raise ValueError("source path is not in the scanned manifest")
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != manifest[rel].get("sha256"):
+        raise ValueError("source changed after scan; scan again")
+    return {"schema": "godot-project-health.source.v1", "path": rel, "text": raw.decode("utf-8-sig")[:200000]}
+
+
+def _image(root: Path, rel: str) -> tuple[bytes, str]:
+    path = safe_file(root, rel)
+    mime = IMAGE_TYPES.get(path.suffix.lower())
+    if not mime:
+        raise ValueError("unsupported image type")
+    manifest = {str(item.get("path")): item for item in latest(root).get("records", [])}
+    record = manifest.get(rel)
+    if record is None or not path.is_file():
+        raise ValueError("image is not in the scanned manifest")
+    raw = path.read_bytes()
+    if len(raw) > 16 * 1024 * 1024:
+        raise ValueError("image exceeds 16 MiB preview limit")
+    if hashlib.sha256(raw).hexdigest() != record.get("sha256"):
+        raise ValueError("image changed after scan; scan again")
+    return raw, mime
 
 
 def handler_factory(root: Path):
@@ -36,17 +108,13 @@ def handler_factory(root: Path):
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
-            self.send_header("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'self'; img-src 'self'; object-src 'none'; frame-ancestors 'none'")
             self.end_headers()
             self.wfile.write(body)
 
         def require_post_auth(self) -> bool:
             origin = f"http://127.0.0.1:{self.server.server_port}"
-            return (
-                self.allowed_host()
-                and self.headers.get("Origin") == origin
-                and secrets.compare_digest(self.headers.get("X-Project-Health-Token", ""), token)
-            )
+            return self.allowed_host() and self.headers.get("Origin") == origin and secrets.compare_digest(self.headers.get("X-Project-Health-Token", ""), token)
 
         def read_request(self):
             length = int(self.headers.get("Content-Length", "0") or 0)
@@ -63,7 +131,9 @@ def handler_factory(root: Path):
             if not self.allowed_host():
                 self.send({"reason": "Invalid Host"}, 403)
                 return
-            path = urlsplit(self.path).path
+            parsed = urlsplit(self.path)
+            path = parsed.path
+            params = parse_qs(parsed.query)
             try:
                 if path == "/api/knowledge/session":
                     self.send({"token": token, "service": "godot-project-health-knowledge-v1"})
@@ -74,12 +144,23 @@ def handler_factory(root: Path):
                     self.send(state)
                 elif path == "/api/knowledge/config":
                     self.send(load_config(root))
+                elif path == "/api/knowledge/tasks":
+                    self.send({"schema": "godot-project-health.tasks.v1", "tasks": _tasks(root)})
+                elif path == "/api/knowledge/task":
+                    self.send(_task(root, params.get("id", [""])[0]))
+                elif path == "/api/knowledge/source":
+                    self.send(_source(root, params.get("path", [""])[0]))
+                elif path == "/api/knowledge/runtime-eligibility":
+                    self.send(eligibility(root))
+                elif path == "/api/knowledge/image":
+                    data, mime = _image(root, params.get("path", [""])[0])
+                    self.send(data, content_type=mime)
                 elif path in ("/knowledge", "/knowledge/"):
-                    self.send((Path(__file__).with_name("project_health_knowledge.html")).read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
+                    self.send(Path(__file__).with_name("project_health_knowledge.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
                 elif path == "/knowledge/app.js":
-                    self.send((Path(__file__).with_name("project_health_knowledge.js")).read_text(encoding="utf-8"), content_type="text/javascript; charset=utf-8")
+                    self.send(Path(__file__).with_name("project_health_knowledge.js").read_text(encoding="utf-8"), content_type="text/javascript; charset=utf-8")
                 elif path == "/knowledge/style.css":
-                    self.send((Path(__file__).with_name("project_health_knowledge.css")).read_text(encoding="utf-8"), content_type="text/css; charset=utf-8")
+                    self.send(Path(__file__).with_name("project_health_knowledge.css").read_text(encoding="utf-8"), content_type="text/css; charset=utf-8")
                 elif path in ("/", "/latest.html"):
                     self.send((root / "logs/ci/project-health/latest.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
                 else:
@@ -118,8 +199,7 @@ def main(argv=None):
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--port", type=int, required=True)
     args = parser.parse_args(argv)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_factory(args.repo_root.resolve()))
-    server.serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", args.port), handler_factory(args.repo_root.resolve())).serve_forever()
 
 
 if __name__ == "__main__":
