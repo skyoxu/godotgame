@@ -13,7 +13,7 @@
     "status": {"enum": ["ready", "fallback_required"]},
     "semantic_decision_required": {"type": "boolean"},
     "freeze_state": {"const": "unfrozen"},
-    "candidates": {"type": "array", "items": {"type": "object", "required": ["path", "semantic_satisfaction"], "properties": {"path": {"type": "string"}, "source_sha256": {"type": "string"}, "semantic_satisfaction": {"const": "undecided"}}},
+    "candidates": {"type": "array", "items": {"type": "object", "required": ["path", "semantic_satisfaction"], "properties": {"path": {"type": "string"}, "source_sha256": {"type": "string"}, "semantic_satisfaction": {"const": "undecided"}}}},
     "bundle_sha256": {"type": "string", "minLength": 64, "maxLength": 64}
   },
   "additionalProperties": true
