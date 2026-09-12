@@ -14,7 +14,7 @@ if str(PYTHON) not in sys.path:
 
 from knowledge_locator import locate
 from prepare_knowledge_context import prepare
-from publish_knowledge_catalog import PublicationBlocked, check_current, publish
+from publish_knowledge_catalog import PublicationBlocked, check_current, publish, restore_lkg
 
 
 def git(root: Path, *args: str) -> str:
@@ -89,6 +89,45 @@ class KnowledgeCatalogPublicationTests(unittest.TestCase):
             with self.assertRaises(PublicationBlocked) as caught:
                 publish(root)
             self.assertEqual("dirty_control_plane", caught.exception.reason)
+
+    def test_failed_evaluation_does_not_advance_current_or_lkg(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_repo(root)
+            publish(root)
+            current_path = root / "knowledge/indexes/current.json"
+            lkg_path = root / "knowledge/indexes/last-known-good.json"
+            current_before = current_path.read_text(encoding="utf-8")
+            lkg_before = lkg_path.read_text(encoding="utf-8")
+
+            suite_path = root / "knowledge/evaluation/queries.v1.json"
+            suite = json.loads(suite_path.read_text(encoding="utf-8"))
+            suite["cases"][0]["must_include_paths"] = ["docs/prd/does-not-exist.md"]
+            suite_path.write_text(json.dumps(suite), encoding="utf-8")
+            git(root, "add", "knowledge/evaluation/queries.v1.json")
+            git(root, "commit", "-m", "make evaluation fail")
+
+            with self.assertRaises(PublicationBlocked) as caught:
+                publish(root)
+            self.assertEqual("repository_query_evaluation_failed", caught.exception.reason)
+            self.assertEqual(current_before, current_path.read_text(encoding="utf-8"))
+            self.assertEqual(lkg_before, lkg_path.read_text(encoding="utf-8"))
+
+    def test_restore_lkg_rebuilds_current_and_canonical_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_repo(root)
+            publish(root)
+            lkg_path = root / "knowledge/indexes/last-known-good.json"
+            expected_pointer = json.loads(lkg_path.read_text(encoding="utf-8"))
+            (root / "knowledge/indexes/current.json").write_text("{}\n", encoding="utf-8")
+            (root / "knowledge/catalogs/repository-knowledge-catalog.v1.json").write_text("{}\n", encoding="utf-8")
+
+            result = restore_lkg(root)
+            self.assertEqual("restored", result["status"])
+            current = json.loads((root / "knowledge/indexes/current.json").read_text(encoding="utf-8"))
+            self.assertEqual(expected_pointer, current)
+            self.assertEqual("current", check_current(root)["status"])
 
 
 if __name__ == "__main__":
