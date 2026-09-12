@@ -35,53 +35,65 @@ class ImpactIndexRuntimeTests(unittest.TestCase):
         (root / "Game.Core").mkdir()
         (root / "Game.Godot/Scenes").mkdir(parents=True)
         (root / "Game.Godot/Scripts").mkdir(parents=True)
+        (root / "Game.Godot/Data").mkdir(parents=True)
         (root / "Tests.Godot").mkdir()
         config = {
-            "schema":"godot-project-impact.analysis-config.v1","revision":"test-v1",
-            "include_prefixes":["Game.Core/","Game.Godot/","Tests.Godot/"],"include_exact_paths":[],
-            "include_extensions":[".cs",".gd",".tscn"],"max_file_bytes":1048576,
-            "relation_types":["declares","resource-reference","scene-script","text-symbol-reference"]
+            "schema": "godot-project-impact.analysis-config.v1",
+            "revision": "test-v1",
+            "include_prefixes": ["Game.Core/", "Game.Godot/", "Tests.Godot/"],
+            "include_exact_paths": [],
+            "include_extensions": [".cs", ".gd", ".tscn", ".json"],
+            "max_file_bytes": 1048576,
+            "relation_types": ["declares", "declares-config-pointer", "resource-reference", "scene-script", "text-symbol-reference"],
         }
-        aliases = {"schema":"godot-project-impact.target-aliases.v1","revision":"test-v1","aliases":[]}
+        aliases = {"schema": "godot-project-impact.target-aliases.v1", "revision": "test-v1", "aliases": []}
         (root / "scripts/python/impact_analysis_config.v1.json").write_text(json.dumps(config), encoding="utf-8")
         (root / "scripts/python/impact_target_aliases.v1.json").write_text(json.dumps(aliases), encoding="utf-8")
-        (root / "Game.Core/RewardService.cs").write_text("public class RewardService { public void Grant() {} }\n", encoding="utf-8")
-        (root / "Game.Core/Other.cs").write_text("public class Other { public void RewardService() {} }\n", encoding="utf-8")
-        (root / "Game.Godot/Scripts/RewardView.gd").write_text("extends Control\nfunc show_reward():\n    pass\n", encoding="utf-8")
-        (root / "Game.Godot/Scenes/Reward.tscn").write_text('[gd_scene load_steps=2 format=3]\n[ext_resource type="Script" path="res://Game.Godot/Scripts/RewardView.gd" id="1"]\n[node name="Reward" type="Control"]\nscript = ExtResource("1")\n', encoding="utf-8")
-        (root / "Tests.Godot/test_reward.gd").write_text("extends GdUnitTestSuite\n# RewardService\n", encoding="utf-8")
+        (root / "Game.Core/FeatureService.cs").write_text("public class FeatureService { public void Apply() {} }\n", encoding="utf-8")
+        (root / "Game.Core/Other.cs").write_text("public class Other { public void FeatureService() {} }\n", encoding="utf-8")
+        (root / "Game.Godot/Scripts/FeatureView.gd").write_text("extends Control\nfunc show_feature():\n    pass\n", encoding="utf-8")
+        (root / "Game.Godot/Scenes/FeaturePanel.tscn").write_text('[gd_scene load_steps=2 format=3]\n[ext_resource type="Script" path="res://Game.Godot/Scripts/FeatureView.gd" id="1"]\n[node name="FeaturePanel" type="Control"]\nscript = ExtResource("1")\n', encoding="utf-8")
+        (root / "Game.Godot/Data/feature.json").write_text('{"feature":{"enabled":true,"limit":3}}\n', encoding="utf-8")
+        (root / "Tests.Godot/test_feature.gd").write_text("extends GdUnitTestSuite\n# FeatureService\n", encoding="utf-8")
         git(root, "add", ".")
         git(root, "commit", "-m", "seed")
         return git(root, "rev-parse", "HEAD")
 
-    def test_index_scene_relation_and_strict_report(self):
+    def test_index_scene_config_relation_and_strict_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             revision = self.make_repo(root)
             index = build_index(root, revision, trusted_ref="refs/heads/main")
             self.assertTrue(any(item.get("type") == "scene-script" and item.get("confirmed") for item in index["relations"]))
+            pointer = resolve_target(index, "Game.Godot/Data/feature.json#/feature/enabled")
+            self.assertEqual("config-pointer", pointer["kind"])
+            self.assertEqual("boolean", pointer["value_type"])
+            self.assertTrue(any(item.get("type") == "declares-config-pointer" and item.get("to") == pointer["id"] for item in index["relations"]))
             publish_index(root, index, root / "logs/ci")
             scan(root)
-            report = ImpactAnalyzer(root).analyze("Game.Core/RewardService.cs", strict=True, frozen_context_sha256="freeze-123")
+            report = ImpactAnalyzer(root).analyze("Game.Core/FeatureService.cs", strict=True, frozen_context_sha256="freeze-123")
             self.assertEqual(index["index_id"], report["index_id"])
             self.assertEqual("freeze-123", report["frozen_context_sha256"])
             self.assertEqual("file", report["resolved_target"]["kind"])
 
-    def test_natural_language_and_ambiguous_symbols_fail_closed(self):
+    def test_natural_language_ambiguous_symbols_and_missing_pointers_fail_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             revision = self.make_repo(root)
             index = build_index(root, revision)
             with self.assertRaises(ImpactIndexError):
-                resolve_target(index, "please change the reward flow")
-            # RewardService is both a type declaration and a method name in this fixture.
+                resolve_target(index, "please change the feature flow")
+            # FeatureService is both a type declaration and a method name in this fixture.
             with self.assertRaises(ImpactIndexError) as caught:
-                resolve_target(index, "RewardService")
+                resolve_target(index, "FeatureService")
             self.assertEqual("underqualified_target", caught.exception.code)
+            with self.assertRaises(ImpactIndexError) as missing:
+                resolve_target(index, "Game.Godot/Data/feature.json#/feature/missing")
+            self.assertEqual("unsupported_target", missing.exception.code)
 
     def test_handoff_requires_exact_frozen_hash(self):
-        frozen = {"consumer":"chapter6","revision":"a"*40,"frozen_sha256":"freeze-a"}
-        impact = {"mode":"strict","revision":"a"*40,"frozen_context_sha256":"freeze-b","index_id":"idx-x","target":"x"}
+        frozen = {"consumer": "chapter6", "revision": "a" * 40, "frozen_sha256": "freeze-a"}
+        impact = {"mode": "strict", "revision": "a" * 40, "frozen_context_sha256": "freeze-b", "index_id": "idx-x", "target": "x"}
         result = validate(frozen, impact)
         self.assertEqual("failed", result["status"])
         self.assertIn("frozen_hash_mismatch", result["errors"])
