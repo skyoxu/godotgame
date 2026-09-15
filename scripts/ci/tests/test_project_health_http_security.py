@@ -60,22 +60,12 @@ class ProjectHealthHttpSecurityTests(unittest.TestCase):
         token = json.loads(payload)["token"]
 
         body = b"{}"
-        status, _, _ = self.request(
-            "POST",
-            "/api/knowledge/config",
-            headers={"Content-Type": "application/json"},
-            body=body,
-        )
+        status, _, _ = self.request("POST", "/api/knowledge/config", headers={"Content-Type": "application/json"}, body=body)
         self.assertEqual(403, status)
 
         status, _, payload = self.request(
-            "POST",
-            "/api/knowledge/config",
-            headers={
-                "Content-Type": "application/json",
-                "Origin": f"http://127.0.0.1:{self.port}",
-                "X-Project-Health-Token": token,
-            },
+            "POST", "/api/knowledge/config",
+            headers={"Content-Type": "application/json", "Origin": f"http://127.0.0.1:{self.port}", "X-Project-Health-Token": token},
             body=body,
         )
         self.assertEqual(200, status, payload.decode("utf-8", errors="replace"))
@@ -84,37 +74,19 @@ class ProjectHealthHttpSecurityTests(unittest.TestCase):
     def test_post_rejects_wrong_origin_and_unbounded_or_wrong_content_type(self):
         _, _, payload = self.request("GET", "/api/knowledge/session")
         token = json.loads(payload)["token"]
-        auth = {
-            "Origin": f"http://127.0.0.1:{self.port}",
-            "X-Project-Health-Token": token,
-        }
-        status, _, _ = self.request(
-            "POST",
-            "/api/knowledge/config",
-            headers={**auth, "Content-Type": "text/plain"},
-            body=b"{}",
-        )
+        auth = {"Origin": f"http://127.0.0.1:{self.port}", "X-Project-Health-Token": token}
+        status, _, _ = self.request("POST", "/api/knowledge/config", headers={**auth, "Content-Type": "text/plain"}, body=b"{}")
         self.assertEqual(422, status)
 
         status, _, _ = self.request(
-            "POST",
-            "/api/knowledge/config",
-            headers={
-                "Content-Type": "application/json",
-                "Origin": "http://127.0.0.1:1",
-                "X-Project-Health-Token": token,
-            },
+            "POST", "/api/knowledge/config",
+            headers={"Content-Type": "application/json", "Origin": "http://127.0.0.1:1", "X-Project-Health-Token": token},
             body=b"{}",
         )
         self.assertEqual(403, status)
 
         oversized = b"{" + b" " * 65536 + b"}"
-        status, _, _ = self.request(
-            "POST",
-            "/api/knowledge/config",
-            headers={**auth, "Content-Type": "application/json"},
-            body=oversized,
-        )
+        status, _, _ = self.request("POST", "/api/knowledge/config", headers={**auth, "Content-Type": "application/json"}, body=oversized)
         self.assertEqual(422, status)
 
     def test_knowledge_page_csp_is_stricter_than_generated_dashboard(self):
@@ -129,6 +101,22 @@ class ProjectHealthHttpSecurityTests(unittest.TestCase):
         status, headers, _ = self.request("GET", "/latest.html")
         self.assertEqual(200, status)
         self.assertIn("'unsafe-inline'", headers.get("Content-Security-Policy", ""))
+
+    def test_scene_graph_routes_keep_strict_knowledge_csp(self):
+        status, headers, payload = self.request("GET", "/api/knowledge/scene-graph")
+        self.assertEqual(200, status, payload.decode("utf-8", errors="replace"))
+        graph = json.loads(payload)
+        self.assertEqual("godot-project-knowledge.godot-scene-graph.v1", graph["schema"])
+        self.assertIn("nodes", graph)
+
+        for path in ("/knowledge/scenes", "/knowledge/scenes/unreachable", "/knowledge/scenes.js", "/knowledge/scenes.css"):
+            status, headers, _ = self.request("GET", path)
+            self.assertEqual(200, status, path)
+            self.assertNotIn("'unsafe-inline'", headers.get("Content-Security-Policy", ""))
+
+        status, _, payload = self.request("GET", "/api/knowledge/godot/unreachable")
+        self.assertEqual(200, status, payload.decode("utf-8", errors="replace"))
+        self.assertIsInstance(json.loads(payload)["items"], list)
 
     def test_report_traversal_and_image_revision_mismatch_fail_closed(self):
         outside = self.root / "outside.txt"
