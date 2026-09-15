@@ -1,0 +1,16 @@
+{
+  "artifacts": {
+    "catalog": "sha256:f4a26dc43a3488fa9d0fd3fd4e3d5dd9d81c51fd0a7ba29a07b49595edc05ceb",
+    "evaluation": "sha256:2eca9a09d2a3eb3f258b2697fb3514bccf2acdbb802dcc9d89718d5c6f7d1794",
+    "exclusions": "sha256:0da8f7dfa576b01cced37dc1735728364350f57d11729273223aea6e131b1022",
+    "policies": "sha256:ad3520401383fea9cb6e9d349d040c780f3891b4d44623e25d3c4d2814f619ee",
+    "projections": "sha256:50f81ac1b66e87924fa55b8c6e38a85fbb3d6693194957fd6846759a6440ee24",
+    "query_suite": "sha256:05b11bfccba07fcaacc17bc16de95194927f1ed7e6a44eeb1844bb02f615db90",
+    "snapshot": "sha256:bef918ba2094abdcfb4e1a9fedc1285b325078a271240991711d10b8a8d4e291"
+  },
+  "authority_ref": "refs/heads/main",
+  "generation_id": "d29255df8205ca1b566b3ce591203083de7b7a665b86083c52433266827518c0",
+  "main_commit": "235452f042e586d1700cf6e26492ae0c0bf1fa72",
+  "schema": "godot-project-knowledge.publication-generation.v1",
+  "source_snapshot_id": "26a842dae4d899a1c5a7412811c72c1bffd1a3fc725de89159b4bf8a7397fe47"
+}

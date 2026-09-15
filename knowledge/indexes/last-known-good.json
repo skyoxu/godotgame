@@ -1,0 +1,8 @@
+{
+  "authority_ref": "refs/heads/main",
+  "generation_id": "d29255df8205ca1b566b3ce591203083de7b7a665b86083c52433266827518c0",
+  "generation_sha256": "sha256:e7dabbd7af2a469b528c3434a8215440fe4f54a888825da11e529932c348d8cf",
+  "main_commit": "235452f042e586d1700cf6e26492ae0c0bf1fa72",
+  "schema": "godot-project-knowledge.index-pointer.v1",
+  "source_snapshot_id": "26a842dae4d899a1c5a7412811c72c1bffd1a3fc725de89159b4bf8a7397fe47"
+}

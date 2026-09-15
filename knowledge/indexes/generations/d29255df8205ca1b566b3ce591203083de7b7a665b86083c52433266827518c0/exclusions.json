@@ -1,0 +1,21 @@
+{
+  "rules": [
+    {
+      "prefix": ".git/",
+      "reason": "repository internals"
+    },
+    {
+      "prefix": ".godot/",
+      "reason": "generated engine state"
+    },
+    {
+      "prefix": "logs/",
+      "reason": "run evidence is not repository authority"
+    },
+    {
+      "prefix": "knowledge/indexes/generations/",
+      "reason": "generated publication output"
+    }
+  ],
+  "schema": "godot-project-knowledge.source-exclusions.v1"
+}
