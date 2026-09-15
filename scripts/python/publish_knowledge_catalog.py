@@ -11,6 +11,7 @@ from typing import Any
 from _knowledge_catalog_builder import canonical_bytes
 from _knowledge_locator_core import locate
 from build_knowledge_catalog import build
+from knowledge_publication_freshness import publication_freshness_reason
 from project_health_knowledge import write_json
 
 POLICY_PATH = Path("knowledge/policies/consumer-policies.v1.json")
@@ -24,11 +25,11 @@ CANONICAL = {
 INDEX_ROOT = Path("knowledge/indexes")
 ARTIFACTS = ("snapshot", "catalog", "projections", "policies", "exclusions", "query_suite", "evaluation")
 CONTROL_PLANE_PATHS = (
-    "knowledge/policies", "knowledge/evaluation",
+    "knowledge/policies", "knowledge/evaluation", "knowledge/contracts",
     "scripts/python/_knowledge_catalog_builder.py", "scripts/python/_knowledge_locator_core.py",
     "scripts/python/build_knowledge_catalog.py", "scripts/python/knowledge_locator.py",
-    "scripts/python/publish_knowledge_catalog.py", "scripts/python/prepare_knowledge_context.py",
-    "scripts/python/freeze_knowledge_context.py",
+    "scripts/python/knowledge_publication_freshness.py", "scripts/python/publish_knowledge_catalog.py",
+    "scripts/python/prepare_knowledge_context.py", "scripts/python/freeze_knowledge_context.py",
 )
 
 
@@ -106,9 +107,14 @@ def _validate_generation(root: Path, pointer: dict[str, Any], require_current_re
             raise PublicationBlocked(f"generation_artifact_hash_invalid:{name}")
         artifacts[name] = artifact
     if require_current_ref:
-        current = subprocess.run(["git", "-C", str(root), "rev-parse", str(manifest.get("authority_ref"))], capture_output=True, text=True, encoding="utf-8", check=False)
-        if current.returncode or current.stdout.strip() != manifest.get("main_commit"):
-            raise PublicationBlocked("authority_ref_moved")
+        reason = publication_freshness_reason(
+            root,
+            str(manifest.get("main_commit") or ""),
+            str(manifest.get("authority_ref") or ""),
+            artifacts["exclusions"],
+        )
+        if reason is not None:
+            raise PublicationBlocked(reason)
     return manifest, artifacts
 
 
