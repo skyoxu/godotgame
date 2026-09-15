@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Godot Scene Graph · Project Health</title>
+  <link rel="stylesheet" href="/knowledge/style.css">
+  <link rel="stylesheet" href="/knowledge/scenes.css">
+  <script src="/knowledge/scenes.js" defer></script>
+</head>
+<body>
+<main>
+  <nav><a href="/knowledge/">Knowledge + Impact</a> / Godot scene graph <span class="badge">MAIN ONLY</span></nav>
+  <div class="row"><h1>Godot scene graph</h1><button id="scene-graph-refresh" type="button">Refresh graph</button><button id="scene-probe" type="button">Rescan local main</button><a href="/knowledge/scenes/unreachable">Unconfirmed scenes</a></div>
+  <p>Green relations are statically proven scene instances/routes. Yellow relations are references without a proven trigger and do not make a scene reachable.</p>
+  <p id="scene-status" role="status">Loading immutable scene evidence…</p>
+  <div id="scene-legend" class="scene-legend"><span class="scene-effective">effective</span><span class="scene-possible">possible</span><span class="scene-unreachable">unreachable candidate</span></div>
+  <div id="scene-graph" class="scene-map"></div>
+</main>
+<dialog id="scene-preview"><button id="scene-preview-close" type="button">Close</button><h2 id="scene-preview-title"></h2><div id="scene-preview-body"></div></dialog>
+</body>
+</html>
