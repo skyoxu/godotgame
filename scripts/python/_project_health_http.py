@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from _godot_scene_graph import scene_graph_for_revision
 from impact_analyzer import ImpactAnalyzer
 from knowledge_locator import CONSUMERS, locate
 from project_health_godot import build_navigation
@@ -36,8 +37,15 @@ IMAGE_TYPES = {
     ".jpeg": "image/jpeg",
     ".webp": "image/webp",
     ".svg": "image/svg+xml",
+    ".gif": "image/gif",
 }
 REPORT_TYPES = {".json": "application/json; charset=utf-8", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
+
+
+def _scene_graph(root: Path) -> dict:
+    state = latest(root)
+    graph = scene_graph_for_revision(root, str(state.get("revision") or ""))
+    return {"revision": state.get("revision"), **graph}
 
 
 def _snapshot_status(root: Path) -> dict:
@@ -92,13 +100,14 @@ def _task(root: Path, task_id: str) -> dict:
     )
     semantic = _optional_json(root / "docs/knowledge/generated" / f"task-{task_id}-semantic.json")
     reviewed_resources = _optional_json(root / "docs/knowledge/generated" / f"task-{task_id}-resources.json")
+    element_capture = _optional_json(root / "docs/knowledge/generated" / f"chapter6-task-{task_id}-elements.json")
     links_payload = _optional_json(root / "docs/knowledge/generated/task-resource-links.json") or {}
     generated_links = [
         item for item in links_payload.get("generated", [])
         if isinstance(item, dict) and str(item.get("task_id")) == str(task_id)
     ]
     return {
-        "schema": "godot-project-health.task.v5",
+        "schema": "godot-project-health.task.v6",
         "revision": state.get("revision"),
         "task": {key: row.get(key) for key in ("id", "title", "status", "dependencies", "recommendedSubtasks", "sources")} if row else None,
         "runtime": runtime,
@@ -107,6 +116,7 @@ def _task(root: Path, task_id: str) -> dict:
         "semantic": semantic,
         "resource_knowledge": generated_links,
         "reviewed_resources": reviewed_resources,
+        "chapter6_capture": element_capture,
     }
 
 
@@ -206,6 +216,21 @@ def handler_factory(root: Path):
                 elif path == "/api/knowledge/tasks": self.send({"schema": "godot-project-health.tasks.v2", "revision": latest(root).get("revision"), "tasks": _tasks(root)})
                 elif path == "/api/knowledge/task": self.send(_task(root, params.get("id", [""])[0]))
                 elif path == "/api/knowledge/source": self.send(_source(root, params.get("path", [""])[0]))
+                elif path == "/api/knowledge/scene-graph": self.send(_scene_graph(root))
+                elif path in ("/api/knowledge/godot/scene", "/api/knowledge/godot/script", "/api/knowledge/godot/unreachable"):
+                    graph = _scene_graph(root)
+                    if path.endswith("/unreachable"):
+                        self.send({"schema": "godot-project-health.unconfirmed-scenes.v1", "revision": graph.get("revision"), "items": [item for item in graph.get("nodes", {}).values() if item.get("classification") == "unreachable-candidate"]})
+                    else:
+                        rel = params.get("path", [""])[0].replace("\\", "/")
+                        if path.endswith("/scene"):
+                            item = graph.get("nodes", {}).get(rel)
+                        else:
+                            item = [ref for ref in graph.get("code_references", []) if ref.get("source") == rel]
+                        if item is None or item == []:
+                            self.send({"reason": "Scene or script not found"}, 404)
+                        else:
+                            self.send({"revision": graph.get("revision"), "path": rel, "item": item})
                 elif path == "/api/knowledge/runtime-eligibility": self.send(eligibility(root))
                 elif path == "/api/knowledge/runtime-latest":
                     runtime_path = root / "logs/ci/project-health-knowledge/runtime/latest.json"
@@ -216,6 +241,11 @@ def handler_factory(root: Path):
                 elif path in ("/knowledge", "/knowledge/"): self.send(Path(__file__).with_name("project_health_knowledge.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
                 elif path == "/knowledge/app.js": self.send(Path(__file__).with_name("project_health_knowledge.js").read_text(encoding="utf-8"), content_type="text/javascript; charset=utf-8")
                 elif path == "/knowledge/style.css": self.send(Path(__file__).with_name("project_health_knowledge.css").read_text(encoding="utf-8"), content_type="text/css; charset=utf-8")
+                elif path == "/knowledge/scenes": self.send(Path(__file__).with_name("project_health_scenes.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
+                elif path == "/knowledge/scenes/unreachable": self.send(Path(__file__).with_name("project_health_unreachable.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
+                elif path == "/knowledge/scenes.js": self.send(Path(__file__).with_name("project_health_scenes.js").read_text(encoding="utf-8"), content_type="text/javascript; charset=utf-8")
+                elif path == "/knowledge/unreachable.js": self.send(Path(__file__).with_name("project_health_unreachable.js").read_text(encoding="utf-8"), content_type="text/javascript; charset=utf-8")
+                elif path == "/knowledge/scenes.css": self.send(Path(__file__).with_name("project_health_scenes.css").read_text(encoding="utf-8"), content_type="text/css; charset=utf-8")
                 elif path in ("/", "/latest.html"): self.send((root / "logs/ci/project-health/latest.html").read_text(encoding="utf-8"), content_type="text/html; charset=utf-8")
                 elif path.startswith("/api/"): self.send({"reason": "Not found"}, 404)
                 else:

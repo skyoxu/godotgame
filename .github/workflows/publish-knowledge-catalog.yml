@@ -13,6 +13,8 @@ on:
       - ".taskmaster/**"
       - ".agents/skills/**"
       - "Game.Core/Contracts/**"
+      - "execution-plans/**"
+      - "decision-logs/**"
       - "knowledge/policies/**"
       - "knowledge/evaluation/**"
       - "knowledge/contracts/**"
