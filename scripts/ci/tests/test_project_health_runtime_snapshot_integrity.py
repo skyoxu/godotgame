@@ -22,7 +22,7 @@ class ProjectHealthRuntimeSnapshotIntegrityTests(unittest.TestCase):
 
     def test_main_and_workspace_exclude_plugin_import_cache_but_keep_project_inputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
 
             def git(*args: str) -> str:
                 return subprocess.check_output(
@@ -44,7 +44,7 @@ class ProjectHealthRuntimeSnapshotIntegrityTests(unittest.TestCase):
             (root / ".git/info/exclude").write_text("logs/\n", encoding="utf-8")
 
             for mode in ("main", "workspace"):
-                destination = root / f"logs/{mode}/source"
+                destination = (root / f"logs/{mode}/source").resolve()
                 manifest = prepare_snapshot(root, destination, revision, mode, time.monotonic() + 30)
                 excluded_rel = excluded.relative_to(root).as_posix()
                 plugin_rel = plugin_source.relative_to(root).as_posix()
