@@ -255,6 +255,27 @@ jobs:
             _extract_workflow_scripts(workflow),
         )
 
+    def test_workflow_dispatch_inputs_are_not_interpolated_into_shell_source(self) -> None:
+        workflow = (ROOT / ".github/workflows/mvg-integration.yml").read_text(encoding="utf-8")
+        self.assertIn("MVG_MANIFEST_INPUT: ${{ inputs.manifest }}", workflow)
+        self.assertIn("MVG_MUTATION_SPEC_INPUT: ${{ inputs.mutation_spec }}", workflow)
+        run_bodies = []
+        in_run = False
+        run_indent = 0
+        for line in workflow.splitlines():
+            indent = len(line) - len(line.lstrip())
+            if in_run and indent > run_indent:
+                run_bodies.append(line)
+                continue
+            in_run = False
+            if line.strip() == "run: |":
+                in_run = True
+                run_indent = indent
+        shell_source = "\n".join(run_bodies)
+        self.assertNotIn("${{ inputs.manifest }}", shell_source)
+        self.assertNotIn("${{ inputs.mutation_spec }}", shell_source)
+        self.assertNotIn("${{ inputs.challenge_input }}", shell_source)
+
     def test_parameterized_mutation_spec_has_no_business_defaults(self) -> None:
         spec = {
             "schema_version": "godotgame.mvg-mutation-probe.v1",
