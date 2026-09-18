@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 FULL_SHA = re.compile(r"[0-9a-f]{40}")
+RUN_MANIFEST_SCHEMA = "godot-project-impact.run-manifest.v1"
 
 
 def _canonical_hash(value: dict[str, Any]) -> str:
@@ -27,6 +28,9 @@ def validate(
     repo_root: str | Path | None = None,
     expected_consumer: str | None = None,
     expected_task_id: str | None = None,
+    impact_report_bytes: bytes | None = None,
+    run_manifest: dict[str, Any] | None = None,
+    impact_report_path: str | None = None,
 ) -> dict[str, Any]:
     errors: list[str] = []
     revision = str(frozen.get("revision") or "").lower()
@@ -60,6 +64,24 @@ def validate(
         errors.append("missing_impact_index_binding")
     if not isinstance(impact.get("resolved_target"), dict):
         errors.append("missing_resolved_target")
+
+    if impact_report_bytes is not None or run_manifest is not None:
+        if impact_report_bytes is None or not isinstance(run_manifest, dict):
+            errors.append("missing_impact_run_manifest")
+        else:
+            actual_report_sha = hashlib.sha256(impact_report_bytes).hexdigest()
+            if run_manifest.get("schema") != RUN_MANIFEST_SCHEMA:
+                errors.append("unsupported_impact_run_manifest")
+            if str(run_manifest.get("report_sha256") or "").lower() != actual_report_sha:
+                errors.append("impact_report_hash_mismatch")
+            if str(run_manifest.get("revision") or "").lower() != revision:
+                errors.append("impact_manifest_revision_mismatch")
+            if str(run_manifest.get("status") or "") != "ok":
+                errors.append("impact_manifest_status_mismatch")
+            if impact_report_path is not None:
+                expected_path = Path(str(impact_report_path)).as_posix()
+                if str(run_manifest.get("report_path") or "") != expected_path:
+                    errors.append("impact_manifest_path_mismatch")
 
     task_id = frozen.get("task_id")
     if consumer == "review":
@@ -134,12 +156,31 @@ def main(argv=None):
     except ValueError:
         print(json.dumps({"schema":"godot-project-impact.handoff.v3","status":"failed","errors":["handoff_path_outside_repository"]}))
         return 2
+    try:
+        frozen_bytes = frozen_path.read_bytes()
+        impact_bytes = impact_path.read_bytes()
+        manifest_path = impact_path.with_name("run-manifest.v1.json")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.is_file() else None
+        report_relative = impact_path.resolve().relative_to(root).as_posix()
+        frozen = json.loads(frozen_bytes.decode("utf-8"))
+        impact = json.loads(impact_bytes.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        print(json.dumps({
+            "schema": "godot-project-impact.handoff.v3",
+            "status": "failed",
+            "errors": ["invalid_handoff_artifact"],
+            "reason": str(exc),
+        }))
+        return 2
     out = validate(
-        json.loads(frozen_path.read_text(encoding="utf-8")),
-        json.loads(impact_path.read_text(encoding="utf-8")),
+        frozen,
+        impact,
         repo_root=root,
         expected_consumer=args.consumer,
         expected_task_id=args.task_id,
+        impact_report_bytes=impact_bytes,
+        run_manifest=manifest,
+        impact_report_path=report_relative,
     )
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0 if out["status"] == "ok" else 2
