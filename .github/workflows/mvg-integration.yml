@@ -23,6 +23,10 @@ on:
       - '.github/workflows/mvg-integration.yml'
       - 'scripts/python/*mvg*'
       - 'scripts/ci/tests/test_mvg*'
+      - 'scripts/ci/run_mvg_template_smoke.py'
+      - 'scripts/ci/run_project_health_browser_smoke.py'
+      - 'scripts/browser/project_health.spec.js'
+      - 'scripts/python/project_health_scenes.js'
       - 'scripts/python/_project_health_runtime_snapshot.py'
       - 'scripts/python/run_gdunit.py'
       - 'scripts/python/check_workflow_gate_enforcement.py'
@@ -52,12 +56,22 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Verify reusable MVG failure handling
         run: python -m unittest scripts.ci.tests.test_mvg_acceptance -v
       - name: Setup Godot for neutral and requested MVG runtime
         uses: ./.github/actions/setup-godot-windows
       - name: Run neutral MVG runtime smoke
         run: python scripts/ci/run_mvg_template_smoke.py
+      - name: Install Project Health browser test runtime
+        shell: pwsh
+        run: |
+          npm install --prefix logs/ci/playwright-runner @playwright/test@1.55.0
+          node logs/ci/playwright-runner/node_modules/@playwright/test/cli.js install chromium
+      - name: Run Project Health browser timing regression
+        run: python scripts/ci/run_project_health_browser_smoke.py --playwright-root logs/ci/playwright-runner
       - name: Run requested MVG manifest
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.manifest != '' }}
         shell: pwsh
