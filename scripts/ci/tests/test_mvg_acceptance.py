@@ -32,6 +32,12 @@ class MvgAcceptanceTests(unittest.TestCase):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("content", encoding="utf-8")
+        tasks = self.root / ".taskmaster/tasks/tasks.json"
+        tasks.parent.mkdir(parents=True)
+        tasks.write_text(
+            json.dumps({"master": {"tasks": [{"id": 1}, {"id": 2}]}}),
+            encoding="utf-8",
+        )
         self.manifest = {
             "schema_version": "godotgame.mvg-integration.v1",
             "mvg_id": "neutral-pilot",
@@ -39,11 +45,15 @@ class MvgAcceptanceTests(unittest.TestCase):
                 {
                     "id": "feature-flow",
                     "outcome": "A neutral feature crosses one explicit contract boundary.",
+                    "task_ids": [1, 2],
                     "source_paths": ["Game.Core/Feature.cs"],
                     "handoffs": [
                         {
                             "contract_ref": "Game.Core/Contract.cs",
                             "behavior": "The consumer observes one stable handoff.",
+                            "producer_task": 1,
+                            "consumer_task": 2,
+                            "owner_task": 2,
                             "test_ids": ["feature-core"],
                         }
                     ],
@@ -63,18 +73,20 @@ class MvgAcceptanceTests(unittest.TestCase):
             ],
         }
 
-    def test_template_manifest_needs_no_task_data_until_it_references_tasks(self) -> None:
+    def test_manifest_requires_real_task_and_handoff_ownership(self) -> None:
         self.assertEqual([], validate_manifest(self.root, self.manifest))
-        owned = copy.deepcopy(self.manifest)
-        owned["flows"][0]["task_ids"] = [1, 2]
-        owned["flows"][0]["handoffs"][0].update(
-            producer_task=1, consumer_task=2, owner_task=2
+        missing_tasks = self.root / ".taskmaster/tasks/tasks.json"
+        missing_tasks.unlink()
+        self.assertTrue(validate_manifest(self.root, self.manifest))
+        missing_tasks.write_text(
+            json.dumps({"master": {"tasks": [{"id": 1}, {"id": 2}]}}),
+            encoding="utf-8",
         )
-        self.assertTrue(validate_manifest(self.root, owned))
-        tasks = self.root / ".taskmaster/tasks/tasks.json"
-        tasks.parent.mkdir(parents=True)
-        tasks.write_text(json.dumps({"master": {"tasks": [{"id": 1}, {"id": 2}]}}))
-        self.assertEqual([], validate_manifest(self.root, owned))
+        no_ownership = copy.deepcopy(self.manifest)
+        no_ownership["flows"][0].pop("task_ids")
+        for key in ("producer_task", "consumer_task", "owner_task"):
+            no_ownership["flows"][0]["handoffs"][0].pop(key)
+        self.assertTrue(validate_manifest(self.root, no_ownership))
 
     def test_planning_allows_missing_planned_test_but_run_rejects_it(self) -> None:
         doc = copy.deepcopy(self.manifest)
@@ -125,6 +137,19 @@ class MvgAcceptanceTests(unittest.TestCase):
         result = read_test_evidence(self.root, "gdunit", "expected", 1)
         self.assertFalse(result["passed"])
         self.assertEqual("reported-suite-failure", result["reason"])
+
+
+    def test_duplicate_test_identity_across_multiple_reports_fails_closed(self) -> None:
+        one = self.root / "one"
+        two = self.root / "two"
+        one.mkdir()
+        two.mkdir()
+        xml = '<TestRun><UnitTestResult testName="Expected.A" outcome="Passed"/></TestRun>'
+        (one / "results.trx").write_text(xml, encoding="utf-8")
+        (two / "results.trx").write_text(xml, encoding="utf-8")
+        result = read_test_evidence(self.root, "dotnet", "Expected", 1)
+        self.assertFalse(result["passed"])
+        self.assertEqual("duplicate-test-results", result["reason"])
 
     def test_planning_success_never_claims_runtime_verification(self) -> None:
         path = self.root / "manifest.json"
