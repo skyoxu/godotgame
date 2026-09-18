@@ -50,7 +50,7 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 2. Read `docs/workflows/knowledge-context-shadow.md` and `docs/workflows/knowledge-context-freeze.md`.
 3. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
 4. Read `docs/workflows/ui-ux-implementation-policy.md` when the task carries `ui_ux_seed`; Chapter 6 should preserve stable scene, input, text-key, and state boundaries but should not run a broad visual retrofit.
-5. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
+5. Do not load sibling-repository evidence from the shipped skill tree; use locally generated evidence only when explicitly needed.
 
 ## Knowledge / Impact Contract
 
@@ -103,7 +103,7 @@ Chapter 6 has dense business-repo logs. Always read active-task, latest.json, su
 
 ## Business Evidence References
 
-Generated evidence may live under `references/business-repos/<repo>.md`. These files are optional regression evidence from known business repositories; they must not define production generation rules.
+Sibling-repository evidence is never shipped inside the skill tree. When explicitly needed, refresh it locally under `logs/ci/workflow-business-evidence/`; it is empirical evidence only and never a production rule.
 
 ## Maintenance
 
