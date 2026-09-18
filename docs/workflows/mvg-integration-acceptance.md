@@ -12,7 +12,7 @@ MVG integration acceptance verifies that multiple implemented capabilities still
 | Chapter 6 | Implement flow tests incrementally; for MVG closure run the full manifest against one isolated snapshot. |
 | Chapter 7 | For critical UI flows prefer real scenes, engine input, bounded state waits, and cleanup. Keep scene-method and engine-input evidence distinct. |
 
-A fresh template contains no MVG business manifest. See `docs/testing/mvg/README.md` for the reusable schema.
+A fresh template contains no MVG business manifest. Once a project creates one, task ownership is mandatory: each flow binds real Taskmaster IDs and every handoff names a producer, consumer, and owner. See `docs/testing/mvg/README.md` for the reusable schema.
 
 ## Evidence contract
 
@@ -50,4 +50,4 @@ The optional parameterized mutation probe is documented in `docs/testing/mvg/REA
 
 ## CI
 
-`.github/workflows/mvg-integration.yml` always runs neutral framework regression tests when MVG framework surfaces change. Because the template has no project-specific MVG data, runtime execution is opt-in through workflow-dispatch inputs `manifest`, `challenge_input`, and `mutation_spec`. Downstream projects can add their own path triggers and committed manifest once real flows exist.
+`.github/workflows/mvg-integration.yml` always runs neutral framework regressions plus a real end-to-end MVG runtime smoke. The smoke temporarily injects neutral Taskmaster, dotnet, and GdUnit fixtures, executes the same isolated runner used by projects, then restores the checkout. Project-specific runtime remains opt-in through workflow-dispatch inputs `manifest`, `challenge_input`, and `mutation_spec`; those inputs are passed through environment variables rather than interpolated into PowerShell source.
