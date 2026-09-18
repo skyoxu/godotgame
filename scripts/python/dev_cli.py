@@ -822,6 +822,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_srv.add_argument("--port", type=int, default=0)
     p_srv.set_defaults(func=cmd_serve_project_health)
 
+    from run_mvg_acceptance import register_arguments as register_mvg_arguments, run as run_mvg
+    p_mvg = sub.add_parser(
+        "run-mvg-acceptance",
+        help="plan, recommend, or run isolated MVG integration evidence",
+    )
+    register_mvg_arguments(p_mvg)
+    p_mvg.set_defaults(func=run_mvg)
+
     return parser
 
 
