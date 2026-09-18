@@ -2,7 +2,7 @@
 
 This template intentionally ships with **no business MVG manifest** and no task IDs.
 
-Create a project-specific manifest only after the project has real flows, contracts, tests, and (when used) Taskmaster data. The reusable runner accepts a repository-relative manifest:
+Create a project-specific manifest only after the project has real flows, contracts, tests, and Taskmaster data. The reusable runner accepts a repository-relative manifest:
 
 ```powershell
 py -3 scripts/python/dev_cli.py run-mvg-acceptance --manifest docs/testing/mvg/<project>.json --mode plan
@@ -12,7 +12,7 @@ py -3 scripts/python/dev_cli.py run-mvg-acceptance --manifest docs/testing/mvg/<
 
 The schema is `godotgame.mvg-integration.v1`.
 
-Each manifest contains non-empty `flows` and `tests`. A flow declares an observable outcome, source paths, handoffs, and covered test IDs. A handoff declares a contract reference, observable behavior, and test IDs. Task ownership fields are optional in the reusable template; when a flow supplies `task_ids`, its handoff task ownership must be complete and must resolve against `.taskmaster/tasks/tasks.json`.
+Each manifest contains non-empty `flows` and `tests`. Every flow requires non-empty `task_ids` that resolve against `.taskmaster/tasks/tasks.json`. Every handoff requires `producer_task`, `consumer_task`, and `owner_task`, all owned by that flow. The reusable template stays empty by shipping no production MVG manifest; CI injects minimal neutral Taskmaster data only inside a temporary runtime smoke.
 
 Supported test evidence levels are:
 
