@@ -82,7 +82,7 @@ Chapter 2.5 is a read-only feasibility routing pass. Use the source document tex
 
 ## Business Evidence References
 
-Generated evidence may live under `references/business-repos/<repo>.md`. These files are optional regression evidence from known business repositories; they must not define production generation rules.
+Sibling-repository evidence is never shipped inside the skill tree. When explicitly needed, refresh it locally under `logs/ci/workflow-business-evidence/`; it is empirical evidence only and never a production rule.
 
 ## Maintenance
 
