@@ -56,19 +56,21 @@ def read_test_evidence(directory: Path, kind: str, expected: str, min_tests: int
         return {**result, "reason": "missing-test-report"}
 
     try:
+        seen_identities: set[str] = set()
         for path in files:
             tree = ET.parse(path).getroot()
             result["reports"].append(str(path))
             expected_tag = "UnitTestResult" if kind == "dotnet" else "testcase"
             local_cases = [node for node in tree.iter() if node.tag.split("}")[-1] == expected_tag]
             identities = [
-                case.get("executionId")
-                or case.get("testName")
-                or (case.get("classname", "") + ":" + case.get("name", ""))
+                case.get("testName", "")
+                if kind == "dotnet"
+                else (case.get("classname", expected) + ":" + case.get("name", ""))
                 for case in local_cases
             ]
-            if len(identities) != len(set(identities)):
+            if len(identities) != len(set(identities)) or seen_identities.intersection(identities):
                 return {**result, "reason": "duplicate-test-results"}
+            seen_identities.update(identities)
 
             for node in tree.iter():
                 tag = node.tag.split("}")[-1]
