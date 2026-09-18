@@ -2,6 +2,8 @@
 """Deterministic revision-bound Impact exploration and strict analysis."""
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -14,6 +16,23 @@ from project_health_knowledge import base_dir, latest, snapshot_text
 class ImpactAnalyzer:
     def __init__(self, root: str | Path = ".") -> None:
         self.root = base_dir(root)
+
+    def _index_binding(self, revision: str, index_id: str) -> tuple[str, str]:
+        pointer = self.root / "logs/ci/impact-index/current.json"
+        manifest = json.loads(pointer.read_text(encoding="utf-8"))
+        if manifest.get("repository_revision") != revision or manifest.get("index_id") != index_id:
+            raise ImpactIndexError("stale_index", "current Impact index identity does not match strict analysis")
+        relative = str(manifest.get("artifact_path") or "")
+        candidate = (self.root / relative).resolve()
+        try:
+            candidate.relative_to(self.root.resolve())
+        except ValueError as exc:
+            raise ImpactIndexError("path_outside_repository", "Impact index artifact escapes repository") from exc
+        raw = candidate.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != manifest.get("artifact_sha256"):
+            raise ImpactIndexError("invalid_manifest", "Impact index artifact hash mismatch")
+        return candidate.relative_to(self.root.resolve()).as_posix(), digest
 
     def _explore(self, needle: str, limit: int) -> dict[str, Any]:
         state = latest(self.root)
@@ -73,9 +92,12 @@ class ImpactAnalyzer:
                 "direction": relation.get("direction"), "depth": relation.get("depth"),
                 "from": relation.get("from"), "to": relation.get("to"), "line": relation.get("line"),
             })
+        index_id = str(indexed.get("index_id") or "")
+        index_path, index_sha256 = self._index_binding(revision, index_id)
         return {
             "schema": "godot-project-impact.report.v3", "revision": revision,
-            "snapshot_mode": state.get("snapshot_mode"), "index_id": indexed.get("index_id"),
+            "snapshot_mode": state.get("snapshot_mode"), "index_id": index_id,
+            "index_path": index_path, "index_sha256": index_sha256,
             "target": needle, "resolved_target": indexed.get("target"), "mode": "strict",
             "frozen_context_sha256": frozen_context_sha256,
             "warning": indexed.get("warning"), "evidence": evidence, "omissions": [],
