@@ -54,27 +54,35 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Verify reusable MVG failure handling
         run: python -m unittest scripts.ci.tests.test_mvg_acceptance -v
-      - name: Setup Godot for requested MVG runtime
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.manifest != '' }}
+      - name: Setup Godot for neutral and requested MVG runtime
         uses: ./.github/actions/setup-godot-windows
+      - name: Run neutral MVG runtime smoke
+        run: python scripts/ci/run_mvg_template_smoke.py
       - name: Run requested MVG manifest
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.manifest != '' }}
         shell: pwsh
+        env:
+          MVG_MANIFEST_INPUT: ${{ inputs.manifest }}
+          MVG_CHALLENGE_INPUT: ${{ inputs.challenge_input }}
         run: |
           $args = @(
             'scripts/python/run_mvg_acceptance.py',
             '--mode', 'run',
             '--snapshot', 'commit',
             '--revision', 'HEAD',
-            '--manifest', '${{ inputs.manifest }}',
+            '--manifest', $env:MVG_MANIFEST_INPUT,
             '--godot-bin', $env:GODOT_BIN,
             '--timeout-sec', '1200'
           )
-          if ('${{ inputs.challenge_input }}' -eq 'true') { $args += '--challenge-input' }
+          if ($env:MVG_CHALLENGE_INPUT -eq 'true') { $args += '--challenge-input' }
           python @args
       - name: Run optional parameterized mutation experiment
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mutation_spec != '' }}
-        run: python scripts/python/run_mvg_mutation_probe.py --snapshot commit --revision HEAD --spec "${{ inputs.mutation_spec }}"
+        shell: pwsh
+        env:
+          MVG_MUTATION_SPEC_INPUT: ${{ inputs.mutation_spec }}
+        run: |
+          python scripts/python/run_mvg_mutation_probe.py --snapshot commit --revision HEAD --spec $env:MVG_MUTATION_SPEC_INPUT
       - name: Upload MVG evidence
         if: always()
         uses: actions/upload-artifact@v4
