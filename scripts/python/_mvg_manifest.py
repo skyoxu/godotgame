@@ -28,23 +28,20 @@ def read_manifest(root: Path, path: str) -> dict:
     return json.loads(safe_path(root, path).read_text(encoding="utf-8-sig"))
 
 
-def _task_ids(root: Path) -> set[int] | None:
+def _task_ids(root: Path) -> set[int]:
     path = root / ".taskmaster/tasks/tasks.json"
     if not path.is_file():
-        return None
+        raise ValueError("MVG manifest requires .taskmaster/tasks/tasks.json")
     doc = json.loads(path.read_text(encoding="utf-8-sig"))
     return {int(row["id"]) for row in doc["master"]["tasks"]}
 
 
 def _validate_task_ownership(
-    flow: dict, tasks: set[int] | None, label: str, errors: list[str]
+    flow: dict, tasks: set[int], label: str, errors: list[str]
 ) -> set[int]:
     ids = flow.get("task_ids", [])
-    if ids:
-        if tasks is None:
-            errors.append(f"{label}: task_ids require .taskmaster/tasks/tasks.json")
-        elif any(type(item) is not int or item not in tasks for item in ids):
-            errors.append(f"{label}: unknown task_ids")
+    if not ids or any(type(item) is not int or item not in tasks for item in ids):
+        errors.append(f"{label}: unknown or empty task_ids")
     return set(ids)
 
 
@@ -126,16 +123,13 @@ def validate_manifest(root: Path, doc: dict, executable: bool = False) -> list[s
 
             for edge in flow["handoffs"]:
                 task_keys = ("producer_task", "consumer_task", "owner_task")
-                present = [key in edge for key in task_keys]
-                if any(present) and not all(present):
-                    errors.append(f"{label}: handoff task ownership must be complete")
-                elif all(present):
-                    if not owned_tasks:
-                        errors.append(f"{label}: handoff task ownership requires flow task_ids")
-                    elif any(type(edge[key]) is not int or edge[key] not in owned_tasks for key in task_keys):
-                        errors.append(
-                            f"{label}: each handoff needs known producer, consumer and owner tasks"
-                        )
+                if not all(key in edge for key in task_keys) or any(
+                    type(edge.get(key)) is not int or edge.get(key) not in owned_tasks
+                    for key in task_keys
+                ):
+                    errors.append(
+                        f"{label}: each handoff needs known producer, consumer and owner tasks"
+                    )
 
                 if not safe_path(root, edge["contract_ref"]).is_file() or not edge["behavior"].strip():
                     errors.append(f"{label}: handoff contract and behavior are required")
