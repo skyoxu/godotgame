@@ -10,6 +10,7 @@ LEVELS = {
     "dotnet": {"domain-integration"},
     "gdunit": {"scene-method", "engine-input"},
 }
+COVERAGE_MODES = {"pilot", "critical", "full"}
 
 
 def safe_path(root: Path, value: str) -> Path:
@@ -28,12 +29,12 @@ def read_manifest(root: Path, path: str) -> dict:
     return json.loads(safe_path(root, path).read_text(encoding="utf-8-sig"))
 
 
-def _task_ids(root: Path) -> set[int]:
+def _task_rows(root: Path) -> dict[int, dict]:
     path = root / ".taskmaster/tasks/tasks.json"
     if not path.is_file():
         raise ValueError("MVG manifest requires .taskmaster/tasks/tasks.json")
     doc = json.loads(path.read_text(encoding="utf-8-sig"))
-    return {int(row["id"]) for row in doc["master"]["tasks"]}
+    return {int(row["id"]): row for row in doc["master"]["tasks"]}
 
 
 def _validate_task_ownership(
@@ -53,10 +54,64 @@ def validate_manifest(root: Path, doc: dict, executable: bool = False) -> list[s
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", doc.get("mvg_id", "")):
             errors.append("Invalid mvg_id")
 
-        tasks = _task_ids(root)
+        task_rows = _task_rows(root)
+        tasks = set(task_rows)
         flows, tests = doc["flows"], doc["tests"]
         if not flows or not tests:
             errors.append("At least one flow and test are required")
+
+        coverage_contract = doc.get("coverage")
+        if not isinstance(coverage_contract, dict):
+            errors.append("coverage contract is required")
+        else:
+            mode = coverage_contract.get("mode")
+            if mode not in COVERAGE_MODES:
+                errors.append("coverage: invalid mode")
+            scope_id = coverage_contract.get("scope_id", "")
+            if not isinstance(scope_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", scope_id):
+                errors.append("coverage: invalid scope_id")
+            required_flow_ids = coverage_contract.get("required_flow_ids")
+            flow_ids = [flow["id"] for flow in flows]
+            if not isinstance(required_flow_ids, list) or required_flow_ids != flow_ids:
+                errors.append("coverage: required_flow_ids must exactly match manifest flow order")
+            excluded_claims = coverage_contract.get("excluded_claims")
+            if (
+                not isinstance(excluded_claims, list)
+                or not excluded_claims
+                or any(not isinstance(item, str) or not item.strip() for item in excluded_claims)
+            ):
+                errors.append("coverage: excluded_claims must be a non-empty string array")
+
+            referenced_tasks = sorted(
+                {
+                    task_id
+                    for flow in flows
+                    for task_id in flow.get("task_ids", [])
+                    if isinstance(task_id, int) and task_id in task_rows
+                }
+            )
+            non_done = sorted(
+                task_id
+                for task_id in referenced_tasks
+                if str(task_rows[task_id].get("status", "")).lower() != "done"
+            )
+            declared_blockers = coverage_contract.get("blocking_task_ids", [])
+            if (
+                not isinstance(declared_blockers, list)
+                or any(type(task_id) is not int for task_id in declared_blockers)
+                or sorted(declared_blockers) != non_done
+            ):
+                errors.append(
+                    f"coverage: blocking_task_ids must match non-done scoped tasks {non_done}"
+                )
+            if mode == "critical" and len(flows) < 2:
+                errors.append("coverage: critical mode requires at least two flows")
+            if mode == "full" and len(flows) < 3:
+                errors.append("coverage: full mode requires at least three flows")
+            if executable and mode in {"critical", "full"} and non_done:
+                errors.append(
+                    f"coverage: executable {mode} scope blocked by non-done tasks {non_done}"
+                )
 
         for rows, label in ((flows, "flow"), (tests, "test")):
             ids = [row["id"] for row in rows]
@@ -166,6 +221,7 @@ def recommend(doc: dict, changed_paths: list[str], *, unknown_reason: str = "") 
             )
 
     unmapped = sorted(set(changed_paths) - mapped)
+    coverage = doc.get("coverage") if isinstance(doc.get("coverage"), dict) else {}
     return {
         "recommendation": "full-mvg" if unmapped or not matched or unknown_reason else "related-first",
         "matched_flows": matched,
@@ -173,6 +229,12 @@ def recommend(doc: dict, changed_paths: list[str], *, unknown_reason: str = "") 
         "unmapped_changes": unmapped,
         "unknown_reason": unknown_reason,
         "required_tests": [test["id"] for test in doc["tests"]],
+        "manifest_coverage_mode": coverage.get("mode", "unknown"),
+        "manifest_scope_id": coverage.get("scope_id", ""),
+        "manifest_blocking_task_ids": coverage.get("blocking_task_ids", []),
         "authorizes_test_exclusion": False,
-        "analysis_scope": "Explicit MVG source/contract/test mappings; not a call graph or formal Impact replacement",
+        "analysis_scope": (
+            "Explicit MVG source/contract/test mappings; full-mvg means every required test "
+            "in this manifest, not automatic product-wide coverage or formal Impact replacement"
+        ),
     }
