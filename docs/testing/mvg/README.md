@@ -14,6 +14,16 @@ The schema is `godotgame.mvg-integration.v1`.
 
 Each manifest contains non-empty `flows` and `tests`. Every flow requires non-empty `task_ids` that resolve against `.taskmaster/tasks/tasks.json`. Every handoff requires `producer_task`, `consumer_task`, and `owner_task`, all owned by that flow. The reusable template stays empty by shipping no production MVG manifest; CI injects minimal neutral Taskmaster data only inside a temporary runtime smoke.
 
+Every manifest also carries a required `coverage` contract:
+
+- `mode`: `pilot`, `critical`, or `full`;
+- `scope_id`: stable project-owned scope identity;
+- `required_flow_ids`: exactly the manifest flow order;
+- `blocking_task_ids`: exactly the scoped Taskmaster IDs whose status is not `done`;
+- `excluded_claims`: non-empty statements describing what the scope does **not** prove.
+
+`critical` requires at least two flows and `full` requires at least three. Planning may describe an incomplete critical/full scope, but executable critical/full runs fail closed while `blocking_task_ids` is non-empty. The template's own temporary smoke is deliberately `pilot`; it proves reusable mechanics, never product-wide MVG coverage.
+
 Supported test evidence levels are:
 
 - dotnet: `domain-integration`
@@ -30,6 +40,8 @@ The recommendation layer compares changed Git paths with explicit manifest sourc
 - a fully mapped change can produce `related-first`;
 - any unmapped path, empty/unknown change range, or unavailable Git comparison produces `full-mvg`;
 - `required_tests` always contains the complete manifest test inventory;
+- recommendation output includes `manifest_coverage_mode`, `manifest_scope_id`, and `manifest_blocking_task_ids`;
+- `full-mvg` means all required tests in the **selected manifest**, not automatic whole-product coverage;
 - `authorizes_test_exclusion` is always false.
 
 This does not replace the formal revision-bound Impact Index or Knowledge Control Plane.
