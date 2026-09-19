@@ -64,7 +64,11 @@ class ProjectHealthServerTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with mock.patch.object(server_module, "is_process_alive", return_value=True), mock.patch.object(
+            with mock.patch.object(
+                server_module,
+                "knowledge_service_available",
+                return_value=True,
+            ), mock.patch.object(server_module, "is_process_alive", return_value=True), mock.patch.object(
                 server_module,
                 "port_accepts_connections",
                 return_value=True,
@@ -98,7 +102,7 @@ class ProjectHealthServerTests(unittest.TestCase):
             spawn_mock.assert_called_once()
 
     def test_project_health_scan_cli_should_optionally_serve(self) -> None:
-        with mock.patch.object(
+        with mock.patch.dict(scan_cli_module.os.environ, {"CI": ""}), mock.patch.object(
             scan_cli_module,
             "project_health_scan",
             return_value={"status": "warn", "exit_code": 0},

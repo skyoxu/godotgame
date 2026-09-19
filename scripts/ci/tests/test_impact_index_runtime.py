@@ -13,6 +13,7 @@ if str(PYTHON) not in sys.path:
     sys.path.insert(0, str(PYTHON))
 
 from impact_analysis_handoff import validate
+from freeze_knowledge_context import freeze
 from impact_analysis_index import ImpactIndexError, build_index, publish_index
 from impact_analyzer import ImpactAnalyzer
 from impact_runtime import resolve_target
@@ -74,7 +75,81 @@ class ImpactIndexRuntimeTests(unittest.TestCase):
             report = ImpactAnalyzer(root).analyze("Game.Core/FeatureService.cs", strict=True, frozen_context_sha256="freeze-123")
             self.assertEqual(index["index_id"], report["index_id"])
             self.assertEqual("freeze-123", report["frozen_context_sha256"])
+            self.assertTrue(report["index_sha256"])
+            self.assertTrue(report["index_path"].endswith("/impact-index.v1.json"))
             self.assertEqual("file", report["resolved_target"]["kind"])
+
+    def test_handoff_binds_report_bytes_to_run_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            revision = self.make_repo(root)
+            index = build_index(root, revision, trusted_ref="refs/heads/main")
+            publish_index(root, index, root / "logs/ci")
+            scan(root)
+            bundle = {
+                "schema": "godot-project-knowledge.context-candidates.v2",
+                "status": "ready",
+                "consumer": "chapter6",
+                "task_id": "1",
+                "revision": revision,
+                "policy_revision": "test",
+                "publication_state": "published-current",
+                "bundle_sha256": "bundle",
+                "candidates": [{"path": "Game.Core/FeatureService.cs"}],
+            }
+            frozen = freeze(
+                bundle,
+                {"decisions":[{"path":"Game.Core/FeatureService.cs","accepted":True,"reason":"test","satisfies":"test"}]},
+            )
+            report = ImpactAnalyzer(root).analyze(
+                "Game.Core/FeatureService.cs",
+                strict=True,
+                frozen_context_sha256=frozen["frozen_sha256"],
+            )
+            report["status"] = "ok"
+            report_bytes = (json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+            report_path = "logs/ci/impact/test/impact-report.v1.json"
+            manifest = {
+                "schema": "godot-project-impact.run-manifest.v1",
+                "run_id": "test-run",
+                "report_path": report_path,
+                "report_sha256": __import__("hashlib").sha256(report_bytes).hexdigest(),
+                "status": "ok",
+                "revision": revision,
+            }
+            result = validate(
+                frozen,
+                report,
+                repo_root=root,
+                impact_report_bytes=report_bytes,
+                run_manifest=manifest,
+                impact_report_path=report_path,
+            )
+            self.assertEqual("ok", result["status"])
+
+            bad_manifest = dict(manifest)
+            bad_manifest["report_sha256"] = "0" * 64
+            result = validate(
+                frozen,
+                report,
+                repo_root=root,
+                impact_report_bytes=report_bytes,
+                run_manifest=bad_manifest,
+                impact_report_path=report_path,
+            )
+            self.assertEqual("failed", result["status"])
+            self.assertIn("impact_report_hash_mismatch", result["errors"])
+
+            missing = validate(
+                frozen,
+                report,
+                repo_root=root,
+                impact_report_bytes=report_bytes,
+                run_manifest=None,
+                impact_report_path=report_path,
+            )
+            self.assertEqual("failed", missing["status"])
+            self.assertIn("missing_impact_run_manifest", missing["errors"])
 
     def test_natural_language_ambiguous_symbols_and_missing_pointers_fail_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -91,12 +166,49 @@ class ImpactIndexRuntimeTests(unittest.TestCase):
                 resolve_target(index, "Game.Godot/Data/feature.json#/feature/missing")
             self.assertEqual("unsupported_target", missing.exception.code)
 
-    def test_handoff_requires_exact_frozen_hash(self):
-        frozen = {"consumer": "chapter6", "revision": "a" * 40, "frozen_sha256": "freeze-a"}
-        impact = {"mode": "strict", "revision": "a" * 40, "frozen_context_sha256": "freeze-b", "index_id": "idx-x", "target": "x"}
-        result = validate(frozen, impact)
-        self.assertEqual("failed", result["status"])
-        self.assertIn("frozen_hash_mismatch", result["errors"])
+    def test_handoff_recomputes_frozen_content_hash_and_validates_index_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            revision = self.make_repo(root)
+            index = build_index(root, revision, trusted_ref="refs/heads/main")
+            published = publish_index(root, index, root / "logs/ci")
+            scan(root)
+            bundle = {
+                "schema": "godot-project-knowledge.context-candidates.v2",
+                "status": "ready",
+                "consumer": "chapter6",
+                "task_id": "1",
+                "revision": revision,
+                "policy_revision": "test",
+                "publication_state": "published-current",
+                "bundle_sha256": "bundle",
+                "candidates": [{"path": "Game.Core/FeatureService.cs"}],
+            }
+            frozen = freeze(
+                bundle,
+                {"decisions":[{"path":"Game.Core/FeatureService.cs","accepted":True,"reason":"test","satisfies":"test"}]},
+            )
+            report = ImpactAnalyzer(root).analyze(
+                "Game.Core/FeatureService.cs",
+                strict=True,
+                frozen_context_sha256=frozen["frozen_sha256"],
+            )
+            result = validate(frozen, report, repo_root=root, expected_consumer="chapter6", expected_task_id="1")
+            self.assertEqual("ok", result["status"])
+
+            tampered = json.loads(json.dumps(frozen))
+            tampered["accepted_paths"].append("Game.Core/Other.cs")
+            result = validate(tampered, report, repo_root=root)
+            self.assertEqual("failed", result["status"])
+            self.assertIn("frozen_content_hash_mismatch", result["errors"])
+
+            index_path = root / published["index_path"]
+            index_path.write_text("{}\n", encoding="utf-8")
+            result = validate(frozen, report, repo_root=root)
+            self.assertEqual("failed", result["status"])
+            self.assertIn("index_hash_mismatch", result["errors"])
+
+
 
 
 if __name__ == "__main__":

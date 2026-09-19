@@ -1,0 +1,109 @@
+name: MVG Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: Repository-relative MVG manifest to execute
+        type: string
+        required: false
+        default: ''
+      challenge_input:
+        description: Run manifest-declared negative wiring challenges
+        type: boolean
+        required: false
+        default: false
+      mutation_spec:
+        description: Optional repository-relative mutation spec
+        type: string
+        required: false
+        default: ''
+  pull_request:
+    paths:
+      - '.github/workflows/mvg-integration.yml'
+      - 'scripts/python/*mvg*'
+      - 'scripts/ci/tests/test_mvg*'
+      - 'scripts/ci/run_mvg_template_smoke.py'
+      - 'scripts/ci/run_project_health_browser_smoke.py'
+      - 'scripts/browser/project_health.spec.js'
+      - 'scripts/python/project_health_scenes.js'
+      - 'scripts/python/_project_health_runtime_snapshot.py'
+      - 'scripts/python/run_gdunit.py'
+      - 'scripts/python/check_workflow_gate_enforcement.py'
+      - 'scripts/python/config/workflow-gate-allowlist.json'
+      - 'docs/testing/mvg/**'
+      - 'docs/workflows/mvg-integration-acceptance.md'
+      - 'Game.Core.Tests/Integration/Mvg*'
+      - 'Tests.Godot/tests/Integration/Mvg/**'
+
+permissions:
+  contents: read
+
+jobs:
+  mvg:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: 'utf-8'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify reusable MVG failure handling
+        run: python -m unittest scripts.ci.tests.test_mvg_acceptance -v
+      - name: Setup Godot for neutral and requested MVG runtime
+        uses: ./.github/actions/setup-godot-windows
+      - name: Run neutral MVG runtime smoke
+        run: python scripts/ci/run_mvg_template_smoke.py
+      - name: Install Project Health browser test runtime
+        shell: pwsh
+        run: |
+          npm install --prefix logs/ci/playwright-runner @playwright/test@1.55.0
+          node logs/ci/playwright-runner/node_modules/@playwright/test/cli.js install chromium
+      - name: Run Project Health browser timing regression
+        run: python scripts/ci/run_project_health_browser_smoke.py --playwright-root logs/ci/playwright-runner
+      - name: Run requested MVG manifest
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.manifest != '' }}
+        shell: pwsh
+        env:
+          MVG_MANIFEST_INPUT: ${{ inputs.manifest }}
+          MVG_CHALLENGE_INPUT: ${{ inputs.challenge_input }}
+        run: |
+          $args = @(
+            'scripts/python/run_mvg_acceptance.py',
+            '--mode', 'run',
+            '--snapshot', 'commit',
+            '--revision', 'HEAD',
+            '--manifest', $env:MVG_MANIFEST_INPUT,
+            '--godot-bin', $env:GODOT_BIN,
+            '--timeout-sec', '1200'
+          )
+          if ($env:MVG_CHALLENGE_INPUT -eq 'true') { $args += '--challenge-input' }
+          python @args
+      - name: Run optional parameterized mutation experiment
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mutation_spec != '' }}
+        shell: pwsh
+        env:
+          MVG_MUTATION_SPEC_INPUT: ${{ inputs.mutation_spec }}
+        run: |
+          python scripts/python/run_mvg_mutation_probe.py --snapshot commit --revision HEAD --spec $env:MVG_MUTATION_SPEC_INPUT
+      - name: Upload MVG evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvg-integration-evidence
+          path: |
+            logs/ci/mvg-acceptance/**
+            logs/ci/mvg-mutation/**
+            !logs/**/snapshot/**
+          retention-days: 14

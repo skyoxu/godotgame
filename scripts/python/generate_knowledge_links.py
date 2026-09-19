@@ -182,7 +182,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--task-id", action="append", dest="task_ids")
     parser.add_argument("--write-task-refs", action="store_true")
     args = parser.parse_args(argv)
-    result = generate(args.repo_root.resolve(), set(args.task_ids or []), args.write_task_refs)
+    selected = set(args.task_ids) if args.task_ids else None
+    result = generate(args.repo_root.resolve(), selected, args.write_task_refs)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

@@ -48,8 +48,8 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 1. Read the relevant Chapter 7 section in the template repo `workflow.md`.
 2. Read `docs/workflows/chapter3-7-component-routing.md` for the formal Chapter 3-7 soft routing preferences.
 3. Read `docs/workflows/ui-ux-implementation-policy.md`; Chapter 7 consumes Chapter 3 `ui_ux_seed` metadata and turns it into screen contracts, component kit decisions, screenshot acceptance, accessibility checks, and localization checks.
-4. Optionally read `references/business-repos/<repo>.md` only as empirical validation evidence when the target business repo has a generated reference.
-5. If that optional evidence file is missing or stale, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>` from the template repo.
+4. Do not load sibling-repository evidence from the shipped skill tree; use locally generated evidence only when explicitly needed.
+5. If local empirical evidence is needed, run `py -3 scripts/python/update_workflow_chapter_skills.py <repo>`; generated evidence stays under `logs/ci/workflow-business-evidence/`.
 
 ## Idempotent Procedure
 
@@ -72,7 +72,7 @@ Chapter 7 currently has little or no business-repo runtime history. Use workflow
 
 ## Business Evidence References
 
-Generated evidence may live under `references/business-repos/<repo>.md`. These files are optional regression evidence from known business repositories; they must not define production generation rules.
+Sibling-repository evidence is never shipped inside the skill tree. When explicitly needed, refresh it locally under `logs/ci/workflow-business-evidence/`; it is empirical evidence only and never a production rule.
 
 ## Maintenance
 

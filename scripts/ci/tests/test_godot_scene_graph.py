@@ -93,6 +93,7 @@ class GodotSceneGraphTests(unittest.TestCase):
         self.assertEqual(route["source"], "Menu.tscn")
         self.assertEqual(route["target"], "Feature.tscn")
         self.assertEqual(route["evidence_level"], "effective")
+        self.assertEqual(graph["nodes"]["Feature.tscn"]["classification"], "confirmed-reachable")
 
 
 if __name__ == "__main__":
