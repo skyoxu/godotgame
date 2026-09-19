@@ -17,6 +17,7 @@ class TemplateBusinessLeakageTests(unittest.TestCase):
         ]
         roots = [
             ROOT / "scripts/python",
+            ROOT / "scripts/sc",
             ROOT / "scripts/ci/tests",
             ROOT / "knowledge",
             ROOT / "docs/knowledge",
@@ -40,7 +41,7 @@ class TemplateBusinessLeakageTests(unittest.TestCase):
             relative = path.relative_to(ROOT).as_posix()
             # Legacy unit tests may document migration-source behavior. CI fixtures for the
             # Knowledge/Impact port live under scripts/ci/tests and remain covered below.
-            if relative.startswith("scripts/python/tests/"):
+            if relative.startswith("scripts/python/tests/") or relative.startswith("scripts/sc/tests/"):
                 continue
             if path.suffix.casefold() in {".png", ".jpg", ".jpeg", ".webp", ".zip", ".dll", ".exe"}:
                 continue
