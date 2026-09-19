@@ -132,6 +132,7 @@ def run(args: argparse.Namespace, root: Path | None = None) -> int:
         summary.update(
             mvg_id=doc.get("mvg_id"),
             manifest=args.manifest,
+            coverage=doc.get("coverage", {}),
             validation_errors=errors,
         )
         if errors:
