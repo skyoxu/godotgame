@@ -35,12 +35,21 @@ class MvgAcceptanceTests(unittest.TestCase):
         tasks = self.root / ".taskmaster/tasks/tasks.json"
         tasks.parent.mkdir(parents=True)
         tasks.write_text(
-            json.dumps({"master": {"tasks": [{"id": 1}, {"id": 2}]}}),
+            json.dumps({"master": {"tasks": [{"id": 1, "status": "done"}, {"id": 2, "status": "done"}]}}),
             encoding="utf-8",
         )
         self.manifest = {
             "schema_version": "godotgame.mvg-integration.v1",
             "mvg_id": "neutral-pilot",
+            "coverage": {
+                "mode": "pilot",
+                "scope_id": "neutral-template-pilot",
+                "required_flow_ids": ["feature-flow"],
+                "blocking_task_ids": [],
+                "excluded_claims": [
+                    "Neutral template fixture does not represent project-wide MVG coverage."
+                ],
+            },
             "flows": [
                 {
                     "id": "feature-flow",
@@ -73,13 +82,58 @@ class MvgAcceptanceTests(unittest.TestCase):
             ],
         }
 
+    def test_coverage_contract_rejects_missing_or_mismatched_scope(self) -> None:
+        for mutate in [
+            lambda doc: doc.pop("coverage"),
+            lambda doc: doc["coverage"].__setitem__("required_flow_ids", ["other-flow"]),
+            lambda doc: doc["coverage"].__setitem__("excluded_claims", []),
+        ]:
+            with self.subTest(mutate=mutate):
+                doc = copy.deepcopy(self.manifest)
+                mutate(doc)
+                self.assertTrue(validate_manifest(self.root, doc))
+
+    def test_critical_and_full_scopes_fail_closed_on_incomplete_scope(self) -> None:
+        tasks = self.root / ".taskmaster/tasks/tasks.json"
+        tasks.write_text(
+            json.dumps({
+                "master": {
+                    "tasks": [
+                        {"id": 1, "status": "done"},
+                        {"id": 2, "status": "pending"},
+                    ]
+                }
+            }),
+            encoding="utf-8",
+        )
+        critical = copy.deepcopy(self.manifest)
+        critical["coverage"] = {
+            "mode": "critical",
+            "scope_id": "neutral-critical",
+            "required_flow_ids": ["feature-flow", "second-flow"],
+            "blocking_task_ids": [2],
+            "excluded_claims": ["Human product acceptance remains outside this fixture."],
+        }
+        critical["flows"].append({**copy.deepcopy(critical["flows"][0]), "id": "second-flow"})
+        self.assertEqual([], validate_manifest(self.root, critical, executable=False))
+        errors = validate_manifest(self.root, critical, executable=True)
+        self.assertTrue(any("blocked by non-done tasks [2]" in item for item in errors))
+
+        full = copy.deepcopy(critical)
+        full["coverage"]["mode"] = "full"
+        full["coverage"]["scope_id"] = "neutral-full"
+        full["coverage"]["required_flow_ids"] = ["feature-flow", "second-flow", "third-flow"]
+        full["flows"].append({**copy.deepcopy(full["flows"][0]), "id": "third-flow"})
+        errors = validate_manifest(self.root, full, executable=True)
+        self.assertTrue(any("executable full scope blocked" in item for item in errors))
+
     def test_manifest_requires_real_task_and_handoff_ownership(self) -> None:
         self.assertEqual([], validate_manifest(self.root, self.manifest))
         missing_tasks = self.root / ".taskmaster/tasks/tasks.json"
         missing_tasks.unlink()
         self.assertTrue(validate_manifest(self.root, self.manifest))
         missing_tasks.write_text(
-            json.dumps({"master": {"tasks": [{"id": 1}, {"id": 2}]}}),
+            json.dumps({"master": {"tasks": [{"id": 1, "status": "done"}, {"id": 2, "status": "done"}]}}),
             encoding="utf-8",
         )
         no_ownership = copy.deepcopy(self.manifest)
@@ -105,6 +159,9 @@ class MvgAcceptanceTests(unittest.TestCase):
 
         unknown = recommend(self.manifest, ["Game.Godot/NewFeature.gd"])
         self.assertEqual("full-mvg", unknown["recommendation"])
+        self.assertEqual("pilot", unknown["manifest_coverage_mode"])
+        self.assertEqual("neutral-template-pilot", unknown["manifest_scope_id"])
+        self.assertEqual([], unknown["manifest_blocking_task_ids"])
         self.assertEqual(["Game.Godot/NewFeature.gd"], unknown["unmapped_changes"])
         self.assertEqual(["feature-core"], unknown["required_tests"])
 
