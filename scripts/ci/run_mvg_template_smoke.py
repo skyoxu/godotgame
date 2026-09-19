@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
 
     fixture_files = {
         root / ".taskmaster/tasks/tasks.json": json.dumps(
-            {"master": {"tasks": [{"id": 900001}, {"id": 900002}]}},
+            {"master": {"tasks": [{"id": 900001, "status": "done"}, {"id": 900002, "status": "done"}]}},
             ensure_ascii=False,
             indent=2,
         ) + "\n",
@@ -52,6 +52,15 @@ def main(argv: list[str] | None = None) -> int:
     manifest = {
         "schema_version": "godotgame.mvg-integration.v1",
         "mvg_id": "template-runtime-smoke",
+        "coverage": {
+            "mode": "pilot",
+            "scope_id": "neutral-template-runtime",
+            "required_flow_ids": ["neutral-cross-runtime-flow"],
+            "blocking_task_ids": [],
+            "excluded_claims": [
+                "Runtime smoke proves template mechanics, not project-wide MVG coverage."
+            ],
+        },
         "flows": [{
             "id": "neutral-cross-runtime-flow",
             "task_ids": [900001, 900002],
