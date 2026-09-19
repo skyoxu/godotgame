@@ -14,6 +14,12 @@ MVG integration acceptance verifies that multiple implemented capabilities still
 
 A fresh template contains no MVG business manifest. Once a project creates one, task ownership is mandatory: each flow binds real Taskmaster IDs and every handoff names a producer, consumer, and owner. See `docs/testing/mvg/README.md` for the reusable schema.
 
+## Coverage scope contract
+
+Every project manifest declares whether it is a `pilot`, `critical`, or `full` scope. It also records a stable `scope_id`, the exact ordered flow inventory, scoped non-done Taskmaster blockers, and explicit excluded claims. This separates "all tests in this manifest ran" from "the project's complete MVG scope is covered."
+
+The template ships no critical/full business inventory. Its temporary neutral runtime smoke is a `pilot` only. Projects define their own critical/full flows after real Taskmaster, contracts, and tests exist. Executable critical/full scopes fail closed until every scoped task is `done`.
+
 ## Evidence contract
 
 The runner creates `logs/ci/mvg-acceptance/<run-id>/summary.json` and raw test evidence. A runtime run is verified only when every required manifest test:
@@ -34,7 +40,7 @@ Only the first successful GdUnit suite in one snapshot performs prewarm. Later s
 
 `--mode recommend --base <ref>` compares Git paths against explicit manifest source paths, contract references, and integration test paths. Commit mode reads the manifest from `--revision` and compares to that revision without mixing current workspace changes. Workspace mode explicitly records that working changes are included.
 
-The recommendation is deliberately conservative. Unknown paths, missing mappings, empty change sets, or unavailable Git ranges force `full-mvg`. Even `related-first` is only ordering guidance: all manifest tests stay in `required_tests`, and the current run mode executes all of them. This layer is not a call graph and does not replace formal Impact/KCP analysis.
+The recommendation is deliberately conservative. Unknown paths, missing mappings, empty change sets, or unavailable Git ranges force `full-mvg`. Here `full-mvg` means every required test in the selected manifest, not automatic product-wide coverage. Recommendation output carries `manifest_coverage_mode`, `manifest_scope_id`, and `manifest_blocking_task_ids`. Even `related-first` is only ordering guidance: all manifest tests stay in `required_tests`, and the current run mode executes all of them. This layer is not a call graph and does not replace formal Impact/KCP analysis.
 
 ## Commands
 
